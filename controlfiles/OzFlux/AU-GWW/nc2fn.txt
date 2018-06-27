@@ -1,0 +1,91 @@
+[Files]
+    file_path = E:/TERN/Sites/GWW/Data/Processed/2017/
+    in_filename = GWW_2017_L3.nc
+    out_filename = GWW_2017_FluxNet.csv
+
+[General]
+    CanopyHeight = "18"
+    DataPolicy = "OzFlux (http://data.ozflux.org.au/portal/site/licenceinfo.jspx)"
+    DataURL = "http://data.ozflux.org.au/"
+    Elevation = "430m"
+    Institution = "CSIRO"
+    LandUse = "old-growth woodland"
+    Latitude = "-30.1914"
+    LicenseType = "TERN-BY-SA_NC"
+    LicenseURL = "http://www.tern.org.au/datalicence/TERN-BY-SA-NC/1.0"
+    Longitude = "120.65416666666666666666666666666667"
+    MeasurementHeight = "36m"
+    MetadataURL = "http://www.ozflux.org.au/monitoringsites/gww/index.html"
+    PIEmail = "craig.macfarlane@csiro.au"
+    PIName = "Craig Macfarlane"
+    SiteName = "Great Western Woodlands, Western Australia, Australia"
+    SoilType = "heavy red clay"
+    SWC1Depth = "5cm"
+    TS1Depth = "6cm"
+    start_datetime = "2017-01-01 00:30"
+    end_datetime = "2018-01-01 00:00"
+
+[Variables]
+    [[FC]]
+        ncname = "Fc"
+        format = "0.00"
+    [[CO2]]
+        ncname = "Cc"
+        format = "0.0"
+    [[ust]]
+        ncname = "ustar"
+        format = "0.00"
+    [[RG_in]]
+        ncname = "Fsd"
+        format = "0"
+    [[TA]]
+        ncname = "Ta"
+        format = "0.00"
+    [[H2O]]
+        ncname = "Ah"
+        format = "0.00"
+    [[LE]]
+        ncname = "Fe"
+        format = "0"
+    [[H]]
+        ncname = "Fh"
+        format = "0"
+    [[G1]]
+        ncname = "Fg"
+        format = "0"
+    [[PRECIP]]
+        ncname = "Precip"
+        format = "0.00"
+    [[SWC1]]
+        ncname = "Sws"
+        format = "0.000"
+    [[TS1]]
+        ncname = "Ts"
+        format = "0.00"
+    [[RNET]]
+        ncname = "Fn"
+        format = "0"
+    [[SWin]]
+        ncname = "Fsd"
+        format = "0"
+    [[SWout]]
+        ncname = "Fsu"
+        format = "0"
+    [[LWin]]
+        ncname = "Fld"
+        format = "0"
+    [[LWout]]
+        ncname = "Flu"
+        format = "0"
+    [[WD]]
+        ncname = "Wd"
+        format = "0"
+    [[WS]]
+        ncname = "Ws"
+        format = "0.00"
+    [[PA]]
+        ncname = "ps"
+        format = "0.00"
+    [[RH]]
+        ncname = "RH"
+        format = "0"

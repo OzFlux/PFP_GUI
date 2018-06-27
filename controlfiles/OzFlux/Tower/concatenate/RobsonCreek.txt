@@ -1,0 +1,13 @@
+[Files]
+    [[Out]]
+        ncFileName = ../OzFlux/Sites/RobsonCreek/Data/Portal/RobsonCreek_L3.nc
+    [[In]]
+        0 = ../OzFlux/Sites/RobsonCreek/Data/Portal/Robson_2013_L3.nc
+        1 = ../OzFlux/Sites/RobsonCreek/Data/Portal/Robson_2014_L3.nc
+        2 = ../OzFlux/Sites/RobsonCreek/Data/Portal/Robson_2015_L3.nc
+        3 = ../OzFlux/Sites/RobsonCreek/Data/Portal/Robson_2016_L3.nc
+
+[Options]
+    NumberOfDimensions = 3                       # number of dimensions for output netCDF file
+    MaxGapInterpolate  = 0                       # maximum gap length (hours) for filling by interpolation
+    FixTimeStepMethod  = round                   # interpolate/round

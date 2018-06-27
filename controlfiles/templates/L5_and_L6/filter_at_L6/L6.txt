@@ -1,0 +1,83 @@
+[Files]
+    file_path = ../Sites/<site_name>/Data/Processed/all/
+    in_filename = <site_name>_<start_year>_to_<end_year>_L5.nc
+    out_filename = <site_name>_<start_year>_to_<end_year>_L6.nc
+    plot_path = ../Sites/<site_name>/Plots/
+    cpd_filename = <site_name>_L3_CPD.xls
+
+[Global]
+    acknowledgement = """This work used eddy covariance data collected by the TERN-OzFlux facility. OzFlux
+would like to acknowledge the financial support of the Australian Federal Government via
+the National Collaborative Research Infrastructure Scheme and the Education Investment
+Fund."""
+
+[Options]
+    MaxGapInterpolate   = 0
+    FilterList          = "['Fc']"
+    TurbulenceFilter    = ustar  # ustar/ustar_evg/L/none, type of turbulence filter
+    DayNightFilter      = Fsd    # Fsd/sa/none, Fsd ==> use Fsd, sa ==> use solar altitude
+    UseFsdsyn_threshold = No     # Yes/No, include Fsd_syn in the day/night filter
+    AcceptDayTimes      = Yes    # Yes/No, accept all day time values (including ustar<threshold)
+    UseEveningFilter    = No     # Yes/No, only use specified hours after sunset
+    EveningFilterLength = 3      # 0/X, period starting after sunset, hours (0 ==> disable)
+    Fsd_threshold       = 10     # Fsd threshold for determining day or night time, W/m2
+    sa_threshold        = -5     # Solar altitude threshold, degrees, -ve below horizon
+
+[ustar_threshold]
+# put a line here for each date period being used (usually one year)
+# <start_datetime> is of the form YYYY-MM-DD hh:mm
+# <end_datetime> is of the form YYYY-MM-DD hh:mm
+# <ustar_threshold> is a number
+# eg     0 = "['2011-01-01 00:30','2012-01-01 00:00',0.27]"
+    0 = "['<start_datetime>','<end_datetime>',<ustar_threshold>]"
+
+[ER]
+    [[ER_SOLO]]
+        [[[ERUsingSOLO]]]
+            target ="ER"
+            drivers = "['Ts','Ta','Sws']"
+            output = "ER_SOLO_all"
+        [[[MergeSeries]]]
+            Source = "['ER','ER_SOLO_all']"
+    [[ER_FFNET]]
+        [[[ERUsingFFNET]]]
+            target ="ER"
+            drivers = "['Ts','Ta','Sws']"
+            output = "ER_FFNET_all"
+        [[[MergeSeries]]]
+            Source = "['ER','ER_FFNET_all']"
+    [[ER_LT]]
+        [[[ERUsingLloydTaylor]]]
+            target ="ER"
+            drivers = "['Ta']"
+            output = "ER_LT_all"
+            minimum_temperature_spread = 5
+            step_size_days = 5
+            window_size_days = 15
+            minimum_percent_annual = 25
+            minimum_percent_noct_window = 20
+            output_plots = False
+        [[[MergeSeries]]]
+            Source = "['ER','ER_LT_all']"
+
+[NEE]
+    [[NEE_SOLO]]
+        Fc  = "Fc"
+        ER = "ER_SOLO"
+    [[NEE_FFNET]]
+        Fc  = "Fc"
+        ER = "ER_FFNET"
+    [[NEE_LT]]
+        Fc  = "Fc"
+        ER = "ER_LT"
+
+[GPP]
+    [[GPP_SOLO]]
+        NEE = "NEE_SOLO"
+        ER = "ER_SOLO"
+    [[GPP_FFNET]]
+        NEE = "NEE_FFNET"
+        ER = "ER_FFNET"
+    [[GPP_LT]]
+        NEE  = "NEE_LT"
+        ER = "ER_LT"

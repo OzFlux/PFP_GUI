@@ -1,0 +1,144 @@
+[General]
+    # set the width and height of the plot windows in inches
+    PlotWidth = 10.7         # plot width for time series plots
+    PlotHeight = 8           # plot height for time series plots
+    zms = 36                 # Li-7500 height above surface (m) used to calculate Fc storage
+
+[Files]
+    file_path = /home/peter/OzFlux/Sites/GreatWesternWoodlands/Data/Processed/2017/
+    in_filename = GWW_2017_L2.nc
+    out_filename = GWW_2017_L3.nc
+
+[Options]
+    CO2Units                = umol/mol      # 'mg/m3' or 'umol/mol', units for Cc
+    FcUnits                 = umol/m2/s     # 'mg/m2/s' or 'umol/m2/s', units for Fc
+
+[Output]
+    #xl = "['Ah','Cc','eta','Fa','Fc','Fe','Fg','Fh','Fld','Flu','Fm','Fn','Fsd','Fsu','Precip','ps','Sws','Ta','theta','Ts','ustar','Ws','Wd']"
+    #nc = "['Ah','Cc','eta','Fa','Fc','Fe','Fg','Fh','Fld','Flu','Fm','Fn','Fsd','Fsu','Precip','ps','Sws','Ta','theta','Ts','ustar','Ws','Wd']"
+
+[Soil]
+    FgDepth = 0.08              # depth of heat flux plates, m
+    BulkDensity = 2.6           # bulk density of soil, kg/m3
+    OrganicContent = 0.005      # organic content of soil, fraction between 0 and 1
+    SwsDefault = 0.2            # default value for soil moisture
+    SwsSeries = "['Sws']"       # soil moisture series to use when calculating soil heat capacity
+
+#[Massman]
+    zmd = 24            # instrument height above displacement plane: for h = 18, d = 2 / 3 * h = 12.  36 - 12 = 24m.
+    z0 = 1.8            # roughness length: for h = 18, z0 = 0.1 * h = 1.8m.
+    angle = 25          # angle between CSAT3 mounting point and IRGA sensor head mid-path
+    CSATarm = 0.38      # distance from CSAT mounting point to CSAT sensor
+    IRGAarm = 0.24      # distance from CSAT mounting point to IRGA sensor
+
+[Variables]
+# Radiation
+    [[Fn]]
+        [[[MergeSeries]]]
+            Source     = "['Fn_KZ','Fn_NRlite2']"  #Don't delete Fn_KZ
+        [[[RangeCheck]]]
+            Lower      = [-150]*12
+            Upper      = [1100]*12
+# Turbulent fluxes
+    [[Fh]]
+        [[[RangeCheck]]]
+            Lower      = "[-100]*12"
+            Upper      = "[600]*12"
+#        [[[DiurnalCheck]]]
+#            NumSd     = "[5]*12"
+    [[Fe]]
+        [[[RangeCheck]]]
+            Lower      = "[-100]*12"
+            Upper      = "[600]*12"
+#        [[[DiurnalCheck]]]
+#            NumSd     = "[5]*12"
+    [[Fc]]
+    # units are umol/m2/s
+        [[[RangeCheck]]]
+            Lower      = "[-50]*12"
+            Upper      = "[50]*12"
+#        [[[DiurnalCheck]]]
+#            NumSd     = "[5]*12"
+    [[Fm]]
+        [[[RangeCheck]]]
+            Lower      = "[-1]*12"
+            Upper      = "[1]*12"
+    [[ustar]]
+        [[[RangeCheck]]]
+            Lower      = "[0]*12"
+            Upper      = "[2]*12"
+# Meteorological
+    [[Ta]]
+        [[[MergeSeries]]]
+            Source     = "['Ta_HMP_36m','Ta_CSAT','Ta_HMP_2m']"
+        [[[RangeCheck]]]
+            Lower      = [0]*12
+            Upper      = [50]*12
+    [[Ah]]
+        [[[MergeSeries]]]
+            Source     = "['Ah_HMP_36m','Ah_7500_Av','Ah_HMP_2m']"
+        [[[RangeCheck]]]
+            Lower      = "[0,0,0,0,0,0,0,0,0,0,0,0]"
+            Upper      = [30]*12
+# Meteorology: CO2 concentration
+    [[Cc]]
+    # units are umol/mol
+        [[[MergeSeries]]]
+            Source     = "['Cc_7500_Av']"
+            standard_name = "not defined"
+        [[[RangeCheck]]]
+            Lower      = "[250]*12"
+            Upper      = "[900]*12"
+# Meteorology: Wind speed
+    [[Ws]]
+        [[[MergeSeries]]]
+            Source     = "['Ws_2D','Ws_CSAT']"
+            standard_name = "not defined"
+        [[[RangeCheck]]]
+            Lower      = "[0]*12"
+            Upper      = "[30]*12"
+#        [[[DiurnalCheck]]]
+#            NumSd      = "[6]*12"
+# Meteorology: Wind direction
+    [[Wd]]
+        [[[MergeSeries]]]
+            Source     = "['Wd_2D','Wd_CSAT']"
+            standard_name = "not defined"
+        [[[RangeCheck]]]
+            Lower      = "[0]*12"
+            Upper      = "[360]*12"
+    [[Fg]]
+        [[[AverageSeries]]]
+            Source     = "['Fg_8cma','Fg_8cmb','Fg_8cmc']"
+        [[[RangeCheck]]]
+            Lower      = "[-300]*12"
+            Upper      = "[300]*12"
+    [[Sws]]
+        [[[AverageSeries]]]
+            Source     = "['Sws_10cmb']"
+        [[[RangeCheck]]]
+            Lower      = "[0]*12"
+            Upper      = "[0.5]*12"
+    [[Ts]]
+        [[[AverageSeries]]]
+            Source     = "['Ts_8cma', 'Ts_8cmb']"
+        [[[RangeCheck]]]
+            Lower      = "[0]*12"
+            Upper      = "[60]*12"
+
+[Plots]
+    [[1]]
+        Title = "Radiative fluxes"
+        Variables = "['Flu','Fld','Fsu','Fsd','Fn','Fn_NRlite2','Precip']"
+    [[2]]
+        Title = "Turbulent fluxes"
+        Variables = "['Fh','Fe','Fc','ustar','Fm']"
+    [[3]]
+        Title = "Air temperature, humidity and CO2"
+        Variables = "['Ta','Ta_HMP_36m','Ta_HMP_2m','Ah','Ah_HMP_36m','Ah_HMP_2m','Cc_7500_Av']"
+    [[4]]
+        Title = "Soil temperature, water content and heat flux"
+        Variables = "['Precip','Ts','Sws','Fg']"
+    [[5]]
+        Title = "Pressure, wind speed and direction"
+        Variables = "['ps','Ws_CSAT','Ux','Uy','Uz','Wd_CSAT']"

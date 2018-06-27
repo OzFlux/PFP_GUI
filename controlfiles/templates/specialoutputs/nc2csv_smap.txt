@@ -1,0 +1,116 @@
+# Control file template for converting an OzFlux L6 netCDF file to SMAP format CSV file
+# [Files]
+#  file_path    - directory containing the files
+#  in_filename  - input file name
+#  out_filename - base name for the output file constructed as follows:
+#                    <smap_id_number>_<smap_id_string>
+#                 where <smap_id_number> is the SMP_ID number of the site eg 6001001 for Great Western Woodlands
+#                       >smap_id_string> is the SMAP ID string of the site eg OZ-GWW for Great Western Woodlands
+
+[Files]
+    file_path = ../Sites/<site_name>/Data/Processed/all/
+    in_filename = <site_name>_<year>_L6.nc
+    out_filename = <smap_base_filename>
+
+[General]
+    CanopyHeight = "<canopy_height>"
+    DataPolicy = "OzFlux (http://ozflux.its.monash.edu.au/ecosystem/site/licenceinfo.jspx)"
+    DataURL = "http://data.ozflux.org.au"
+    Elevation = "<elevation>"
+    Institution = "<institution>"
+    LandCover = "<land_cover>"
+    LandUse = "<land_use>"
+    Latitude = "<latitude>"
+    LicenseType = "TERN-BY-SA_NC"
+    LicenseURL = "http://www.tern.org.au/datalicence/TERN-BY-SA-NC/1.0"
+    Longitude = "<longitude>"
+    MeasurementHeight = "<measurement_height>"
+    MetadataURL = "http://www.ozflux.org.au/monitoringsites/<site_name>/index.html"
+    PIEmail = "<pi_email>"
+    PIName = "<pi_name>"
+    SiteName = "<site_long_name>"
+    SMAP_ID = <SMAP_ID_number>
+    SoilType = "<soil_type>"
+    SWCDepth = "<soil_moisture_depth>"
+    TSDepth = "<soil_temperature_depth>"
+    Citation = "<portal_collection_citation>"
+
+[Variables]
+    [[Rn_f]]
+        ncname = "Fn_sw"
+        units = "MJ m-2 day-1"
+        daily = "sum"
+        genqc = True
+        format = "0.00"
+    [[Rs_f]]
+        ncname = "Fsd"
+        units = "MJ m-2 day-1"
+        daily = "sum"
+        genqc = True
+        format = "0.00"
+    [[PAR_f]]
+        ncname = None
+        units = "MJ m-2 day-1"
+        daily = "sum"
+        genqc = True
+        format = "0"
+    [[Ta]]
+        ncname = "Ta"
+        units = "C"
+        daily = "average"
+        genqc = True
+        format = "0.00"
+    [[VPD]]
+        ncname = "VPD"
+        units = "kPa"
+        daily = "average"
+        genqc = True
+        format = "0.00"
+    [[Ts_f]]
+        ncname = "Ts"
+        units = "C"
+        daily = "average"
+        genqc = True
+        format = "0.00"
+    [[PREC]]
+        ncname = "Precip"
+        units = mm day-1
+        daily = "sum"
+        genqc = False
+        format = "0.00"
+    [[SWC]]
+        ncname = "Sws"
+        units = "m3/m3"
+        daily = "average"
+        genqc = False
+        format = "0.000"
+    [[NEE]]
+        ncname = "NEE_SOLO"
+        units = "gC m-2 day-1"
+        daily = "sum"
+        genqc = True
+        format = "0.00"
+    [[GPP]]
+        ncname = "GPP_SOLO"
+        units = "gC m-2 day-1"
+        daily = "sum"
+        genqc = True
+        format = "0.00"
+    [[Reco]]
+        ncname = "Fre_SOLO"
+        units = "gC m-2 day-1"
+        daily = "sum"
+        genqc = True
+        format = "0.00"
+    [[PRESS]]
+        ncname = "ps"
+        units = "MPa"
+        daily = "average"
+        genqc = False
+        format = "0.00000"
+    [[SNOWD]]
+        ncname = None
+        units = "mm"
+        daily = "sum"
+        genqc = False
+        format = "0"

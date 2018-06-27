@@ -1,0 +1,63 @@
+[Files]
+    file_path = ../Sites/<site_name>/Data/Processed/all/
+    in_filename = <site_name>_<year>_L4.nc
+    out_filename = <site_name>_<year>_L5.nc
+    plot_path = ../Sites/<site_name>/Plots/
+
+[Output]
+    nc = "['Ah','Cc','e','Fa','Fc','Fc_storage','Fe','Fg','Fh','Fld','Flu','Fm','Fn','Fsd','Fsu','Precip','ps','q','RH','Sws','SHD','Ta','Ts','ustar','VPD','Ws','Wd']"
+
+[Options]
+    MaxGapInterpolate   = 0
+
+[Fluxes]
+    [[ustar]]
+        [[[GapFillUsingSOLO]]]
+            [[[[ustar_SOLO]]]]
+                drivers = "['Ws','Fn','Ta','q']"
+        [[[MergeSeries]]]
+            Source     = "['ustar','ustar_SOLO']"
+    [[Fe]]
+        [[[GapFillUsingSOLO]]]
+            [[[[Fe_SOLO]]]]
+                drivers = "['Fa','SHD','Ta','Ws']"                  #minimalist
+               #drivers = "['Fn','Fg','q','VPD','Ta','Ts']"         #James
+        [[[MergeSeries]]]
+            Source     = "['Fe','Fe_SOLO']"
+    [[Fh]]
+        [[[GapFillUsingSOLO]]]
+            [[[[Fh_SOLO]]]]
+                drivers = "['Fa','Ta','Ws']"                        #minimalist
+               #drivers = "['Fn','Fg','q','VPD','Ta','Ts']"         #James
+        [[[MergeSeries]]]
+            Source     = "['Fh','Fh_SOLO']"
+    [[Fc]]
+        [[[GapFillUsingSOLO]]]
+            [[[[Fc_SOLO]]]]
+                drivers = "['Fsd','SHD','Ts']"                      #minimalist
+               #drivers = "['Fn','Fg','q','VPD','Ta','Ts']"         #James
+               #solo_settings = "[25,500,5,0.001,500]"
+        [[[MergeSeries]]]
+            Source     = "['Fc','Fc_SOLO']"
+
+[Plots]
+    [[1]]
+        Title = "Turbulent fluxes"
+        Variables = "['ustar','Fh','Fe','Fc']"
+    [[2]]
+        Title = "ustar gap filling"
+        Variables = "['ustar','ustar_SOLO']"
+    [[3]]
+        Title = "Fe gap filling"
+        Variables = "['Fe','Fe_SOLO']"
+    [[4]]
+        Title = "Fh gap filling"
+        Variables = "['Fh','Fh_SOLO']"
+    [[5]]
+        Title = "Fc gap filling"
+        Variables = "['Fc','Fc_SOLO']"
+
+[SOLO_Summary]
+    [[1]]
+        Title = "Fluxes"
+        Variables = "['ustar_SOLO','Fh_SOLO','Fe_SOLO','Fc_SOLO']"

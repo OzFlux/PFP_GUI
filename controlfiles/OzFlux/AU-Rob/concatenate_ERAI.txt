@@ -1,0 +1,29 @@
+[Options]
+    NumberOfDimensions = 1             # number of dimensions for output netCDF file
+    MaxGapInterpolate  = 0             # maximum gap length (hours) for filling by interpolation
+    FixTimeStepMethod  = round         # interpolate/round
+    Truncate = No                      # Yes/No, truncate beginning and end if data missing
+    TruncateThreshold =                # %, truncate if less data than threshold
+    SeriesToCheck = "[]"
+
+[Files]
+    [[Out]]
+        ncFileName = ../OzFlux/Sites/RobsonCreek/Data/ERAI/RobsonCreek_ERAI.nc
+    [[In]]
+        0 = ../OzFlux/Sites/RobsonCreek/Data/ERAI/RobsonCreek_ERAI_2000.nc
+        1 = ../OzFlux/Sites/RobsonCreek/Data/ERAI/RobsonCreek_ERAI_2001.nc
+        2 = ../OzFlux/Sites/RobsonCreek/Data/ERAI/RobsonCreek_ERAI_2002.nc
+        3 = ../OzFlux/Sites/RobsonCreek/Data/ERAI/RobsonCreek_ERAI_2003.nc
+        4 = ../OzFlux/Sites/RobsonCreek/Data/ERAI/RobsonCreek_ERAI_2004.nc
+        5 = ../OzFlux/Sites/RobsonCreek/Data/ERAI/RobsonCreek_ERAI_2005.nc
+        6 = ../OzFlux/Sites/RobsonCreek/Data/ERAI/RobsonCreek_ERAI_2006.nc
+        7 = ../OzFlux/Sites/RobsonCreek/Data/ERAI/RobsonCreek_ERAI_2007.nc
+        8 = ../OzFlux/Sites/RobsonCreek/Data/ERAI/RobsonCreek_ERAI_2008.nc
+        9 = ../OzFlux/Sites/RobsonCreek/Data/ERAI/RobsonCreek_ERAI_2009.nc
+        10 = ../OzFlux/Sites/RobsonCreek/Data/ERAI/RobsonCreek_ERAI_2010.nc
+        11 = ../OzFlux/Sites/RobsonCreek/Data/ERAI/RobsonCreek_ERAI_2011.nc
+        12 = ../OzFlux/Sites/RobsonCreek/Data/ERAI/RobsonCreek_ERAI_2012.nc
+        13 = ../OzFlux/Sites/RobsonCreek/Data/ERAI/RobsonCreek_ERAI_2013.nc
+        14 = ../OzFlux/Sites/RobsonCreek/Data/ERAI/RobsonCreek_ERAI_2014.nc
+        15 = ../OzFlux/Sites/RobsonCreek/Data/ERAI/RobsonCreek_ERAI_2015.nc
+        16 = ../OzFlux/Sites/RobsonCreek/Data/ERAI/RobsonCreek_ERAI_2016.nc

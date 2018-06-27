@@ -1,0 +1,141 @@
+[General]
+    zms = 2.2           # Li-IRGA height above surface (m) used to calculate Fc storage
+
+[Files]
+    file_path = ../OzFlux/Sites/AlpinePeatland/Data/Tower/2017/
+    in_filename = AU-APL_2017_L2.nc
+    out_filename = AU-APL_2017_L3.nc
+
+[Imports]
+    [[Precip_0]]
+        source = "AWS"
+        file_name = ../OzFlux/Sites/AlpinePeatland/Data/AWS/Dargo_AWS.nc
+        var_name = "Precip_0"
+    [[Precip_1]]
+        source = "AWS"
+        file_name = ../OzFlux/Sites/AlpinePeatland/Data/AWS/Dargo_AWS.nc
+        var_name = "Precip_1"
+    [[Precip_2]]
+        source = "AWS"
+        file_name = ../OzFlux/Sites/AlpinePeatland/Data/AWS/Dargo_AWS.nc
+        var_name = "Precip_2"
+
+[Options]
+    CO2Units = umol/mol      # 'mg/m3' or 'umol/mol', units for CO2
+    FcUnits = umol/m2/s     # 'mg/m2/s' or 'umol/m2/s', units for Fc
+
+[Output]
+    #xl = "['H2O','CO2','eta','Fa','Fc','Fe','Fg','Fg_Av','Fh','Fld','Flu','Fm','Fn','Fsd','Fsu','Precip','ps','Sws','Ta','theta','Ts','ustar','Ws','Wd']"
+    #nc = "['H2O','CO2','eta','Fa','Fc','Fe','Fg','Fg_Av','Fh','Fld','Flu','Fm','Fn','Fsd','Fsu','Precip','ps','Sws','Ta','theta','Ts','ustar','Ws','Wd']"
+
+[Soil]
+    FgDepth = <depth>                       # depth of heat flux plates, m
+    BulkDensity = 800            # bulk density of soil, kg/m3
+    OrganiCO2ontent = 0.85      # organic content of soil, fraction between 0 and 1
+    SwsDefault = 0.7    # default value for soil moisture
+    SwsSeries = "['Sws']"                   # soil moisture series to use when calculating soil heat capacity
+
+#[Massman]
+#    # TEST ONLY - values for Alice Springs Mulga
+#    zmd = 7.3           # instrument height above displacement plane, d = 2 / 3 * h = 4.3, h = 6.5, z = 11.635 m
+#    z0 = 0.8            # roughness length from Brutseart 1982, eqn 5.7: h / z = 3 * e
+#    angle = 16          # angle between CSAT3 mounting point and IRGA sensor head mid-path
+#    CSATarm = 0.475     # distance from CSAT mounting point to CSAT sensor
+#    IRGAarm = 0.315     # distance from CSAT mounting point to IRGA sensor
+
+[Variables]
+# Radiation
+    [[Fn]]
+        [[[MergeSeries]]]
+            Source     = "['Fn_KZ','Fn_NR']"
+        [[[RangeCheck]]]
+            Lower      = [-150]*12
+            Upper      = [1100]*12
+# Turbulent fluxes
+    [[Fh]]
+        [[[RangeCheck]]]
+            Lower      = "[-100]*12"
+            Upper      = "[600]*12"
+    [[Fe]]
+        [[[RangeCheck]]]
+            Lower      = "[-100]*12"
+            Upper      = "[600]*12"
+    [[Fc]]
+    # units are umol/m2/s
+        [[[RangeCheck]]]
+            Lower      = "[-17,-17,-17,-17,-17,-17,-17,-17,-17,-17,-17,-17]"
+            Upper      = "[10,10,10,10,10,10,10,10,10,10,10,10]"
+    [[Fm]]
+        [[[RangeCheck]]]
+            Lower      = "[-1]*12"
+            Upper      = "[1]*12"
+    [[ustar]]
+        [[[RangeCheck]]]
+            Lower      = "[0]*12"
+            Upper      = "[2]*12"
+# Meteorological
+    [[Ta]]
+        [[[MergeSeries]]]
+            Source     = "['Ta_HMP_2.2m','Ta_CSAT']"
+        [[[RangeCheck]]]
+            Lower      = [-20]*12
+            Upper      = [50]*12
+    [[Ah]]
+        [[[MergeSeries]]]
+            Source     = "['Ah_HMP_2.2m','H2O_IRGA_Av']"
+        [[[RangeCheck]]]
+            Lower      = "[0]*12"
+            Upper      = [35]*12
+# Meteorology: CO2 concentration
+    [[CO2]]
+    # units are umol/mol
+        [[[MergeSeries]]]
+            Source     = "['CO2_IRGA_Av']"
+            standard_name = "not defined"
+        [[[RangeCheck]]]
+            Lower      = "[250]*12"
+            Upper      = "[900]*12"
+# Meteorology: Wind speed
+    [[Ws]]
+        [[[MergeSeries]]]
+            Source     = "['Ws_CSAT','Ws_WS4']"
+            standard_name = "not defined"
+        [[[RangeCheck]]]
+            Lower      = "[0]*12"
+            Upper      = "[30]*12"
+# Meteorology: Wind direction
+    [[Wd]]
+        [[[MergeSeries]]]
+            Source     = "['Wd_WS4','Wd_CSAT']"
+            standard_name = "not defined"
+        [[[RangeCheck]]]
+            Lower      = "[0]*12"
+            Upper      = "[360]*12"
+# Meteorology: Precipitation
+    [[Precip]]
+        [[[MergeSeries]]]
+            Source     = "['Precip_0', 'Precip_1', 'Precip_2']"
+            standard_name = "not defined"    
+
+[Plots]
+    [[1]]
+        Title = "Radiative fluxes"
+        Variables = "['Fsd','Fsu','Fld','Flu','Fn']"
+    [[2]]
+        Title = "Turbulent fluxes"
+        Variables = "['Fh','Fe','Fc','ustar','Fm']"
+    [[3]]
+        Title = "Fh diagnostics"
+        Variables = "['Fh','UzT','Diag_CSAT','Diag_IRGA','Signal_H2O','H2O_IRGA_Sd','Signal_CO2','CO2_IRGA_Sd']"
+    [[4]]
+        Title = "Fe diagnostics"
+        Variables = "['Fe','UzA','Diag_CSAT','Diag_IRGA','Signal_H2O','H2O_IRGA_Sd','Signal_CO2','CO2_IRGA_Sd']"
+    [[5]]
+        Title = "Fc diagnostics"
+        Variables = "['Fc','UzC','Diag_CSAT','Diag_IRGA','Signal_H2O','H2O_IRGA_Sd','Signal_CO2','CO2_IRGA_Sd']"
+    [[6]]
+        Title = "Air temperature, humidity and CO2"
+        Variables = "['Ta','H2O','CO2_IRGA_Av','Precip']"
+    [[7]]
+        Title = "Pressure, wind speed and direction"
+        Variables = "['ps','Ws','Ux','Uy','Uz','Wd']"

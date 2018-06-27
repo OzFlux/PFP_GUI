@@ -1,0 +1,65 @@
+[Files]
+    file_path = ../Sites/<site_name>/Data/Processed/all/
+    in_filename = <site_name>_<start_year>_to_<end_year>_L5.nc
+    out_filename = <site_name>_<start_year>_to_<end_year>_L6.nc
+    plot_path = ../Sites/<site_name>/Plots/
+
+[Global]
+    acknowledgement = """This work used eddy covariance data collected by the TERN-OzFlux facility. OzFlux
+would like to acknowledge the financial support of the Australian Federal Government via
+the National Collaborative Research Infrastructure Scheme and the Education Investment
+Fund."""
+
+[Options]
+    MaxGapInterpolate   = 0
+
+[ER]
+    [[ER_SOLO]]
+        [[[ERUsingSOLO]]]
+            target ="ER"
+            drivers = "['Ts','Ta','Sws']"
+            output = "ER_SOLO_all"
+        [[[MergeSeries]]]
+            Source = "['ER','ER_SOLO_all']"
+    [[ER_FFNET]]
+        [[[ERUsingFFNET]]]
+            target ="ER"
+            drivers = "['Ts','Ta','Sws']"
+            output = "ER_FFNET_all"
+        [[[MergeSeries]]]
+            Source = "['ER','ER_FFNET_all']"
+    [[ER_LT]]
+        [[[ERUsingLloydTaylor]]]
+            target ="ER"
+            drivers = "['Ta']"
+            output = "ER_LT_all"
+            minimum_temperature_spread = 5
+            step_size_days = 5
+            window_size_days = 15
+            minimum_percent_annual = 25
+            minimum_percent_noct_window = 20
+            output_plots = False
+        [[[MergeSeries]]]
+            Source = "['ER','ER_LT_all']"
+
+[NEE]
+    [[NEE_SOLO]]
+        Fc  = "Fc"
+        ER = "ER_SOLO"
+    [[NEE_FFNET]]
+        Fc  = "Fc"
+        ER = "ER_FFNET"
+    [[NEE_LT]]
+        Fc  = "Fc"
+        ER = "ER_LT"
+
+[GPP]
+    [[GPP_SOLO]]
+        NEE = "NEE_SOLO"
+        ER = "ER_SOLO"
+    [[GPP_FFNET]]
+        NEE = "NEE_FFNET"
+        ER = "ER_FFNET"
+    [[GPP_LT]]
+        NEE  = "NEE_LT"
+        ER = "ER_LT"

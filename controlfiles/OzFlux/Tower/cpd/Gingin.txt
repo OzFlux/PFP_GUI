@@ -1,0 +1,20 @@
+[Files]
+    file_path = ../OzFlux/Sites/Gingin/Data/Portal/
+    in_filename = Gingin_L3.nc
+
+[Options]
+    Fsd_threshold  = 10
+    Num_bootstraps = 100
+    Output_results = True
+    Output_plots   = True
+    Plot_TClass    = False
+
+[Variables]
+    [[Fc]]
+        AltVarName = "Fc"
+    [[Ta]]
+        AltVarName = "Ta"
+    [[ustar]]
+        AltVarName = "ustar"
+    [[Fsd]]
+        AltVarName = "Fsd"

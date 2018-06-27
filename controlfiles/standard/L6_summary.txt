@@ -1,0 +1,98 @@
+[Files]
+    file_path = ../Sites/HowardSprings/Data/Processed/all/
+    in_filename = HowardSprings_2002_to_2014_L6.nc
+
+[Variables]
+# radiation
+    [[Fn]]
+        operator = "average"
+        format = "0.0"
+    [[Fsd]]
+        operator = "average"
+        format = "0.0"
+    [[Fsu]]
+        operator = "average"
+        format = "0.0"
+    [[Fld]]
+        operator = "average"
+        format = "0.0"
+    [[Flu]]
+        operator = "average"
+        format = "0.0"
+# meteorology
+    [[Ah]]
+        operator = "average"
+        format = "0.00"
+    [[Cc]]
+        operator = "average"
+        format = "0.0"
+    [[ps]]
+        operator = "average"
+        format = "0.00"
+    [[q]]
+        operator = "average"
+        format = "0.0000"
+    [[RH]]
+        operator = "average"
+        format = "0"
+    [[Ta]]
+        operator = "average"
+        format = "0.00"
+    [[Ws]]
+        operator = "average"
+        format = "0.00"
+    [[Precip]]
+        operator = "sum"
+        format = "0.0"
+# soil
+    [[Fg]]
+        operator = "average"
+        format = "0.0"
+    [[Sws]]
+        operator = "average"
+        format = "0.000"
+    [[Ts]]
+        operator = "average"
+        format = "0.00"
+# fluxes
+    [[Fc]]
+        operator = "average"
+        format = "0.00"
+    [[Fe]]
+        operator = "average"
+        format = "0.0"
+    [[Fh]]
+        operator = "average"
+        format = "0.0"
+    [[ustar]]
+        operator = "average"
+        format = "0.00"
+# ET
+    [[ET]]
+        operator = "sum"
+        format = "0.0"
+# NEE, NEP, GPP and Fre
+    [[Fre_SOLO]]
+        operator = "sum"
+        format = "0.00"
+    [[Fre_FFNET]]
+        operator = "sum"
+        format = "0.00"
+    [[GPP_SOLO]]
+        operator = "sum"
+        format = "0.00"
+    [[GPP_FFNET]]
+        operator = "sum"
+        format = "0.00"
+    [[NEE_SOLO]]
+        operator = "sum"
+        format = "0.00"
+    [[NEE_FFNET]]
+        operator = "sum"
+        format = "0.00"
+    [[NEP_SOLO]]
+        operator = "sum"
+        format = "0.00"
+    [[NEP_FFNET]]
+        operator = "sum"
+        format = "0.00"

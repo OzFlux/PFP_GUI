@@ -1,0 +1,66 @@
+[Files]
+    file_path       = ../OzFlux/Sites/TiTreeEast/Data/FluxNet/
+    in_filename     = FLX_AU-TTE_FLUXNET2015_FULLSET_HH_2012-2014_1-3.csv
+    in_headerrow    = 1
+    in_firstdatarow = 2
+    out_filename    = TiTreeEast_L6.nc
+
+[Global] 
+		latitude       = -22.287
+		longitude      = 133.64
+    site_name      = "Ti Tree East"
+ 		time_step      = 30
+ 		time_zone      = "Australia/Darwin"
+
+[Variables]
+    [[DateTime]]
+        [[[Function]]]
+            func = """DateTimeFromTimeStamp(TimeStamp)"""
+    [[TimeStamp]]
+        [[[csv]]]
+            name     = TIMESTAMP_END
+        [[[Attr]]]
+            long_name     = "Date/time in ISO format (end of period)"
+            units         = "days"
+    [[Fsd]]
+        [[[csv]]]
+            name     = SW_IN_F
+        [[[Attr]]]
+            long_name = "Downwelling shortwave radiation"
+            units = "W/m2"
+    [[NEE]]
+        [[[csv]]]
+            name     = NEE_VUT_REF
+        [[[Attr]]]
+            long_name = "Net ecosystem exchange"
+            units = "umol/m2/s"
+    [[ER]]
+        [[[csv]]]
+            name     = RECO_NT_VUT_REF
+        [[[Attr]]]
+            long_name = "Ecosystem respiration"
+            units = "umol/m2/s"
+    [[GPP]]
+        [[[csv]]]
+            name     = GPP_NT_VUT_REF
+        [[[Attr]]]
+            long_name = "Gross primary productivity"
+            units = "umol/m2/s"
+    [[Fe]]
+        [[[csv]]]
+            name     = LE_F_MDS
+        [[[Attr]]]
+            long_name = "Latent heat flux"
+            units = "W/m2"
+    [[Fh]]
+        [[[csv]]]
+            name     = H_F_MDS
+        [[[Attr]]]
+            long_name = "sensible heat flux"
+            units = "W/m2"
+    [[Precip]]
+        [[[csv]]]
+            name     = P_F
+        [[[Attr]]]
+            long_name = "Precipitation"
+            units = "mm"

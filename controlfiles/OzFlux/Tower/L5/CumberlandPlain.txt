@@ -1,0 +1,91 @@
+[Files]
+    plot_path = ../OzFlux/Sites/CumberlandPlain/Plots/
+    file_path = ../OzFlux/Sites/CumberlandPlain/Data/Portal/
+    in_filename = CumberlandPlain_L4.nc
+    out_filename = CumberlandPlain_L5.nc
+    cpd_filename = CumberlandPlain_L3_CPD.xls
+
+[Output]
+
+[Options]
+    MaxGapInterpolate   = 0
+    FilterList          = "['Fc']"
+    TurbulenceFilter    = ustar  # ustar/L/none, type of turbulence filter
+    DayNightFilter      = Fsd    # Fsd/sa/none, Fsd ==> use Fsd, sa ==> use solar altitude
+    UseFsdsyn_threshold = No     # Yes/No, include Fsd_syn in the day/night filter
+    AcceptDayTimes      = Yes    # Yes/No, accept all day time values (including ustar<threshold)
+    UseEveningFilter    = No     # Yes/No, only use specified hours after sunset
+    EveningFilterLength = 3      # 0/X, period starting after sunset, hours (0 ==> disable)
+    Fsd_threshold       = 10     # Fsd threshold for determining day or night time, W/m2
+    sa_threshold        = -5     # Solar altitude threshold, degrees, -ve below horizon
+
+[GUI]
+    [[SOLO]]
+        nodes         = "auto"
+        training      = 500
+        nda_factor    = 5
+        learning      = 0.01
+        iterations    = 500
+        period_option = "days"         # manual/monthly/days
+        start_date    = ""             # YYYY-MM-DD, if period_option="manual"
+        end_date      = ""             # YYYY-MM-DD, if period_option="manual"
+        number_days   = 60             # number of days if period_option="days"
+        auto_complete = "yes"          # yes/no, automatically fill left-over gaps
+        min_percent   = 25             # minimum percentage of good points
+        overwrite     = "no"           # no/yes, overwrite previously gap filled data
+        show_plots    = "no"           # yes/no
+
+[Fluxes]
+    [[ustar]]
+        [[[GapFillUsingSOLO]]]
+            [[[[ustar_SOLO]]]]
+                drivers = "['Ws','Fn','Ta','q']"
+        [[[MergeSeries]]]
+            Source     = "['ustar','ustar_SOLO']"
+    [[Fe]]
+        [[[GapFillUsingSOLO]]]
+            [[[[Fe_SOLO]]]]
+                drivers = "['Fa','SHD','Ta','Ws']"                  #minimalist
+               #drivers = "['Fn','Fg','q','SHD','Ta','Ts']"         #James
+        [[[MergeSeries]]]
+            Source     = "['Fe','Fe_SOLO']"
+    [[Fh]]
+        [[[GapFillUsingSOLO]]]
+            [[[[Fh_SOLO]]]]
+                drivers = "['Fa','Ta','Ws']"                        #minimalist
+               #drivers = "['Fn','Fg','q','SHD','Ta','Ts']"         #James
+        [[[MergeSeries]]]
+            Source     = "['Fh','Fh_SOLO']"
+    [[Fc]]
+        [[[RangeCheck]]]
+            Lower = "[-12.5]*12"
+            Upper = "[7.5]*12"
+        [[[GapFillUsingSOLO]]]
+            [[[[Fc_SOLO]]]]
+                solo_settings = "[10,500,5,0.001,500]"
+               #drivers = "['Fsd','SHD','Ts']"                      #minimalist
+                drivers = "['Fn','Fg','q','SHD','Ta','Ts']"         #James
+        [[[MergeSeries]]]
+            Source     = "['Fc','Fc_SOLO']"
+
+[Plots]
+    [[1]]
+        Title = "Turbulent fluxes"
+        Variables = "['ustar','Fh','Fe','Fc']"
+    [[2]]
+        Title = "ustar gap filling"
+        Variables = "['ustar','ustar_SOLO']"
+    [[3]]
+        Title = "Fe gap filling"
+        Variables = "['Fe','Fe_SOLO']"
+    [[4]]
+        Title = "Fh gap filling"
+        Variables = "['Fh','Fh_SOLO']"
+    [[5]]
+        Title = "Fc gap filling"
+        Variables = "['Fc','Fc_SOLO']"
+
+[SOLO_Summary]
+    [[1]]
+        Title = "Fluxes"
+        Variables = "['ustar_SOLO','Fh_SOLO','Fe_SOLO','Fc_SOLO']"

@@ -1,0 +1,126 @@
+[General]
+    zms = 3.4           # Li-7500 height above surface (m) used to calculate Fc storage
+
+[Files]
+    file_path = ../OzFlux/Sites/RockyMouth/Data/Tower/
+    in_filename = RockyMouth_2015_16_L2.nc
+    out_filename = RockyMouth_2015_16_L3.nc
+
+[Options]
+    CO2Units = umol/mol       # 'mg/m3' or 'umol/mol', units for Cc
+    FcUnits = umol/m2/s      # 'mg/m2/s' or 'umol/m2/s', units for Fc
+
+[Output]
+
+[Soil]
+
+#[Massman]
+#    # TEST ONLY - values for Alice Springs Mulga
+#    zmd = 7.3           # instrument height above displacement plane, d = 2 / 3 * h = 4.3, h = 6.5, z = 11.635 m
+#    z0 = 0.8            # roughness length from Brutseart 1982, eqn 5.7: h / z = 3 * e
+#    angle = 16          # angle between CSAT3 mounting point and IRGA sensor head mid-path
+#    CSATarm = 0.475     # distance from CSAT mounting point to CSAT sensor
+#    IRGAarm = 0.315     # distance from CSAT mounting point to IRGA sensor
+
+[Variables]
+# Radiation
+    [[Fn]]
+        [[[MergeSeries]]]
+            Source     = "['Fn_KZ']"
+        [[[RangeCheck]]]
+            Lower      = [-150]*12
+            Upper      = [1100]*12
+# Turbulent fluxes
+    [[Fh]]
+        [[[RangeCheck]]]
+            Lower      = "[-100]*12"
+            Upper      = "[500]*12"
+    [[Fe]]
+        [[[RangeCheck]]]
+            Lower      = "[-100]*12"
+            Upper      = "[700]*12"
+    [[Fc]]
+    # units are umol/m2/s
+        [[[RangeCheck]]]
+            Lower      = "[-50]*12"
+            Upper      = "[50]*12"
+#        [[[DiurnalCheck]]]
+#            NumSd      = "[3]*12"
+    [[Fm]]
+        [[[RangeCheck]]]
+            Lower      = "[-1]*12"
+            Upper      = "[1]*12"
+    [[ustar]]
+        [[[RangeCheck]]]
+            Lower      = "[0]*12"
+            Upper      = "[2]*12"
+# Meteorological
+    [[Ta]]
+        [[[MergeSeries]]]
+            Source     = "['Ta_HMP','Ta_SONIC_Av']"
+        [[[RangeCheck]]]
+            Lower      = [0]*12
+            Upper      = [50]*12
+    [[Ah]]
+        [[[MergeSeries]]]
+            Source     = "['Ah_HMP','H2O_IRGA_Av']"
+        [[[RangeCheck]]]
+            Lower      = "[0]*12"
+            Upper      = [35]*12
+# Meteorology: CO2 concentration
+    [[CO2]]
+    # units are umol/mol
+        [[[MergeSeries]]]
+            Source     = "['CO2_IRGA_Av']"
+            standard_name = "not defined"
+        [[[RangeCheck]]]
+            Lower      = "[250]*12"
+            Upper      = "[900]*12"
+# Meteorology: Wind speed
+    [[Ws]]
+        [[[MergeSeries]]]
+            Source     = "['Ws_SONIC']"
+            standard_name = "not defined"
+        [[[RangeCheck]]]
+            Lower      = "[0]*12"
+            Upper      = "[30]*12"
+# Meteorology: Wind direction
+    [[Wd]]
+        [[[MergeSeries]]]
+            Source     = "['Wd_SONIC']"
+            standard_name = "not defined"
+        [[[RangeCheck]]]
+            Lower      = "[0]*12"
+            Upper      = "[360]*12"
+    [[Ts]]
+        [[[AverageSeries]]]
+            Source     = "['Ts_8cma','Ts_8cmb']"
+        [[[RangeCheck]]]
+            Lower      = "[0]*12"
+            Upper      = "[60]*12"
+
+[Plots]
+    [[1]]
+        Title = "Radiative fluxes"
+        Variables = "['Fsd','Fsu','Fld','Flu','Fn']"
+    [[2]]
+        Title = "Turbulent fluxes"
+        Variables = "['Fh','Fe','Fc','ustar','Fm']"
+    [[3]]
+        Title = "Fh diagnostics"
+        Variables = "['Fh','UzT','Diag_SONIC','Diag_IRGA','AGC_IRGA','H2O_IRGA_Sd','CO2_IRGA_Sd']"
+    [[4]]
+        Title = "Fe diagnostics"
+        Variables = "['Fe','UzA','Diag_SONIC','Diag_IRGA','AGC_IRGA','H2O_IRGA_Sd','CO2_IRGA_Sd']"
+    [[5]]
+        Title = "Fc diagnostics"
+        Variables = "['Fc','UzC','Diag_SONIC','Diag_IRGA','AGC_IRGA','H2O_IRGA_Sd','CO2_IRGA_Sd']"
+    [[6]]
+        Title = "Air temperature, humidity and CO2"
+        Variables = "['Ta','Ta_HMP','Ah','Ah_HMP','CO2']"
+    [[7]]
+        Title = "Soil temperature"
+        Variables = "['Ts']"
+    [[8]]
+        Title = "Pressure, wind speed and direction"
+        Variables = "['ps','Ws','Ux','Uy','Uz','Wd']"

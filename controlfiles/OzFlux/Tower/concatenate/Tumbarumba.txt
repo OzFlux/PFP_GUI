@@ -1,0 +1,25 @@
+[Files]
+    [[Out]]
+        ncFileName = ../OzFlux/Sites/Tumbarumba/Data/Portal/Tumbarumba_L3.nc
+    [[In]]
+        0 = ../OzFlux/Sites//Tumbarumba/Data/Portal/Tumbarumba_2002_L3.nc
+        1 = ../OzFlux/Sites//Tumbarumba/Data/Portal/Tumbarumba_2003_L3.nc
+        2 = ../OzFlux/Sites//Tumbarumba/Data/Portal/Tumbarumba_2004_L3.nc
+        3 = ../OzFlux/Sites//Tumbarumba/Data/Portal/Tumbarumba_2005_L3.nc
+        4 = ../OzFlux/Sites//Tumbarumba/Data/Portal/Tumbarumba_2006_L3.nc
+        5 = ../OzFlux/Sites//Tumbarumba/Data/Portal/Tumbarumba_2007_L3.nc
+        6 = ../OzFlux/Sites//Tumbarumba/Data/Portal/Tumbarumba_2008_L3.nc
+        7 = ../OzFlux/Sites//Tumbarumba/Data/Portal/Tumbarumba_2009_L3.nc
+        8 = ../OzFlux/Sites//Tumbarumba/Data/Portal/Tumbarumba_2010_L3.nc
+        9 = ../OzFlux/Sites//Tumbarumba/Data/Portal/Tumbarumba_2011_L3.nc
+        10 = ../OzFlux/Sites//Tumbarumba/Data/Portal/Tumbarumba_2012_L3.nc
+        11 = ../OzFlux/Sites//Tumbarumba/Data/Portal/Tumbarumba_2013_L3.nc
+        12 = ../OzFlux/Sites//Tumbarumba/Data/Portal/Tumbarumba_2014_L3.nc
+        13 = ../OzFlux/Sites//Tumbarumba/Data/Portal/Tumbarumba_2015_L3.nc
+        14 = ../OzFlux/Sites//Tumbarumba/Data/Portal/Tumbarumba_2016_L3_all.nc
+        15 = ../OzFlux/Sites//Tumbarumba/Data/Portal/Tumbarumba_2017_L3_Q1Q2.nc
+
+[Options]
+    NumberOfDimensions = 3                       # number of dimensions for output netCDF file
+    MaxGapInterpolate  = 0                       # maximum gap length (hours) for filling by interpolation
+    FixTimeStepMethod  = round                   # interpolate/round

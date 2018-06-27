@@ -1,0 +1,60 @@
+[Files]
+    file_path = ../Sites/<site_name>/Data/Processed/<year>/
+    in_filename = <site_name>_<year>_L3.nc
+
+[Variables]
+    [[Ta]]
+        Format = "0.00"
+    [[Ah]]
+        Format = "0.00"
+    [[Cc]]
+        Format = "0.0"
+    [[Ws]]
+        Format = "0.00"
+    [[Wd]]
+        Format = "0"
+    [[ps]]
+        Format = "0.00"
+    [[Fld]]
+        Format = "0"
+    [[Flu]]
+        Format = "0"
+    [[Fn]]
+        Format = "0"
+    [[Fsd]]
+        Format = "0"
+    [[Fsu]]
+        Format = "0"
+    [[Ts]]
+        Format = "0.00"
+    [[Sws]]
+        Format = "0.000"
+    [[Fg]]
+        Format = "0"
+    [[Fa]]
+        Format = "0"
+    [[Fe]]
+        Format = "0"
+    [[Fh]]
+        Format = "0"
+    [[Fc]]
+        Format = "0.00"
+    [[Fm]]
+        Format = "0.000"
+    [[ustar]]
+        Format = "0.00"
+    [[EF]]
+        Format = "0.00"
+        [[[RangeCheck]]]
+            Lower = -2
+            Upper = 2
+    [[BR]]
+        Format = "0.00"
+        [[[RangeCheck]]]
+            Lower = -20
+            Upper = 20
+    [[WUE]]
+        Format = "0.00000"
+        [[[RangeCheck]]]
+            Lower = -2
+            Upper = 2

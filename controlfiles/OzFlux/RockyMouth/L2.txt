@@ -1,0 +1,273 @@
+[Files]
+    file_path = ../OzFlux/Sites/RockyMouth/Data/Tower/
+    in_filename = RockyMouth_2015_16_L1.nc
+    out_filename = RockyMouth_2015_16_L2.nc
+
+[Output]
+
+[Variables]
+# Radiation
+    [[Fld]]
+        [[[RangeCheck]]]
+            Lower      = "[250]*12"
+            Upper      = "[700]*12"
+        [[[ExcludeDates]]]
+            0 = "['2016-04-26 14:30','2016-04-26 14:30']"
+    [[Flu]]
+        [[[RangeCheck]]]
+            Lower      = "[300]*12"
+            Upper      = "[700]*12"
+        [[[ExcludeDates]]]
+            0 = "['2016-04-26 14:30','2016-04-26 14:30']"
+    [[Fsu]]
+        [[[RangeCheck]]]
+            Lower      = "[-10]*12"
+            Upper      = "[500]*12"
+        [[[ExcludeDates]]]
+            0 = "['2015-05-09 00:30','2015-11-06 12:00']"
+            1 = "['2016-04-26 14:30','2016-04-26 14:30']"
+    [[Fsd]]
+        [[[RangeCheck]]]
+            Lower      = "[-10]*12"
+            Upper      = "[1500]*12"
+        [[[ExcludeDates]]]
+            0 = "['2015-05-09 00:30','2015-11-06 12:00']"
+            1 = "['2016-04-26 14:30','2016-04-26 14:30']"
+# Temperature covariances
+    [[UzT]]
+        [[[RangeCheck]]]
+            Lower      = "[-0.2]*12"
+            Upper      = "[1]*12"
+		[[[ExcludeDates]]]
+			0 = "['2016-04-26 14:30','2016-04-26 14:30']"
+    [[UxT]]
+        [[[RangeCheck]]]
+            Lower      = "[-2]*12"
+            Upper      = "[2]*12"
+		[[[ExcludeDates]]]
+			0 = "['2016-04-26 14:30','2016-04-26 14:30']"
+    [[UyT]]
+        [[[RangeCheck]]]
+            Lower      = "[-2]*12"
+            Upper      = "[2]*12"
+		[[[ExcludeDates]]]
+			0 = "['2016-04-26 14:30','2016-04-26 14:30']"
+# H2O covarinaces
+    [[UzA]]
+        [[[RangeCheck]]]
+            Lower      = "[-0.01]*12"
+            Upper      = "[0.5]*12"
+		[[[ExcludeDates]]]
+			0 = "['2016-04-26 14:30','2016-04-26 14:30']"
+    [[UxA]]
+        [[[RangeCheck]]]
+            Lower      = "[-2]*12"
+            Upper      = "[2]*12"
+		[[[ExcludeDates]]]
+			0 = "['2016-04-26 14:30','2016-04-26 14:30']"
+    [[UyA]]
+        [[[RangeCheck]]]
+            Lower      = "[-2]*12"
+            Upper      = "[2]*12"
+		[[[ExcludeDates]]]
+			0 = "['2016-04-26 14:30','2016-04-26 14:30']"
+# CO2 covariances
+    [[UzC]]
+        [[[RangeCheck]]]
+            Lower      = "[-3]*12"
+            Upper      = "[3]*12"
+		[[[ExcludeDates]]]
+			0 = "['2016-04-26 14:30','2016-04-26 14:30']"
+    [[UxC]]
+        [[[RangeCheck]]]
+            Lower      = "[-5]*12"
+            Upper      = "[5]*12"
+		[[[ExcludeDates]]]
+			0 = "['2016-04-26 14:30','2016-04-26 14:30']"
+    [[UyC]]
+        [[[RangeCheck]]]
+            Lower      = "[-5]*12"
+            Upper      = "[5]*12"
+		[[[ExcludeDates]]]
+			0 = "['2016-04-26 14:30','2016-04-26 14:30']"
+# momentum covariances and variances
+    [[UxUz]]
+        [[[RangeCheck]]]
+            Lower      = "[-10]*12"
+            Upper      = "[10]*12"
+		[[[ExcludeDates]]]
+			0 = "['2016-04-26 14:30','2016-04-26 14:30']"
+    [[UyUz]]
+        [[[RangeCheck]]]
+            Lower      = "[-10]*12"
+            Upper      = "[10]*12"
+		[[[ExcludeDates]]]
+			0 = "['2016-04-26 14:30','2016-04-26 14:30']"
+    [[UxUy]]
+        [[[RangeCheck]]]
+            Lower      = "[-1]*12"
+            Upper      = "[1]*12"
+		[[[ExcludeDates]]]
+			0 = "['2016-04-26 14:30','2016-04-26 14:30']"
+    [[UxUx]]
+        [[[RangeCheck]]]
+            Lower      = "[-10]*12"
+            Upper      = "[10]*12"
+		[[[ExcludeDates]]]
+			0 = "['2016-04-26 14:30','2016-04-26 14:30']"
+    [[UyUy]]
+        [[[RangeCheck]]]
+            Lower      = "[-10]*12"
+            Upper      = "[10]*12"
+		[[[ExcludeDates]]]
+			0 = "['2016-04-26 14:30','2016-04-26 14:30']"
+# Meteorology
+    [[CO2_IRGA_Av]]
+        [[[RangeCheck]]]
+            Lower      = "[500]*12"
+            Upper      = "[2000]*12"
+		[[[ExcludeDates]]]
+			0 = "['2016-04-26 14:30','2016-04-26 14:30']"
+    [[H2O_IRGA_Av]]
+        [[[RangeCheck]]]
+            Lower      = "[0]*12"
+            Upper      = "[40]*12"
+		[[[ExcludeDates]]]
+			0 = "['2016-04-26 14:30','2016-04-26 14:30']"
+    [[Ah_HMP]]
+        [[[RangeCheck]]]
+            Lower      = "[0]*12"
+            Upper      = "[30]*12"
+		[[[ExcludeDates]]]
+			0 = "['2016-04-26 14:30','2016-04-26 14:30']"
+    [[Tv_SONIC_Av]]
+        [[[RangeCheck]]]
+            Lower      = "[0]*12"
+            Upper      = "[50]*12"
+		[[[ExcludeDates]]]
+			0 = "['2016-04-26 14:30','2016-04-26 14:30']"
+    [[Ta_HMP]]
+        [[[RangeCheck]]]
+            Lower      = "[0]*12"
+            Upper      = "[50]*12"
+		[[[ExcludeDates]]]
+			0 = "['2016-04-26 14:30','2016-04-26 14:30']"
+# Variance and standard deviation of absolute humidities, used for QC checks
+    [[H2O_IRGA_Sd]]
+        [[[RangeCheck]]]
+            Lower      = "[0]*12"
+            Upper      = "[100]*12"
+        [[[ExcludeDates]]]
+            0 = "['2016-04-26 14:30','2016-04-26 14:30']"
+    [[CO2_IRGA_Sd]]
+        [[[RangeCheck]]]
+            Lower      = "[0]*12"
+            Upper      = "[500]*12"
+        [[[ExcludeDates]]]
+            0 = "['2016-04-26 14:30','2016-04-26 14:30']"
+# Wind speed and direction
+    [[Wd_RMY]]
+        [[[RangeCheck]]]
+            Lower      = "[0]*12"
+            Upper      = "[360]*12"
+		[[[ExcludeDates]]]
+			0 = "['2016-04-26 14:30','2016-04-26 14:30']"
+    [[Ws_RMY]]
+        [[[RangeCheck]]]
+            Lower      = "[0]*12"
+            Upper      = "[20]*12"
+		[[[ExcludeDates]]]
+			0 = "['2016-04-26 14:30','2016-04-26 14:30']"
+    [[Wd_SONIC]]
+        [[[RangeCheck]]]
+            Lower      = "[0]*12"
+            Upper      = "[360]*12"
+		[[[ExcludeDates]]]
+			0 = "['2016-04-26 14:30','2016-04-26 14:30']"
+    [[Ws_SONIC]]
+        [[[RangeCheck]]]
+            Lower      = "[0]*12"
+            Upper      = "[20]*12"
+		[[[ExcludeDates]]]
+			0 = "['2016-04-26 14:30','2016-04-26 14:30']"
+    [[Ux]]
+        [[[RangeCheck]]]
+            Lower      = "[-20]*12"
+            Upper      = "[20]*12"
+		[[[ExcludeDates]]]
+			0 = "['2016-04-26 14:30','2016-04-26 14:30']"
+    [[Uy]]
+        [[[RangeCheck]]]
+            Lower      = "[-20]*12"
+            Upper      = "[20]*12"
+		[[[ExcludeDates]]]
+			0 = "['2016-04-26 14:30','2016-04-26 14:30']"
+    [[Uz]]
+        [[[RangeCheck]]]
+            Lower      = "[-1]*12"
+            Upper      = "[1]*12"
+        [[[ExcludeDates]]]
+            0 = "['2016-04-26 14:30','2016-04-26 14:30']"
+# Pressure
+    [[ps]]
+        [[[RangeCheck]]]
+            Lower      = "[95]*12"
+            Upper      = "[105]*12"
+		[[[ExcludeDates]]]
+			0 = "['2016-04-26 14:30','2016-04-26 14:30']"
+# Soil heat flux, moisture and temperature
+# repeat the following section for as many soil temperature sensors as installed at the site
+    [[Ts_8cma]]
+        [[[RangeCheck]]]
+            Lower      = "[0]*12"
+            Upper      = "[60]*12"
+		[[[ExcludeDates]]]
+			0 = "['2016-04-26 14:30','2016-04-26 14:30']"
+	[[Ts_8cmb]]
+        [[[RangeCheck]]]
+            Lower      = "[0]*12"
+            Upper      = "[60]*12"
+		[[[ExcludeDates]]]
+			0 = "['2016-04-26 14:30','2016-04-26 14:30']"
+# CSAT and IRGA diagnostics
+    [[Diag_SONIC]]
+        [[[RangeCheck]]]
+            Lower      = "[-0.5]*12"
+            Upper      = "[20000]*12"
+        [[[ExcludeDates]]]
+            0 = "['2016-04-26 14:30','2016-04-26 14:30']"
+    [[Diag_IRGA]]
+        [[[RangeCheck]]]
+            Lower      = "[-0.5]*12"
+            Upper      = "[10.5]*12"
+        [[[ExcludeDates]]]
+            0 = "['2016-04-26 14:30','2016-04-26 14:30']"
+    [[AGC_IRGA]]
+        [[[RangeCheck]]]
+            Lower      = "[0]*12"
+            Upper      = "[75]*12"
+        [[[ExcludeDates]]]
+            0 = "['2016-04-26 14:30','2016-04-26 14:30']"
+
+[Plots]
+    [[1]]
+        Title     = "Radiative fluxes"
+        Variables = "['Fsd','Fsu','Fld','Flu']"
+    [[2]]
+        Title     = "Covariances (CSAT)"
+        Variables = "['UzT','UxT','UyT','UxUz','UyUz','UxUx','UyUy']"
+    [[3]]
+        Title = "Covariances (CSAT&7500)"
+        Variables = "['UzA','UxA','UyA','UzC','UxC','UyC']"
+    [[4]]
+        Title = "Air temperature, humidity and CO2"
+        Variables = "['Ta_HMP','Tv_SONIC_Av','Ah_HMP','Ah_IRGA_Av','CO2_IRGA_Av']"
+    [[5]]
+        Title = "Soil temperature"
+        Variables = "['Ts_8cma','Ts_8cmb']"
+    [[6]]
+        Title = "Pressure, wind speed, wind direction & rainfall"
+        Variables = "['ps','Ws_SONIC','Ux','Uy','Uz','Wd_SONIC']"
+    [[7]]
+        Title = "Diagnostics"
+        Variables = "['H2O_IRGA_Sd','CO2_IRGA_Sd','AGC_IRGA','Diag_SONIC','Diag_IRGA']"

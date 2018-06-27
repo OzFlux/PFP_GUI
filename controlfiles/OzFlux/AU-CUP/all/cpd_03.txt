@@ -1,0 +1,21 @@
+[Files]
+    file_path = ../OzFlux/Sites/CumberlandPlain/Data/Tower/all/
+    in_filename = CumberlandPlain_L3.nc
+    out_filename = CumberlandPlain_L3_CPD_03.xls
+
+[Options]
+    Fsd_threshold  = 10
+    Num_bootstraps = 10
+    Output_results = True
+    Output_plots   = True
+    Plot_TClass    = False
+
+[Variables]
+    [[Fc]]
+        AltVarName = "Fc_PFP_single"
+    [[Ta]]
+        AltVarName = "Ta"
+    [[ustar]]
+        AltVarName = "ustar"
+    [[Fsd]]
+        AltVarName = "Fsd"

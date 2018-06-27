@@ -1,0 +1,24 @@
+[Options]
+    NumberOfDimensions = 3             # number of dimensions for output netCDF file
+    MaxGapInterpolate  = 3             # maximum gap length (hours) for filling by interpolation
+    FixTimeStepMethod  = round         # interpolate/round
+    Truncate = Yes                     # Yes/No, truncate beginning and end if data missing
+    TruncateThreshold = 50             # %, truncate if less data than threshold
+    SeriesToCheck = "['Ah','Cc','Fa','Fg','Fld','Flu','Fn','Fsd','Fsu','ps','Sws','Ta','Ts','Ws','Wd','Precip']"
+
+[Files]
+    [[Out]]
+        ncFileName = ../Sites/<site_name>/Data/Processed/all/<site_name>_L3.nc
+    [[In]]
+        0 = ../Sites/<site_name>/Data/Processed/2001/<site_name>_2001_L3.nc
+        1 = ../Sites/<site_name>/Data/Processed/2002/<site_name>_2002_L3.nc
+        2 = ../Sites/<site_name>/Data/Processed/2003/<site_name>_2003_L3.nc
+        3 = ../Sites/<site_name>/Data/Processed/2004/<site_name>_2004_L3.nc
+        4 = ../Sites/<site_name>/Data/Processed/2005/<site_name>_2005_L3.nc
+        5 = ../Sites/<site_name>/Data/Processed/2006/<site_name>_2006_L3.nc
+        6 = ../Sites/<site_name>/Data/Processed/2007/<site_name>_2007_L3.nc
+        7 = ../Sites/<site_name>/Data/Processed/2008/<site_name>_2008_L3.nc
+        8 = ../Sites/<site_name>/Data/Processed/2009/<site_name>_2009_L3.nc
+        9 = ../Sites/<site_name>/Data/Processed/2010/<site_name>_2010_L3.nc
+        10 = ../Sites/<site_name>/Data/Processed/2011/<site_name>_2011_L3.nc
+        11 = ../Sites/<site_name>/Data/Processed/2012/<site_name>_2012_L3.nc

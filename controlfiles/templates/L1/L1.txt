@@ -1,0 +1,664 @@
+# AAHYWEH
+# Control file for choosing data from the L1 Excel spreadsheet and writing it to a netCDF file.
+#
+# TEMPLATE VERSION
+#  To convert this template to a version that works for data output by the standard OzFlux
+#  data logger program:
+#   1) Replace the following place holders with values for your site:
+#      <site_name> - the name of the site
+#      <year>      - the year of the data
+#      <latitude>  - the latitude of the site, decimal degrees
+#      <longitude> - the longitude of the site, decimal degrees
+#      <height>    - the height of the measurement (above ground), m
+#      <depth>     - the depth of the measurement (below ground), cm for depths <= 1m, m for depths > 1m
+#      <letter>    - the letter used to distinguish sensors at the same depth or height
+#   2) Fill out the global and variable attributes
+#
+# [Files] - contains paths, file names and location of data in file
+# [Global] - global attributes to be written into the netCDF file
+# [Variables] - data to extract from Excel spreadsheet and write to netCDF file
+#
+[Files]
+    file_path = ../Sites/<site_name>/Data/Processed/<year>/
+    in_filename = <site_name>_<year>_L1.xls
+    in_headerrow  = 2
+    in_firstdatarow = 5
+    out_filename = <site_name>_<year>_L1.nc
+
+[Global]
+    acknowledgement = """This work used eddy covariance data collected by the TERN-OzFlux facility. OzFlux
+would like to acknowledge the financial support of the Australian Federal Government via
+the National Collaborative Research Infrastructure Scheme and the Education Investment
+Fund."""
+  	contact        = ""                                  
+  	canopy_height  = ""
+  	comment        = "CF metadata, OzFlux standard variable names"
+  	elevation      = ""
+    conventions    = "CF-1.6"
+    conventions_names = "CF convention standard names table version 27, 28 Nov 2013, audited 4 Jan 2015"
+  	data_url       = "http://data.ozflux.org.au/"
+    doi            = "DOI:????"
+  	history        = ""
+    institution    = ""
+    latitude       = "<latitude>"
+    license_type   = "TERN-BY-SA-NC"
+    license_url    = "http://www.tern.org.au/datalicence/TERN-BY-SA-NC/1.0"
+    longitude      = "<longitude>"
+    metadata_url   = "http://http://www.ozflux.org.au/monitoringsites/<site_name>/index.html"
+   	ozflux_url     = "http://ozflux.org.au/"
+    references     = "None"
+    site_name      = "<site_name>"
+    site_pi        = ""
+    soil           = ""
+    source         = ""
+    title          = "Flux tower data set from the <site_name> site for the calendar year <year>"
+    time_step      = "30"
+    time_zone      = ""
+    tower_height   = ""
+    vegetation     = ""
+
+[Variables]
+    [[xlDateTime]]
+        [[[xl]]]
+            sheet    = slow_flux
+            name     = TIMESTAMP
+        [[[Attr]]]
+            long_name     = "Date/time in Excel format"
+            units         = "days since 1899-12-31 00:00:00 +9:30"
+            standard_name = "not defined"
+            cf_role       = "timeseries_id"
+# Radiation
+    [[Fn_NR]]
+        [[[xl]]]
+            sheet    = slow_rad
+            name     = Fn_NR_Avg
+        [[[Attr]]]
+            ancillary_variables = "Fn_NR QC flag"
+            height = "<height>m"
+            instrument = "NR Lite"
+            long_name = "Net radiation (NRLite)"
+            serial_number = ""
+            standard_name = "surface_net_downwawrd_radiative_flux"
+            units = "W/m2"
+    [[Fld]]
+        [[[xl]]]
+            sheet    = slow_rad
+            name     = Fld_CNR4_Avg
+        [[[Attr]]]
+            ancillary_variables = "Fld QC flag"
+            height = "<height>m"
+            instrument = "Kipp and Zonen CNR4"
+            long_name = Down-welling long wave"
+            serial_number= ""
+            standard_name = "surface_downwelling_longwave_flux_in_air"
+            units    = "W/m2"
+    [[Flu]]
+        [[[xl]]]
+            sheet    = slow_rad
+            name     = Flu_CNR4_Avg
+        [[[Attr]]]
+            ancillary_variables = "Flu QC flag"
+            height = "<height>m"
+            instrument = "Kipp and Zonen CNR4"                    
+            long_name = "Up-welling long wave"
+            serial_number = ""
+            standard_name = "surface_upwelling_longwave_flux_in_air"   
+            units    = "W/m2"
+    [[Fsu]]
+        [[[xl]]]
+            sheet    = slow_rad
+            name     = Fsu_CNR4_Avg
+        [[[Attr]]]
+            ancillary_variables = "Fsu QC flag"
+            height = "<height>m"
+            instrument = "Kipp and Zonen CNR4"           
+            long_name = "Up-welling short wave"
+            serial_number = ""
+            standard_name = "surface_upwelling_shortwave_flux_in_air"
+            units    = "W/m2"
+    [[Fsd]]
+        [[[xl]]]
+            sheet    = slow_rad
+            name     = Fsd_CNR4_Avg
+        [[[Attr]]]
+            ancillary_variables = "Fsd QC flag"
+            height = "<height>m"
+            instrument = "Kipp and Zonen CNR4"
+            long_name = "Down-welling short wave"
+            serial_number = ""
+            standard_name = "surface_downwelling_shortwave_flux_in_air"
+            units = "W/m2"
+# CSAT temperature covariances with wind velocity components
+    [[UzT]]
+        [[[xl]]]
+            sheet    = slow_flux
+            name     = covUzTv
+        [[[Attr]]]
+            ancillary_variables = "UzT QC flag"
+            height = "<height>m"
+            instrument = "CSAT3"
+            long_name = "Covariance of Uz and T"
+            serial_number = ""
+            standard_name = "not defined"
+            units = "mC/s"
+    [[UxT]]
+        [[[xl]]]
+            sheet    = slow_flux
+            name     = covUxTv
+        [[[Attr]]]
+            ancillary_variables = "UxT QC flag"
+            height = "<height>m"
+            instrument = "CSAT3"
+            long_name = "Covariance of Ux and T"
+            serial_number = ""
+            standard_name = "not defined"
+            units = "mC/s""
+    [[UyT]]
+        [[[xl]]]
+            sheet    = slow_flux
+            name     = covUyTv
+        [[[Attr]]]
+            ancillary_variables = "UyT QC flag"
+            height = "<height>m"
+            instrument = "CSAT3"
+            long_name = "Covariance of Uy and T"
+            serial_number = ""
+            standard_name = "not defined"
+            units = "mC/s"
+# Li-7500 H2O covariances with wind velocity components
+    [[UzA]]
+        [[[xl]]]
+            sheet    = slow_flux
+            name     = covUzAh
+        [[[Attr]]]
+            ancillary_variables = "UzA QC flag"
+            height = "<height>m"
+            instrument = "CSAT3, Li-7500"
+            long_name = "Covariance of Uz and H2O"
+            serial_number = ""
+            standard_name = "not defined"
+            units = "g/m2/s"
+    [[UxA]]
+        [[[xl]]]
+            sheet    = slow_flux
+            name     = covUxAh
+        [[[Attr]]]
+            ancillary_variables = "UxA QC flag"
+            height = "<height>m"
+            instrument = "CSAT3, Li-7500"
+            long_name = "Covariance of Ux and H2O"
+            serial_number = ""
+            standard_name = "not defined"
+            units = "g/m2/s"
+    [[UyA]]
+        [[[xl]]]
+            sheet    = slow_flux
+            name     = covUyAh
+        [[[Attr]]]
+            ancillary_variables = "UyA QC flag"
+            height = "<height>m"
+            instrument = "CSAT3, Li-7500"
+            long_name = "Covariance of Uy and H2O"
+            serial_number = ""
+            standard_name = "not defined"
+            units = "g/m2/s"
+# Li-7500 CO2 covariances with wind velocity components
+    [[UzC]]
+        [[[xl]]]
+            sheet    = slow_flux
+            name     = covUzCc
+        [[[Attr]]]
+            ancillary_variables = "UzC QC flag"
+            height = "<height>m"
+            instrument = "CSAT3, Li-7500"
+            long_name = "Covariance of Uz and CO2"
+            serial_number = ""
+            standard_name = "not defined"
+            units = "mg/m2/s"
+    [[UxC]]
+        [[[xl]]]
+            sheet    = slow_flux
+            name     = covUxCc
+        [[[Attr]]]
+            ancillary_variables = "UxC QC flag"
+            height = "<height>m"
+            instrument = "CSAT3, Li-7500"
+            long_name = "Covariance of Ux and CO2"
+            serial_number = ""
+            standard_name = "not defined"
+            units = "mg/m2/s"
+    [[UyC]]
+        [[[xl]]]
+            sheet    = slow_flux
+            name     = covUyCc
+        [[[Attr]]]
+            ancillary_variables = "UyC QC flag"
+            height = "<height>m"
+            instrument = "CSAT3, Li-7500"
+            long_name = "Covariance of Uy and CO2"
+            serial_number = ""
+            standard_name = "not defined"
+            units = "mg/m2/s"
+# Covariances and variances: Momentum
+    [[UxUz]]
+        [[[xl]]]
+            sheet    = slow_flux
+            name     = covUzUx
+        [[[Attr]]]
+            ancillary_variables = "UxUz QC flag"
+            height = "<height>m"
+            instrument = "CSAT3"
+            long_name = "Covariance of Ux and Uz"
+            serial_number = ""
+            standard_name = "not defined"
+            units = "m2/s2"
+    [[UyUz]]
+        [[[xl]]]
+            sheet    = slow_flux
+            name     = covUzUy
+        [[[Attr]]]
+            ancillary_variables = "UyUz QC flag"
+            height = "<height>m"
+            instrument = "CSAT3"
+            long_name = "Covariance of Uy and Uz"
+            serial_number = ""
+            standard_name = "not defined"
+            units = "m2/s2"
+    [[UxUy]]
+        [[[xl]]]
+            sheet    = slow_flux
+            name     = covUxUy
+        [[[Attr]]]
+            ancillary_variables = "UxUy QC flag"
+            height = "<height>m"
+            instrument = "CSAT"
+            long_name = "Covariance of Ux and Uy"
+            serial_number = ""
+            standard_name = "not defined"
+            units = "m2/s2"
+    [[UzUz]]
+        [[[xl]]]
+            sheet    = slow_flux
+            name     = covUzUz
+        [[[Attr]]]
+            ancillary_variables = "UzUz QC flag"
+            height = "<height>m"
+            instrument = "CSAT"
+            long_name = "Vertical wind speed (CSAT coordinates), variance"
+            serial_number = ""
+            standard_name = "not defined"
+            units = "m2/s2"
+    [[UxUx]]
+        [[[xl]]]
+            sheet    = slow_flux
+            name     = covUxUx
+        [[[Attr]]]
+            ancillary_variables = "UxUx QC flag"
+            height = "<height>m"
+            instrument = "CSAT"
+            long_name = "Longitudinal wind speed (CSAT coordinates), variance"
+            serial_number = ""
+            standard_name = "not defined"
+            units = "m2/s2"
+    [[UyUy]]
+        [[[xl]]]
+            sheet    = slow_flux
+            name     = covUyUy
+        [[[Attr]]]
+            ancillary_variables = "UyUy QC flag"
+            height = "<height>m"
+            instrument = "CSAT"
+            long_name = "Lateral wind speed component (CSAT coordinates), variance"
+            serial_number = ""
+            standard_name = "not defined"
+            units = "m2/s2"
+# Meteorology: CSAT3 virtual temperature
+    [[Tv_CSAT]]
+        [[[xl]]]
+            sheet    = slow_met
+            name     = Tv_CSAT_Avg
+        [[[Attr]]]
+            ancillary_variables = "Tv_CSAT QC flag"
+            height = "<height>m"
+            instrument = "CSAT"
+            long_name = "Virtual air temperature"
+            serial_number = ""
+            standard_name = "virtual_temperature"
+            units = "C"
+# Meteorology: Li-7500 average H2O and CO2 concentrations
+    [[Cc_7500_Av]]
+        [[[xl]]]
+            sheet    = slow_met
+            name     = Cc_7500_Avg
+        [[[Attr]]]
+            ancillary_variables = "Cc_7500 QC flag"
+            height = "<height>m"
+            instrument = "Li-7500"
+            long_name = "CO2 concentration, average"
+            serial_number = ""
+            standard_name = "mass_concentration_of_carbon_dioxide_in_air"
+            units = "mg/m3"
+    [[Ah_7500_Av]]
+        [[[xl]]]
+            sheet    = slow_met
+            name     = Ah_7500_Avg
+        [[[Attr]]]
+            ancillary_variables = "Ah_7500 QC flag"
+            height = "<height>m"
+            instrument = "Li-7500"
+            long_name = "Absolute humidity, average"
+            serial_number = ""
+            standard_name = "mass_concentration_of_water_vapor_in_air"
+            units = "g/m3"
+# Meteorology: Li-7500 variance of H2O and CO2 concentrations
+    [[AhAh]]
+        [[[xl]]]
+            sheet    = slow_flux
+            name     = covAhAh
+        [[[Attr]]]
+            ancillary_variables = "AhAh QC flag"
+            height = "<height>m"
+            instrument = "Li-7500"
+            long_name = "Absolute humidity, variance"
+            serial_number = ""
+            standard_name = "not defined"
+            units = "(g/m3)2"
+    [[CcCc]]
+        [[[xl]]]
+            sheet    = slow_flux
+            name     = covCcCc
+        [[[Attr]]]
+            ancillary_variables = "CcCc QC flag"
+            height = "<height>m"
+            instrument = "Li-7500"
+            long_name = "CO2 concentration, variance"
+            serial_number = ""
+            standard_name = "not defined"
+            units = "(mg/m3)2"
+# Meteorology: HMP45 absolute humidities
+    [[Ah_HMP_<height>m]]
+        [[[xl]]]
+            sheet    = slow_met
+            name     = Ah_HMP_01_Avg
+        [[[Attr]]]
+            ancillary_variables = "Ah_HMP_<height>m QC flag"
+            height = "<height>m"
+            instrument = "HMP45C"
+            long_name = "Absolute humidity, average"
+            serial_number = ""
+            standard_name = "mass_concentration_of_water_vapor_in_air"
+            units = "g/m3"
+# Meteorology: HMP45 temperatures
+    [[Ta_HMP_<height>m]]
+        [[[xl]]]
+            sheet    = slow_met
+            name     = Ta_HMP_01_Avg
+        [[[Attr]]]
+            ancillary_variables = "Ta_HMP_<height>m QC flag"
+            height = "<height>m"
+            instrument = "HMP45C"
+            long_name = "Air temperature, average"
+            serial_number = ""
+            standard_name = "air_temperature"
+            units = "C"
+# Soil: Ground heat flux
+    [[Fg_8cma]]
+        [[[xl]]]
+            sheet    = slow_flux
+            name     = Fg_CN3_01_Avg
+        [[[Attr]]]
+            ancillary_variables = "Fg_8cma QC flag"
+            height = "-0.08m"
+            instrument = "Middleton CN3"
+            long_name = "Ground heat flux, sensor 1a"
+            serial_number = ""
+            standard_name = "downward_heat_flux_in_soil"
+            units = "W/m2"
+    [[Fg_8cmb]]
+        [[[xl]]]
+            sheet    = slow_flux
+            name     = Fg_CN3_02_Avg
+        [[[Attr]]]
+            ancillary_variables = "Fg_8cmb QC flag"
+            height = "-0.08m"
+            instrument = "Middleton CN3"
+            long_name = "Ground heat flux, sensor 1b"
+            serial_number = ""
+            standard_name = "downward_heat_flux_in_soil"
+            units = "W/m2"
+    [[Fg_8cmc]]
+        [[[xl]]]
+            sheet    = slow_flux
+            name     = Fg_CN3_03_Avg
+        [[[Attr]]]
+            ancillary_variables = "Fg_8cmc QC flag"
+            height = "-0.08m"
+            instrument = "Middleton CN3"
+            long_name = "Ground heat flux, sensor 1c"
+            serial_number = ""
+            standard_name = "downward_heat_flux_in_soil"
+            units = "W/m2"
+# Soil: Volumetric soil water content
+# Repeat the following section for as many soil moisture sensors
+# as are installed at the site.
+    [[Sws_<depth><letter>]]
+        [[[xl]]]
+            sheet    = slow_met
+            name     = Sws_616_01_Avg
+        [[[Attr]]]
+            ancillary_variables = "Sws_<depth><letter> QC flag"
+            height = "-<depth>m"
+            instrument = "Campbell Scientific CS616"
+            long_name = "Soil water fraction, sensor 1a"
+            serial_number = ""
+            standard_name = "soil_moisture_content"
+            units = "frac"
+# Soil: Soil temperature
+    [[Ts_8cma]]
+        [[[xl]]]
+            sheet    = slow_met
+            name     = Ts_TCAV_01_Avg
+        [[[Attr]]]
+            ancillary_variables = "Ts_8cma QC flag"
+            height = "-0.08m"
+            instrument = "Campbell Scientific TCAV"
+            long_name = "Soil temperature, sensor 1a"
+            serial_number = ""
+            standard_name = "soil_temperature"
+            units = "C"
+    [[Ts_8cmb]]
+        [[[xl]]]
+            sheet    = slow_met
+            name     = Ts_TCAV_02_Avg
+        [[[Attr]]]
+            ancillary_variables = "Ts_8cmb QC flag"
+            height = "-0.08m"
+            instrument = "Campbell Scientific TCAV"
+            long_name = "Soil temperature, sensor 1b"
+            serial_number = ""
+            standard_name = "soil_temperature"
+            units = "C"
+    [[Ts_8cmc]]
+        [[[xl]]]
+            sheet    = slow_met
+            name     = Ts_TCAV_03_Avg
+        [[[Attr]]]
+            ancillary_variables = "Ts_8cmc QC flag"
+            height = "-0.08m"
+            instrument = "Campbell Scientific TCAV"
+            long_name = "Soil temperature, sensor 1c"
+            serial_number = ""
+            standard_name = "soil_temperature"
+            units = "C"
+# Meteorology: Rain
+    [[Precip]]
+        [[[xl]]]
+            sheet    = slow_met
+            name     = Rain_Tot
+        [[[Attr]]]
+            ancillary_variables = "Precip QC flag"
+            height = "0.6m"
+            instrument = "Hydrological Services CS7000"
+            long_name = "Rainfall, 30 minute total"
+            serial_number = ""
+            standard_name = "rainfall_amount"
+            units = "mm"
+# Meteorology: Wind speed and direction from the WindSonic
+    [[Wd_WS4]]
+        [[[xl]]]
+            sheet    = slow_met
+            name     = WD_WS4_Avg
+        [[[Attr]]]
+            ancillary_variables = "Wd_WS4 QC flag"
+            height = "<height>m"
+            instrument = "WindSonic4"
+            long_name = "Wind direction"
+            serial_number = ""
+            standard_name = "wind_from_direction"
+            units = "deg"
+    [[Ws_WS4]]
+        [[[xl]]]
+            sheet    = slow_met
+            name     = WS_WS4_Avg
+        [[[Attr]]]
+            ancillary_variables = "Ws_WS4 QC flag"
+            height = "<height>m"
+            instrument = "WindSonic4"
+            long_name = "Wind speed"
+            serial_number = ""
+            standard_name = "wind_speed"
+            units = "m/s"
+# Meteorology: Wind speed and direction from the CSAT3
+    [[Wd_CSAT]]
+        [[[xl]]]
+            sheet    = slow_met
+            name     = WD_CSAT_Compass_Avg
+        [[[Attr]]]
+            ancillary_variables = "Wd_CSAT QC flag"
+            height = "<height>m"
+            instrument = "CSAT"
+            long_name = "Wind direction"
+            serial_number = ""
+            standard_name = "wind_from_direction"
+            units = "deg"
+    [[Ws_CSAT]]
+        [[[xl]]]
+            sheet    = slow_met
+            name     = WS_CSAT_Avg
+        [[[Attr]]]
+            ancillary_variables = "Ws_CSAT QC flag"
+            height = "<height>m"
+            instrument = "CSAT"
+            long_name = "Wind speed"
+            serial_number = ""
+            standard_name = "wind_speed"
+            units = "m/s"
+    [[Ux]]
+        [[[xl]]]
+            sheet    = slow_met
+            name     = Ux_CSAT_Avg
+        [[[Attr]]]
+            ancillary_variables = "Ux QC flag"
+            height = "<height>m"
+            instrument = "CSAT"
+            long_name = "Wind speed, longitudinal component"
+            serial_number = ""
+            standard_name = "not defined"
+            units = "m/s"
+    [[Uy]]
+        [[[xl]]]
+            sheet    = slow_met
+            name     = Uy_CSAT_Avg
+        [[[Attr]]]
+            ancillary_variables = "Uy QC flag"
+            height = "<height>m"
+            instrument = "CSAT"
+            long_name = "Wind speed, lateral component"
+            serial_number = ""
+            standard_name = "not defined"
+            units = "m/s"
+    [[Uz]]
+        [[[xl]]]
+            sheet    = slow_met
+            name     = Uz_CSAT_Avg
+        [[[Attr]]]
+            ancillary_variables = "Uz QC flag"
+            height = "<height>m"
+            instrument = "CSAT"
+            long_name = "Wind speed, vertical component"
+            serial_number = ""
+            standard_name = "not defined"
+            units = "m/s"
+# Meteorology: pressure from the Li-7500
+    [[ps]]
+        [[[xl]]]
+            sheet    = slow_met
+            name     = ps_7500_Avg
+        [[[Attr]]]
+            ancillary_variables = "ps QC flag"
+            height = "<height>m"
+            instrument = "Li-7500"
+            long_name = "Air pressure, average"
+            serial_number = ""
+            standard_name = "surface_air_pressure"
+            units = "kPa"
+# Diagnostics: CSAT3 and Li-7500
+    [[Diag_CSAT]]
+        [[[xl]]]
+            sheet    = slow_flux
+            name     = CSAT_Warn
+        [[[Attr]]]
+            ancillary_variables = "Diag_CSAT QC flag"
+            height = "<height>m"
+            instrument = "CSAT"
+            long_name = "CSAT diagnostic value"
+            serial_number = ""
+            standard_name = "not defined"
+            units = "none"
+    [[Diag_7500]]
+        [[[xl]]]
+            sheet    = slow_flux
+            name     = 7500_Warn
+        [[[Attr]]]
+            ancillary_variables = "Diag_7500 QC flag"
+            height = "<height>m"
+            instrument = "Li-7500"
+            long_name = "Li-7500 diagnostic value"
+            serial_number = ""
+            standard_name = "not defined"
+            units = "none"
+    [[AGC_7500]]
+        [[[xl]]]
+            sheet    = slow_flux
+            name     = AGC_7500_Avg
+        [[[Attr]]]
+            ancillary_variables = "AGC_7500 QC flag"
+            height = "<height>m"
+            instrument = "Li-7500"
+            long_name = "Li-7500 automatic gain control"
+            serial_number = ""
+            standard_name = "not defined"
+            units = "none"
+# Housekeeping
+    [[Vbat]]
+        [[[xl]]]
+            sheet    = slow_met
+            name     = Vbat_Avg
+        [[[Attr]]]
+            ancillary_variables = "None"
+            instrument = "Campbell Scientific CR3000 logger"
+            long_name = "Battery voltage at logger"
+            serial_number = ""
+            standard_name = "not defined"
+            units    = "V"
+    [[Tpanel]]
+        [[[xl]]]
+            sheet    = slow_met
+            name     = Tpanel_Avg
+        [[[Attr]]]
+            ancillary_variables = "None"
+            instrument = "Campbell Scientific CR3000 logger"
+            long_name = "Panel temperature at logger"
+            serial_number = ""
+            standard_name = "not defined"
+            units    = "C"

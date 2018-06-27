@@ -1,0 +1,84 @@
+[Files]
+    file_path       = ../OzFlux/Sites/SturtPlains/Data/FluxNet/
+    in_filename     = FLX_AU-Stp_FLUXNET2015_FULLSET_HH_2008-2014_1-3.csv
+    in_headerrow    = 1
+    in_firstdatarow = 2
+    out_filename    = SturtPlains_L6.nc
+
+[Global] 
+		latitude       = -17.1507
+		longitude      = 133.3502
+    site_name      = "Sturt Plains"
+ 		time_step      = 30
+ 		time_zone      = "Australia/Darwin"
+
+[Variables]
+    [[DateTime]]
+        [[[Function]]]
+            func = """DateTimeFromTimeStamp(TimeStamp)"""
+    [[TimeStamp]]
+        [[[csv]]]
+            name     = TIMESTAMP_END
+        [[[Attr]]]
+            long_name     = "Date/time in ISO format (end of period)"
+            units         = "days"
+    [[Fsd]]
+        [[[csv]]]
+            name     = SW_IN_F
+        [[[Attr]]]
+            long_name = "Downwelling shortwave radiation"
+            units = "W/m2"
+    [[NEE_LT]]
+        [[[csv]]]
+            name     = NEE_VUT_REF
+        [[[Attr]]]
+            long_name = "Net ecosystem exchange"
+            units = "umol/m2/s"
+    [[ER_LT]]
+        [[[csv]]]
+            name     = RECO_NT_VUT_REF
+        [[[Attr]]]
+            long_name = "Ecosystem respiration"
+            units = "umol/m2/s"
+    [[GPP_LT]]
+        [[[csv]]]
+            name     = GPP_NT_VUT_REF
+        [[[Attr]]]
+            long_name = "Gross primary productivity"
+            units = "umol/m2/s"
+    [[NEE_LL]]
+        [[[csv]]]
+            name     = NEE_DT_VUT_REF
+        [[[Attr]]]
+            long_name = "Net ecosystem exchange"
+            units = "umol/m2/s"
+    [[ER_LL]]
+        [[[csv]]]
+            name     = RECO_DT_VUT_REF
+        [[[Attr]]]
+            long_name = "Ecosystem respiration"
+            units = "umol/m2/s"
+    [[GPP_LL]]
+        [[[csv]]]
+            name     = GPP_DT_VUT_REF
+        [[[Attr]]]
+            long_name = "Gross primary productivity"
+            units = "umol/m2/s"
+    [[Fe]]
+        [[[csv]]]
+            name     = LE_F_MDS
+        [[[Attr]]]
+            long_name = "Latent heat flux"
+            units = "W/m2"
+    [[Fh]]
+        [[[csv]]]
+            name     = H_F_MDS
+        [[[Attr]]]
+            long_name = "sensible heat flux"
+            units = "W/m2"
+    [[Precip]]
+        [[[csv]]]
+            name     = P_F
+        [[[Attr]]]
+            long_name = "Precipitation"
+            units = "mm"

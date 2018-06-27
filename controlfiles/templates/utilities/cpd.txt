@@ -1,0 +1,20 @@
+[Files]
+    file_path = ../Sites/<site_name>/Data/Processed/<year>/
+    in_filename = <site_name>_<year>_L3.nc
+
+[Options]
+    Fsd_threshold  = 10
+    Num_bootstraps = 10
+    Output_results = True
+    Output_plots   = True
+    Plot_TClass    = False
+
+[Variables]
+    [[Fc]]
+        AltVarName = "Fc"
+    [[Ta]]
+        AltVarName = "Ta"
+    [[ustar]]
+        AltVarName = "ustar"
+    [[Fsd]]
+        AltVarName = "Fsd"

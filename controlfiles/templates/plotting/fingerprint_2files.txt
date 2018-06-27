@@ -1,0 +1,65 @@
+# AAHYWEH
+# Control file for plotting fingerprints using data from 2 or more OzFlux netCDF files.
+# This version of the fingerprint control file is designed to allow the user to plot
+# data from 2 or more OzFlux netCDF files on a single fingerprint plot.  This approach
+# is useful for comparing, say, L3 data with gap filled drivers (L4) or fluxes (L5).
+# Side by side comparison of gap filled and non-gap filled data can highlight problems
+# with the gap filling approach used.
+#
+# TEMPLATE VERSION
+#  To convert this template to a version that works for data output by the standard OzFlux
+#  data logger program:
+#   1) Replace the following place holders with values for your site:
+#      <site_name> - the name of the site
+#      <year>      - the year of the data
+#
+# [Variables] - section containing the variables to be plotted
+#  Each sub-section in the [Variables] section defines a variable for which a fingerprint
+#  is to be plotted.
+#  Each variable name used when defining what fingerprints to plot in the [Plots] section
+#  must have a corresponding entry in the [Variables] section.
+#  In the example below, the L3 latent heat flux, named as Fe_L3, appears in the list
+#  of variables for the first plot.  The data to use for Fe_L3 and where it is to come
+#  from are defined in the [[Fe_L3]] sub-section of the [Variables] section.
+#
+#  Each sub-section in [Variables] must contain 2 entries:
+#   in_filename - the name, complete with path, of the file containing the data
+#   nc_varname  - the name of the variable to be read from the above file
+#
+#  There can be an arbitrary number of sub-sections in the [Variables] section.
+#
+# [Plots] - section containing the plots to be made
+#  Each sub-section in the [Plots] section defines a fingerprint plot.  Each fingerprint
+#  plot can have an arbitrary number of panels with each panel corresponding to a single
+#  variable.  In practice, the panels become too narrow to be useful if there are more
+#  than 5 or 6 panels on a single fingerprint plot.
+#
+#  Each sub-section in the [Plots] section must be uniquely numbered eg [[1]], [[2]],
+#  [[3]], [[4]] etc.
+#
+#  Each sub-section in the [Plots] section must contain 2 entries:
+#   Title     - a title for the fingerprint plot
+#   Variables - a list of variables to be plotted as panels on a single fingerprint plot
+#               - the list must be enclosed in double quote marks (")
+#               - each entry in the list must be enclosed in single quote marks (')
+#
+#  There can be an arbitrary number of sub-sections in the [Plots] section.
+#
+[Variables]
+    [[Fe_L3]]
+        in_filename = "../Sites/<site_name>/Data/Processed/<year>/<site_name>_<year>_L3.nc"
+        nc_varname = "Fe"
+    [[Fe_L5]]
+        in_filename = "../Sites/<site_name>/Data/Processed/<year>/<site_name>_<year>_L5.nc"
+        nc_varname = "Fe"
+    [[Fc_L3]]
+        in_filename = "../Sites/<site_name>/Data/Processed/<year>/<site_name>_<year>_L3.nc"
+        nc_varname = "Fc"
+    [[Fc_L5]]
+        in_filename = "../Sites/<site_name>/Data/Processed/<year>/<site_name>_<year>_L5.nc"
+        nc_varname = "Fc"
+
+[Plots]
+    [[1]]
+        Title = "Fc L3 & L5 fingerprint"
+        Variables = "['Fc_L3','Fc_L5','Fe_L3','Fe_L5']"

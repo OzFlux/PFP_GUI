@@ -1,0 +1,190 @@
+[Files]
+    plot_path = ../OzFlux/Sites/AdelaideRiver/Plots/
+    file_path = ../OzFlux/Sites/AdelaideRiver/Data/Portal/
+    in_filename = AdelaideRiver_L3.nc
+    out_filename = AdelaideRiver_L4.nc
+    aws = ../OzFlux/Sites/AdelaideRiver/Data/AWS/AdelaideRiver_AWS.nc
+    erai = ../OzFlux/Sites/AdelaideRiver/Data/ERAI/AdelaideRiver_ERAI.nc
+    climatology = ../OzFlux/Sites/AdelaideRiver/Data/Portal/AdelaideRiver_L3_Climatology.xls
+
+[Output]
+    nc = "['Ah','Cc','e','Fa','Fc','Fc_storage','Fe','Fg','Fh','Fld','Flu','Fm','Fn','Fsd','Fsd_syn','Fsu','Precip','ps','q','RH','Sws','SHD','Ta','Ts','ustar','VPD','Ws','Wd']"
+
+[Options]
+    MaxGapInterpolate = 0
+
+[GUI]
+    [[Alternate]]
+        period_option = "days"   # manual/monthly/days
+        start_date    = ""       # YYYY-MM-DD, only needed for manual run
+        end_date      = ""       # YYYY-MM-DD, only needed for manual run
+        number_days   = 90       # number of days
+        auto_complete = "yes"    # yes/no, automatically fill left-over gaps
+        min_percent   = 50       # minimum percentage of good points
+        overwrite     = "no"     # no/yes, overwrite previously gap filled data
+        show_plots    = "no"     # yes/no
+
+[Drivers]
+    [[Ah]]
+        [[[GapFillFromAlternate]]]
+            [[[[Ah_aws]]]]
+                source = "AWS"
+            [[[[Ah_erai]]]]
+                source = "ERAI"
+        [[[GapFillFromClimatology]]]
+            [[[[Ah_cli]]]]
+                method = "interpolated daily"
+        [[[MergeSeries]]]
+            Source     = "['Ah','Ah_aws','Ah_erai','Ah_cli']"
+    [[Cc]]
+        [[[GapFillFromClimatology]]]
+            [[[[Cc_cli]]]]
+                method = "interpolated daily"
+        [[[MergeSeries]]]
+            Source     = "['Cc','Cc_cli']"
+    [[Fa]]
+        [[[GapFillFromAlternate]]]
+            [[[[Fa_erai]]]]
+                source = "ERAI"
+        [[[GapFillFromClimatology]]]
+            [[[[Fa_cli]]]]
+                method = "interpolated daily"
+        [[[MergeSeries]]]
+            Source     = "['Fa','Fa_erai','Fa_cli']"
+    [[Fg]]
+        [[[GapFillFromAlternate]]]
+            [[[[Fg_erai]]]]
+                source = "ERAI"
+        [[[GapFillFromClimatology]]]
+            [[[[Fg_cli]]]]
+                method = "interpolated daily"
+        [[[MergeSeries]]]
+            Source     = "['Fg','Fg_erai','Fg_cli']"
+    [[Fld]]
+        [[[GapFillFromAlternate]]]
+            [[[[Fld_erai]]]]
+                source = "ERAI"
+        [[[GapFillFromClimatology]]]
+            [[[[Fld_cli]]]]
+                method = "interpolated daily"
+        [[[MergeSeries]]]
+            Source     = "['Fld','Fld_erai','Fld_cli']"
+    [[Flu]]
+        [[[GapFillFromAlternate]]]
+            [[[[Flu_erai]]]]
+                source = "ERAI"
+        [[[GapFillFromClimatology]]]
+            [[[[Flu_cli]]]]
+                method = "interpolated daily"
+        [[[MergeSeries]]]
+            Source     = "['Flu','Flu_erai','Flu_cli']"
+    [[Fn]]
+        [[[GapFillFromAlternate]]]
+            [[[[Fn_erai]]]]
+                source = "ERAI"
+        [[[GapFillFromClimatology]]]
+            [[[[Fn_cli]]]]
+                method = "interpolated daily"
+        [[[MergeSeries]]]
+            Source     = "['Fn','Fn_erai','Fn_cli']"
+    [[Fsd]]
+        [[[GapFillFromAlternate]]]
+            [[[[Fsd_erai]]]]
+                source = "ERAI"
+        [[[GapFillFromClimatology]]]
+            [[[[Fsd_cli]]]]
+                method = "interpolated daily"
+        [[[MergeSeries]]]
+            Source     = "['Fsd','Fsd_erai','Fsd_cli']"
+    [[Fsu]]
+        [[[GapFillFromAlternate]]]
+            [[[[Fsu_erai]]]]
+                source = "ERAI"
+        [[[GapFillFromClimatology]]]
+            [[[[Fsu_cli]]]]
+                method = "interpolated daily"
+        [[[MergeSeries]]]
+            Source     = "['Fsu','Fsu_erai','Fsu_cli']"
+    [[ps]]
+        [[[GapFillFromAlternate]]]
+            [[[[ps_aws]]]]
+                source = "AWS"
+            [[[[ps_erai]]]]
+                source = "ERAI"
+        [[[GapFillFromClimatology]]]
+            [[[[ps_cli]]]]
+                method = "interpolated daily"
+        [[[MergeSeries]]]
+            Source     = "['ps','ps_aws','ps_erai','ps_cli']"
+    [[Sws]]
+        [[[GapFillFromAlternate]]]
+            [[[[Sws_erai]]]]
+                source = "ERAI"
+                lag = "no"
+        [[[MergeSeries]]]
+            Source     = "['Sws','Sws_erai']"
+    [[Ta]]
+        [[[GapFillFromAlternate]]]
+            [[[[Ta_aws]]]]
+                source = "AWS"
+            [[[[Ta_erai]]]]
+                source = "ERAI"
+        [[[GapFillFromClimatology]]]
+            [[[[Ta_cli]]]]
+                method = "interpolated daily"
+        [[[MergeSeries]]]
+            Source     = "['Ta','Ta_aws','Ta_erai','Ta_cli']"
+    [[Ts]]
+        [[[GapFillFromAlternate]]]
+            [[[[Ts_erai]]]]
+                source = "ERAI"
+        [[[GapFillFromClimatology]]]
+            [[[[Ts_cli]]]]
+                method = "interpolated daily"
+        [[[MergeSeries]]]
+            Source     = "['Ts','Ts_erai','Ts_cli']"
+    [[Ws]]
+        [[[GapFillFromAlternate]]]
+            [[[[Ws_aws]]]]
+                source = "AWS"
+                fit = "ols_thru0"
+                lag = "no"
+            [[[[Ws_erai]]]]
+                source = "ERAI"
+                fit = "ols_thru0"
+                lag = "no"
+        [[[GapFillFromClimatology]]]
+            [[[[Ws_cli]]]]
+                method = "interpolated daily"
+        [[[MergeSeries]]]
+            Source     = "['Ws','Ws_aws','Ws_erai','Ws_cli']"
+    [[Wd]]
+        [[[GapFillFromAlternate]]]
+            [[[[Wd_aws]]]]
+                source = "AWS"
+                fit = "replace"
+                lag = "no"
+            [[[[Wd_erai]]]]
+                source = "ERAI"
+                fit = "replace"
+                lag = "no"
+        [[[GapFillFromClimatology]]]
+            [[[[Wd_cli]]]]
+                method = "interpolated daily"
+        [[[MergeSeries]]]
+            Source     = "['Wd','Wd_aws','Wd_erai','Wd_cli']"
+    [[Precip]]
+        [[[GapFillFromAlternate]]]
+            [[[[Precip_aws]]]]
+                source = "AWS"
+                fit = "replace"
+                lag = "no"
+            [[[[Precip_erai]]]]
+                source = "ERAI"
+                fit = "replace"
+                lag = "no"
+        [[[MergeSeries]]]
+            Source     = "['Precip','Precip_aws','Precip_erai']"
+        [[[RangeCheck]]]
+            Lower      = "[0]*12"
+            Upper      = "[50]*12"

@@ -1,0 +1,14 @@
+[Files]
+    [[Out]]
+        ncFileName = ../OzFlux/Sites/Warra/Data/Portal/Warra_L3.nc
+    [[In]]
+        0 = ../OzFlux/Sites/Warra/Data/Portal/Warra_2013_L3.nc
+        1 = ../OzFlux/Sites/Warra/Data/Portal/Warra_2014_L3.nc
+        2 = ../OzFlux/Sites/Warra/Data/Portal/Warra_2015_Feb_to_Dec_L3.nc
+        3 = ../OzFlux/Sites/Warra/Data/Portal/Warra_2016_L3.nc
+        4 = ../OzFlux/Sites/Warra/Data/Portal/Warra_2017_L3.nc
+
+[Options]
+    NumberOfDimensions = 3                       # number of dimensions for output netCDF file
+    MaxGapInterpolate  = 0                       # maximum gap length (hours) for filling by interpolation
+    FixTimeStepMethod  = round                   # interpolate/round

@@ -1,0 +1,41 @@
+[Variables]
+    [[Fsd]]
+        AltVarName = "Fsd"
+    [[Fsu]]
+        AltVarName = "Fsu"
+    [[Fld]]
+        AltVarName = "Fld"
+    [[Flu]]
+        AltVarName = "Flu"
+    [[Fn]]
+        AltVarName = "Fn"
+    [[Fa]]
+        AltVarName = "Fa"
+    [[ps]]
+        AltVarName = "ps"
+    [[Ta]]
+        AltVarName = "Ta"
+    [[Ah]]
+        AltVarName = "Ah"
+    [[RH]]
+        AltVarName = "RH"
+    [[Cc]]
+        AltVarName = "Cc"
+    [[Ts]]
+        AltVarName = "Ts"
+    [[Fg]]
+        AltVarName = "Fg"
+    [[Sws]]
+        AltVarName = "Sws"
+    [[Ws]]
+        AltVarName = "Ws"
+    [[Wd]]
+        AltVarName = "Wd"
+    [[Fh]]
+        AltVarName = "Fh"
+    [[Fe]]
+        AltVarName = "Fe"
+    [[Fc]]
+        AltVarName = "Fc"
+    [[ustar]]
+        AltVarName = "ustar"

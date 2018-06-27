@@ -1,0 +1,5 @@
+[Files]
+    xl_file_path = /home/peter/OzFlux/Sites/site_master.xls
+    sheet_name = Active
+    cf_base_path = /home/peter/PyFluxPro/controlfiles/OzFlux/REddyProc/L1/
+    nc_base_path = /home/peter/OzFlux/Sites/

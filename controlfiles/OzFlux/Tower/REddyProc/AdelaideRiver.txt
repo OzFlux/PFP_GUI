@@ -1,0 +1,33 @@
+[Files]
+    file_path = /home/peter/OzFlux/Sites/AdelaideRiver/Data/Portal/
+    in_filename = AdelaideRiver_L3.nc
+    out_filename = AdelaideRiver_L3_REddyProc.csv
+
+[Variables]
+    [[NEE]]
+        ncname = "Fc"
+        format = "0.00"
+    [[Ustar]]
+        ncname = "ustar"
+        format = "0.00"
+    [[Rg]]
+        ncname = "Fsd"
+        format = "0"
+    [[Tair]]
+        ncname = "Ta"
+        format = "0.00"
+    [[rH]]
+        ncname = "RH"
+        format = "0"
+    [[LE]]
+        ncname = "Fe"
+        format = "0"
+    [[H]]
+        ncname = "Fh"
+        format = "0"
+    [[Tsoil]]
+        ncname = "Ts"
+        format = "0.00"
+    [[VPD]]
+        ncname = "VPD"
+        format = "0.0"

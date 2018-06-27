@@ -1,0 +1,51 @@
+[General]
+    PlotWidth_landscape = 10.9
+    PlotHeight_landscape = 7.5
+    PlotWidth_portrait = 7.5
+    PlotHeight_portrait = 10.9
+
+[Files]
+    file_path = ../Sites/<site_name>/Data/Processed/<year>/
+    in_filename = <site_name>_<year>_L3.nc
+
+[Variables]
+    [[Month]]
+        AltVarName = "Month" 
+    [[Hour]]
+        AltVarName = "Hour"
+    [[Minute]]
+        AltVarName = "Minute"
+    [[Fsd]]
+        AltVarName = "Fsd" 
+    [[Fsu]]
+        AltVarName = "Fsu"
+    [[Flu]]
+        AltVarName = "Flu"
+    [[Fld]]
+        AltVarName = "Fld"
+    [[Fn]]
+        AltVarName = "Fn"
+    [[Fg]]
+        AltVarName = "Fg"
+    [[Fe]]
+        AltVarName = "Fe"
+    [[Fh]]
+        AltVarName = "Fh"
+    [[Fc]]
+        AltVarName = "Fc"
+    [[ustar]]
+        AltVarName = "ustar"
+    [[Ta]]
+        AltVarName = "Ta"
+    [[H2O]]
+        AltVarName = "Ah"
+    [[CO2]]
+        AltVarName = "Cc"
+    [[Precip]]
+        AltVarName = "Precip"
+    [[Ws]]
+        AltVarName = "Ws"
+    [[Sws]]
+        AltVarName = "Sws"
+    [[Ts]]
+        AltVarName = "Ts"

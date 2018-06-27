@@ -1,0 +1,36 @@
+[Options]
+    #levels = "['L1','L2','L3','concatenate','climatology','cpd','L4','L5','L6']"
+    levels = "['L1']"
+
+[Levels]
+   [[L1]]
+       0 = 'controlfiles/OzFlux/DINGO/L1/AdelaideRiver.txt'
+       1 = 'controlfiles/OzFlux/DINGO/L1/AliceSpringsMulga.txt'
+       2 = 'controlfiles/OzFlux/DINGO/L1/Calperum.txt'
+       3 = 'controlfiles/OzFlux/DINGO/L1/CapeTribulation.txt'
+       4 = 'controlfiles/OzFlux/DINGO/L1/CowBay.txt'
+       5 = 'controlfiles/OzFlux/DINGO/L1/CumberlandPlain.txt'
+       6 = 'controlfiles/OzFlux/DINGO/L1/DalyPasture.txt'
+       7 = 'controlfiles/OzFlux/DINGO/L1/DalyUncleared.txt'
+       8 = 'controlfiles/OzFlux/DINGO/L1/Dargo.txt'
+       9 = 'controlfiles/OzFlux/DINGO/L1/DryRiver.txt'
+       10 = 'controlfiles/OzFlux/DINGO/L1/Emerald.txt'
+       11 = 'controlfiles/OzFlux/DINGO/L1/FoggDam.txt'
+       12 = 'controlfiles/OzFlux/DINGO/L1/Gingin.txt'
+       13 = 'controlfiles/OzFlux/DINGO/L1/GreatWesternWoodlands.txt'
+       14 = 'controlfiles/OzFlux/DINGO/L1/HowardSprings.txt'
+       15 = 'controlfiles/OzFlux/DINGO/L1/Litchfield.txt'
+       16 = 'controlfiles/OzFlux/DINGO/L1/Nimmo.txt'
+       17 = 'controlfiles/OzFlux/DINGO/L1/RedDirtMelonFarm.txt'
+       18 = 'controlfiles/OzFlux/DINGO/L1/Ridgefield.txt'
+       19 = 'controlfiles/OzFlux/DINGO/L1/RiggsCreek.txt'
+       20 = 'controlfiles/OzFlux/DINGO/L1/RobsonCreek.txt'
+       21 = 'controlfiles/OzFlux/DINGO/L1/Samford.txt'
+       22 = 'controlfiles/OzFlux/DINGO/L1/SturtPlains.txt'
+       23 = 'controlfiles/OzFlux/DINGO/L1/TiTreeEast.txt'
+       24 = 'controlfiles/OzFlux/DINGO/L1/Tumbarumba.txt'
+       25 = 'controlfiles/OzFlux/DINGO/L1/WallabyCreek.txt'
+       26 = 'controlfiles/OzFlux/DINGO/L1/Warra.txt'
+       27 = 'controlfiles/OzFlux/DINGO/L1/Whroo.txt'
+       28 = 'controlfiles/OzFlux/DINGO/L1/WombatStateForest.txt'
+       29 = 'controlfiles/OzFlux/DINGO/L1/Yanco.txt'

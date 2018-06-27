@@ -1,0 +1,78 @@
+[Files]
+    file_path       = ../OzFlux/Sites/SturtPlains/Data/DINGO/V13/
+    in_filename     = Advanced_processed_data_SturtPlains_v13.csv
+    in_headerrow    = 1
+    in_firstdatarow = 2
+    out_filename    = SturtPlains_L6.nc
+
+[Global] 
+		latitude       = -17.15090
+		longitude      = 133.35055
+    site_name      = "Sturt Plains" 
+ 		time_step      = 30
+ 		time_zone      = "Australia/Darwin"
+
+[Variables]
+    [[DateTime]]
+        [[[Function]]]
+            func = """DateTimeFromTimeStamp(TimeStamp)"""
+    [[TimeStamp]]
+        [[[csv]]]
+            name     = DT
+        [[[Attr]]]
+            long_name     = "Date/time in Excel format"
+            units         = "days"
+    [[Fsd]]
+        [[[csv]]]
+            name     = Fsd
+        [[[Attr]]]
+            long_name = "Downwelling shortwave radiation"
+            units = "W/m2"
+    [[NEE]]
+        [[[csv]]]
+            name     = Fc_ustar
+        [[[Attr]]]
+            long_name = "Net ecosystem exchange"
+            units = "umol/m2/s"
+    [[ER]]
+        [[[csv]]]
+            name     = Fre_Con
+        [[[Attr]]]
+            long_name = "Ecosystem respiration"
+            units = "umol/m2/s"
+    [[GPP]]
+        [[[csv]]]
+            name     = GPP_Con
+        [[[Attr]]]
+            long_name = "Gross primary productivity"
+            units = "umol/m2/s"
+    [[Fe]]
+        [[[csv]]]
+            name     = Fe_Con
+        [[[Attr]]]
+            long_name = "Latent heat flux"
+            units = "W/m2"
+    [[Fh]]
+        [[[csv]]]
+            name     = Fh_Con
+        [[[Attr]]]
+            long_name = "sensible heat flux"
+            units = "W/m2"
+    [[Fn]]
+        [[[csv]]]
+            name     = Fn_Con
+        [[[Attr]]]
+            long_name = "Net radiation"
+            units = "W/m2"
+    [[Fg]]
+        [[[csv]]]
+            name     = Fg_Con
+        [[[Attr]]]
+            long_name = "Ground heat flux"
+            units = "W/m2"
+    [[Precip]]
+        [[[csv]]]
+            name     = Precip_Con
+        [[[Attr]]]
+            long_name = "Precipitation"
+            units = "mm"

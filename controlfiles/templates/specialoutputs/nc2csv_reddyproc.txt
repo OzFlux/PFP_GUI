@@ -1,0 +1,30 @@
+[Files]
+    file_path = ../Sites/<site_name>/Data/Processed/<year>/
+    in_filename = <site_name>_<year>_L3.nc
+    out_filename = <site_name>_<year>_FluxNet.csv
+
+[Variables]
+    [[NEE]]
+        ncname = "Fc"
+        format = "0.00"
+    [[Ustar]]
+        ncname = "ustar"
+        format = "0.00"
+    [[Rg]]
+        ncname = "Fsd"
+        format = "0"
+    [[Tair]]
+        ncname = "Ta"
+        format = "0.00"
+    [[rH]]
+        ncname = "RH"
+        format = "0"
+    [[LE]]
+        ncname = "Fe"
+        format = "0"
+    [[H]]
+        ncname = "Fh"
+        format = "0"
+    [[Tsoil]]
+        ncname = "Ts"
+        format = "0.00"

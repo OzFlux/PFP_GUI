@@ -1,0 +1,299 @@
+[Files]
+    file_path = /home/peter/OzFlux/Sites/CumberlandPlain/Data/Tower/2017/
+    in_filename =  CumberlandPlain_2017_L1.nc
+    out_filename =  CumberlandPlain_2017_L2.nc
+
+[Output]
+
+[Variables]
+# Radiation
+    [[Fn_NR]]
+        [[[RangeCheck]]]
+            Lower      = "[-100]*12"
+            Upper      = "[1000]*12"
+    [[Fld]]
+        [[[RangeCheck]]]
+            Lower      = "[250]*12"
+            Upper      = "[700]*12"
+    [[Flu]]
+        [[[RangeCheck]]]
+            Lower      = "[300]*12"
+            Upper      = "[700]*12"
+    [[Fsu]]
+        [[[RangeCheck]]]
+            Lower      = "[-10]*12"
+            Upper      = "[500]*12"
+    [[Fsd]]
+        [[[RangeCheck]]]
+            Lower      = "[-10]*12"
+            Upper      = "[1500]*12"
+	  [[TotalSS]]
+        [[[RangeCheck]]]
+            Lower      = "[-10]*12"
+            Upper      = "[2500]*12"
+    [[DiffuseSS]]
+        [[[RangeCheck]]]
+            Lower      = "[-10]*12"
+            Upper      = "[2500]*12"
+# Temperature covariances
+    [[UzT]]
+        [[[RangeCheck]]]
+            Lower      = "[-0.2]*12"
+            Upper      = "[1]*12"
+    [[UxT]]
+        [[[RangeCheck]]]
+            Lower      = "[-2]*12"
+            Upper      = "[2]*12"
+    [[UyT]]
+        [[[RangeCheck]]]
+            Lower      = "[-2]*12"
+            Upper      = "[2]*12"
+# H2O covarinaces
+    [[UzA]]
+        [[[RangeCheck]]]
+            Lower      = "[-0.01]*12"
+            Upper      = "[0.5]*12"
+    [[UxA]]
+        [[[RangeCheck]]]
+            Lower      = "[-1]*12"
+            Upper      = "[1]*12"
+    [[UyA]]
+        [[[RangeCheck]]]
+            Lower      = "[-1]*12"
+            Upper      = "[1]*12"
+# CO2 covariances
+    [[UzC]]
+        [[[RangeCheck]]]
+            Lower      = "[-2]*12"
+            Upper      = "[2]*12"
+    [[UxC]]
+        [[[RangeCheck]]]
+            Lower      = "[-4]*12"
+            Upper      = "[4]*12"
+    [[UyC]]
+        [[[RangeCheck]]]
+            Lower      = "[-4]*12"
+            Upper      = "[4]*12"
+# momentum covariances and variances
+    [[UxUz]]
+        [[[RangeCheck]]]
+            Lower      = "[-10]*12"
+            Upper      = "[10]*12"
+    [[UyUz]]
+        [[[RangeCheck]]]
+            Lower      = "[-10]*12"
+            Upper      = "[10]*12"
+    [[UxUy]]
+        [[[RangeCheck]]]
+            Lower      = "[-1]*12"
+            Upper      = "[1]*12"
+    [[UxUx]]
+        [[[RangeCheck]]]
+            Lower      = "[-10]*12"
+            Upper      = "[10]*12"
+    [[UyUy]]
+        [[[RangeCheck]]]
+            Lower      = "[-10]*12"
+            Upper      = "[10]*12"
+# Meteorology
+    [[CO2_IRGA_Av]]
+        [[[RangeCheck]]]
+            Lower      = "[500]*12"
+            Upper      = "[2000]*12"
+    [[H2O_IRGA_Av]]
+        [[[RangeCheck]]]
+            Lower      = "[0]*12"
+            Upper      = "[35]*12"
+    [[Ah_HMP_7m]]
+        [[[RangeCheck]]]
+            Lower      = "[0]*12"
+            Upper      = "[30]*12"
+    [[Ah_HMP_30m]]
+        [[[RangeCheck]]]
+            Lower      = "[0]*12"
+            Upper      = "[30]*12"
+    [[Tv_SONIC_Av]]
+        [[[RangeCheck]]]
+            Lower      = "[0]*12"
+            Upper      = "[50]*12"
+    [[Ta_HMP_7m]]
+        [[[RangeCheck]]]
+            Lower      = "[0]*12"
+            Upper      = "[50]*12"
+    [[Ta_HMP_30m]]
+        [[[RangeCheck]]]
+            Lower      = "[0]*12"
+            Upper      = "[50]*12"
+# Standard deviation of H2O and CO2 concentrations, used for QC checks
+    [[H2O_IRGA_Sd]]
+        [[[RangeCheck]]]
+            Lower      = "[0]*12"
+            Upper      = "[5]*12"
+    [[CO2_IRGA_Sd]]
+        [[[RangeCheck]]]
+            Lower      = "[0]*12"
+            Upper      = "[200]*12"
+# Precipitation
+    [[Precip]]
+        [[[RangeCheck]]]
+            Lower      = "[0]*12"
+            Upper      = "[50]*12"
+# Wind speed and direction
+    [[Wd_WS4]]
+        [[[RangeCheck]]]
+            Lower      = "[0]*12"
+            Upper      = "[360]*12"
+    [[Ws_WS4]]
+        [[[RangeCheck]]]
+            Lower      = "[0]*12"
+            Upper      = "[20]*12"
+    [[Wd_SONIC]]
+        [[[RangeCheck]]]
+            Lower      = "[0]*12"
+            Upper      = "[360]*12"
+    [[Ws_SONIC]]
+        [[[RangeCheck]]]
+            Lower      = "[0]*12"
+            Upper      = "[20]*12"
+    [[Ux]]
+        [[[RangeCheck]]]
+            Lower      = "[-20]*12"
+            Upper      = "[20]*12"
+    [[Uy]]
+        [[[RangeCheck]]]
+            Lower      = "[-20]*12"
+            Upper      = "[20]*12"
+    [[Uz]]
+        [[[RangeCheck]]]
+            Lower      = "[-1]*12"
+            Upper      = "[1]*12"
+# Pressure
+    [[ps]]
+        [[[RangeCheck]]]
+            Lower      = "[95]*12"
+            Upper      = "[105]*12"
+# Soil: Ground heat flux
+    [[Fg_8cma]]
+        [[[RangeCheck]]]
+            Lower      = "[-100]*12"
+            Upper      = "[100]*12"
+# Soil: Soil moisture
+    [[Sws_8cma]]
+        [[[RangeCheck]]]
+            Lower      = "[0.05]*12"
+            Upper      = "[0.6]*12"	
+    [[Sws_8cmb]]
+        [[[RangeCheck]]]
+            Lower      = "[0.05]*12"
+            Upper      = "[0.6]*12"		
+    [[Sws_20cma]]
+        [[[RangeCheck]]]
+            Lower      = "[0.05]*12"
+            Upper      = "[0.9]*12"					
+    [[Sws_20cmb]]
+        [[[RangeCheck]]]
+            Lower      = "[0.05]*12"
+            Upper      = "[0.9]*12"			
+# Soil: Soil temperature
+    [[Ts_8cma]]
+        [[[RangeCheck]]]
+            Lower      = "[0]*12"
+            Upper      = "[60]*12"		
+    [[Ts_20cma]]
+        [[[RangeCheck]]]
+            Lower      = "[0]*12"
+            Upper      = "[60]*12"			
+    [[Ts_20cmb]]
+        [[[RangeCheck]]]
+            Lower      = "[0]*12"
+            Upper      = "[60]*12"		
+    [[Ts_0cma]]
+        [[[RangeCheck]]]
+            Lower      = "[0]*12"
+            Upper      = "[60]*12"		
+# CSAT and IRGA diagnostics
+    [[Diag_SONIC]]
+        [[[RangeCheck]]]
+            Lower      = "[-0.5]*12"
+            Upper      = "[300]*12"
+    [[Diag_IRGA]]
+        [[[RangeCheck]]]
+            Lower      = "[-0.5]*12"
+            Upper      = "[10.5]*12"
+    [[AGC_IRGA]]
+        [[[RangeCheck]]]
+            Lower      = "[-0.5]*12"
+            Upper      = "[0.5]*12"
+# EddyPro output and Storage
+# Use moderate AGC filter and Fokken QC of 0, 1
+    [[Fc_EP]]
+        [[[RangeCheck]]]
+            Lower      = "[-50]*12"
+            Upper      = "[50]*12"  # was 20
+    [[Fe_EP]]
+        [[[RangeCheck]]]
+            Lower      = "[-50]*12"
+            Upper      = "[600]*12"
+    [[Fh_EP]]
+        [[[RangeCheck]]]
+            Lower      = "[-100]*12"
+            Upper      = "[600]*12"
+    [[Fm_EP]]
+        [[[RangeCheck]]]
+            Lower      = "[-1]*12"
+            Upper      = "[10]*12"
+    [[ustar_EP]]
+        [[[RangeCheck]]]
+            Lower      = "[0]*12"
+            Upper      = "[5]*12"
+    [[Fc_profile]]
+        [[[RangeCheck]]]
+            Lower      = "[-50]*12"
+            Upper      = "[50]*12"  #was 20
+        [[[DependencyCheck]]]
+            Source     = "['qc_Sc']"	
+    [[qc_Sc]]
+        [[[RangeCheck]]]
+            Lower      = "[-0.5]*12"
+            Upper      = "[1.5]*12"  
+
+[Plots]
+    [[1]]
+        Title = "Radiative fluxes"
+        Variables = "['Fsd','Fsu','Fld','Flu','Fn_NR','TotalSS','DiffuseSS']"
+
+    [[2]]
+        Title = "Covariances (CSAT)"
+        Variables = "['UzT','UxT','UyT','UxUz','UyUz','UxUy','UxUx','UyUy']"
+    [[3]]
+        Title = "Covariances (CSAT&7500)"
+        Variables = "['UzA','UxA','UyA','UzC','UxC','UyC']"
+    [[4]]
+        Title = "Air temperature, humidity and CO2"
+        Variables = "['Ta_HMP_7m','Tv_SONIC_Av','Ah_HMP_7m','Ah_HMP_30m','Ta_HMP_30m','H2O_IRGA_Av','CO2_IRGA_Av']"
+    [[5]]
+        Title = "Rainfall and diagnostics"
+        Variables = "['Precip','H2O_IRGA_Sd','CO2_IRGA_Sd','Diag_IRGA','Diag_SONIC']"
+    [[6]]
+        Title = "Soil temperature and heat flux"
+        Variables = "['Ts_8cma','Ts_20cma','Ts_20cmb','Ts_0cma','Fg_8cma']"
+    [[7]]
+        Title = "Soil moisture"
+        Variables = "['Sws_8cma','Sws_8cmb','Sws_20cma','Sws_20cmb']"
+    [[8]]
+        Title = "Pressure, wind components and rainfall"
+        Variables = "['ps','Ux','Uy','Uz','Precip','Vbat','Tpanel']"
+    [[9]]
+        Title = "Wind speed and direction"
+        Variables = "['Ws_SONIC','Ws_WS4','Wd_SONIC','Wd_WS4']"
+    [[10]]
+        Title = "CO2 Storage"
+        Variables = "['Fc_profiler','Fc_storage','Fe_storage_b4merge','qc_Sc']"
+    [[11]]
+        Title = "EddyPro fluxes"
+        Variables = "['Fc_EP','Fe_EP','Fh_EP','ustar_EP']"
+    [[12]]
+        Title = "xy plots:  Ah"
+	      Type = xy
+        XSeries = "['Ah_HMP_30m']"
+        YSeries = "['H2O_IRGA_Av']"
