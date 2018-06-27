@@ -407,11 +407,14 @@ class pfp_main_ui(QtGui.QWidget, QPlainTextEditLogger):
     def run_current(self):
         # save the current tab index
         tab_index_current = self.tabs.tab_index_current
+        # get the updated control file data
+        cfg = self.tabs.tab_dict[tab_index_current].get_data()
         # set the focus back to the log tab
         self.tabs.setCurrentIndex(0)
         # call the appropriate processing routine depending on the level
         if self.tabs.cfg_dict[tab_index_current]["level"] == "L1":
-            pfp_top_level.do_run_l1(cfg=self.tabs.cfg_dict[tab_index_current])
+            #pfp_top_level.do_run_l1(cfg=self.tabs.cfg_dict[tab_index_current])
+            pfp_top_level.do_run_l1(cfg=cfg)
         elif self.tabs.cfg_dict[tab_index_current]["level"] == "L2":
             pfp_top_level.do_run_l2(cfg=self.tabs.cfg_dict[tab_index_current])
         elif self.tabs.cfg_dict[tab_index_current]["level"] == "L3":

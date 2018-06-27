@@ -1,0 +1,49 @@
+# python files
+*.pyc
+
+# log files
+logfiles/
+utilities/logfiles/
+
+# solo files
+solo/bin/sofm
+solo/bin/solo
+solo/bin/seqsolo
+solo/output/
+solo/inf/sofm.inf
+solo/inf/solo.inf
+solo/inf/seqsolo.inf
+solo/input/
+solo/log/
+
+# mpt files
+mpt/bin/ustar_mp
+mpt/input/
+mpt/log/
+mpt/output/
+
+# mds files
+mds/bin/gf_mds
+mds/input/
+mds/log/
+mds/output/
+
+# control files
+controlfiles/AmeriFlux/
+controlfiles/OzFlux/
+
+# Jupyter notebook files
+ipynb/
+
+# plots
+plots/
+
+# stashed files
+stash/
+
+# mac files
+.DS_store
+
+# exception for .gitignore
+!.gitignore
+!.gitattributes
