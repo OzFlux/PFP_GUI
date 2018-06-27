@@ -23,6 +23,7 @@ class edit_cfg_L1L2L3(QtGui.QWidget):
         self.tree.setSelectionBehavior(QtGui.QAbstractItemView.SelectItems)
 
         self.tree.model().setHorizontalHeaderLabels(['Parameter', 'Value'])
+        self.tree.model().itemChanged.connect(self.handleItemChanged)
 
         for key1 in self.cfg_mod:
             if not self.cfg_mod[key1]:
@@ -59,6 +60,20 @@ class edit_cfg_L1L2L3(QtGui.QWidget):
                 self.tree.model().appendRow(parent1)
 
         self.tree.expandAll()
+
+    def handleItemChanged(self, item):
+        first_level = ["Files", "Global", "Output", "General", "Options", "Soil", "Massman"]
+        if str(item.parent().text()) in first_level:
+            parent = self.cfg_mod[str(item.parent().text())]
+            key = str(item.parent().child(item.row(), 0).text())
+            parent[key] = type(parent[key])(item.text())
+        else:
+            key1 = str(item.parent().parent().parent().text())
+            key2 = str(item.parent().parent().text())
+            key3 = str(item.parent().text())
+            parent = self.cfg_mod[key1][key2][key3]
+            key = str(item.parent().child(item.row(), 0).text())
+            parent[key] = type(parent[key])(item.text())
 
     def get_data(self):
         return self.cfg_mod
