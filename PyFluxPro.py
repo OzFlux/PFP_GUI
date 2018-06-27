@@ -70,7 +70,7 @@ class pfp_main_ui(QtGui.QWidget, QPlainTextEditLogger):
         self.actionFileSave.setShortcut('Ctrl+S')
         self.actionFileSaveAs = QtGui.QAction(self)
         self.actionFileSaveAs.setText("Save As...")
-        self.actionFileSaveAs.setShortcut('Ctrl+A')
+        self.actionFileSaveAs.setShortcut('Shift+Ctrl+S')
         self.actionFileConcatenate = QtGui.QAction(self)
         self.actionFileConcatenate.setText("Concatenate")
         self.actionFileSplit = QtGui.QAction(self)
@@ -251,11 +251,11 @@ class pfp_main_ui(QtGui.QWidget, QPlainTextEditLogger):
         # get the control file path
         cfgpath = QtGui.QFileDialog.getOpenFileName(caption="Choose a control file ...")
         # read the contents of the control file
-        self.cfg = ConfigObj(str(cfgpath))
+        self.cfg = ConfigObj(str(cfgpath), indent_type="    ")
         self.cfg["level"] = self.get_cf_level()
         # create a QtTreeView to edit the control file
         if self.cfg["level"] in ["L1", "L2", "L3"]:
-            self.tabs.tab_dict[self.tabs.tab_index_all] = pfp_gui.edit_cfg_L1L2L3(self.cfg)
+            self.tabs.tab_dict[self.tabs.tab_index_all] = pfp_gui.edit_cfg_L1L2L3(self)
             self.tabs.cfg_dict[self.tabs.tab_index_all] = self.tabs.tab_dict[self.tabs.tab_index_all].get_data()
             self.tabs.cfg_dict[self.tabs.tab_index_all]["controlfile_name"] = cfgpath
         elif self.cfg["level"] in ["concatenate"]:
@@ -390,12 +390,35 @@ class pfp_main_ui(QtGui.QWidget, QPlainTextEditLogger):
         return result
 
     def save_controlfile(self):
-        print "Save goes here"
-        pass
+        """ Save the current tab as a control file."""
+        # get the current tab index
+        tab_index_current = self.tabs.tab_index_current
+        # get the updated control file data
+        cfg = self.tabs.tab_dict[tab_index_current].get_data()
+        # strip out the redundant control file name
+        cfg.pop("controlfile_name", None)
+        # write the control file
+        cfg.write()
+        # remove the asterisk in the tab text
+        tab_text = str(self.tabs.tabText(tab_index_current))
+        self.tabs.setTabText(self.tabs.tab_index_current, tab_text.replace("*",""))
 
     def saveas_controlfile(self):
-        print "Save As goes here"
-        pass
+        """ Save the current tab with a different name."""
+        # get the current tab index
+        tab_index_current = self.tabs.tab_index_current
+        # get the updated control file data
+        cfg = self.tabs.tab_dict[tab_index_current].get_data()
+        # strip out the redundant control file name
+        cfg.pop("controlfile_name", None)
+        # put up a "Save as ..." dialog
+        cfgpath = QtGui.QFileDialog.getSaveFileName(self, "Save as ...")
+        # set the control file name
+        cfg.filename = str(cfgpath)
+        # write the control file
+        cfg.write()
+        # update the tab text
+        self.tabs.setTabText(tab_index_current, os.path.basename(str(cfgpath)))
 
     def edit_preferences(self):
         print "Edit/Preferences goes here"
@@ -413,16 +436,15 @@ class pfp_main_ui(QtGui.QWidget, QPlainTextEditLogger):
         self.tabs.setCurrentIndex(0)
         # call the appropriate processing routine depending on the level
         if self.tabs.cfg_dict[tab_index_current]["level"] == "L1":
-            #pfp_top_level.do_run_l1(cfg=self.tabs.cfg_dict[tab_index_current])
             pfp_top_level.do_run_l1(cfg=cfg)
         elif self.tabs.cfg_dict[tab_index_current]["level"] == "L2":
-            pfp_top_level.do_run_l2(cfg=self.tabs.cfg_dict[tab_index_current])
+            pfp_top_level.do_run_l2(cfg=cfg)
         elif self.tabs.cfg_dict[tab_index_current]["level"] == "L3":
-            pfp_top_level.do_run_l3(cfg=self.tabs.cfg_dict[tab_index_current])
+            pfp_top_level.do_run_l3(cfg=cfg)
         elif self.tabs.cfg_dict[tab_index_current]["level"] == "concatenate":
-            pfp_top_level.do_file_concatenate(cfg=self.tabs.cfg_dict[tab_index_current])
+            pfp_top_level.do_file_concatenate(cfg=cfg)
         elif self.tabs.cfg_dict[tab_index_current]["level"] == "L4":
-            pfp_top_level.do_run_l4(self, cfg=self.tabs.cfg_dict[tab_index_current])
+            pfp_top_level.do_run_l4(self, cfg=cfg)
         else:
             logger.error("Level not implemented yet ...")
 
