@@ -4,11 +4,12 @@ import copy
 from PyQt4 import QtCore, QtGui
 
 class edit_cfg_L1L2L3(QtGui.QWidget):
-    def __init__(self, cfg):
+    def __init__(self, main_gui):
 
         super(edit_cfg_L1L2L3, self).__init__()
 
-        self.cfg_mod = copy.deepcopy(cfg)
+        self.cfg_mod = copy.deepcopy(main_gui.cfg)
+        self.tabs = main_gui.tabs
         # Layout
         self.tree = QtGui.QTreeView()
         vbox = QtGui.QVBoxLayout()
@@ -62,6 +63,10 @@ class edit_cfg_L1L2L3(QtGui.QWidget):
         self.tree.expandAll()
 
     def handleItemChanged(self, item):
+        # add an asterisk to the tab text to indicate the tab contents have changed
+        tab_text = str(self.tabs.tabText(self.tabs.tab_index_current))
+        if "*" not in tab_text:
+            self.tabs.setTabText(self.tabs.tab_index_current, tab_text+"*")
         first_level = ["Files", "Global", "Output", "General", "Options", "Soil", "Massman"]
         if str(item.parent().text()) in first_level:
             parent = self.cfg_mod[str(item.parent().text())]
