@@ -256,15 +256,15 @@ class pfp_main_ui(QtGui.QWidget, QPlainTextEditLogger):
         # create a QtTreeView to edit the control file
         if self.cfg["level"] in ["L1", "L2", "L3"]:
             self.tabs.tab_dict[self.tabs.tab_index_all] = pfp_gui.edit_cfg_L1L2L3(self)
-            self.tabs.cfg_dict[self.tabs.tab_index_all] = self.tabs.tab_dict[self.tabs.tab_index_all].get_data()
+            self.tabs.cfg_dict[self.tabs.tab_index_all] = self.tabs.tab_dict[self.tabs.tab_index_all].get_data_from_model()
             self.tabs.cfg_dict[self.tabs.tab_index_all]["controlfile_name"] = cfgpath
         elif self.cfg["level"] in ["concatenate"]:
             self.tabs.tab_dict[self.tabs.tab_index_all] = pfp_gui.edit_cfg_concatenate(self.cfg)
-            self.tabs.cfg_dict[self.tabs.tab_index_all] = self.tabs.tab_dict[self.tabs.tab_index_all].get_data()
+            self.tabs.cfg_dict[self.tabs.tab_index_all] = self.tabs.tab_dict[self.tabs.tab_index_all].get_data_from_model()
             self.tabs.cfg_dict[self.tabs.tab_index_all]["controlfile_name"] = cfgpath
         elif self.cfg["level"] in ["L4"]:
             self.tabs.tab_dict[self.tabs.tab_index_all] = pfp_gui.edit_cfg_L4(self.cfg)
-            self.tabs.cfg_dict[self.tabs.tab_index_all] = self.tabs.tab_dict[self.tabs.tab_index_all].get_data()
+            self.tabs.cfg_dict[self.tabs.tab_index_all] = self.tabs.tab_dict[self.tabs.tab_index_all].get_data_from_model()
             self.tabs.cfg_dict[self.tabs.tab_index_all]["controlfile_name"] = cfgpath
         elif self.cfg["level"] in ["L5", "L6"]:
             logger.error(" Level "+self.cfg["level"]+" not implemented yet")
@@ -394,7 +394,7 @@ class pfp_main_ui(QtGui.QWidget, QPlainTextEditLogger):
         # get the current tab index
         tab_index_current = self.tabs.tab_index_current
         # get the updated control file data
-        cfg = self.tabs.tab_dict[tab_index_current].get_data()
+        cfg = self.tabs.tab_dict[tab_index_current].get_data_from_model()
         # strip out the redundant control file name
         cfg.pop("controlfile_name", None)
         # write the control file
@@ -408,7 +408,7 @@ class pfp_main_ui(QtGui.QWidget, QPlainTextEditLogger):
         # get the current tab index
         tab_index_current = self.tabs.tab_index_current
         # get the updated control file data
-        cfg = self.tabs.tab_dict[tab_index_current].get_data()
+        cfg = self.tabs.tab_dict[tab_index_current].get_data_from_model()
         # strip out the redundant control file name
         cfg.pop("controlfile_name", None)
         # put up a "Save as ..." dialog
@@ -431,7 +431,7 @@ class pfp_main_ui(QtGui.QWidget, QPlainTextEditLogger):
         # save the current tab index
         tab_index_current = self.tabs.tab_index_current
         # get the updated control file data
-        cfg = self.tabs.tab_dict[tab_index_current].get_data()
+        cfg = self.tabs.tab_dict[tab_index_current].get_data_from_model()
         # set the focus back to the log tab
         self.tabs.setCurrentIndex(0)
         # call the appropriate processing routine depending on the level

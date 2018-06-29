@@ -10,78 +10,126 @@ class edit_cfg_L1L2L3(QtGui.QWidget):
 
         self.cfg_mod = copy.deepcopy(main_gui.cfg)
         self.tabs = main_gui.tabs
-        # Layout
+        # get a QTreeView
         self.tree = QtGui.QTreeView()
+        # set the context menu policy
+        self.tree.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
+        # connect the context menu requested signal to appropriate slot
+        self.tree.customContextMenuRequested.connect(self.openMenu)
         vbox = QtGui.QVBoxLayout()
         vbox.addWidget(self.tree)
         self.setLayout(vbox)
         self.setGeometry(300, 300, 600, 400)
         # Tree view
-        self.tree.setModel(QtGui.QStandardItemModel())
         self.tree.setAlternatingRowColors(True)
         self.tree.setSortingEnabled(True)
         self.tree.setHeaderHidden(False)
         self.tree.setSelectionBehavior(QtGui.QAbstractItemView.SelectItems)
 
+    def get_model_from_data(self):
+        """ Build the data model."""
+        self.tree.setModel(QtGui.QStandardItemModel())
         self.tree.model().setHorizontalHeaderLabels(['Parameter', 'Value'])
         self.tree.model().itemChanged.connect(self.handleItemChanged)
-
+        # there must be some way to do this recursively
         for key1 in self.cfg_mod:
             if not self.cfg_mod[key1]:
                 continue
             if key1 in ["Files", "Global", "Output", "General", "Options", "Soil", "Massman"]:
                 parent = QtGui.QStandardItem(key1)
-                parent.setFlags(QtCore.Qt.NoItemFlags)
                 for val in self.cfg_mod[key1]:
                     value = self.cfg_mod[key1][val]
                     child0 = QtGui.QStandardItem(val)
-                    child0.setFlags(QtCore.Qt.NoItemFlags | QtCore.Qt.ItemIsEnabled)
                     child1 = QtGui.QStandardItem(str(value))
-                    child1.setFlags(QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsEditable | ~ QtCore.Qt.ItemIsSelectable)
                     parent.appendRow([child0, child1])
                 self.tree.model().appendRow(parent)
             elif key1 in ["Variables"]:
-                parent1 = QtGui.QStandardItem(key1)
-                parent1.setFlags(QtCore.Qt.NoItemFlags)
+                self.tree.variables = QtGui.QStandardItem(key1)
                 for key2 in self.cfg_mod[key1]:
                     parent2 = QtGui.QStandardItem(key2)
-                    parent2.setFlags(QtCore.Qt.NoItemFlags)
                     for key3 in self.cfg_mod[key1][key2]:
                         parent3 = QtGui.QStandardItem(key3)
-                        parent3.setFlags(QtCore.Qt.NoItemFlags)
                         for val in self.cfg_mod[key1][key2][key3]:
                             value = self.cfg_mod[key1][key2][key3][val]
                             child0 = QtGui.QStandardItem(val)
-                            child0.setFlags(QtCore.Qt.NoItemFlags | QtCore.Qt.ItemIsEnabled)
                             child1 = QtGui.QStandardItem(str(value))
-                            child1.setFlags(QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsEditable | ~ QtCore.Qt.ItemIsSelectable)
                             parent3.appendRow([child0, child1])
                         parent2.appendRow(parent3)
-                    parent1.appendRow(parent2)
-                self.tree.model().appendRow(parent1)
+                    self.tree.variables.appendRow(parent2)
+                self.tree.model().appendRow(self.tree.variables)
 
-        self.tree.expandAll()
+    def get_data_from_model(self):
+        """ Iterate over the model and get the data."""
+        cfg = self.cfg_mod
+        model = self.tree.model()
+        # there must be a way to do this recursively
+        for i in range(model.rowCount()):
+            section = model.item(i)
+            key1 = str(section.text())
+            cfg[key1] = {}
+            if key1 in ["Files", "Global", "Output", "General", "Options", "Soil", "Massman"]:
+                for j in range(section.rowCount()):
+                    key2 = str(section.child(j, 0).text())
+                    val2 = str(section.child(j, 1).text())
+                    cfg[key1][key2] = val2
+            elif key1 in ["Variables"]:
+                for j in range(section.rowCount()):
+                    subsection = section.child(j)
+                    key2 = str(subsection.text())
+                    cfg[key1][key2] = {}
+                    for k in range(subsection.rowCount()):
+                        subsubsection = subsection.child(k)
+                        key3 = str(subsubsection.text())
+                        cfg[key1][key2][key3] = {}
+                        for l in range(subsubsection.rowCount()):
+                            key4 = str(subsubsection.child(l, 0).text())
+                            val4 = str(subsubsection.child(l, 1).text())
+                            cfg[key1][key2][key3][key4] = val4
+        return cfg
 
     def handleItemChanged(self, item):
+        """ Handler for when view items are edited."""
         # add an asterisk to the tab text to indicate the tab contents have changed
         tab_text = str(self.tabs.tabText(self.tabs.tab_index_current))
         if "*" not in tab_text:
             self.tabs.setTabText(self.tabs.tab_index_current, tab_text+"*")
-        first_level = ["Files", "Global", "Output", "General", "Options", "Soil", "Massman"]
-        if str(item.parent().text()) in first_level:
-            parent = self.cfg_mod[str(item.parent().text())]
-            key = str(item.parent().child(item.row(), 0).text())
-            parent[key] = type(parent[key])(item.text())
-        else:
-            key1 = str(item.parent().parent().parent().text())
-            key2 = str(item.parent().parent().text())
-            key3 = str(item.parent().text())
-            parent = self.cfg_mod[key1][key2][key3]
-            key = str(item.parent().child(item.row(), 0).text())
-            parent[key] = type(parent[key])(item.text())
+        # update the control file contents
+        self.cfg_mod = self.get_data_from_model()
 
-    def get_data(self):
-        return self.cfg_mod
+    def openMenu(self, position):
+        """ Right click context menu."""
+        indexes = self.tree.selectedIndexes()
+        if len(indexes) > 0:
+            level = 0
+            index = indexes[0]
+            while index.parent().isValid():
+                index = index.parent()
+                level += 1
+        self.context_menu = QtGui.QMenu()
+        if level == 0:
+            self.context_menu.actionAddVariable = QtGui.QAction(self)
+            self.context_menu.actionAddVariable.setText("Add variable")
+            self.context_menu.addAction(self.context_menu.actionAddVariable)
+            self.context_menu.actionAddVariable.triggered.connect(self.add_variable)
+        elif level == 1:
+            self.context_menu.addAction(self.tr("Add QC check"))
+        #elif level == 2:
+            #menu.addAction(self.tr("Edit object"))
+
+        self.context_menu.exec_(self.tree.viewport().mapToGlobal(position))
+
+    def add_variable(self):
+        new_var_qc = {"RangeCheck":{"Lower":0, "Upper": 1}}
+        parent2 = QtGui.QStandardItem("New variable")
+        for key3 in new_var_qc:
+            parent3 = QtGui.QStandardItem(key3)
+            for val in new_var_qc[key3]:
+                value = new_var_qc[key3][val]
+                child0 = QtGui.QStandardItem(val)
+                child1 = QtGui.QStandardItem(str(value))
+                parent3.appendRow([child0, child1])
+            parent2.appendRow(parent3)
+        self.tree.variables.appendRow(parent2)
 
 class edit_cfg_concatenate(QtGui.QWidget):
     def __init__(self, cfg):
