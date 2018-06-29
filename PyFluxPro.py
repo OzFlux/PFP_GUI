@@ -250,12 +250,23 @@ class pfp_main_ui(QtGui.QWidget, QPlainTextEditLogger):
     def open_controlfile(self):
         # get the control file path
         cfgpath = QtGui.QFileDialog.getOpenFileName(caption="Choose a control file ...")
+        # check to see if file open was cancelled
+        if len(str(cfgpath)) == 0:
+            return
         # read the contents of the control file
         self.cfg = ConfigObj(str(cfgpath), indent_type="    ")
         self.cfg["level"] = self.get_cf_level()
         # create a QtTreeView to edit the control file
-        if self.cfg["level"] in ["L1", "L2", "L3"]:
-            self.tabs.tab_dict[self.tabs.tab_index_all] = pfp_gui.edit_cfg_L1L2L3(self)
+        if self.cfg["level"] in ["L1"]:
+            self.tabs.tab_dict[self.tabs.tab_index_all] = pfp_gui.edit_cfg_L1(self)
+            self.tabs.cfg_dict[self.tabs.tab_index_all] = self.tabs.tab_dict[self.tabs.tab_index_all].get_data_from_model()
+            self.tabs.cfg_dict[self.tabs.tab_index_all]["controlfile_name"] = cfgpath
+        elif self.cfg["level"] in ["L2"]:
+            self.tabs.tab_dict[self.tabs.tab_index_all] = pfp_gui.edit_cfg_L2(self)
+            self.tabs.cfg_dict[self.tabs.tab_index_all] = self.tabs.tab_dict[self.tabs.tab_index_all].get_data_from_model()
+            self.tabs.cfg_dict[self.tabs.tab_index_all]["controlfile_name"] = cfgpath
+        elif self.cfg["level"] in ["L3"]:
+            self.tabs.tab_dict[self.tabs.tab_index_all] = pfp_gui.edit_cfg_L3(self)
             self.tabs.cfg_dict[self.tabs.tab_index_all] = self.tabs.tab_dict[self.tabs.tab_index_all].get_data_from_model()
             self.tabs.cfg_dict[self.tabs.tab_index_all]["controlfile_name"] = cfgpath
         elif self.cfg["level"] in ["concatenate"]:
