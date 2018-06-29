@@ -25,6 +25,8 @@ class edit_cfg_L1L2L3(QtGui.QWidget):
         self.tree.setSortingEnabled(True)
         self.tree.setHeaderHidden(False)
         self.tree.setSelectionBehavior(QtGui.QAbstractItemView.SelectItems)
+        # build the model
+        self.get_model_from_data()
 
     def get_model_from_data(self):
         """ Build the data model."""
