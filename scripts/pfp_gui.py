@@ -10,9 +10,9 @@ class edit_cfg_L1(QtGui.QWidget):
 
         self.cfg_mod = copy.deepcopy(main_gui.cfg)
         self.tabs = main_gui.tabs
-        
+
         self.edit_L1_gui()
-        
+
     def edit_L1_gui(self):
         """ Edit L1 control file GUI."""
         # get a QTreeView
@@ -119,7 +119,10 @@ class edit_cfg_L1(QtGui.QWidget):
             self.context_menu.addAction(self.context_menu.actionAddVariable)
             self.context_menu.actionAddVariable.triggered.connect(self.add_variable)
         elif level == 1:
-            pass
+            self.context_menu.actionRemoveVariable = QtGui.QAction(self)
+            self.context_menu.actionRemoveVariable.setText("Remove variable")
+            self.context_menu.addAction(self.context_menu.actionRemoveVariable)
+            self.context_menu.actionRemoveVariable.triggered.connect(self.remove_variable)
         elif level == 2:
             self.context_menu.addAction(self.tr("Add ..."))
 
@@ -141,6 +144,32 @@ class edit_cfg_L1(QtGui.QWidget):
             parent2.appendRow(parent3)
         self.tree.variables.appendRow(parent2)
 
+    def remove_variable(self):
+        """ Remove a variable."""
+        model = self.tree.model()
+        # loop over selected items in the tree
+        for idx in self.tree.selectedIndexes():
+            # get the name of the parent of the selected item
+            parent = str(idx.parent().data().toString())
+            # get the parent section
+            for i in range(model.rowCount()):
+                section = model.item(i)
+                if str(section.text()) == "Variables":
+                    break
+            # loop over all children in the "Variables" section
+            for i in range(section.rowCount()):
+                # get the child subsection
+                subsection = section.child(i)
+                # check to see if we have the selected subsection
+                if str(subsection.text()) == str(idx.data().toString()):
+                    # if so, remove the row
+                    section.removeRow(i)
+                    # add an asterisk to the tab text to indicate the tab contents have changed
+                    tab_text = str(self.tabs.tabText(self.tabs.tab_index_current))
+                    if "*" not in tab_text:
+                        self.tabs.setTabText(self.tabs.tab_index_current, tab_text+"*")
+                    break
+
 class edit_cfg_L2(QtGui.QWidget):
     def __init__(self, main_gui):
 
@@ -148,9 +177,9 @@ class edit_cfg_L2(QtGui.QWidget):
 
         self.cfg_mod = copy.deepcopy(main_gui.cfg)
         self.tabs = main_gui.tabs
-        
+
         self.edit_L2_gui()
-        
+
     def edit_L2_gui(self):
         """ Edit L2 control file GUI."""
         # get a QTreeView
@@ -243,6 +272,7 @@ class edit_cfg_L2(QtGui.QWidget):
 
     def context_menu(self, position):
         """ Right click context menu."""
+        model = self.tree.model()
         indexes = self.tree.selectedIndexes()
         if len(indexes) > 0:
             level = 0
@@ -252,47 +282,75 @@ class edit_cfg_L2(QtGui.QWidget):
                 level += 1
         self.context_menu = QtGui.QMenu()
         if level == 0:
-            self.context_menu.actionAddVariable = QtGui.QAction(self)
-            self.context_menu.actionAddVariable.setText("Add variable")
-            self.context_menu.addAction(self.context_menu.actionAddVariable)
-            self.context_menu.actionAddVariable.triggered.connect(self.add_variable)
+            if str(indexes[0].data().toString()) == "Variables":
+                self.context_menu.actionAddVariable = QtGui.QAction(self)
+                self.context_menu.actionAddVariable.setText("Add variable")
+                self.context_menu.addAction(self.context_menu.actionAddVariable)
+                self.context_menu.actionAddVariable.triggered.connect(self.add_variable)
         elif level == 1:
-            self.context_menu.actionAddRangeCheck = QtGui.QAction(self)
-            self.context_menu.actionAddRangeCheck.setText("Add RangeCheck")
-            self.context_menu.addAction(self.context_menu.actionAddRangeCheck)
-            self.context_menu.actionAddRangeCheck.triggered.connect(self.add_rangecheck)
+            parent = str(indexes[0].parent().data().toString())
+            if parent == "Variables":
+                self.context_menu.actionAddRangeCheck = QtGui.QAction(self)
+                self.context_menu.actionAddRangeCheck.setText("Add RangeCheck")
+                self.context_menu.addAction(self.context_menu.actionAddRangeCheck)
+                self.context_menu.actionAddRangeCheck.triggered.connect(self.add_rangecheck)
+                self.context_menu.actionAddDependencyCheck = QtGui.QAction(self)
+                self.context_menu.actionAddDependencyCheck.setText("Add DependencyCheck")
+                self.context_menu.addAction(self.context_menu.actionAddDependencyCheck)
+                self.context_menu.actionAddDependencyCheck.triggered.connect(self.add_dependencycheck)
+                self.context_menu.actionAddDiurnalCheck = QtGui.QAction(self)
+                self.context_menu.actionAddDiurnalCheck.setText("Add DiurnalCheck")
+                self.context_menu.addAction(self.context_menu.actionAddDiurnalCheck)
+                self.context_menu.actionAddDiurnalCheck.triggered.connect(self.add_diurnalcheck)
+                self.context_menu.actionAddExcludeDates = QtGui.QAction(self)
+                self.context_menu.actionAddExcludeDates.setText("Add ExcludeDates")
+                self.context_menu.addAction(self.context_menu.actionAddExcludeDates)
+                self.context_menu.actionAddExcludeDates.triggered.connect(self.add_excludedates)
+                self.context_menu.actionAddExcludeHours = QtGui.QAction(self)
+                self.context_menu.actionAddExcludeHours.setText("Add ExcludeHours")
+                self.context_menu.addAction(self.context_menu.actionAddExcludeHours)
+                self.context_menu.actionAddExcludeHours.triggered.connect(self.add_excludehours)
+                self.context_menu.actionAddLinear = QtGui.QAction(self)
+                self.context_menu.actionAddLinear.setText("Add Linear")
+                self.context_menu.addAction(self.context_menu.actionAddLinear)
+                self.context_menu.actionAddLinear.triggered.connect(self.add_linear)
+                self.context_menu.addSeparator()
+                self.context_menu.actionRemoveVariable = QtGui.QAction(self)
+                self.context_menu.actionRemoveVariable.setText("Remove variable")
+                self.context_menu.addAction(self.context_menu.actionRemoveVariable)
+                self.context_menu.actionRemoveVariable.triggered.connect(self.remove_variable)
+            elif parent == "Files":
+                # get the parent section
+                for i in range(model.rowCount()):
+                    section = model.item(i)
+                    if str(section.text()) == parent:
+                        break
+                # get the key and value for the selected item
+                for i in range(section.rowCount()):
+                    key = str(section.child(i, 0).text())
+                    val = str(section.child(i, 1).text())
+                    if str(indexes[0].data().toString()) == val:
+                        break
+                # check to see if we have the selected subsection
+                print key, val, str(indexes[0].data().toString())
+                if key == "file_path":
+                    self.context_menu.actionBrowseFilePath = QtGui.QAction(self)
+                    self.context_menu.actionBrowseFilePath.setText("Browse...")
+                    self.context_menu.addAction(self.context_menu.actionBrowseFilePath)
+                    self.context_menu.actionBrowseFilePath.triggered.connect(self.browse_file_path)
+                elif key == "in_filename":
+                    self.context_menu.actionBrowseInputFile = QtGui.QAction(self)
+                    self.context_menu.actionBrowseInputFile.setText("Browse...")
+                    self.context_menu.addAction(self.context_menu.actionBrowseInputFile)
+                    self.context_menu.actionBrowseInputFile.triggered.connect(self.browse_input_file)
+                elif key == "out_filename":
+                    self.context_menu.actionBrowseOutputFile = QtGui.QAction(self)
+                    self.context_menu.actionBrowseOutputFile.setText("Browse...")
+                    self.context_menu.addAction(self.context_menu.actionBrowseOutputFile)
+                    self.context_menu.actionBrowseOutputFile.triggered.connect(self.browse_output_file)
+                else:
+                    pass
 
-            self.context_menu.actionAddDependencyCheck = QtGui.QAction(self)
-            self.context_menu.actionAddDependencyCheck.setText("Add DependencyCheck")
-            self.context_menu.addAction(self.context_menu.actionAddDependencyCheck)
-            self.context_menu.actionAddDependencyCheck.triggered.connect(self.add_dependencycheck)
-
-            self.context_menu.actionAddDiurnalCheck = QtGui.QAction(self)
-            self.context_menu.actionAddDiurnalCheck.setText("Add DiurnalCheck")
-            self.context_menu.addAction(self.context_menu.actionAddDiurnalCheck)
-            self.context_menu.actionAddDiurnalCheck.triggered.connect(self.add_diurnalcheck)
-
-            self.context_menu.actionAddExcludeDates = QtGui.QAction(self)
-            self.context_menu.actionAddExcludeDates.setText("Add ExcludeDates")
-            self.context_menu.addAction(self.context_menu.actionAddExcludeDates)
-            self.context_menu.actionAddExcludeDates.triggered.connect(self.add_excludedates)
-
-            self.context_menu.actionAddExcludeHours = QtGui.QAction(self)
-            self.context_menu.actionAddExcludeHours.setText("Add ExcludeHours")
-            self.context_menu.addAction(self.context_menu.actionAddExcludeHours)
-            self.context_menu.actionAddExcludeHours.triggered.connect(self.add_excludehours)
-
-            self.context_menu.actionAddLinear = QtGui.QAction(self)
-            self.context_menu.actionAddLinear.setText("Add Linear")
-            self.context_menu.addAction(self.context_menu.actionAddLinear)
-            self.context_menu.actionAddLinear.triggered.connect(self.add_linear)
-
-            self.context_menu.addSeparator()
-
-            self.context_menu.actionRemoveVariable = QtGui.QAction(self)
-            self.context_menu.actionRemoveVariable.setText("Remove variable")
-            self.context_menu.addAction(self.context_menu.actionRemoveVariable)
-            self.context_menu.actionRemoveVariable.triggered.connect(self.remove_variable)
         #elif level == 2:
             #menu.addAction(self.tr("Edit object"))
 
@@ -336,9 +394,43 @@ class edit_cfg_L2(QtGui.QWidget):
         """ Add a linear correction to a variable."""
         print " add Linear here"
 
+    def browse_file_path(self):
+        """ Browse for the data file path."""
+        print " add browse for data file path here"
+
+    def browse_input_file(self):
+        """ Browse for the input data file path."""
+        print " add browse for input data file name here"
+
+    def browse_output_file(self):
+        """ Browse for the output data file path."""
+        print " add browse for output data file name here"
+
     def remove_variable(self):
         """ Remove a variable."""
-        print " add RemoveVariable here"
+        model = self.tree.model()
+        # loop over selected items in the tree
+        for idx in self.tree.selectedIndexes():
+            # get the name of the parent of the selected item
+            parent = str(idx.parent().data().toString())
+            # get the parent section
+            for i in range(model.rowCount()):
+                section = model.item(i)
+                if str(section.text()) == "Variables":
+                    break
+            # loop over all children in the "Variables" section
+            for i in range(section.rowCount()):
+                # get the child subsection
+                subsection = section.child(i)
+                # check to see if we have the selected subsection
+                if str(subsection.text()) == str(idx.data().toString()):
+                    # if so, remove the row
+                    section.removeRow(i)
+                    # add an asterisk to the tab text to indicate the tab contents have changed
+                    tab_text = str(self.tabs.tabText(self.tabs.tab_index_current))
+                    if "*" not in tab_text:
+                        self.tabs.setTabText(self.tabs.tab_index_current, tab_text+"*")
+                    break
 
 class edit_cfg_L3(QtGui.QWidget):
     def __init__(self, main_gui):
@@ -347,9 +439,9 @@ class edit_cfg_L3(QtGui.QWidget):
 
         self.cfg_mod = copy.deepcopy(main_gui.cfg)
         self.tabs = main_gui.tabs
-        
+
         self.edit_L3_gui()
-        
+
     def edit_L3_gui(self):
         """ Edit L3 control file GUI."""
         # get a QTreeView
