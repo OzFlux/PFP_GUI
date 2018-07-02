@@ -332,7 +332,6 @@ class edit_cfg_L2(QtGui.QWidget):
                     if str(indexes[0].data().toString()) == val:
                         break
                 # check to see if we have the selected subsection
-                print key, val, str(indexes[0].data().toString())
                 if key == "file_path":
                     self.context_menu.actionBrowseFilePath = QtGui.QAction(self)
                     self.context_menu.actionBrowseFilePath.setText("Browse...")
