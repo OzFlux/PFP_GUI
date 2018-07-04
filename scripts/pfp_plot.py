@@ -347,7 +347,7 @@ def plottimeseries(cf, nFig, dsa, dsb):
     p['loc'],p['fmt'] = get_ticks(p['XAxMin'],p['XAxMax'])
     plt.ion()
     #plt.ioff()
-    fig = plt.figure(int(nFig),figsize=(p['PlotWidth'],p['PlotHeight']))
+    fig = plt.figure(figsize=(p['PlotWidth'],p['PlotHeight']))
     fig.clf()
     fig.canvas.set_window_title(p['PlotDescription'])
     plt.figtext(0.5,0.95,SiteName+': '+p['PlotDescription'],ha='center',size=16)
@@ -419,7 +419,10 @@ def plottimeseries(cf, nFig, dsa, dsb):
             logger.error('  plttimeseries: series '+ThisOne+' not in data structure')
     fig.show()
     plt.pause(0.1)
-    fname = 'plots/'+SiteName.replace(' ','')+'_'+Level+'_'+p['PlotDescription'].replace(' ','')+'.png'
+    plot_path = p["plot_path"]
+    if not os.path.exists(plot_path):
+        os.makedirs(plot_path)
+    fname = os.path.join(plot_path, SiteName.replace(' ','')+'_'+Level+'_'+p['PlotDescription'].replace(' ','')+'.png')
     fig.savefig(fname,format='png')
 
 def plot_quickcheck(cf):
@@ -1060,6 +1063,10 @@ def plot_quickcheck(cf):
 
 def plot_setup(cf,nFig):
     p = {}
+    if "plot_path" in cf["Files"]:
+        p["plot_path"] = os.path.join(cf["Files"]["plot_path"], cf["level"])
+    else:
+        p["plot_path"] = os.path.join("plots", cf["level"])
     p['PlotDescription'] = cf['Plots'][str(nFig)]['Title']
     p['SeriesList'] = ast.literal_eval(cf['Plots'][str(nFig)]['Variables'])
     p['nGraphs'] = len(p['SeriesList'])
@@ -1179,9 +1186,9 @@ def plot_onetimeseries_right(fig,n,ThisOne,xarray,yarray,p):
 def plotxy(cf,nFig,plt_cf,dsa,dsb):
     SiteName = dsa.globalattributes['site_name']
     PlotDescription = cf['Plots'][str(nFig)]['Title']
-    fig = plt.figure(int(nFig))
-
+    fig = plt.figure()
     fig.clf()
+    fig.canvas.set_window_title(PlotDescription)
     plt.figtext(0.5,0.95,SiteName+': '+PlotDescription,ha='center',size=16)
     XSeries = ast.literal_eval(plt_cf['XSeries'])
     YSeries = ast.literal_eval(plt_cf['YSeries'])

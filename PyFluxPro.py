@@ -407,7 +407,7 @@ class pfp_main_ui(QtGui.QWidget, QPlainTextEditLogger):
         # get the updated control file data
         cfg = self.tabs.tab_dict[tab_index_current].get_data_from_model()
         # strip out the redundant control file name
-        cfg.pop("controlfile_name", None)
+        #cfg.pop("controlfile_name", None)
         # write the control file
         cfg.write()
         # remove the asterisk in the tab text
@@ -421,7 +421,7 @@ class pfp_main_ui(QtGui.QWidget, QPlainTextEditLogger):
         # get the updated control file data
         cfg = self.tabs.tab_dict[tab_index_current].get_data_from_model()
         # strip out the redundant control file name
-        cfg.pop("controlfile_name", None)
+        #cfg.pop("controlfile_name", None)
         # put up a "Save as ..." dialog
         cfgpath = QtGui.QFileDialog.getSaveFileName(self, "Save as ...")
         # set the control file name
