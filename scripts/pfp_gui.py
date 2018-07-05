@@ -482,20 +482,21 @@ class edit_cfg_L2(QtGui.QWidget):
         self.tree.model().setHorizontalHeaderLabels(['Parameter', 'Value'])
         self.tree.model().itemChanged.connect(self.handleItemChanged)
         # there must be some way to do this recursively
+        self.tree.sections = {}
         for key1 in self.cfg_mod:
             if not self.cfg_mod[key1]:
                 continue
             if key1 in ["Files"]:
                 # sections with only 1 level
-                self.tree.files = QtGui.QStandardItem(key1)
+                self.tree.sections[key1] = QtGui.QStandardItem(key1)
                 for val in self.cfg_mod[key1]:
                     value = self.cfg_mod[key1][val]
                     child0 = QtGui.QStandardItem(val)
                     child1 = QtGui.QStandardItem(str(value))
-                    self.tree.files.appendRow([child0, child1])
-                self.tree.model().appendRow(self.tree.files)
+                    self.tree.sections[key1].appendRow([child0, child1])
+                self.tree.model().appendRow(self.tree.sections[key1])
             elif  key1 in ["Plots"]:
-                self.tree.plots = QtGui.QStandardItem(key1)
+                self.tree.sections[key1] = QtGui.QStandardItem(key1)
                 for key2 in self.cfg_mod[key1]:
                     parent2 = QtGui.QStandardItem(key2)
                     for val in self.cfg_mod[key1][key2]:
@@ -503,11 +504,11 @@ class edit_cfg_L2(QtGui.QWidget):
                         child0 = QtGui.QStandardItem(val)
                         child1 = QtGui.QStandardItem(str(value))
                         parent2.appendRow([child0, child1])
-                    self.tree.plots.appendRow(parent2)
-                self.tree.model().appendRow(self.tree.plots)
+                    self.tree.sections[key1].appendRow(parent2)
+                self.tree.model().appendRow(self.tree.sections[key1])
             elif key1 in ["Variables"]:
                 # sections with 3 levels
-                self.tree.variables = QtGui.QStandardItem(key1)
+                self.tree.sections[key1] = QtGui.QStandardItem(key1)
                 for key2 in self.cfg_mod[key1]:
                     parent2 = QtGui.QStandardItem(key2)
                     for key3 in self.cfg_mod[key1][key2]:
@@ -518,8 +519,8 @@ class edit_cfg_L2(QtGui.QWidget):
                             child1 = QtGui.QStandardItem(str(value))
                             parent3.appendRow([child0, child1])
                         parent2.appendRow(parent3)
-                    self.tree.variables.appendRow(parent2)
-                self.tree.model().appendRow(self.tree.variables)
+                    self.tree.sections[key1].appendRow(parent2)
+                self.tree.model().appendRow(self.tree.sections[key1])
 
     def get_data_from_model(self):
         """ Iterate over the model and get the data."""
@@ -618,14 +619,14 @@ class edit_cfg_L2(QtGui.QWidget):
                 self.context_menu.actionAddExcludeDates.setText("Add ExcludeDates")
                 self.context_menu.addAction(self.context_menu.actionAddExcludeDates)
                 self.context_menu.actionAddExcludeDates.triggered.connect(self.add_excludedates)
-                self.context_menu.actionAddExcludeHours = QtGui.QAction(self)
-                self.context_menu.actionAddExcludeHours.setText("Add ExcludeHours")
-                self.context_menu.addAction(self.context_menu.actionAddExcludeHours)
-                self.context_menu.actionAddExcludeHours.triggered.connect(self.add_excludehours)
-                self.context_menu.actionAddLinear = QtGui.QAction(self)
-                self.context_menu.actionAddLinear.setText("Add Linear")
-                self.context_menu.addAction(self.context_menu.actionAddLinear)
-                self.context_menu.actionAddLinear.triggered.connect(self.add_linear)
+                #self.context_menu.actionAddExcludeHours = QtGui.QAction(self)
+                #self.context_menu.actionAddExcludeHours.setText("Add ExcludeHours")
+                #self.context_menu.addAction(self.context_menu.actionAddExcludeHours)
+                #self.context_menu.actionAddExcludeHours.triggered.connect(self.add_excludehours)
+                #self.context_menu.actionAddLinear = QtGui.QAction(self)
+                #self.context_menu.actionAddLinear.setText("Add Linear")
+                #self.context_menu.addAction(self.context_menu.actionAddLinear)
+                #self.context_menu.actionAddLinear.triggered.connect(self.add_linear)
                 self.context_menu.addSeparator()
                 self.context_menu.actionRemoveVariable = QtGui.QAction(self)
                 self.context_menu.actionRemoveVariable.setText("Remove variable")
