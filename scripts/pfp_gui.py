@@ -2305,78 +2305,213 @@ class edit_cfg_concatenate(QtGui.QWidget):
         return
 
 class edit_cfg_L4(QtGui.QWidget):
-    def __init__(self, cfg):
+    def __init__(self, main_gui):
 
         super(edit_cfg_L4, self).__init__()
 
-        self.cfg_mod = copy.deepcopy(cfg)
-        # Layout
+        self.cfg_mod = copy.deepcopy(main_gui.cfg)
+        self.tabs = main_gui.tabs
+        
+        self.edit_l4_gui()
+        
+    def edit_l4_gui(self):
+        """ Edit an L4 control file GUI."""
+        # get a QTreeView
         self.tree = QtGui.QTreeView()
+        # set the context menu policy
+        self.tree.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
+        # connect the context menu requested signal to appropriate slot
+        self.tree.customContextMenuRequested.connect(self.context_menu)
         vbox = QtGui.QVBoxLayout()
         vbox.addWidget(self.tree)
         self.setLayout(vbox)
         self.setGeometry(300, 300, 600, 400)
         # Tree view
-        self.tree.setModel(QtGui.QStandardItemModel())
         self.tree.setAlternatingRowColors(True)
         self.tree.setSortingEnabled(True)
         self.tree.setHeaderHidden(False)
         self.tree.setSelectionBehavior(QtGui.QAbstractItemView.SelectItems)
-
+        # build the model
+        self.get_model_from_data()
+        
+    def get_model_from_data(self):
+        """ Build the data model."""
+        self.tree.setModel(QtGui.QStandardItemModel())
         self.tree.model().setHorizontalHeaderLabels(['Parameter', 'Value'])
-
+        self.tree.model().itemChanged.connect(self.handleItemChanged)
+        # there must be someway outa here, said the Joker to the Thief ...
+        self.tree.sections = {}
         for key1 in self.cfg_mod:
             if not self.cfg_mod[key1]:
                 continue
-            if key1 in ["Files", "Global", "Output", "General", "Options", "Soil", "Massman"]:
-                parent1 = QtGui.QStandardItem(key1)
-                parent1.setFlags(QtCore.Qt.NoItemFlags)
+            if key1 in ["Files", "Global", "Output", "Options"]:
+                # sections with only 1 level
+                self.tree.sections[key1] = QtGui.QStandardItem(key1)
                 for val in self.cfg_mod[key1]:
                     value = self.cfg_mod[key1][val]
                     child0 = QtGui.QStandardItem(val)
-                    child0.setFlags(QtCore.Qt.NoItemFlags | QtCore.Qt.ItemIsEnabled)
                     child1 = QtGui.QStandardItem(str(value))
-                    child1.setFlags(QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsEditable | ~ QtCore.Qt.ItemIsSelectable)
-                    parent1.appendRow([child0, child1])
-                self.tree.model().appendRow(parent1)
+                    self.tree.sections[key1].appendRow([child0, child1])
+                self.tree.model().appendRow(self.tree.sections[key1])
             elif key1 in ["Variables", "Drivers"]:
-                parent1 = QtGui.QStandardItem(key1)
-                parent1.setFlags(QtCore.Qt.NoItemFlags)
+                # sections with 4 levels
+                self.tree.sections[key1] = QtGui.QStandardItem(key1)
                 for key2 in self.cfg_mod[key1]:
                     parent2 = QtGui.QStandardItem(key2)
-                    parent2.setFlags(QtCore.Qt.NoItemFlags)
                     for key3 in self.cfg_mod[key1][key2]:
                         parent3 = QtGui.QStandardItem(key3)
-                        parent3.setFlags(QtCore.Qt.NoItemFlags)
                         if key3 in ["GapFillFromAlternate", "GapFillFromClimatology"]:
                             for key4 in self.cfg_mod[key1][key2][key3]:
                                 parent4 = QtGui.QStandardItem(key4)
-                                parent4.setFlags(QtCore.Qt.NoItemFlags)
                                 for val in self.cfg_mod[key1][key2][key3][key4]:
                                     value = self.cfg_mod[key1][key2][key3][key4][val]
                                     child0 = QtGui.QStandardItem(val)
-                                    child0.setFlags(QtCore.Qt.NoItemFlags | QtCore.Qt.ItemIsEnabled)
                                     child1 = QtGui.QStandardItem(str(value))
-                                    child1.setFlags(QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsEditable | ~ QtCore.Qt.ItemIsSelectable)
                                     parent4.appendRow([child0, child1])
                                 parent3.appendRow(parent4)
                         elif key3 in ["MergeSeries", "RangeCheck", "ExcludeDates"]:
                             for val in self.cfg_mod[key1][key2][key3]:
                                 value = self.cfg_mod[key1][key2][key3][val]
                                 child0 = QtGui.QStandardItem(val)
-                                child0.setFlags(QtCore.Qt.NoItemFlags | QtCore.Qt.ItemIsEnabled)
                                 child1 = QtGui.QStandardItem(str(value))
-                                child1.setFlags(QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsEditable | ~ QtCore.Qt.ItemIsSelectable)
                                 parent3.appendRow([child0, child1])
                         parent2.appendRow(parent3)
-                    parent1.appendRow(parent2)
-                self.tree.model().appendRow(parent1)
+                    self.tree.sections[key1].appendRow(parent2)
+                self.tree.model().appendRow(self.tree.sections[key1])
 
-        self.tree.expandAll()
+    def get_data_from_model(self):
+        """ Iterate over the model and get the data."""
+        cfg = self.cfg_mod
+        model = self.tree.model()
+        # there must be a way to do this recursively
+        for i in range(model.rowCount()):
+            section = model.item(i)
+            key1 = str(section.text())
+            cfg[key1] = {}
+            if key1 in ["Files", "Global", "Output", "Options"]:
+                # sections with only 1 level
+                for j in range(section.rowCount()):
+                    key2 = str(section.child(j, 0).text())
+                    val2 = str(section.child(j, 1).text())
+                    cfg[key1][key2] = val2
+            elif key1 in ["Plots"]:
+                # sections with 2 levels
+                for j in range(section.rowCount()):
+                    subsection = section.child(j)
+                    key2 = str(subsection.text())
+                    cfg[key1][key2] = {}
+                    for k in range(subsection.rowCount()):
+                        key3 = str(subsection.child(k, 0).text())
+                        val3 = str(subsection.child(k, 1).text())
+                        cfg[key1][key2][key3] = val3
+            elif key1 in []:
+                # sections with 3 levels
+                pass
+            elif key1 in ["Variables", "Drivers"]:
+                # sections with 4 levels
+                for j in range(section.rowCount()):
+                    # subsections are variables
+                    subsection = section.child(j)
+                    key2 = str(subsection.text())
+                    cfg[key1][key2] = {}
+                    for k in range(subsection.rowCount()):
+                        # subsubsections are GapFillFromAlternate, GapFillFromClimatology
+                        # MergeSeries
+                        subsubsection = subsection.child(k)
+                        key3 = str(subsubsection.text())
+                        cfg[key1][key2][key3] = {}
+                        for l in range(subsubsection.rowCount()):
+                            subsubsubsection = subsubsection.child(l)
+                            key4 = str(subsubsubsection.text())
+                            cfg[key1][key2][key3][key4] = {}
+                            for m in range(subsubsubsection.rowCount()):
+                                key5 = str(subsubsubsection.child(m, 0).text())
+                                val5 = str(subsubsubsection.child(m, 1).text())
+                                cfg[key1][key2][key3][key4][key5] = val5
+            
+        return cfg
 
-    def get_data(self):
-        return self.cfg_mod
+    def handleItemChanged(self, item):
+        """ Handler for when view items are edited."""
+        # add an asterisk to the tab text to indicate the tab contents have changed
+        tab_text = str(self.tabs.tabText(self.tabs.tab_index_current))
+        if "*" not in tab_text:
+            self.tabs.setTabText(self.tabs.tab_index_current, tab_text+"*")
+        # update the control file contents
+        self.cfg_mod = self.get_data_from_model()
 
+    def context_menu(self, position):
+        """ Right click context menu."""
+        model = self.tree.model()
+        indexes = self.tree.selectedIndexes()        
+        self.context_menu = QtGui.QMenu()
+        level = self.get_level_selected_item()
+        if level == 0:
+            # sections with only 1 level
+            if str(indexes[0].data().toString()) == "Files":
+                self.context_menu.actionAddFileEntry = QtGui.QAction(self)
+                self.context_menu.actionAddFileEntry.setText("Add item")
+                self.context_menu.addAction(self.context_menu.actionAddFileEntry)
+                self.context_menu.actionAddFileEntry.triggered.connect(self.add_fileentry)
+            elif str(indexes[0].data().toString()) == "Output":
+                pass
+            elif str(indexes[0].data().toString()) == "Options":
+                pass
+            elif str(indexes[0].data().toString()) in ["Variables", "Drivers"]:
+                pass
+        elif level == 1:
+            # sections with 2 levels
+            section_name = str(indexes[0].parent().data().toString())
+            subsection_name = str(indexes[0].data().toString())
+            section, i = self.get_section(section_name)
+            subsection, j = self.get_subsection(section, indexes[0])
+            if (section_name == "Files"):
+                if (self.selection_is_key(subsection, indexes[0])):
+                    self.context_menu.actionRemoveInputFile = QtGui.QAction(self)
+                    self.context_menu.actionRemoveInputFile.setText("Remove item")
+                    self.context_menu.addAction(self.context_menu.actionRemoveInputFile)
+                    self.context_menu.actionRemoveInputFile.triggered.connect(self.remove_inputfile)
+                elif (self.selection_is_value(subsection, indexes[0])):
+                    self.context_menu.actionBrowseInputFile = QtGui.QAction(self)
+                    self.context_menu.actionBrowseInputFile.setText("Browse...")
+                    self.context_menu.addAction(self.context_menu.actionBrowseInputFile)
+                    self.context_menu.actionBrowseInputFile.triggered.connect(self.browse_input_file)
+        elif level == 2:
+            # sections with 3 levels
+            pass
+        elif level == 3:
+            # sections with 4 levels
+            pass
+        
+        self.context_menu.exec_(self.tree.viewport().mapToGlobal(position))
+
+    def get_level_selected_item(self):
+        """ Get the level of the selected item."""
+        model = self.tree.model()
+        indexes = self.tree.selectedIndexes()
+        level = -1
+        if len(indexes) > 0:
+            level = 0
+            index = indexes[0]
+            while index.parent().isValid():
+                index = index.parent()
+                level += 1
+        return level
+        
+    def add_fileentry(self):
+        """ Add a new entry to the 'Files' section."""
+        child0 = QtGui.QStandardItem("New item")
+        child1 = QtGui.QStandardItem("")
+        self.tree.sections["Files"].appendRow([child0, child1])
+        self.update_tab_text()
+
+    def update_tab_text(self):
+        """ Add an asterisk to the tab title text to indicate tab contents have changed."""
+        # add an asterisk to the tab text to indicate the tab contents have changed
+        tab_text = str(self.tabs.tabText(self.tabs.tab_index_current))
+        if "*" not in tab_text:
+            self.tabs.setTabText(self.tabs.tab_index_current, tab_text+"*")
+    
 class pfp_l4_ui(QtGui.QDialog):
     def __init__(self, parent=None):
         super(pfp_l4_ui, self).__init__(parent)
