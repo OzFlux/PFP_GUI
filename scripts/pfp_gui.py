@@ -2266,7 +2266,6 @@ class edit_cfg_concatenate(QtGui.QWidget):
 
     def remove_inputfile(self):
         """ Remove an input file."""
-        model = self.tree.model()
         # loop over selected items in the tree
         for idx in self.tree.selectedIndexes():
             # get the "Files" section
@@ -2356,6 +2355,9 @@ class edit_cfg_L4(QtGui.QWidget):
                     self.tree.sections[key1].appendRow([child0, child1])
                 self.tree.model().appendRow(self.tree.sections[key1])
             elif key1 in ["Variables", "Drivers"]:
+                if key1 == "Drivers":
+                    key1 = "Variables"
+                    self.cfg_mod.rename("Drivers", key1)
                 # sections with 4 levels
                 self.tree.sections[key1] = QtGui.QStandardItem(key1)
                 for key2 in self.cfg_mod[key1]:
@@ -2458,9 +2460,15 @@ class edit_cfg_L4(QtGui.QWidget):
             elif str(indexes[0].data().toString()) == "Output":
                 pass
             elif str(indexes[0].data().toString()) == "Options":
-                pass
+                self.context_menu.actionAddMaxGapInterpolate = QtGui.QAction(self)
+                self.context_menu.actionAddMaxGapInterpolate.setText("MaxGapInterpolate")
+                self.context_menu.addAction(self.context_menu.actionAddMaxGapInterpolate)
+                self.context_menu.actionAddMaxGapInterpolate.triggered.connect(self.add_maxgapinterpolate)
             elif str(indexes[0].data().toString()) in ["Variables", "Drivers"]:
-                pass
+                self.context_menu.actionAddVariable = QtGui.QAction(self)
+                self.context_menu.actionAddVariable.setText("Add variable")
+                self.context_menu.addAction(self.context_menu.actionAddVariable)
+                self.context_menu.actionAddVariable.triggered.connect(self.add_variable)
         elif level == 1:
             # sections with 2 levels
             section_name = str(indexes[0].parent().data().toString())
@@ -2495,6 +2503,22 @@ class edit_cfg_L4(QtGui.QWidget):
                         self.context_menu.actionBrowseAlternateFile.setText("Browse...")
                         self.context_menu.addAction(self.context_menu.actionBrowseAlternateFile)
                         self.context_menu.actionBrowseAlternateFile.triggered.connect(self.browse_alternate_file)
+                    else:
+                        self.context_menu.actionBrowseInputFile = QtGui.QAction(self)
+                        self.context_menu.actionBrowseInputFile.setText("Browse...")
+                        self.context_menu.addAction(self.context_menu.actionBrowseInputFile)
+                        self.context_menu.actionBrowseInputFile.triggered.connect(self.browse_input_file)
+            elif (section_name == "Options"):
+                if (self.selection_is_key(section, indexes[0])):
+                    self.context_menu.actionRemoveOption = QtGui.QAction(self)
+                    self.context_menu.actionRemoveOption.setText("Remove option")
+                    self.context_menu.addAction(self.context_menu.actionRemoveOption)
+                    self.context_menu.actionRemoveOption.triggered.connect(self.remove_item_options)
+            elif (section_name in ["Variables", "Drivers"]):
+                self.context_menu.actionRemoveOption = QtGui.QAction(self)
+                self.context_menu.actionRemoveOption.setText("Remove variable")
+                self.context_menu.addAction(self.context_menu.actionRemoveOption)
+                self.context_menu.actionRemoveOption.triggered.connect(self.remove_variable)
         elif level == 2:
             # sections with 3 levels
             pass
@@ -2505,12 +2529,39 @@ class edit_cfg_L4(QtGui.QWidget):
         self.context_menu.exec_(self.tree.viewport().mapToGlobal(position))
 
     def add_fileentry(self):
-        """ Add a new entry to the 'Files' section."""
+        """ Add a new entry to the [Files] section."""
         child0 = QtGui.QStandardItem("New item")
         child1 = QtGui.QStandardItem("")
         self.tree.sections["Files"].appendRow([child0, child1])
         self.update_tab_text()
 
+    def add_maxgapinterpolate(self):
+        """ Add MaxGapInterpolate to the [Options] section."""
+        child0 = QtGui.QStandardItem("MaxGapInterpolate")
+        child1 = QtGui.QStandardItem("3")
+        self.tree.sections["Options"].appendRow([child0, child1])
+        self.update_tab_text()
+
+    def add_variable(self):
+        """ Add a variable."""
+        new_var = {"GapFillFromAlternate":{"var_source": {"source": "source"}},
+                   "GapFillUsingMDS":{"var_MDS":{"source":"MDS"}},
+                   "GapFillFromClimatology":{"var_cli":{"method":"interpolated daily"}}}
+        parent2 = QtGui.QStandardItem("New variable")
+        for key3 in new_var:
+            parent3 = QtGui.QStandardItem(key3)
+            for val in new_var[key3]:
+                value = new_var[key3][val]
+                child0 = QtGui.QStandardItem(val)
+                child1 = QtGui.QStandardItem(str(value))
+                parent3.appendRow([child0, child1])
+            parent2.appendRow(parent3)
+        self.tree.sections["Variables"].appendRow(parent2)
+        # add an asterisk to the tab text to indicate the tab contents have changed
+        tab_text = str(self.tabs.tabText(self.tabs.tab_index_current))
+        if "*" not in tab_text:
+            self.tabs.setTabText(self.tabs.tab_index_current, tab_text+"*")
+        
     def browse_alternate_file(self):
         """ Browse for the alternate data file path."""
         model = self.tree.model()
@@ -2639,11 +2690,29 @@ class edit_cfg_L4(QtGui.QWidget):
 
     def remove_item_files(self):
         """ Remove an item from the Files section."""
-        model = self.tree.model()
         # loop over selected items in the tree
         for idx in self.tree.selectedIndexes():
             # get the "Files" section
             section, i = self.get_section("Files")
+            subsection, i = self.get_subsection(section, idx)
+            section.removeRow(i)
+            self.update_tab_text()
+
+    def remove_item_options(self):
+        """ Remove an item from the Options section."""
+        # loop over selected items in the tree
+        for idx in self.tree.selectedIndexes():
+            # get the "Options" section
+            section, i = self.get_section("Options")
+            subsection, i = self.get_subsection(section, idx)
+            section.removeRow(i)
+            self.update_tab_text()
+
+    def remove_variable(self):
+        """ Remove a variable."""
+        for idx in self.tree.selectedIndexes():
+            # get the "Variables" section
+            section, i = self.get_section("Variables")
             subsection, i = self.get_subsection(section, idx)
             section.removeRow(i)
             self.update_tab_text()

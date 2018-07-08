@@ -71,13 +71,30 @@ L4
 1) implement get_model_from_data
    - done
 2) implement get_data_from_model
+   - done
 3) implement right-click context menu
 4) implement handleItemChanged
+   - done
 5) [Files] section
    - "Add item"
      - done
    - "Remove item"
+     - done
    - "Browse"
+     - done
+6) [Global] section
+7) [Options] section
+   - done
+8) [Import] section
+9) [Drivers] or [Variables] section
+   - "Add variable"
+   - "Remove variable"
+   - "Add method"
+   - "Remove method"
+   - "Add QC check"
+   - "Remove QC check"
+   - "Add MergeSeries"
+   - "Remove MergeSeries"
 
 L5
 
