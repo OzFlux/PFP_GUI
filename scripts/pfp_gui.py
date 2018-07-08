@@ -3,6 +3,8 @@ import copy
 import os
 # 3rd party modules
 from PyQt4 import QtCore, QtGui
+# PFP modules
+import pfp_utils
 
 class edit_cfg_L1(QtGui.QWidget):
     def __init__(self, main_gui):
@@ -217,8 +219,8 @@ class edit_cfg_L1(QtGui.QWidget):
         # add an asterisk to the tab text to indicate the tab contents have changed
         tab_text = str(self.tabs.tabText(self.tabs.tab_index_current))
         if "*" not in tab_text:
-            self.tabs.setTabText(self.tabs.tab_index_current, tab_text+"*")        
-        
+            self.tabs.setTabText(self.tabs.tab_index_current, tab_text+"*")
+
     def add_fileentry(self):
         """ Add a new entry to the 'Files' section."""
         child0 = QtGui.QStandardItem("New item")
@@ -227,8 +229,8 @@ class edit_cfg_L1(QtGui.QWidget):
         # add an asterisk to the tab text to indicate the tab contents have changed
         tab_text = str(self.tabs.tabText(self.tabs.tab_index_current))
         if "*" not in tab_text:
-            self.tabs.setTabText(self.tabs.tab_index_current, tab_text+"*")        
-    
+            self.tabs.setTabText(self.tabs.tab_index_current, tab_text+"*")
+
     def add_global(self):
         """ Add a new entry to the 'Global' section."""
         child0 = QtGui.QStandardItem("New item")
@@ -237,8 +239,8 @@ class edit_cfg_L1(QtGui.QWidget):
         # add an asterisk to the tab text to indicate the tab contents have changed
         tab_text = str(self.tabs.tabText(self.tabs.tab_index_current))
         if "*" not in tab_text:
-            self.tabs.setTabText(self.tabs.tab_index_current, tab_text+"*")        
-    
+            self.tabs.setTabText(self.tabs.tab_index_current, tab_text+"*")
+
     def add_variable(self):
         """ Add a new variable."""
         new_var = {"xl":{"sheet":"", "name":""},
@@ -257,7 +259,7 @@ class edit_cfg_L1(QtGui.QWidget):
         # add an asterisk to the tab text to indicate the tab contents have changed
         tab_text = str(self.tabs.tabText(self.tabs.tab_index_current))
         if "*" not in tab_text:
-            self.tabs.setTabText(self.tabs.tab_index_current, tab_text+"*")        
+            self.tabs.setTabText(self.tabs.tab_index_current, tab_text+"*")
 
     def browse_file_path(self):
         """ Browse for the data file path."""
@@ -367,7 +369,7 @@ class edit_cfg_L1(QtGui.QWidget):
                 tab_text = str(self.tabs.tabText(self.tabs.tab_index_current))
                 if "*" not in tab_text:
                     self.tabs.setTabText(self.tabs.tab_index_current, tab_text+"*")
-                break                    
+                break
 
     #def remove_fileentry(self):
         #""" Remove an entry from the [Files] section."""
@@ -689,7 +691,7 @@ class edit_cfg_L2(QtGui.QWidget):
                 self.context_menu.actionRemoveExcludeDateRange.setText("Remove date range")
                 self.context_menu.addAction(self.context_menu.actionRemoveExcludeDateRange)
                 self.context_menu.actionRemoveExcludeDateRange.triggered.connect(self.remove_excludedaterange)
-                
+
         self.context_menu.exec_(self.tree.viewport().mapToGlobal(position))
 
     def add_fileentry(self):
@@ -700,7 +702,7 @@ class edit_cfg_L2(QtGui.QWidget):
         # add an asterisk to the tab text to indicate the tab contents have changed
         tab_text = str(self.tabs.tabText(self.tabs.tab_index_current))
         if "*" not in tab_text:
-            self.tabs.setTabText(self.tabs.tab_index_current, tab_text+"*")        
+            self.tabs.setTabText(self.tabs.tab_index_current, tab_text+"*")
 
     def add_variable(self):
         """ Add a new variable to the 'Variables' section."""
@@ -718,7 +720,7 @@ class edit_cfg_L2(QtGui.QWidget):
         # add an asterisk to the tab text to indicate the tab contents have changed
         tab_text = str(self.tabs.tabText(self.tabs.tab_index_current))
         if "*" not in tab_text:
-            self.tabs.setTabText(self.tabs.tab_index_current, tab_text+"*")        
+            self.tabs.setTabText(self.tabs.tab_index_current, tab_text+"*")
 
     def add_timeseries(self):
         """ Add a new time series to the 'Plots' section."""
@@ -733,7 +735,7 @@ class edit_cfg_L2(QtGui.QWidget):
         # add an asterisk to the tab text to indicate the tab contents have changed
         tab_text = str(self.tabs.tabText(self.tabs.tab_index_current))
         if "*" not in tab_text:
-            self.tabs.setTabText(self.tabs.tab_index_current, tab_text+"*")        
+            self.tabs.setTabText(self.tabs.tab_index_current, tab_text+"*")
 
     def add_scatterplot(self):
         """ Add a new scatter plot to the 'Plots' section."""
@@ -748,7 +750,7 @@ class edit_cfg_L2(QtGui.QWidget):
         # add an asterisk to the tab text to indicate the tab contents have changed
         tab_text = str(self.tabs.tabText(self.tabs.tab_index_current))
         if "*" not in tab_text:
-            self.tabs.setTabText(self.tabs.tab_index_current, tab_text+"*")        
+            self.tabs.setTabText(self.tabs.tab_index_current, tab_text+"*")
 
     def add_rangecheck(self):
         """ Add a range check to a variable."""
@@ -865,7 +867,7 @@ class edit_cfg_L2(QtGui.QWidget):
         tab_text = str(self.tabs.tabText(self.tabs.tab_index_current))
         if "*" not in tab_text:
             self.tabs.setTabText(self.tabs.tab_index_current, tab_text+"*")
-            
+
     def add_excludedaterange(self):
         """ Add another date range to the ExcludeDates QC check."""
         model = self.tree.model()
@@ -1087,7 +1089,7 @@ class edit_cfg_L2(QtGui.QWidget):
                     tab_text = str(self.tabs.tabText(self.tabs.tab_index_current))
                     if "*" not in tab_text:
                         self.tabs.setTabText(self.tabs.tab_index_current, tab_text+"*")
-                    break                    
+                    break
 
 class edit_cfg_L3(QtGui.QWidget):
     def __init__(self, main_gui):
@@ -1149,7 +1151,7 @@ class edit_cfg_L3(QtGui.QWidget):
                         child1 = QtGui.QStandardItem(str(value))
                         parent2.appendRow([child0, child1])
                     self.tree.sections[key1].appendRow(parent2)
-                self.tree.model().appendRow(self.tree.sections[key1])                
+                self.tree.model().appendRow(self.tree.sections[key1])
             elif key1 in ["Variables"]:
                 # sections with 3 levels
                 self.tree.sections[key1] = QtGui.QStandardItem(key1)
@@ -1385,7 +1387,7 @@ class edit_cfg_L3(QtGui.QWidget):
         # add an asterisk to the tab text to indicate the tab contents have changed
         tab_text = str(self.tabs.tabText(self.tabs.tab_index_current))
         if "*" not in tab_text:
-            self.tabs.setTabText(self.tabs.tab_index_current, tab_text+"*")        
+            self.tabs.setTabText(self.tabs.tab_index_current, tab_text+"*")
 
     def add_2dcoordrotation(self):
         """ Add 2DCoordRotation to the [Options] section."""
@@ -1395,7 +1397,7 @@ class edit_cfg_L3(QtGui.QWidget):
         # add an asterisk to the tab text to indicate the tab contents have changed
         tab_text = str(self.tabs.tabText(self.tabs.tab_index_current))
         if "*" not in tab_text:
-            self.tabs.setTabText(self.tabs.tab_index_current, tab_text+"*")        
+            self.tabs.setTabText(self.tabs.tab_index_current, tab_text+"*")
 
     def add_massmancorrection(self):
         """ Add Massman correction to the [Options] section."""
@@ -1405,7 +1407,7 @@ class edit_cfg_L3(QtGui.QWidget):
         # add an asterisk to the tab text to indicate the tab contents have changed
         tab_text = str(self.tabs.tabText(self.tabs.tab_index_current))
         if "*" not in tab_text:
-            self.tabs.setTabText(self.tabs.tab_index_current, tab_text+"*")        
+            self.tabs.setTabText(self.tabs.tab_index_current, tab_text+"*")
 
     def add_applyfcstorage(self):
         """ Add storage term to Fc to the [Options] section."""
@@ -1415,7 +1417,7 @@ class edit_cfg_L3(QtGui.QWidget):
         # add an asterisk to the tab text to indicate the tab contents have changed
         tab_text = str(self.tabs.tabText(self.tabs.tab_index_current))
         if "*" not in tab_text:
-            self.tabs.setTabText(self.tabs.tab_index_current, tab_text+"*")        
+            self.tabs.setTabText(self.tabs.tab_index_current, tab_text+"*")
 
     def add_correctindividualfg(self):
         """ Add correct individual Fg to the [Options] section."""
@@ -1425,7 +1427,7 @@ class edit_cfg_L3(QtGui.QWidget):
         # add an asterisk to the tab text to indicate the tab contents have changed
         tab_text = str(self.tabs.tabText(self.tabs.tab_index_current))
         if "*" not in tab_text:
-            self.tabs.setTabText(self.tabs.tab_index_current, tab_text+"*")        
+            self.tabs.setTabText(self.tabs.tab_index_current, tab_text+"*")
 
     def add_correctfgforstorage(self):
         """ Add correct Fg for storage to the [Options] section."""
@@ -1435,7 +1437,7 @@ class edit_cfg_L3(QtGui.QWidget):
         # add an asterisk to the tab text to indicate the tab contents have changed
         tab_text = str(self.tabs.tabText(self.tabs.tab_index_current))
         if "*" not in tab_text:
-            self.tabs.setTabText(self.tabs.tab_index_current, tab_text+"*")        
+            self.tabs.setTabText(self.tabs.tab_index_current, tab_text+"*")
 
     def add_fileentry(self):
         """ Add a new entry to the 'Files' section."""
@@ -1445,7 +1447,7 @@ class edit_cfg_L3(QtGui.QWidget):
         # add an asterisk to the tab text to indicate the tab contents have changed
         tab_text = str(self.tabs.tabText(self.tabs.tab_index_current))
         if "*" not in tab_text:
-            self.tabs.setTabText(self.tabs.tab_index_current, tab_text+"*")        
+            self.tabs.setTabText(self.tabs.tab_index_current, tab_text+"*")
 
     def add_variable(self):
         new_var_qc = {"RangeCheck":{"Lower":0, "Upper": 1}}
@@ -1462,7 +1464,7 @@ class edit_cfg_L3(QtGui.QWidget):
         # add an asterisk to the tab text to indicate the tab contents have changed
         tab_text = str(self.tabs.tabText(self.tabs.tab_index_current))
         if "*" not in tab_text:
-            self.tabs.setTabText(self.tabs.tab_index_current, tab_text+"*")        
+            self.tabs.setTabText(self.tabs.tab_index_current, tab_text+"*")
 
     def add_timeseries(self):
         """ Add a new time series to the 'Plots' section."""
@@ -1477,7 +1479,7 @@ class edit_cfg_L3(QtGui.QWidget):
         # add an asterisk to the tab text to indicate the tab contents have changed
         tab_text = str(self.tabs.tabText(self.tabs.tab_index_current))
         if "*" not in tab_text:
-            self.tabs.setTabText(self.tabs.tab_index_current, tab_text+"*")        
+            self.tabs.setTabText(self.tabs.tab_index_current, tab_text+"*")
 
     def add_scatterplot(self):
         """ Add a new scatter plot to the 'Plots' section."""
@@ -1492,7 +1494,7 @@ class edit_cfg_L3(QtGui.QWidget):
         # add an asterisk to the tab text to indicate the tab contents have changed
         tab_text = str(self.tabs.tabText(self.tabs.tab_index_current))
         if "*" not in tab_text:
-            self.tabs.setTabText(self.tabs.tab_index_current, tab_text+"*")        
+            self.tabs.setTabText(self.tabs.tab_index_current, tab_text+"*")
 
     def add_averageseries(self):
         """ Add an average series instruction to a variable."""
@@ -1661,7 +1663,7 @@ class edit_cfg_L3(QtGui.QWidget):
         tab_text = str(self.tabs.tabText(self.tabs.tab_index_current))
         if "*" not in tab_text:
             self.tabs.setTabText(self.tabs.tab_index_current, tab_text+"*")
-            
+
     def add_excludedaterange(self):
         """ Add another date range to the ExcludeDates QC check."""
         model = self.tree.model()
@@ -1901,7 +1903,7 @@ class edit_cfg_L3(QtGui.QWidget):
                     tab_text = str(self.tabs.tabText(self.tabs.tab_index_current))
                     if "*" not in tab_text:
                         self.tabs.setTabText(self.tabs.tab_index_current, tab_text+"*")
-                    break                    
+                    break
 
 class edit_cfg_concatenate(QtGui.QWidget):
     def __init__(self, main_gui):
@@ -1910,9 +1912,9 @@ class edit_cfg_concatenate(QtGui.QWidget):
 
         self.cfg_mod = copy.deepcopy(main_gui.cfg)
         self.tabs = main_gui.tabs
-        
+
         self.edit_concatenate_gui()
-        
+
     def edit_concatenate_gui(self):
         """ Edit a concatenate control file GUI."""
         # get a QTreeView
@@ -1932,7 +1934,7 @@ class edit_cfg_concatenate(QtGui.QWidget):
         self.tree.setSelectionBehavior(QtGui.QAbstractItemView.SelectItems)
         # build the model
         self.get_model_from_data()
-        
+
     def get_model_from_data(self):
         """ Build the data model."""
         self.tree.setModel(QtGui.QStandardItemModel())
@@ -1992,7 +1994,7 @@ class edit_cfg_concatenate(QtGui.QWidget):
                         cfg[key1][key2][key3] = val3
 
         return cfg
-    
+
     def handleItemChanged(self, item):
         """ Handler for when view items are edited."""
         # add an asterisk to the tab text to indicate the tab contents have changed
@@ -2001,7 +2003,7 @@ class edit_cfg_concatenate(QtGui.QWidget):
             self.tabs.setTabText(self.tabs.tab_index_current, tab_text+"*")
         # update the control file contents
         self.cfg_mod = self.get_data_from_model()
-    
+
     def context_menu(self, position):
         """ Right click context menu."""
         model = self.tree.model()
@@ -2088,9 +2090,9 @@ class edit_cfg_concatenate(QtGui.QWidget):
                     self.context_menu.actionBrowseOutputFile.triggered.connect(self.browse_output_file)
         elif level == 3:
             pass
-                
+
         self.context_menu.exec_(self.tree.viewport().mapToGlobal(position))
-        
+
     def get_section(self, section_name):
         """ Gets a section from a model by matching the section name."""
         model = self.tree.model()
@@ -2099,7 +2101,7 @@ class edit_cfg_concatenate(QtGui.QWidget):
             if str(section.text()) == str(section_name):
                 break
         return section, i
-    
+
     def get_subsection(self, section, idx):
         """ Gets a subsection from a model by matching the subsection name."""
         for i in range(section.rowCount()):
@@ -2109,7 +2111,7 @@ class edit_cfg_concatenate(QtGui.QWidget):
             if str(subsection.text()) == str(idx.data().toString()):
                 break
         return subsection, i
-    
+
     def get_keyval_by_key_name(self, section, key):
         """ Get the value from a section based on the key name."""
         found = False
@@ -2135,14 +2137,14 @@ class edit_cfg_concatenate(QtGui.QWidget):
                 val_child = str(section.child(i, 1).text())
                 break
         return key_child, val_child, found
-        
+
     def update_tab_text(self):
         """ Add an asterisk to the tab title text to indicate tab contents have changed."""
         # add an asterisk to the tab text to indicate the tab contents have changed
         tab_text = str(self.tabs.tabText(self.tabs.tab_index_current))
         if "*" not in tab_text:
             self.tabs.setTabText(self.tabs.tab_index_current, tab_text+"*")
-    
+
     def add_inputfile(self):
         """ Add an entry for a new input file."""
         model = self.tree.model()
@@ -2154,7 +2156,7 @@ class edit_cfg_concatenate(QtGui.QWidget):
             child0 = QtGui.QStandardItem(str(subsection.rowCount()))
             child1 = QtGui.QStandardItem("")
             subsection.appendRow([child0, child1])
-        
+
     def add_option(self, key, val):
         """ Add an option to the context menu."""
         # add the option to the [Options] section
@@ -2261,7 +2263,7 @@ class edit_cfg_concatenate(QtGui.QWidget):
             # remove the option
             section.removeRow(i)
             self.update_tab_text()
-            
+
     def remove_inputfile(self):
         """ Remove an input file."""
         model = self.tree.model()
@@ -2274,7 +2276,7 @@ class edit_cfg_concatenate(QtGui.QWidget):
             subsection.removeRow(i)
             self.renumber_subsection_keys(subsection)
             self.update_tab_text()
-    
+
     def selection_is_key(self, section, idx):
         """ Return True if the selected item is a key."""
         result = False
@@ -2285,7 +2287,7 @@ class edit_cfg_concatenate(QtGui.QWidget):
                 result = True
                 break
         return result
-    
+
     def selection_is_value(self, section, idx):
         """ Return True if the selected item is a value."""
         result = False
@@ -2296,7 +2298,7 @@ class edit_cfg_concatenate(QtGui.QWidget):
                 result = True
                 break
         return result
-    
+
     def renumber_subsection_keys(self, subsection):
         """ Renumber the subsection keys when an item is removed."""
         for i in range(subsection.rowCount()):
@@ -2311,9 +2313,9 @@ class edit_cfg_L4(QtGui.QWidget):
 
         self.cfg_mod = copy.deepcopy(main_gui.cfg)
         self.tabs = main_gui.tabs
-        
+
         self.edit_l4_gui()
-        
+
     def edit_l4_gui(self):
         """ Edit an L4 control file GUI."""
         # get a QTreeView
@@ -2333,7 +2335,7 @@ class edit_cfg_L4(QtGui.QWidget):
         self.tree.setSelectionBehavior(QtGui.QAbstractItemView.SelectItems)
         # build the model
         self.get_model_from_data()
-        
+
     def get_model_from_data(self):
         """ Build the data model."""
         self.tree.setModel(QtGui.QStandardItemModel())
@@ -2428,7 +2430,7 @@ class edit_cfg_L4(QtGui.QWidget):
                                 key5 = str(subsubsubsection.child(m, 0).text())
                                 val5 = str(subsubsubsection.child(m, 1).text())
                                 cfg[key1][key2][key3][key4][key5] = val5
-            
+
         return cfg
 
     def handleItemChanged(self, item):
@@ -2443,7 +2445,7 @@ class edit_cfg_L4(QtGui.QWidget):
     def context_menu(self, position):
         """ Right click context menu."""
         model = self.tree.model()
-        indexes = self.tree.selectedIndexes()        
+        indexes = self.tree.selectedIndexes()
         self.context_menu = QtGui.QMenu()
         level = self.get_level_selected_item()
         if level == 0:
@@ -2466,24 +2468,142 @@ class edit_cfg_L4(QtGui.QWidget):
             section, i = self.get_section(section_name)
             subsection, j = self.get_subsection(section, indexes[0])
             if (section_name == "Files"):
-                if (self.selection_is_key(subsection, indexes[0])):
+                if (self.selection_is_key(section, indexes[0])):
                     self.context_menu.actionRemoveInputFile = QtGui.QAction(self)
                     self.context_menu.actionRemoveInputFile.setText("Remove item")
                     self.context_menu.addAction(self.context_menu.actionRemoveInputFile)
-                    self.context_menu.actionRemoveInputFile.triggered.connect(self.remove_inputfile)
-                elif (self.selection_is_value(subsection, indexes[0])):
-                    self.context_menu.actionBrowseInputFile = QtGui.QAction(self)
-                    self.context_menu.actionBrowseInputFile.setText("Browse...")
-                    self.context_menu.addAction(self.context_menu.actionBrowseInputFile)
-                    self.context_menu.actionBrowseInputFile.triggered.connect(self.browse_input_file)
+                    self.context_menu.actionRemoveInputFile.triggered.connect(self.remove_item_files)
+                elif (self.selection_is_value(section, indexes[0])):
+                    key, val, found = self.get_keyval_by_val_name(section, indexes[0].data().toString())
+                    if key in ["file_path", "plot_path"]:
+                        self.context_menu.actionBrowseFilePath = QtGui.QAction(self)
+                        self.context_menu.actionBrowseFilePath.setText("Browse...")
+                        self.context_menu.addAction(self.context_menu.actionBrowseFilePath)
+                        self.context_menu.actionBrowseFilePath.triggered.connect(self.browse_file_path)
+                    elif key in ["in_filename"]:
+                        self.context_menu.actionBrowseInputFile = QtGui.QAction(self)
+                        self.context_menu.actionBrowseInputFile.setText("Browse...")
+                        self.context_menu.addAction(self.context_menu.actionBrowseInputFile)
+                        self.context_menu.actionBrowseInputFile.triggered.connect(self.browse_input_file)
+                    elif key in ["out_filename"]:
+                        self.context_menu.actionBrowseOutputFile = QtGui.QAction(self)
+                        self.context_menu.actionBrowseOutputFile.setText("Browse...")
+                        self.context_menu.addAction(self.context_menu.actionBrowseOutputFile)
+                        self.context_menu.actionBrowseOutputFile.triggered.connect(self.browse_output_file)
+                    elif key in ["aws", "access", "climatology", "erai"]:
+                        self.context_menu.actionBrowseAlternateFile = QtGui.QAction(self)
+                        self.context_menu.actionBrowseAlternateFile.setText("Browse...")
+                        self.context_menu.addAction(self.context_menu.actionBrowseAlternateFile)
+                        self.context_menu.actionBrowseAlternateFile.triggered.connect(self.browse_alternate_file)
         elif level == 2:
             # sections with 3 levels
             pass
         elif level == 3:
             # sections with 4 levels
             pass
-        
+
         self.context_menu.exec_(self.tree.viewport().mapToGlobal(position))
+
+    def add_fileentry(self):
+        """ Add a new entry to the 'Files' section."""
+        child0 = QtGui.QStandardItem("New item")
+        child1 = QtGui.QStandardItem("")
+        self.tree.sections["Files"].appendRow([child0, child1])
+        self.update_tab_text()
+
+    def browse_alternate_file(self):
+        """ Browse for the alternate data file path."""
+        model = self.tree.model()
+        idx = self.tree.selectedIndexes()[0]
+        # get the section containing the selected item
+        section, i = self.get_section("Files")
+        # get the key and value of the selected item
+        key, val, found = self.get_keyval_by_val_name(section, str(idx.data().toString()))
+        # set the file filter
+        file_filter = "*.nc"
+        if str(key) in ["climatology"]:
+            file_filter = "*.xls"
+        # get the file path from the selected item
+        file_path = os.path.split(str(idx.data().toString()))[0]
+        file_path = os.path.join(file_path,"")
+        # dialog for open file
+        file_path = os.path.join(file_path, "")
+        new_file = QtGui.QFileDialog.getOpenFileName(caption="Choose an alternate data file ...", directory=file_path, filter=file_filter)
+        # update the model
+        if len(str(new_file)) > 0:
+            subsection.child(i, 1).setText(new_file)
+
+    def browse_file_path(self):
+        """ Browse for the data file path."""
+        model = self.tree.model()
+        indexes = self.tree.selectedIndexes()
+        # get the section containing the selected item
+        section, i = self.get_section("Files")
+        # get the key and value of the selected item
+        key, val, found = self.get_keyval_by_val_name(section, str(indexes[0].data().toString()))
+        # dialog for new directory
+        new_dir = QtGui.QFileDialog.getExistingDirectory(self, "Open a folder", val, QtGui.QFileDialog.ShowDirsOnly)
+        # update the model
+        if len(str(new_dir)) > 0:
+            section.child(i,1).setText(new_dir)
+
+    def browse_input_file(self):
+        """ Browse for the input data file path."""
+        model = self.tree.model()
+        indexes = self.tree.selectedIndexes()
+        # get the section containing the selected item
+        section, i = self.get_section("Files")
+        subsection, i = self.get_subsection(section, indexes[0])
+        cfg = self.get_data_from_model()
+        file_path = pfp_utils.get_keyvaluefromcf(cfg, ["Files"], "file_path", default=os.path.expanduser("~"))
+        # dialog for open file
+        file_path = os.path.join(file_path, "")
+        new_file = QtGui.QFileDialog.getOpenFileName(caption="Choose an input file ...", directory=file_path, filter="*.nc")
+        # update the model
+        if len(str(new_file)) > 0:
+            subsection.child(i, 1).setText(new_file)
+
+    def browse_output_file(self):
+        """ Browse for the output data file path."""
+        model = self.tree.model()
+        indexes = self.tree.selectedIndexes()
+        # get the section containing the selected item
+        section, i = self.get_section("Files")
+        subsection, i = self.get_subsection(section, indexes[0].parent())
+        cfg = self.get_data_from_model()
+        file_path = pfp_utils.get_keyvaluefromcf(cfg, ["Files"], "file_path", default=os.path.expanduser("~"))
+        # dialog for open file
+        file_path = os.path.join(file_path, "")
+        new_file = QtGui.QFileDialog.getOpenFileName(caption="Choose an output file ...", directory=file_path, filter="*.nc")
+        # update the model
+        if len(str(new_file)) > 0:
+            subsection.child(i, 1).setText(new_file)
+
+    def get_keyval_by_key_name(self, section, key):
+        """ Get the value from a section based on the key name."""
+        found = False
+        val_child = ""
+        key_child = ""
+        for i in range(section.rowCount()):
+            if str(section.child(i, 0).text()) == str(key):
+                found = True
+                key_child = str(section.child(i, 0).text())
+                val_child = str(section.child(i, 1).text())
+                break
+        return key_child, val_child, found
+
+    def get_keyval_by_val_name(self, section, val):
+        """ Get the value from a section based on the value name."""
+        found = False
+        key_child = ""
+        val_child = ""
+        for i in range(section.rowCount()):
+            if str(section.child(i, 1).text()) == str(val):
+                found = True
+                key_child = str(section.child(i, 0).text())
+                val_child = str(section.child(i, 1).text())
+                break
+        return key_child, val_child, found
 
     def get_level_selected_item(self):
         """ Get the level of the selected item."""
@@ -2497,13 +2617,58 @@ class edit_cfg_L4(QtGui.QWidget):
                 index = index.parent()
                 level += 1
         return level
-        
-    def add_fileentry(self):
-        """ Add a new entry to the 'Files' section."""
-        child0 = QtGui.QStandardItem("New item")
-        child1 = QtGui.QStandardItem("")
-        self.tree.sections["Files"].appendRow([child0, child1])
-        self.update_tab_text()
+
+    def get_section(self, section_name):
+        """ Gets a section from a model by matching the section name."""
+        model = self.tree.model()
+        for i in range(model.rowCount()):
+            section = model.item(i)
+            if str(section.text()) == str(section_name):
+                break
+        return section, i
+
+    def get_subsection(self, section, idx):
+        """ Gets a subsection from a model by matching the subsection name."""
+        for i in range(section.rowCount()):
+            # get the child subsection
+            subsection = section.child(i)
+            # check to see if we have the selected subsection
+            if str(subsection.text()) == str(idx.data().toString()):
+                break
+        return subsection, i
+
+    def remove_item_files(self):
+        """ Remove an item from the Files section."""
+        model = self.tree.model()
+        # loop over selected items in the tree
+        for idx in self.tree.selectedIndexes():
+            # get the "Files" section
+            section, i = self.get_section("Files")
+            subsection, i = self.get_subsection(section, idx)
+            section.removeRow(i)
+            self.update_tab_text()
+
+    def selection_is_key(self, section, idx):
+        """ Return True if the selected item is a key."""
+        result = False
+        for i in range(section.rowCount()):
+            key = str(section.child(i, 0).text())
+            val = str(section.child(i, 1).text())
+            if str(idx.data().toString()) == key:
+                result = True
+                break
+        return result
+
+    def selection_is_value(self, section, idx):
+        """ Return True if the selected item is a value."""
+        result = False
+        for i in range(section.rowCount()):
+            key = str(section.child(i, 0).text())
+            val = str(section.child(i, 1).text())
+            if str(idx.data().toString()) == val:
+                result = True
+                break
+        return result
 
     def update_tab_text(self):
         """ Add an asterisk to the tab title text to indicate tab contents have changed."""
@@ -2511,7 +2676,7 @@ class edit_cfg_L4(QtGui.QWidget):
         tab_text = str(self.tabs.tabText(self.tabs.tab_index_current))
         if "*" not in tab_text:
             self.tabs.setTabText(self.tabs.tab_index_current, tab_text+"*")
-    
+
 class pfp_l4_ui(QtGui.QDialog):
     def __init__(self, parent=None):
         super(pfp_l4_ui, self).__init__(parent)
