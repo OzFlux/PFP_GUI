@@ -95,6 +95,8 @@ L4
    - "Remove QC check"
    - "Add MergeSeries"
    - "Remove MergeSeries"
+10) automagic population of new variable fields based on contents of
+    [Files] section
 
 L5
 

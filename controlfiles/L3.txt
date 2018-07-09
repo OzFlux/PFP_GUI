@@ -120,30 +120,30 @@ controlfile_name = /home/peter/PFP_GUI/controlfiles/L3.txt
             Source = "['Sws_180cma','Sws_180cmb','Sws_180cmc']"
 
 [Plots]
-    [[1]]
+    [[Radiative fluxes]]
         Title = Radiative fluxes
         Variables = "['Fsd','Fsu','Fld','Flu','Fn']"
-    [[2]]
+    [[Turbulent fluxes]]
         Title = Turbulent fluxes
         Variables = "['Fh','Fe','Fc','ustar','Fm']"
-    [[3]]
+    [[Air temperature, humidity and CO2]]
         Title = "Air temperature, humidity and CO2"
         Variables = "['Ta','Ah','Cc','Precip']"
-    [[4]]
+    [[Soil temperature, water content and heat flux]]
         Title = "Soil temperature, water content and heat flux"
         Variables = "['Ts','Sws','Fg','Precip']"
-    [[5]]
+    [[Pressure, wind speed and direction]]
         Title = "Pressure, wind speed and direction"
         Variables = "['ps','Ws_CSAT','Ux','Uy','Uz','Wd']"
-    [[6]]
+    [[Fc, precip and ppm]]
         Title = "Fc, precip and ppm"
         Variables = "['Fc','Precip','Cc']"
-    [[7]]
+    [[Fh diagnostics]]
         Title = Fh diagnostics
         Variables = "['Fh','UzT','Diag_CSAT','Diag_7500','AGC_7500','Ah_7500_Sd','Cc_7500_Sd']"
-    [[8]]
+    [[Fe diagnostics]]
         Title = Fe diagnostics
         Variables = "['Fe','UzA','Diag_CSAT','Diag_7500','AGC_7500','Ah_7500_Sd','Cc_7500_Sd']"
-    [[9]]
+    [[Fc diagnostics]]
         Title = Fc diagnostics
         Variables = "['Fc','UzC','Diag_CSAT','Diag_7500','AGC_7500','Ah_7500_Sd','Cc_7500_Sd']"

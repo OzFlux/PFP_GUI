@@ -2424,14 +2424,20 @@ class edit_cfg_L4(QtGui.QWidget):
                         subsubsection = subsection.child(k)
                         key3 = str(subsubsection.text())
                         cfg[key1][key2][key3] = {}
-                        for l in range(subsubsection.rowCount()):
-                            subsubsubsection = subsubsection.child(l)
-                            key4 = str(subsubsubsection.text())
-                            cfg[key1][key2][key3][key4] = {}
-                            for m in range(subsubsubsection.rowCount()):
-                                key5 = str(subsubsubsection.child(m, 0).text())
-                                val5 = str(subsubsubsection.child(m, 1).text())
-                                cfg[key1][key2][key3][key4][key5] = val5
+                        if key3 in ["GapFillFromAlternate", "GapFillFromClimatology", "GapFillUsingMDS"]:
+                            for l in range(subsubsection.rowCount()):
+                                subsubsubsection = subsubsection.child(l)
+                                key4 = str(subsubsubsection.text())
+                                cfg[key1][key2][key3][key4] = {}
+                                for m in range(subsubsubsection.rowCount()):
+                                    key5 = str(subsubsubsection.child(m, 0).text())
+                                    val5 = str(subsubsubsection.child(m, 1).text())
+                                    cfg[key1][key2][key3][key4][key5] = val5
+                        elif key3 in ["MergeSeries", "RangeCheck", "DiurnalCheck", "DependencyCheck", "ExcludeDates"]:
+                            for l in range(subsubsection.rowCount()):
+                                key4 = str(subsubsection.child(i, 0).text())
+                                val4 = str(subsubsection.child(i, 1).text())
+                                cfg[key1][key2][key3][key4] = val4
 
         return cfg
 
@@ -2515,18 +2521,136 @@ class edit_cfg_L4(QtGui.QWidget):
                     self.context_menu.addAction(self.context_menu.actionRemoveOption)
                     self.context_menu.actionRemoveOption.triggered.connect(self.remove_item_options)
             elif (section_name in ["Variables", "Drivers"]):
+                self.context_menu.actionAddAlternate = QtGui.QAction(self)
+                self.context_menu.actionAddAlternate.setText("Add Alternate")
+                self.context_menu.addAction(self.context_menu.actionAddAlternate)
+                self.context_menu.actionAddAlternate.triggered.connect(self.add_alternate)
+                self.context_menu.actionAddMDS = QtGui.QAction(self)
+                self.context_menu.actionAddMDS.setText("Add MDS")
+                self.context_menu.addAction(self.context_menu.actionAddMDS)
+                self.context_menu.actionAddMDS.triggered.connect(self.add_MDS)
+                self.context_menu.actionAddClimatology = QtGui.QAction(self)
+                self.context_menu.actionAddClimatology.setText("Add Climatology")
+                self.context_menu.addAction(self.context_menu.actionAddClimatology)
+                self.context_menu.actionAddClimatology.triggered.connect(self.add_climatology)
+                self.context_menu.addSeparator()
+                self.context_menu.actionAddRangeCheck = QtGui.QAction(self)
+                self.context_menu.actionAddRangeCheck.setText("Add RangeCheck")
+                self.context_menu.addAction(self.context_menu.actionAddRangeCheck)
+                self.context_menu.actionAddRangeCheck.triggered.connect(self.add_rangecheck)
+                self.context_menu.actionAddDependencyCheck = QtGui.QAction(self)
+                self.context_menu.actionAddDependencyCheck.setText("Add DependencyCheck")
+                self.context_menu.addAction(self.context_menu.actionAddDependencyCheck)
+                self.context_menu.actionAddDependencyCheck.triggered.connect(self.add_dependencycheck)
+                self.context_menu.actionAddDiurnalCheck = QtGui.QAction(self)
+                self.context_menu.actionAddDiurnalCheck.setText("Add DiurnalCheck")
+                self.context_menu.addAction(self.context_menu.actionAddDiurnalCheck)
+                self.context_menu.actionAddDiurnalCheck.triggered.connect(self.add_diurnalcheck)
+                self.context_menu.actionAddExcludeDates = QtGui.QAction(self)
+                self.context_menu.actionAddExcludeDates.setText("Add ExcludeDates")
+                self.context_menu.addAction(self.context_menu.actionAddExcludeDates)
+                self.context_menu.actionAddExcludeDates.triggered.connect(self.add_excludedates)
+                self.context_menu.addSeparator()
                 self.context_menu.actionRemoveOption = QtGui.QAction(self)
                 self.context_menu.actionRemoveOption.setText("Remove variable")
                 self.context_menu.addAction(self.context_menu.actionRemoveOption)
                 self.context_menu.actionRemoveOption.triggered.connect(self.remove_variable)
         elif level == 2:
             # sections with 3 levels
-            pass
+            section_name = str(indexes[0].parent().parent().data().toString())
+            subsection_name = str(indexes[0].parent().data().toString())
+            subsubsection_name = str(indexes[0].data().toString())
+            #if str(indexes[0].data().toString()) in ["ExcludeDates"]:
+                #self.context_menu.actionAddExcludeDateRange = QtGui.QAction(self)
+                #self.context_menu.actionAddExcludeDateRange.setText("Add date range")
+                #self.context_menu.addAction(self.context_menu.actionAddExcludeDateRange)
+                #self.context_menu.actionAddExcludeDateRange.triggered.connect(self.add_excludedaterange)
+                #self.context_menu.addSeparator()
+            if subsubsection_name in ["RangeCheck", "DependencyCheck", "DiurnalCheck", "ExcludeDates"]:
+                self.context_menu.actionRemoveQCCheck = QtGui.QAction(self)
+                self.context_menu.actionRemoveQCCheck.setText("Remove QC check")
+                self.context_menu.addAction(self.context_menu.actionRemoveQCCheck)
+                self.context_menu.actionRemoveQCCheck.triggered.connect(self.remove_qc_check)
+            elif subsubsection_name in ["GapFillFromAlternate", "GapFillUsingMDS", "GapFillFromClimatology"]:
+                if subsubsection_name == "GapFillFromAlternate":
+                    self.context_menu.actionAddMoreAlternate = QtGui.QAction(self)
+                    self.context_menu.actionAddMoreAlternate.setText("Add Alternate")
+                    self.context_menu.addAction(self.context_menu.actionAddMoreAlternate)
+                    self.context_menu.actionAddMoreAlternate.triggered.connect(self.add_more_alternate)
+                self.context_menu.actionRemoveGFMethod = QtGui.QAction(self)
+                self.context_menu.actionRemoveGFMethod.setText("Remove method")
+                self.context_menu.addAction(self.context_menu.actionRemoveGFMethod)
+                self.context_menu.actionRemoveGFMethod.triggered.connect(self.remove_gf_method)
         elif level == 3:
             # sections with 4 levels
             pass
 
         self.context_menu.exec_(self.tree.viewport().mapToGlobal(position))
+
+    def add_alternate(self):
+        """ Add GapFillFromAlternate to a variable."""
+        idx = self.tree.selectedIndexes()[0]
+        dict_to_add = {"GapFillFromAlternate":{"<var_alt>": {"source": "<alt>"}}}
+        # get the [Variables] section
+        section, i = self.get_section("Variables")
+        # get the subsection (variable)
+        subsection, j = self.get_subsection(section, idx)
+        # add the subsubsection (RangeCheck)
+        self.add_subsubsubsection(subsection, dict_to_add)
+        # update the tab text with an asterix if required
+        self.update_tab_text()
+
+    def add_climatology(self):
+        """ Add GapFillFromClimatology to a variable."""
+        idx = self.tree.selectedIndexes()[0]
+        dict_to_add = {"GapFillFromClimatology":{"<var>_cli": {"method": "interpolated daily"}}}
+        # get the [Variables] section
+        section, i = self.get_section("Variables")
+        # get the subsection (variable)
+        subsection, j = self.get_subsection(section, idx)
+        # add the subsubsection (RangeCheck)
+        self.add_subsubsubsection(subsection, dict_to_add)
+        # update the tab text with an asterix if required
+        self.update_tab_text()
+
+    def add_dependencycheck(self):
+        """ Add a dependency check to a variable."""
+        idx = self.tree.selectedIndexes()[0]
+        dict_to_add = {"DependencyCheck":{"Source":"[]"}}
+        # get the [Variables] section
+        section, i = self.get_section("Variables")
+        # get the subsection (variable)
+        subsection, j = self.get_subsection(section, idx)
+        # add the subsubsection (RangeCheck)
+        self.add_subsubsection(subsection, dict_to_add)
+        # update the tab text with an asterix if required
+        self.update_tab_text()
+
+    def add_diurnalcheck(self):
+        """ Add a diurnal check to a variable."""
+        idx = self.tree.selectedIndexes()[0]
+        dict_to_add = {"DiurnalCheck":{"NumSd":"5"}}
+        # get the [Variables] section
+        section, i = self.get_section("Variables")
+        # get the subsection (variable)
+        subsection, j = self.get_subsection(section, idx)
+        # add the subsubsection (RangeCheck)
+        self.add_subsubsection(subsection, dict_to_add)
+        # update the tab text with an asterix if required
+        self.update_tab_text()
+
+    def add_excludedates(self):
+        """ Add an exclude dates check to a variable."""
+        idx = self.tree.selectedIndexes()[0]
+        dict_to_add = {"ExcludeDates":{"0":"[YYYY-mm-dd HH:MM, YYYY-mm-dd HH:MM]"}}
+        # get the [Variables] section
+        section, i = self.get_section("Variables")
+        # get the subsection (variable)
+        subsection, j = self.get_subsection(section, idx)
+        # add the subsubsection (RangeCheck)
+        self.add_subsubsection(subsection, dict_to_add)
+        # update the tab text with an asterix if required
+        self.update_tab_text()
 
     def add_fileentry(self):
         """ Add a new entry to the [Files] section."""
@@ -2542,26 +2666,83 @@ class edit_cfg_L4(QtGui.QWidget):
         self.tree.sections["Options"].appendRow([child0, child1])
         self.update_tab_text()
 
+    def add_MDS(self):
+        """ Add GapFillUsingMDS to a variable."""
+        idx = self.tree.selectedIndexes()[0]
+        dict_to_add = {"GapFillUsingMDS":{"<var>_MDS": {"source": "MDS"}}}
+        # get the [Variables] section
+        section, i = self.get_section("Variables")
+        # get the subsection (variable)
+        subsection, j = self.get_subsection(section, idx)
+        # add the subsubsection (RangeCheck)
+        self.add_subsubsubsection(subsection, dict_to_add)
+        # update the tab text with an asterix if required
+        self.update_tab_text()
+
+    def add_more_alternate(self):
+        """ Add another alternate source to a variable."""
+        idx = self.tree.selectedIndexes()[0]
+        dict_to_add = {"<var_alt>": {"source": "<alt>"}}
+        # get the [Variables] section
+        section, i = self.get_section("Variables")
+        # get the subsection (variable)
+        subsection, j = self.get_subsection(section, idx)
+        subsubsection, j = self.get_subsection(subsection, idx)
+        # add the subsubsection (RangeCheck)
+        self.add_subsubsection(subsubsection, dict_to_add)
+        # update the tab text with an asterix if required
+        self.update_tab_text()
+
+    def add_rangecheck(self):
+        """ Add a range check to a variable."""
+        idx = self.tree.selectedIndexes()[0]
+        dict_to_add = {"RangeCheck":{"Lower":0, "Upper": 1}}
+        # get the [Variables] section
+        section, i = self.get_section("Variables")
+        # get the subsection (variable)
+        subsection, j = self.get_subsection(section, idx)
+        # add the subsubsection (RangeCheck)
+        self.add_subsubsection(subsection, dict_to_add)
+        # update the tab text with an asterix if required
+        self.update_tab_text()
+
+    def add_subsubsection(self, subsection, dict_to_add):
+        """ Add a subsubsection to the model."""
+        for key1 in dict_to_add:
+            subsubsection = QtGui.QStandardItem(key1)
+            for key2 in dict_to_add[key1]:
+                child0 = QtGui.QStandardItem(key2)
+                child1 = QtGui.QStandardItem(str(dict_to_add[key1][key2]))
+                subsubsection.appendRow([child0, child1])
+            subsection.appendRow(subsubsection)
+
+    def add_subsubsubsection(self, subsection, dict_to_add):
+        """ Add a subsubsubsection to the model."""
+        for key3 in dict_to_add:
+            subsubsection = QtGui.QStandardItem(key3)
+            for key4 in dict_to_add[key3]:
+                subsubsubsection = QtGui.QStandardItem(key4)
+                for val in dict_to_add[key3][key4]:
+                    value = dict_to_add[key3][key4][val]
+                    child0 = QtGui.QStandardItem(val)
+                    child1 = QtGui.QStandardItem(str(value))
+                    subsubsubsection.appendRow([child0, child1])
+                subsubsection.appendRow(subsubsubsection)
+            subsection.appendRow(subsubsection)
+
     def add_variable(self):
         """ Add a variable."""
-        new_var = {"GapFillFromAlternate":{"var_source": {"source": "source"}},
-                   "GapFillUsingMDS":{"var_MDS":{"source":"MDS"}},
-                   "GapFillFromClimatology":{"var_cli":{"method":"interpolated daily"}}}
-        parent2 = QtGui.QStandardItem("New variable")
-        for key3 in new_var:
-            parent3 = QtGui.QStandardItem(key3)
-            for val in new_var[key3]:
-                value = new_var[key3][val]
-                child0 = QtGui.QStandardItem(val)
-                child1 = QtGui.QStandardItem(str(value))
-                parent3.appendRow([child0, child1])
-            parent2.appendRow(parent3)
-        self.tree.sections["Variables"].appendRow(parent2)
-        # add an asterisk to the tab text to indicate the tab contents have changed
-        tab_text = str(self.tabs.tabText(self.tabs.tab_index_current))
-        if "*" not in tab_text:
-            self.tabs.setTabText(self.tabs.tab_index_current, tab_text+"*")
-        
+        dict_to_add = {"GapFillFromAlternate":{"<var_alt>": {"source": "<alt>"}},
+                       "GapFillUsingMDS":{"<var>_MDS":{"source":"MDS"}},
+                       "GapFillFromClimatology":{"<var>_cli":{"method":"interpolated daily"}}}
+        subsection = QtGui.QStandardItem("New variable")
+        self.add_subsubsubsection(subsection, dict_to_add)
+        dict_to_add = {"MergeSeries":{"Source":"[]"}}
+        self.add_subsubsection(subsection, dict_to_add)
+        self.tree.sections["Variables"].appendRow(subsection)
+        # update the tab text with an asterix if required
+        self.update_tab_text()
+
     def browse_alternate_file(self):
         """ Browse for the alternate data file path."""
         model = self.tree.model()
@@ -2696,6 +2877,32 @@ class edit_cfg_L4(QtGui.QWidget):
             section, i = self.get_section("Files")
             subsection, i = self.get_subsection(section, idx)
             section.removeRow(i)
+            self.update_tab_text()
+
+    def remove_qc_check(self):
+        """ Remove a QC check."""
+        # loop over selected items in the tree
+        for idx in self.tree.selectedIndexes():
+            # get the [Variables] section
+            section, i = self.get_section("Variables")
+            # get the variable section
+            subsection, j = self.get_subsection(section, idx)
+            # get the variable QC section
+            subsubsection, k = self.get_subsection(subsection, idx)
+            subsection.removeRow(k)
+            self.update_tab_text()
+
+    def remove_gf_method(self):
+        """ Remove a gap filling method."""
+        # loop over selected items in the tree
+        for idx in self.tree.selectedIndexes():
+            # get the [Variables] section
+            section, i = self.get_section("Variables")
+            # get the variable section
+            subsection, j = self.get_subsection(section, idx)
+            # get the variable gap fill method section
+            subsubsection, k = self.get_subsection(subsection, idx)
+            subsection.removeRow(k)
             self.update_tab_text()
 
     def remove_item_options(self):
