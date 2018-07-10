@@ -796,7 +796,7 @@ def gfalternate_getalternatevaratmaxr(ds_tower,ds_alternate,alternate_info,mode=
                 msg = " getalternatevaratmaxr: not enough good data in alternate "+var
                 logger.error(msg)
             rval = float(0)
-        r[idx] = rval
+        r[idx] = numpy.ma.filled(rval, float(c.missing_value))
     # save the correlation array for later plotting
     alternate_info["r"] = r
     # sort the correlation array and the alternate variable list

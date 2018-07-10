@@ -2354,10 +2354,7 @@ class edit_cfg_L4(QtGui.QWidget):
                     child1 = QtGui.QStandardItem(str(value))
                     self.tree.sections[key1].appendRow([child0, child1])
                 self.tree.model().appendRow(self.tree.sections[key1])
-            elif key1 in ["Variables", "Drivers"]:
-                if key1 == "Drivers":
-                    key1 = "Variables"
-                    self.cfg_mod.rename("Drivers", key1)
+            elif key1 in ["Drivers"]:
                 # sections with 4 levels
                 self.tree.sections[key1] = QtGui.QStandardItem(key1)
                 for key2 in self.cfg_mod[key1]:
@@ -2411,7 +2408,7 @@ class edit_cfg_L4(QtGui.QWidget):
             elif key1 in []:
                 # sections with 3 levels
                 pass
-            elif key1 in ["Variables", "Drivers"]:
+            elif key1 in ["Drivers"]:
                 # sections with 4 levels
                 for j in range(section.rowCount()):
                     # subsections are variables
@@ -2435,8 +2432,8 @@ class edit_cfg_L4(QtGui.QWidget):
                                     cfg[key1][key2][key3][key4][key5] = val5
                         elif key3 in ["MergeSeries", "RangeCheck", "DiurnalCheck", "DependencyCheck", "ExcludeDates"]:
                             for l in range(subsubsection.rowCount()):
-                                key4 = str(subsubsection.child(i, 0).text())
-                                val4 = str(subsubsection.child(i, 1).text())
+                                key4 = str(subsubsection.child(l, 0).text())
+                                val4 = str(subsubsection.child(l, 1).text())
                                 cfg[key1][key2][key3][key4] = val4
 
         return cfg
@@ -2470,7 +2467,7 @@ class edit_cfg_L4(QtGui.QWidget):
                 self.context_menu.actionAddMaxGapInterpolate.setText("MaxGapInterpolate")
                 self.context_menu.addAction(self.context_menu.actionAddMaxGapInterpolate)
                 self.context_menu.actionAddMaxGapInterpolate.triggered.connect(self.add_maxgapinterpolate)
-            elif str(indexes[0].data().toString()) in ["Variables", "Drivers"]:
+            elif str(indexes[0].data().toString()) in ["Drivers"]:
                 self.context_menu.actionAddVariable = QtGui.QAction(self)
                 self.context_menu.actionAddVariable.setText("Add variable")
                 self.context_menu.addAction(self.context_menu.actionAddVariable)
@@ -2520,7 +2517,7 @@ class edit_cfg_L4(QtGui.QWidget):
                     self.context_menu.actionRemoveOption.setText("Remove option")
                     self.context_menu.addAction(self.context_menu.actionRemoveOption)
                     self.context_menu.actionRemoveOption.triggered.connect(self.remove_item_options)
-            elif (section_name in ["Variables", "Drivers"]):
+            elif (section_name in ["Drivers"]):
                 self.context_menu.actionAddAlternate = QtGui.QAction(self)
                 self.context_menu.actionAddAlternate.setText("Add Alternate")
                 self.context_menu.addAction(self.context_menu.actionAddAlternate)
@@ -2592,7 +2589,7 @@ class edit_cfg_L4(QtGui.QWidget):
         idx = self.tree.selectedIndexes()[0]
         dict_to_add = {"GapFillFromAlternate":{"<var_alt>": {"source": "<alt>"}}}
         # get the [Variables] section
-        section, i = self.get_section("Variables")
+        section, i = self.get_section("Drivers")
         # get the subsection (variable)
         subsection, j = self.get_subsection(section, idx)
         # add the subsubsection (RangeCheck)
@@ -2605,7 +2602,7 @@ class edit_cfg_L4(QtGui.QWidget):
         idx = self.tree.selectedIndexes()[0]
         dict_to_add = {"GapFillFromClimatology":{"<var>_cli": {"method": "interpolated daily"}}}
         # get the [Variables] section
-        section, i = self.get_section("Variables")
+        section, i = self.get_section("Drivers")
         # get the subsection (variable)
         subsection, j = self.get_subsection(section, idx)
         # add the subsubsection (RangeCheck)
@@ -2618,7 +2615,7 @@ class edit_cfg_L4(QtGui.QWidget):
         idx = self.tree.selectedIndexes()[0]
         dict_to_add = {"DependencyCheck":{"Source":"[]"}}
         # get the [Variables] section
-        section, i = self.get_section("Variables")
+        section, i = self.get_section("Drivers")
         # get the subsection (variable)
         subsection, j = self.get_subsection(section, idx)
         # add the subsubsection (RangeCheck)
@@ -2631,7 +2628,7 @@ class edit_cfg_L4(QtGui.QWidget):
         idx = self.tree.selectedIndexes()[0]
         dict_to_add = {"DiurnalCheck":{"NumSd":"5"}}
         # get the [Variables] section
-        section, i = self.get_section("Variables")
+        section, i = self.get_section("Drivers")
         # get the subsection (variable)
         subsection, j = self.get_subsection(section, idx)
         # add the subsubsection (RangeCheck)
@@ -2644,7 +2641,7 @@ class edit_cfg_L4(QtGui.QWidget):
         idx = self.tree.selectedIndexes()[0]
         dict_to_add = {"ExcludeDates":{"0":"[YYYY-mm-dd HH:MM, YYYY-mm-dd HH:MM]"}}
         # get the [Variables] section
-        section, i = self.get_section("Variables")
+        section, i = self.get_section("Drivers")
         # get the subsection (variable)
         subsection, j = self.get_subsection(section, idx)
         # add the subsubsection (RangeCheck)
@@ -2671,7 +2668,7 @@ class edit_cfg_L4(QtGui.QWidget):
         idx = self.tree.selectedIndexes()[0]
         dict_to_add = {"GapFillUsingMDS":{"<var>_MDS": {"source": "MDS"}}}
         # get the [Variables] section
-        section, i = self.get_section("Variables")
+        section, i = self.get_section("Drivers")
         # get the subsection (variable)
         subsection, j = self.get_subsection(section, idx)
         # add the subsubsection (RangeCheck)
@@ -2684,7 +2681,7 @@ class edit_cfg_L4(QtGui.QWidget):
         idx = self.tree.selectedIndexes()[0]
         dict_to_add = {"<var_alt>": {"source": "<alt>"}}
         # get the [Variables] section
-        section, i = self.get_section("Variables")
+        section, i = self.get_section("Drivers")
         # get the subsection (variable)
         subsection, j = self.get_subsection(section, idx)
         subsubsection, j = self.get_subsection(subsection, idx)
@@ -2698,7 +2695,7 @@ class edit_cfg_L4(QtGui.QWidget):
         idx = self.tree.selectedIndexes()[0]
         dict_to_add = {"RangeCheck":{"Lower":0, "Upper": 1}}
         # get the [Variables] section
-        section, i = self.get_section("Variables")
+        section, i = self.get_section("Drivers")
         # get the subsection (variable)
         subsection, j = self.get_subsection(section, idx)
         # add the subsubsection (RangeCheck)
@@ -2739,7 +2736,7 @@ class edit_cfg_L4(QtGui.QWidget):
         self.add_subsubsubsection(subsection, dict_to_add)
         dict_to_add = {"MergeSeries":{"Source":"[]"}}
         self.add_subsubsection(subsection, dict_to_add)
-        self.tree.sections["Variables"].appendRow(subsection)
+        self.tree.sections["Drivers"].appendRow(subsection)
         # update the tab text with an asterix if required
         self.update_tab_text()
 
@@ -2884,7 +2881,7 @@ class edit_cfg_L4(QtGui.QWidget):
         # loop over selected items in the tree
         for idx in self.tree.selectedIndexes():
             # get the [Variables] section
-            section, i = self.get_section("Variables")
+            section, i = self.get_section("Drivers")
             # get the variable section
             subsection, j = self.get_subsection(section, idx)
             # get the variable QC section
@@ -2897,7 +2894,7 @@ class edit_cfg_L4(QtGui.QWidget):
         # loop over selected items in the tree
         for idx in self.tree.selectedIndexes():
             # get the [Variables] section
-            section, i = self.get_section("Variables")
+            section, i = self.get_section("Drivers")
             # get the variable section
             subsection, j = self.get_subsection(section, idx)
             # get the variable gap fill method section
@@ -2918,8 +2915,8 @@ class edit_cfg_L4(QtGui.QWidget):
     def remove_variable(self):
         """ Remove a variable."""
         for idx in self.tree.selectedIndexes():
-            # get the "Variables" section
-            section, i = self.get_section("Variables")
+            # get the "Drivers" section
+            section, i = self.get_section("Drivers")
             subsection, i = self.get_subsection(section, idx)
             section.removeRow(i)
             self.update_tab_text()

@@ -5,6 +5,7 @@ import os
 import matplotlib
 from PyQt4 import QtCore
 # PFP modules
+import pfp_clim
 import pfp_io
 import pfp_levels
 import pfp_plot
@@ -282,9 +283,37 @@ def do_plot_closeplots():
     matplotlib.pyplot.close("all")
     return
 # top level routines for the Utilities menu
-def do_utilities_climatology():
-    logger.warning("Climatology not implemented yet")
-    return
+def do_utilities_climatology(mode="standard"):
+    #logger.warning("Climatology not implemented yet")
+    #return
+    logger.info(" Starting climatology")
+    if mode == "standard":
+        stdname = "controlfiles/standard/climatology.txt"
+        if os.path.exists(stdname):
+            cf = pfp_io.get_controlfilecontents(stdname)
+            filename = pfp_io.get_filename_dialog(path="../Sites", title='Choose a netCDF file')
+            if not os.path.exists(filename):
+                logger.info( " Climatology: no input file chosen")
+                return
+            if "Files" not in cf:
+                cf["Files"] = {}
+            cf["Files"]["file_path"] = os.path.join(os.path.split(filename)[0],"")
+            in_filename = os.path.split(filename)[1]
+            cf["Files"]["in_filename"] = in_filename
+            cf["Files"]["out_filename"] = in_filename.replace(".nc", "_Climatology.xls")
+        else:
+            cf = pfp_io.load_controlfile(path="controlfiles")
+            if len(cf) == 0:
+                return
+    else:
+        logger.info("Loading control file ...")
+        cf = pfp_io.load_controlfile(path='controlfiles')
+        if len(cf) == 0:
+            return
+    logger.info("Doing the climatology")
+    pfp_clim.climatology(cf)
+    logger.info(' Finished climatology')
+    logger.info("")    
 def do_utilities_ustar_cpd():
     logger.warning("U* threshold (CPD) not implemented yet")
     return

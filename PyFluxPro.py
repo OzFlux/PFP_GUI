@@ -242,7 +242,7 @@ class pfp_main_ui(QtGui.QWidget, QPlainTextEditLogger):
         self.actionPlotTimeSeries.triggered.connect(pfp_top_level.do_plot_timeseries)
         self.actionPlotClosePlots.triggered.connect(pfp_top_level.do_plot_closeplots)
         # Utilities menu actions
-        self.actionUtilitiesClimatology.triggered.connect(pfp_top_level.do_utilities_climatology)
+        self.actionUtilitiesClimatology.triggered.connect(lambda:pfp_top_level.do_utilities_climatology(mode="standard"))
         self.actionUtilitiesUstarCPD.triggered.connect(pfp_top_level.do_utilities_ustar_cpd)
         # add the L4 GUI
         self.l4_ui = pfp_gui.pfp_l4_ui(self)
@@ -250,11 +250,12 @@ class pfp_main_ui(QtGui.QWidget, QPlainTextEditLogger):
     def open_controlfile(self):
         # get the control file path
         cfgpath = QtGui.QFileDialog.getOpenFileName(caption="Choose a control file ...")
+        cfgpath = str(cfgpath)
         # check to see if file open was cancelled
         if len(str(cfgpath)) == 0:
             return
         # read the contents of the control file
-        self.cfg = ConfigObj(str(cfgpath), indent_type="    ")
+        self.cfg = ConfigObj(cfgpath, indent_type="    ")
         self.cfg["level"] = self.get_cf_level()
         # create a QtTreeView to edit the control file
         if self.cfg["level"] in ["L1"]:

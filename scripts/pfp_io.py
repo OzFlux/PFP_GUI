@@ -2163,10 +2163,7 @@ def xl_write_AlternateStats(ds):
         for output in output_list:
             xlResultsSheet.write(xlRow,xlCol,output)
             # convert masked array to ndarray
-            if numpy.ma.isMA(ds.alternate[label]["results"][output]):
-                output_array = numpy.ma.filled(ds.alternate[label]["results"][output],float(c.missing_value))
-            else:
-                output_array = numpy.array(ds.alternate[label]["results"][output],copy=True)
+            output_array = numpy.ma.filled(ds.alternate[label]["results"][output],float(c.missing_value))
             for item in output_array:
                 xlRow = xlRow + 1
                 # xlwt under Anaconda seems to only allow float64!
