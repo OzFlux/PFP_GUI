@@ -2249,21 +2249,24 @@ def GapFillUsingInterpolation(cf,ds):
     Author: PRI
     Date: September 2016
     """
+    default_len = 2
     label_list = pfp_utils.get_label_list_from_cf(cf)
-    maxlen = int(pfp_utils.get_keyvaluefromcf(cf,["Options"],"MaxGapInterpolate",default=2))
-    if maxlen==0:
+    max_len = int(pfp_utils.get_keyvaluefromcf(cf, ["Options"], "MaxGapInterpolate", default=default_len))
+    if max_len == 0:
         msg = " Gap fill by interpolation disabled in control file"
         logger.info(msg)
         return
+    default_len = max_len
     for label in label_list:
         section = pfp_utils.get_cfsection(cf, series=label)
-        if "MaxGapInterpolate" in cf[section][label]:
-            maxlen = int(pfp_utils.get_keyvaluefromcf(cf,[section,label],"MaxGapInterpolate",default=2))
-            if maxlen==0:
-                msg = " Gap fill by interpolation disabled for "+label
-                logger.info(msg)
-                continue
-            pfp_ts.InterpolateOverMissing(ds,series=label,maxlen=2)
+        max_len = int(pfp_utils.get_keyvaluefromcf(cf, [section, label], "MaxGapInterpolate", default=default_len))
+        if max_len == 0:
+            msg = " Gap fill by interpolation disabled for "+label
+            logger.info(msg)
+            continue
+        msg = " Gap filling "+label+" by interpolation (max_len="+str(max_len)+")"
+        logger.info(msg)
+        pfp_ts.InterpolateOverMissing(ds, series=label, maxlen=max_len)
 
 # functions for GapFillUsingSOLO
 def GapFillUsingSOLO(cf,dsa,dsb):
