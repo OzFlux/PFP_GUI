@@ -399,14 +399,14 @@ def compare_eddypro():
     si_ep = pfp_utils.GetDateIndex(dt_ep, str(start_datetime), ts=30, default=0, match='exact')
     ei_ep = pfp_utils.GetDateIndex(dt_ep, str(end_datetime), ts=30, default=len(dt_ep), match='exact')
 
-    us_of = pfp_utils.GetVariable(ds_of,'ustar',si=si_of,ei=ei_of)
-    us_ep = pfp_utils.GetVariable(ds_ep,'ustar',si=si_ep,ei=ei_ep)
-    Fh_of = pfp_utils.GetVariable(ds_of,'Fh',si=si_of,ei=ei_of)
-    Fh_ep = pfp_utils.GetVariable(ds_ep,'Fh',si=si_ep,ei=ei_ep)
-    Fe_of = pfp_utils.GetVariable(ds_of,'Fe',si=si_of,ei=ei_of)
-    Fe_ep = pfp_utils.GetVariable(ds_ep,'Fe',si=si_ep,ei=ei_ep)
-    Fc_of = pfp_utils.GetVariable(ds_of,'Fc',si=si_of,ei=ei_of)
-    Fc_ep = pfp_utils.GetVariable(ds_ep,'Fc',si=si_ep,ei=ei_ep)
+    us_of = pfp_utils.GetVariable(ds_of,'ustar',start=si_of,end=ei_of)
+    us_ep = pfp_utils.GetVariable(ds_ep,'ustar',start=si_ep,end=ei_ep)
+    Fh_of = pfp_utils.GetVariable(ds_of,'Fh',start=si_of,end=ei_of)
+    Fh_ep = pfp_utils.GetVariable(ds_ep,'Fh',start=si_ep,end=ei_ep)
+    Fe_of = pfp_utils.GetVariable(ds_of,'Fe',start=si_of,end=ei_of)
+    Fe_ep = pfp_utils.GetVariable(ds_ep,'Fe',start=si_ep,end=ei_ep)
+    Fc_of = pfp_utils.GetVariable(ds_of,'Fc',start=si_of,end=ei_of)
+    Fc_ep = pfp_utils.GetVariable(ds_ep,'Fc',start=si_ep,end=ei_ep)
     # copy the range check values from the OFQC attributes to the EP attributes
     for of, ep in zip([us_of, Fh_of, Fe_of, Fc_of], [us_ep, Fh_ep, Fe_ep, Fc_ep]):
         for item in ["rangecheck_upper", "rangecheck_lower"]:
