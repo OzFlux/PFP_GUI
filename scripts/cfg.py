@@ -1,6 +1,11 @@
 version_name = "PyFluxPro"
-version_number = "V0.9.0"
-# V0.9.0 - fork frmo main PyFluxPro at V0.1.1
+version_number = "V0.9.1"
+# V0.9.1 - updated to PyFluxPro V0.1.5
+#        - working steps at this stage are:
+#          - L1 to L4
+#          - concatenation
+#          - climatology
+# V0.9.0 - fork from main PyFluxPro at V0.1.1
 #        - implement integrated GUI
 # V0.1.1 - cumulative changes up to 13/07/2017
 #        - major change to pfp_utils.CreateSeries()
