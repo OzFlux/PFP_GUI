@@ -6,6 +6,7 @@ import matplotlib
 from PyQt4 import QtCore
 # PFP modules
 import pfp_clim
+import pfp_cpd
 import pfp_io
 import pfp_levels
 import pfp_plot
@@ -180,7 +181,18 @@ def do_run_l3(cfg=None):
     logger.info("")
     return
 def do_run_l4(main_gui, cfg=None):
-    #logger.warning("L4 processing not implemented yet")
+    """
+    Purpose:
+     Top level routine for running the L4 gap filling.
+    Usage:
+     pfp_top_level.do_run_l4()
+    Side effects:
+     Creates an L4 netCDF file with gap filled meteorology.
+    Author: PRI
+    Date: Back in the day
+    Mods:
+     December 2017: rewrite for use with new GUI
+    """
     logger.info("Starting L4 processing")
     if not cfg:
         cfg = pfp_io.load_controlfile(path='controlfiles')
@@ -269,6 +281,7 @@ def do_plot_fingerprints():
     pfp_plot.plot_fingerprint(cf)
     logger.info("Finished plotting fingerprint")
     logger.info("")
+    return
 def do_plot_quickcheck():
     logger.warning("Quick check plotting not implemented yet")
     return
@@ -284,8 +297,6 @@ def do_plot_closeplots():
     return
 # top level routines for the Utilities menu
 def do_utilities_climatology(mode="standard"):
-    #logger.warning("Climatology not implemented yet")
-    #return
     logger.info(" Starting climatology")
     if mode == "standard":
         stdname = "controlfiles/standard/climatology.txt"
@@ -314,6 +325,34 @@ def do_utilities_climatology(mode="standard"):
     pfp_clim.climatology(cf)
     logger.info(' Finished climatology')
     logger.info("")
-def do_utilities_ustar_cpd():
-    logger.warning("U* threshold (CPD) not implemented yet")
+    return
+def do_utilities_ustar_cpd(mode="standard"):
+    logger.info(" Starting u* threshold detection (CPD)")
+    if mode == "standard":
+        stdname = "controlfiles/standard/cpd.txt"
+        if os.path.exists(stdname):
+            cf = pfp_io.get_controlfilecontents(stdname)
+            filename = pfp_io.get_filename_dialog(path="../Sites", title='Choose a netCDF file')
+            if not os.path.exists(filename):
+                logger.info( " CPD: no input file chosen")
+                return
+            if "Files" not in cf:
+                cf["Files"] = {}
+            cf["Files"]["file_path"] = os.path.join(os.path.split(filename)[0],"")
+            in_filename = os.path.split(filename)[1]
+            cf["Files"]["in_filename"] = in_filename
+            cf["Files"]["out_filename"] = in_filename.replace(".nc", "_CPD.xls")
+        else:
+            cf = pfp_io.load_controlfile(path="controlfiles")
+            if len(cf) == 0:
+                return
+    else:
+        logger.info("Loading control file ...")
+        cf = pfp_io.load_controlfile(path='controlfiles')
+        if len(cf) == 0:
+            return
+    logger.info("Doing u* threshold detection (CPD)")
+    pfp_cpd.cpd_main(cf)
+    logger.info(" Finished u* threshold detection (CPD)")
+    logger.info("")
     return

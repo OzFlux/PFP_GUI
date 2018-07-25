@@ -243,7 +243,7 @@ class pfp_main_ui(QtGui.QWidget, QPlainTextEditLogger):
         self.actionPlotClosePlots.triggered.connect(pfp_top_level.do_plot_closeplots)
         # Utilities menu actions
         self.actionUtilitiesClimatology.triggered.connect(lambda:pfp_top_level.do_utilities_climatology(mode="standard"))
-        self.actionUtilitiesUstarCPD.triggered.connect(pfp_top_level.do_utilities_ustar_cpd)
+        self.actionUtilitiesUstarCPD.triggered.connect(lambda:pfp_top_level.do_utilities_ustar_cpd(mode="standard"))
         # add the L4 GUI
         self.l4_ui = pfp_gui.pfp_l4_ui(self)
 
