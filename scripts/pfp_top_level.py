@@ -199,7 +199,7 @@ def do_run_l4(main_gui, cfg=None):
         cfg["Options"]={}
     cfg["Options"]["call_mode"] = "interactive"
     ds4 = pfp_levels.l4qc(main_gui, cfg, ds3)
-    if ds4.returncodes["alternate"]=="quit" or ds4.returncodes["solo"]=="quit":
+    if ds4.returncodes["alternate"]=="quit":
         logger.info("Quitting L4: "+sitename)
     else:
         logger.info("Finished L4: "+sitename)
@@ -313,7 +313,7 @@ def do_utilities_climatology(mode="standard"):
     logger.info("Doing the climatology")
     pfp_clim.climatology(cf)
     logger.info(' Finished climatology')
-    logger.info("")    
+    logger.info("")
 def do_utilities_ustar_cpd():
     logger.warning("U* threshold (CPD) not implemented yet")
     return

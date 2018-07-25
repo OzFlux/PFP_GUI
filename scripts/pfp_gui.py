@@ -2345,7 +2345,7 @@ class edit_cfg_L4(QtGui.QWidget):
         for key1 in self.cfg_mod:
             if not self.cfg_mod[key1]:
                 continue
-            if key1 in ["Files", "Global", "Output", "Options"]:
+            if key1 in ["Files", "Global", "Options"]:
                 # sections with only 1 level
                 self.tree.sections[key1] = QtGui.QStandardItem(key1)
                 for val in self.cfg_mod[key1]:
@@ -2475,9 +2475,7 @@ class edit_cfg_L4(QtGui.QWidget):
         elif level == 1:
             # sections with 2 levels
             section_name = str(indexes[0].parent().data().toString())
-            subsection_name = str(indexes[0].data().toString())
-            section, i = self.get_section(section_name)
-            subsection, j = self.get_subsection(section, indexes[0])
+            section, i = self.get_section_from_text(model, section_name)
             if (section_name == "Files"):
                 if (self.selection_is_key(section, indexes[0])):
                     self.context_menu.actionRemoveInputFile = QtGui.QAction(self)
@@ -2485,7 +2483,7 @@ class edit_cfg_L4(QtGui.QWidget):
                     self.context_menu.addAction(self.context_menu.actionRemoveInputFile)
                     self.context_menu.actionRemoveInputFile.triggered.connect(self.remove_item_files)
                 elif (self.selection_is_value(section, indexes[0])):
-                    key, val, found = self.get_keyval_by_val_name(section, indexes[0].data().toString())
+                    key, val, found, i = self.get_keyval_by_val_name(section, indexes[0].data().toString())
                     if key in ["file_path", "plot_path"]:
                         self.context_menu.actionBrowseFilePath = QtGui.QAction(self)
                         self.context_menu.actionBrowseFilePath.setText("Browse...")
@@ -2580,7 +2578,14 @@ class edit_cfg_L4(QtGui.QWidget):
                 self.context_menu.actionRemoveGFMethod.triggered.connect(self.remove_gf_method)
         elif level == 3:
             # sections with 4 levels
-            pass
+            section_name = str(indexes[0].parent().parent().parent().data().toString())
+            subsection_name = str(indexes[0].parent().parent().data().toString())
+            subsubsection_name = str(indexes[0].parent().data().toString())
+            subsubsubsection_name = str(indexes[0].data().toString())
+            self.context_menu.actionRemoveGFMethodVariable = QtGui.QAction(self)
+            self.context_menu.actionRemoveGFMethodVariable.setText("Remove variable")
+            self.context_menu.addAction(self.context_menu.actionRemoveGFMethodVariable)
+            self.context_menu.actionRemoveGFMethodVariable.triggered.connect(self.remove_gf_method_variable)
 
         self.context_menu.exec_(self.tree.viewport().mapToGlobal(position))
 
@@ -2588,10 +2593,13 @@ class edit_cfg_L4(QtGui.QWidget):
         """ Add GapFillFromAlternate to a variable."""
         idx = self.tree.selectedIndexes()[0]
         dict_to_add = {"GapFillFromAlternate":{"<var_alt>": {"source": "<alt>"}}}
-        # get the [Variables] section
-        section, i = self.get_section("Drivers")
-        # get the subsection (variable)
-        subsection, j = self.get_subsection(section, idx)
+        # get the parent and sub section text
+        subsection_text = str(idx.data().toString())
+        section_text = str(idx.parent().data().toString())
+        # get the top level and sub sections
+        model = self.tree.model()
+        section, i = self.get_section_from_text(model, section_text)
+        subsection, j = self.get_subsection_from_text(section, subsection_text)
         # add the subsubsection (RangeCheck)
         self.add_subsubsubsection(subsection, dict_to_add)
         # update the tab text with an asterix if required
@@ -2601,10 +2609,13 @@ class edit_cfg_L4(QtGui.QWidget):
         """ Add GapFillFromClimatology to a variable."""
         idx = self.tree.selectedIndexes()[0]
         dict_to_add = {"GapFillFromClimatology":{"<var>_cli": {"method": "interpolated daily"}}}
-        # get the [Variables] section
-        section, i = self.get_section("Drivers")
-        # get the subsection (variable)
-        subsection, j = self.get_subsection(section, idx)
+        # get the parent and sub section text
+        subsection_text = str(idx.data().toString())
+        section_text = str(idx.parent().data().toString())
+        # get the top level and sub sections
+        model = self.tree.model()
+        section, i = self.get_section_from_text(model, section_text)
+        subsection, j = self.get_subsection_from_text(section, subsection_text)
         # add the subsubsection (RangeCheck)
         self.add_subsubsubsection(subsection, dict_to_add)
         # update the tab text with an asterix if required
@@ -2614,10 +2625,13 @@ class edit_cfg_L4(QtGui.QWidget):
         """ Add a dependency check to a variable."""
         idx = self.tree.selectedIndexes()[0]
         dict_to_add = {"DependencyCheck":{"Source":"[]"}}
-        # get the [Variables] section
-        section, i = self.get_section("Drivers")
-        # get the subsection (variable)
-        subsection, j = self.get_subsection(section, idx)
+        # get the parents text
+        subsection_text = str(idx.data().toString())
+        section_text = str(idx.parent().data().toString())
+        # get the top level and sub sections
+        model = self.tree.model()
+        section, i = self.get_section_from_text(model, section_text)
+        subsection, j = self.get_subsection_from_text(section, subsection_text)
         # add the subsubsection (RangeCheck)
         self.add_subsubsection(subsection, dict_to_add)
         # update the tab text with an asterix if required
@@ -2627,10 +2641,13 @@ class edit_cfg_L4(QtGui.QWidget):
         """ Add a diurnal check to a variable."""
         idx = self.tree.selectedIndexes()[0]
         dict_to_add = {"DiurnalCheck":{"NumSd":"5"}}
-        # get the [Variables] section
-        section, i = self.get_section("Drivers")
-        # get the subsection (variable)
-        subsection, j = self.get_subsection(section, idx)
+        # get the parents text
+        subsection_text = str(idx.data().toString())
+        section_text = str(idx.parent().data().toString())
+        # get the top level and sub sections
+        model = self.tree.model()
+        section, i = self.get_section_from_text(model, section_text)
+        subsection, j = self.get_subsection_from_text(section, subsection_text)
         # add the subsubsection (RangeCheck)
         self.add_subsubsection(subsection, dict_to_add)
         # update the tab text with an asterix if required
@@ -2640,10 +2657,13 @@ class edit_cfg_L4(QtGui.QWidget):
         """ Add an exclude dates check to a variable."""
         idx = self.tree.selectedIndexes()[0]
         dict_to_add = {"ExcludeDates":{"0":"[YYYY-mm-dd HH:MM, YYYY-mm-dd HH:MM]"}}
-        # get the [Variables] section
-        section, i = self.get_section("Drivers")
-        # get the subsection (variable)
-        subsection, j = self.get_subsection(section, idx)
+        # get the parents text
+        subsection_text = str(idx.data().toString())
+        section_text = str(idx.parent().data().toString())
+        # get the top level and sub sections
+        model = self.tree.model()
+        section, i = self.get_section_from_text(model, section_text)
+        subsection, j = self.get_subsection_from_text(section, subsection_text)
         # add the subsubsection (RangeCheck)
         self.add_subsubsection(subsection, dict_to_add)
         # update the tab text with an asterix if required
@@ -2667,11 +2687,14 @@ class edit_cfg_L4(QtGui.QWidget):
         """ Add GapFillUsingMDS to a variable."""
         idx = self.tree.selectedIndexes()[0]
         dict_to_add = {"GapFillUsingMDS":{"<var>_MDS": {"source": "MDS"}}}
-        # get the [Variables] section
-        section, i = self.get_section("Drivers")
-        # get the subsection (variable)
-        subsection, j = self.get_subsection(section, idx)
-        # add the subsubsection (RangeCheck)
+        # get the parent and sub section text
+        subsection_text = str(idx.data().toString())
+        section_text = str(idx.parent().data().toString())
+        # get the top level and sub sections
+        model = self.tree.model()
+        section, i = self.get_section_from_text(model, section_text)
+        subsection, j = self.get_subsection_from_text(section, subsection_text)
+        # add the subsubsection (MDS)
         self.add_subsubsubsection(subsection, dict_to_add)
         # update the tab text with an asterix if required
         self.update_tab_text()
@@ -2680,11 +2703,15 @@ class edit_cfg_L4(QtGui.QWidget):
         """ Add another alternate source to a variable."""
         idx = self.tree.selectedIndexes()[0]
         dict_to_add = {"<var_alt>": {"source": "<alt>"}}
-        # get the [Variables] section
-        section, i = self.get_section("Drivers")
-        # get the subsection (variable)
-        subsection, j = self.get_subsection(section, idx)
-        subsubsection, j = self.get_subsection(subsection, idx)
+        # get the parents text
+        subsubsection_text = str(idx.data().toString())
+        subsection_text = str(idx.parent().data().toString())
+        section_text = str(idx.parent().parent().data().toString())
+        # get the top level and sub sections
+        model = self.tree.model()
+        section, i = self.get_section_from_text(model, section_text)
+        subsection, j = self.get_subsection_from_text(section, subsection_text)
+        subsubsection, k = self.get_subsection_from_text(subsection, subsubsection_text)
         # add the subsubsection (RangeCheck)
         self.add_subsubsection(subsubsection, dict_to_add)
         # update the tab text with an asterix if required
@@ -2694,10 +2721,13 @@ class edit_cfg_L4(QtGui.QWidget):
         """ Add a range check to a variable."""
         idx = self.tree.selectedIndexes()[0]
         dict_to_add = {"RangeCheck":{"Lower":0, "Upper": 1}}
-        # get the [Variables] section
-        section, i = self.get_section("Drivers")
-        # get the subsection (variable)
-        subsection, j = self.get_subsection(section, idx)
+        # get the parents text
+        subsection_text = str(idx.data().toString())
+        section_text = str(idx.parent().data().toString())
+        # get the top level and sub sections
+        model = self.tree.model()
+        section, i = self.get_section_from_text(model, section_text)
+        subsection, j = self.get_subsection_from_text(section, subsection_text)
         # add the subsubsection (RangeCheck)
         self.add_subsubsection(subsection, dict_to_add)
         # update the tab text with an asterix if required
@@ -2745,9 +2775,12 @@ class edit_cfg_L4(QtGui.QWidget):
         model = self.tree.model()
         idx = self.tree.selectedIndexes()[0]
         # get the section containing the selected item
-        section, i = self.get_section("Files")
+        section_text = str(idx.parent().data().toString())
+        # get the top level and sub sections
+        model = self.tree.model()
+        section, i = self.get_section_from_text(model, section_text)
         # get the key and value of the selected item
-        key, val, found = self.get_keyval_by_val_name(section, str(idx.data().toString()))
+        key, val, found, i = self.get_keyval_by_val_name(section, str(idx.data().toString()))
         # set the file filter
         file_filter = "*.nc"
         if str(key) in ["climatology"]:
@@ -2760,53 +2793,69 @@ class edit_cfg_L4(QtGui.QWidget):
         new_file = QtGui.QFileDialog.getOpenFileName(caption="Choose an alternate data file ...", directory=file_path, filter=file_filter)
         # update the model
         if len(str(new_file)) > 0:
-            subsection.child(i, 1).setText(new_file)
+            section.child(i, 1).setText(new_file)
 
     def browse_file_path(self):
         """ Browse for the data file path."""
         model = self.tree.model()
-        indexes = self.tree.selectedIndexes()
+        idx = self.tree.selectedIndexes()[0]
         # get the section containing the selected item
-        section, i = self.get_section("Files")
+        section_text = str(idx.parent().data().toString())
+        # get the top level and sub sections
+        model = self.tree.model()
+        section, i = self.get_section_from_text(model, section_text)
         # get the key and value of the selected item
-        key, val, found = self.get_keyval_by_val_name(section, str(indexes[0].data().toString()))
+        key, val, found, j = self.get_keyval_by_val_name(section, str(idx.data().toString()))
         # dialog for new directory
         new_dir = QtGui.QFileDialog.getExistingDirectory(self, "Open a folder", val, QtGui.QFileDialog.ShowDirsOnly)
+        new_dir = os.path.join(str(new_dir), "")
         # update the model
         if len(str(new_dir)) > 0:
-            section.child(i,1).setText(new_dir)
+            section.child(j, 1).setText(new_dir)
 
     def browse_input_file(self):
         """ Browse for the input data file path."""
         model = self.tree.model()
-        indexes = self.tree.selectedIndexes()
+        idx = self.tree.selectedIndexes()[0]
         # get the section containing the selected item
-        section, i = self.get_section("Files")
-        subsection, i = self.get_subsection(section, indexes[0])
-        cfg = self.get_data_from_model()
-        file_path = pfp_utils.get_keyvaluefromcf(cfg, ["Files"], "file_path", default=os.path.expanduser("~"))
+        section_text = str(idx.parent().data().toString())
+        subsection_text = str(idx.data().toString())
+        # get the top level and sub sections
+        model = self.tree.model()
+        section, i = self.get_section_from_text(model, section_text)
+        # get the file_path so it can be used as a default directory
+        key, file_path, found, j = self.get_keyval_by_key_name(section, "file_path")
+        # get the row number for the selected item
+        key, val, found, k = self.get_keyval_by_val_name(section, subsection_text)
         # dialog for open file
-        file_path = os.path.join(file_path, "")
-        new_file = QtGui.QFileDialog.getOpenFileName(caption="Choose an input file ...", directory=file_path, filter="*.nc")
+        new_file_path = QtGui.QFileDialog.getOpenFileName(caption="Choose an input file ...",
+                                                          directory=file_path, filter="*.nc")
         # update the model
-        if len(str(new_file)) > 0:
-            subsection.child(i, 1).setText(new_file)
+        if len(str(new_file_path)) > 0:
+            new_file_parts = os.path.split(str(new_file_path))
+            section.child(k, 1).setText(new_file_parts[1])
 
     def browse_output_file(self):
         """ Browse for the output data file path."""
         model = self.tree.model()
-        indexes = self.tree.selectedIndexes()
+        idx = self.tree.selectedIndexes()[0]
         # get the section containing the selected item
-        section, i = self.get_section("Files")
-        subsection, i = self.get_subsection(section, indexes[0].parent())
-        cfg = self.get_data_from_model()
-        file_path = pfp_utils.get_keyvaluefromcf(cfg, ["Files"], "file_path", default=os.path.expanduser("~"))
+        section_text = str(idx.parent().data().toString())
+        subsection_text = str(idx.data().toString())
+        # get the top level and sub sections
+        model = self.tree.model()
+        section, i = self.get_section_from_text(model, section_text)
+        # get the file_path so it can be used as a default directory
+        key, file_path, found, j = self.get_keyval_by_key_name(section, "file_path")
+        # get the row number for the selected item
+        key, val, found, k = self.get_keyval_by_val_name(section, subsection_text)
         # dialog for open file
-        file_path = os.path.join(file_path, "")
-        new_file = QtGui.QFileDialog.getOpenFileName(caption="Choose an output file ...", directory=file_path, filter="*.nc")
+        new_file_path = QtGui.QFileDialog.getSaveFileName(caption="Choose an output file ...",
+                                                          directory=file_path, filter="*.nc")
         # update the model
-        if len(str(new_file)) > 0:
-            subsection.child(i, 1).setText(new_file)
+        if len(str(new_file_path)) > 0:
+            new_file_parts = os.path.split(str(new_file_path))
+            section.child(k, 1).setText(new_file_parts[1])
 
     def get_keyval_by_key_name(self, section, key):
         """ Get the value from a section based on the key name."""
@@ -2819,7 +2868,7 @@ class edit_cfg_L4(QtGui.QWidget):
                 key_child = str(section.child(i, 0).text())
                 val_child = str(section.child(i, 1).text())
                 break
-        return key_child, val_child, found
+        return key_child, val_child, found, i
 
     def get_keyval_by_val_name(self, section, val):
         """ Get the value from a section based on the value name."""
@@ -2832,7 +2881,7 @@ class edit_cfg_L4(QtGui.QWidget):
                 key_child = str(section.child(i, 0).text())
                 val_child = str(section.child(i, 1).text())
                 break
-        return key_child, val_child, found
+        return key_child, val_child, found, i
 
     def get_level_selected_item(self):
         """ Get the level of the selected item."""
@@ -2847,16 +2896,15 @@ class edit_cfg_L4(QtGui.QWidget):
                 level += 1
         return level
 
-    def get_section(self, section_name):
+    def get_section_from_text(self, model, section_name):
         """ Gets a section from a model by matching the section name."""
-        model = self.tree.model()
         for i in range(model.rowCount()):
             section = model.item(i)
             if str(section.text()) == str(section_name):
                 break
         return section, i
 
-    def get_subsection(self, section, idx):
+    def get_subsection_from_index(self, section, idx):
         """ Gets a subsection from a model by matching the subsection name."""
         for i in range(section.rowCount()):
             # get the child subsection
@@ -2866,26 +2914,43 @@ class edit_cfg_L4(QtGui.QWidget):
                 break
         return subsection, i
 
+    def get_subsection_from_text(self, section, text):
+        """ Gets a subsection from a model by matching the subsection name"""
+        for i in range(section.rowCount()):
+            subsection = section.child(i)
+            if str(subsection.text()) == text:
+                break
+        return subsection, i
+
     def remove_item_files(self):
         """ Remove an item from the Files section."""
         # loop over selected items in the tree
         for idx in self.tree.selectedIndexes():
-            # get the "Files" section
-            section, i = self.get_section("Files")
-            subsection, i = self.get_subsection(section, idx)
-            section.removeRow(i)
+            section_text = str(idx.parent().data().toString())
+            subsection_text = str(idx.data().toString())
+            # get the top level section
+            model = self.tree.model()
+            section, i = self.get_section_from_text(model, section_text)
+            # get the subsection within the top level section
+            subsection, j = self.get_subsection_from_text(section, subsection_text)
+            # remove it
+            section.removeRow(j)
             self.update_tab_text()
 
     def remove_qc_check(self):
         """ Remove a QC check."""
         # loop over selected items in the tree
         for idx in self.tree.selectedIndexes():
+            subsubsection_text = str(idx.data().toString())
+            subsection_text = str(idx.parent().data().toString())
+            section_text = str(idx.parent().parent().data().toString())
             # get the [Variables] section
-            section, i = self.get_section("Drivers")
+            model = self.tree.model()
+            section, i = self.get_section_from_text(model, section_text)
             # get the variable section
-            subsection, j = self.get_subsection(section, idx)
-            # get the variable QC section
-            subsubsection, k = self.get_subsection(subsection, idx)
+            subsection, j = self.get_subsection_from_text(section, subsection_text)
+            # get the gap filling method section
+            subsubsection, k = self.get_subsection_from_text(subsection, subsubsection_text)
             subsection.removeRow(k)
             self.update_tab_text()
 
@@ -2893,32 +2958,64 @@ class edit_cfg_L4(QtGui.QWidget):
         """ Remove a gap filling method."""
         # loop over selected items in the tree
         for idx in self.tree.selectedIndexes():
+            subsubsection_text = str(idx.data().toString())
+            subsection_text = str(idx.parent().data().toString())
+            section_text = str(idx.parent().parent().data().toString())
             # get the [Variables] section
-            section, i = self.get_section("Drivers")
+            model = self.tree.model()
+            section, i = self.get_section_from_text(model, section_text)
             # get the variable section
-            subsection, j = self.get_subsection(section, idx)
-            # get the variable gap fill method section
-            subsubsection, k = self.get_subsection(subsection, idx)
+            subsection, j = self.get_subsection_from_text(section, subsection_text)
+            # get the gap filling method section
+            subsubsection, k = self.get_subsection_from_text(subsection, subsubsection_text)
             subsection.removeRow(k)
+            self.update_tab_text()
+
+    def remove_gf_method_variable(self):
+        """ Remove a gap filling method variable."""
+        # loop over selected items in the tree
+        for idx in self.tree.selectedIndexes():
+            # get the parents text
+            subsubsubsection_text = str(idx.data().toString())
+            subsubsection_text = str(idx.parent().data().toString())
+            subsection_text = str(idx.parent().parent().data().toString())
+            section_text = str(idx.parent().parent().parent().data().toString())
+            # get the [Variables] section
+            model = self.tree.model()
+            section, i = self.get_section_from_text(model, section_text)
+            # get the variable section
+            subsection, j = self.get_subsection_from_text(section, subsection_text)
+            # get the gap filling method section
+            subsubsection, k = self.get_subsection_from_text(subsection, subsubsection_text)
+            # get the variable gap fill method section
+            subsubsubsection, l = self.get_subsection_from_text(subsubsection, subsubsubsection_text)
+            subsubsection.removeRow(l)
             self.update_tab_text()
 
     def remove_item_options(self):
         """ Remove an item from the Options section."""
         # loop over selected items in the tree
         for idx in self.tree.selectedIndexes():
+            section_text = str(idx.parent().data().toString())
+            subsection_text = str(idx.data().toString())
             # get the "Options" section
-            section, i = self.get_section("Options")
-            subsection, i = self.get_subsection(section, idx)
-            section.removeRow(i)
+            model = self.tree.model()
+            section, i = self.get_section_from_text(model, section_text)
+            subsection, j = self.get_subsection_from_text(section, subsection_text)
+            section.removeRow(j)
             self.update_tab_text()
 
     def remove_variable(self):
         """ Remove a variable."""
         for idx in self.tree.selectedIndexes():
+            # get the parents text
+            subsection_text = str(idx.data().toString())
+            section_text = str(idx.parent().data().toString())
             # get the "Drivers" section
-            section, i = self.get_section("Drivers")
-            subsection, i = self.get_subsection(section, idx)
-            section.removeRow(i)
+            model = self.tree.model()
+            section, i = self.get_section_from_text(model, section_text)
+            subsection, j = self.get_subsection_from_text(section, subsection_text)
+            section.removeRow(j)
             self.update_tab_text()
 
     def selection_is_key(self, section, idx):
@@ -2975,21 +3072,24 @@ class pfp_l4_ui(QtGui.QDialog):
         self.checkBox_Overwrite.setGeometry(QtCore.QRect(270, 170, 94, 22))
         self.checkBox_Overwrite.setText("Overwrite")
 
-        self.radioButton_Monthly = QtGui.QRadioButton(self)
-        self.radioButton_Monthly.setGeometry(QtCore.QRect(20, 140, 110, 22))
-        self.radioButton_Monthly.setText("Monthly")
+        self.radioButton_NumberMonths = QtGui.QRadioButton(self)
+        self.radioButton_NumberMonths.setGeometry(QtCore.QRect(20, 140, 110, 22))
+        self.radioButton_NumberMonths.setText("Months")
+        self.radioButton_NumberMonths.setChecked(True)
         self.radioButton_NumberDays = QtGui.QRadioButton(self)
         self.radioButton_NumberDays.setGeometry(QtCore.QRect(130, 140, 110, 22))
-        self.radioButton_NumberDays.setChecked(True)
-        self.radioButton_NumberDays.setText("No. Days")
+        self.radioButton_NumberDays.setText("Days")
         self.radioButton_Manual = QtGui.QRadioButton(self)
         self.radioButton_Manual.setGeometry(QtCore.QRect(20, 110, 110, 25))
         self.radioButton_Manual.setText("Manual")
         self.radioButtons = QtGui.QButtonGroup(self)
-        self.radioButtons.addButton(self.radioButton_Monthly)
+        self.radioButtons.addButton(self.radioButton_NumberMonths)
         self.radioButtons.addButton(self.radioButton_NumberDays)
         self.radioButtons.addButton(self.radioButton_Manual)
 
+        self.lineEdit_NumberMonths = QtGui.QLineEdit(self)
+        self.lineEdit_NumberMonths.setGeometry(QtCore.QRect(90, 140, 30, 25))
+        self.lineEdit_NumberMonths.setText("3")
         self.lineEdit_NumberDays = QtGui.QLineEdit(self)
         self.lineEdit_NumberDays.setGeometry(QtCore.QRect(220, 140, 30, 25))
         self.lineEdit_NumberDays.setText("90")

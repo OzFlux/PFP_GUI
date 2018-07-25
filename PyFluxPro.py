@@ -381,24 +381,41 @@ class pfp_main_ui(QtGui.QWidget, QPlainTextEditLogger):
                 result = True
         return result
 
+    #def check_cfg_L4(self):
+        #""" Return true if control file is L4."""
+        #result = False
+        #cfg_sections = self.cfg.keys()
+        ## remove the common sections
+        #common_sections = ["Files", "Global", "Output", "Plots", "General", "Options", "Soil", "Massman", "GUI", "Alternate_Summary"]
+        #for section in cfg_sections:
+            #if section in common_sections:
+                #cfg_sections.remove(section)
+        ## now loop over the remaining sections
+        #for section in cfg_sections:
+            #subsections = self.cfg[section].keys()
+            #for subsection in subsections:
+                #if (("GapFillFromAlternate" in self.cfg[section][subsection].keys()) or
+                    #("GapFillFromClimatology" in self.cfg[section][subsection].keys()) or
+                    #("MergeSeries" in self.cfg[section][subsection].keys())):
+                    #result = True
+                    #break
+        #return result
+
     def check_cfg_L4(self):
         """ Return true if control file is L4."""
         result = False
         cfg_sections = self.cfg.keys()
         # remove the common sections
-        common_sections = ["Files", "Global", "Output", "Plots", "General", "Options", "Soil", "Massman", "GUI"]
+        common_sections = ["Files", "Global", "Output", "Plots", "General", "Options", "Soil", "Massman", "GUI", "Alternate_Summary"]
         for section in cfg_sections:
-            if section in common_sections:
-                cfg_sections.remove(section)
-        # now loop over the remaining sections
-        for section in cfg_sections:
-            subsections = self.cfg[section].keys()
-            for subsection in subsections:
-                if (("GapFillFromAlternate" in self.cfg[section][subsection].keys()) or
-                    ("GapFillFromClimatology" in self.cfg[section][subsection].keys()) or
-                    ("MergeSeries" in self.cfg[section][subsection].keys())):
-                    result = True
-                    break
+            if section in ["Variables", "Drivers", "Fluxes"]:
+                subsections = self.cfg[section].keys()
+                for subsection in subsections:
+                    if (("GapFillFromAlternate" in self.cfg[section][subsection].keys()) or
+                        ("GapFillFromClimatology" in self.cfg[section][subsection].keys()) or
+                        ("MergeSeries" in self.cfg[section][subsection].keys())):
+                        result = True
+                        break
         return result
 
     def save_controlfile(self):

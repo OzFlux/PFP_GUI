@@ -347,17 +347,17 @@ def rpFFNET_initplot(**kwargs):
     pd["ts_height"] = (1.0 - pd["margin_top"] - pd["ts_bottom"])/float(pd["nDrivers"]+1)
     return pd
 
-def rpFFNET_main(ds, rpFFNET_info):
+def rpFFNET_main(ds, rpFFNET_info,FFNET_gui=None):
     """
     This is the main routine for running FFNET, an artifical neural network for estimating ER.
     """
     startdate = rpFFNET_info["startdate"]
     enddate = rpFFNET_info["enddate"]
-    logger.info(" Estimating ER using FFNET")
+    logger.info(" Estimating ER using FFNET: "+startdate+" to "+enddate)
     # read the control file again, this allows the contents of the control file to
     # be changed with the FFNET GUI still displayed
     cfname = ds.globalattributes["controlfile_name"]
-    cf = pfp_io.get_controlfilecontents(cfname)
+    cf = pfp_io.get_controlfilecontents(cfname,mode="quiet")
     ffnet_series = rpFFNET_info["er"].keys()
     for series in ffnet_series:
         section = pfp_utils.get_cfsection(cf,series=series,mode="quiet")
@@ -620,8 +620,6 @@ def rpFFNET_plot(pd,ds,series,driverlist,targetlabel,outputlabel,rpFFNET_info,si
         plt.draw()
         plt.ioff()
     else:
-        print "calling plt.close() in rpFFNET_plot"
-#        plt.close(fig)
         plt.ion()
 
 def rpFFNET_progress(FFNET_gui,text):
@@ -641,6 +639,14 @@ def rpFFNET_quit(ds,FFNET_gui):
 
 def rpFFNET_run_gui(ds,FFNET_gui,rpFFNET_info):
     # populate the rpFFNET_info dictionary with things that will be useful
+    #
+    rpFFNET_info["overwrite"] = True
+    if FFNET_gui.owopt.get()==0: rpFFNET_info["overwrite"] = False
+    rpFFNET_info["show_plots"] = True
+    if FFNET_gui.pltopt.get()==0: rpFFNET_info["show_plots"] = False
+    rpFFNET_info["auto_complete"] = True
+    if FFNET_gui.autocompleteopt.get()==0: rpFFNET_info["auto_complete"] = False
+    #
     rpFFNET_info["hidden"] = FFNET_gui.nodesEntry.get()
     rpFFNET_info["training"] = FFNET_gui.trainingEntry.get()
     if int(FFNET_gui.connecVar.get())==1:
@@ -665,7 +671,7 @@ def rpFFNET_run_gui(ds,FFNET_gui,rpFFNET_info):
         if len(rpFFNET_info["startdate"])==0: rpFFNET_info["startdate"] = rpFFNET_info["file_startdate"]
         rpFFNET_info["enddate"] = FFNET_gui.endEntry.get()
         if len(rpFFNET_info["enddate"])==0: rpFFNET_info["enddate"] = rpFFNET_info["file_enddate"]
-        rpFFNET_main(ds,rpFFNET_info)
+        rpFFNET_main(ds,rpFFNET_info,FFNET_gui=FFNET_gui)
         rpFFNET_progress(FFNET_gui,"Finished manual run ...")
     elif FFNET_gui.peropt.get()==2:
         rpFFNET_progress(FFNET_gui,"Starting auto (monthly) run ...")
@@ -679,7 +685,7 @@ def rpFFNET_run_gui(ds,FFNET_gui,rpFFNET_info):
         enddate = min([file_enddate,enddate])
         rpFFNET_info["enddate"] = datetime.datetime.strftime(enddate,"%Y-%m-%d")
         while startdate<file_enddate:
-            rpFFNET_main(ds,rpFFNET_info)
+            rpFFNET_main(ds,rpFFNET_info,FFNET_gui=FFNET_gui)
             startdate = enddate
             enddate = startdate+dateutil.relativedelta.relativedelta(months=1)
             rpFFNET_info["startdate"] = startdate.strftime("%Y-%m-%d")
@@ -689,20 +695,27 @@ def rpFFNET_run_gui(ds,FFNET_gui,rpFFNET_info):
         rpFFNET_progress(FFNET_gui,"Starting auto (days) run ...")
         # get the start datetime entered in the SOLO GUI
         rpFFNET_info["startdate"] = FFNET_gui.startEntry.get()
+        rpFFNET_info["enddate"] = FFNET_gui.endEntry.get()
         if len(rpFFNET_info["startdate"])==0: rpFFNET_info["startdate"] = rpFFNET_info["file_startdate"]
+        if len(rpFFNET_info["enddate"])==0: rpFFNET_info["enddate"] = rpFFNET_info["file_enddate"]
         startdate = dateutil.parser.parse(rpFFNET_info["startdate"])
+        rpFFNET_info["gui_enddate"] = rpFFNET_info["enddate"]
+        gui_enddate = dateutil.parser.parse(rpFFNET_info["gui_enddate"])
         file_startdate = dateutil.parser.parse(rpFFNET_info["file_startdate"])
         file_enddate = dateutil.parser.parse(rpFFNET_info["file_enddate"])
         nDays = int(FFNET_gui.daysEntry.get())
         enddate = startdate+dateutil.relativedelta.relativedelta(days=nDays)
-        enddate = min([file_enddate,enddate])
+        enddate = min([file_enddate,enddate,gui_enddate])
+        rpFFNET_info["startdate"] = datetime.datetime.strftime(startdate,"%Y-%m-%d")
         rpFFNET_info["enddate"] = datetime.datetime.strftime(enddate,"%Y-%m-%d")
-        while startdate<file_enddate:
-            rpFFNET_main(ds,rpFFNET_info)
+        stopdate = min([file_enddate,gui_enddate])
+        while startdate<stopdate:  #file_enddate:
+            rpFFNET_main(ds,rpFFNET_info,FFNET_gui=FFNET_gui)
             startdate = enddate
             enddate = startdate+dateutil.relativedelta.relativedelta(days=nDays)
+            run_enddate = min([stopdate,enddate])
             rpFFNET_info["startdate"] = startdate.strftime("%Y-%m-%d")
-            rpFFNET_info["enddate"] = enddate.strftime("%Y-%m-%d")
+            rpFFNET_info["enddate"] = run_enddate.strftime("%Y-%m-%d")
         rpFFNET_progress(FFNET_gui,"Finished auto (days) run ...")
     elif FFNET_gui.peropt.get()==4:
         # automatic run with yearly datetime periods
@@ -718,7 +731,7 @@ def rpFFNET_run_gui(ds,FFNET_gui,rpFFNET_info):
         enddate = min([file_enddate,enddate])
         rpFFNET_info["enddate"] = datetime.datetime.strftime(enddate,"%Y-%m-%d")
         while startdate<file_enddate:
-            rpFFNET_main(ds,rpFFNET_info)
+            rpFFNET_main(ds,rpFFNET_info,FFNET_gui=FFNET_gui)
             startdate = enddate
             enddate = startdate+dateutil.relativedelta.relativedelta(years=1)
             rpFFNET_info["startdate"] = startdate.strftime("%Y-%m-%d")
@@ -911,11 +924,11 @@ def rpSOLO_main(ds,solo_info,SOLO_gui=None):
     """
     startdate = solo_info["startdate"]
     enddate = solo_info["enddate"]
-    logger.info(" Estimating ER using SOLO")
+    logger.info(" Estimating ER using SOLO: "+startdate+" to "+enddate)
     # read the control file again, this allows the contents of the control file to
     # be changed with the SOLO GUI still displayed
     cfname = ds.globalattributes["controlfile_name"]
-    cf = pfp_io.get_controlfilecontents(cfname)
+    cf = pfp_io.get_controlfilecontents(cfname,mode="quiet")
     solo_series = solo_info["er"].keys()
     for series in solo_series:
         section = pfp_utils.get_cfsection(cf,series=series,mode="quiet")
@@ -1128,8 +1141,6 @@ def rpSOLO_plot(pd,ds,series,driverlist,targetlabel,outputlabel,solo_info,si=0,e
         plt.draw()
         plt.ioff()
     else:
-        print "calling plt.close() in rpSOLO_plot"
-#        plt.close(fig)
         plt.ion()
 
 def rpSOLO_progress(SOLO_gui,text):
@@ -1147,6 +1158,14 @@ def rpSOLO_resetnodesEntry(SOLO_gui):
 
 def rpSOLO_run_gui(ds,SOLO_gui,solo_info):
     # populate the solo_info dictionary with things that will be useful
+    #
+    solo_info["overwrite"] = True
+    if SOLO_gui.owopt.get()==0: solo_info["overwrite"] = False
+    solo_info["show_plots"] = True
+    if SOLO_gui.pltopt.get()==0: solo_info["show_plots"] = False
+    solo_info["auto_complete"] = True
+    if SOLO_gui.autocompleteopt.get()==0: solo_info["auto_complete"] = False
+    #
     solo_info["nodes"] = SOLO_gui.nodesEntry.get()
     solo_info["training"] = SOLO_gui.trainingEntry.get()
     solo_info["nda_factor"] = SOLO_gui.factorEntry.get()
@@ -1193,20 +1212,27 @@ def rpSOLO_run_gui(ds,SOLO_gui,solo_info):
         # automatc run with number of days specified by user via the GUI
         rpSOLO_progress(SOLO_gui,"Starting auto (days) run ...")
         solo_info["startdate"] = SOLO_gui.startEntry.get()
+        solo_info["enddate"] = SOLO_gui.endEntry.get()
         if len(solo_info["startdate"])==0: solo_info["startdate"] = solo_info["file_startdate"]
+        if len(solo_info["enddate"])==0: solo_info["enddate"] = solo_info["file_enddate"]
         startdate = dateutil.parser.parse(solo_info["startdate"])
+        solo_info["gui_enddate"] = solo_info["enddate"]
+        gui_enddate = dateutil.parser.parse(solo_info["gui_enddate"])
         file_startdate = dateutil.parser.parse(solo_info["file_startdate"])
         file_enddate = dateutil.parser.parse(solo_info["file_enddate"])
         nDays = int(SOLO_gui.daysEntry.get())
         enddate = startdate+dateutil.relativedelta.relativedelta(days=nDays)
-        enddate = min([file_enddate,enddate])
+        enddate = min([file_enddate,enddate,gui_enddate])
+        solo_info["startdate"] = datetime.datetime.strftime(startdate,"%Y-%m-%d")
         solo_info["enddate"] = datetime.datetime.strftime(enddate,"%Y-%m-%d")
-        while startdate<file_enddate:
+        stopdate = min([file_enddate,gui_enddate])
+        while startdate<stopdate:  #file_enddate:
             rpSOLO_main(ds,solo_info,SOLO_gui=SOLO_gui)
             startdate = enddate
             enddate = startdate+dateutil.relativedelta.relativedelta(days=nDays)
+            run_enddate = min([stopdate,enddate])
             solo_info["startdate"] = startdate.strftime("%Y-%m-%d")
-            solo_info["enddate"] = enddate.strftime("%Y-%m-%d")
+            solo_info["enddate"] = run_enddate.strftime("%Y-%m-%d")
         rpSOLO_progress(SOLO_gui,"Finished auto (days) run ...")
     elif SOLO_gui.peropt.get()==4:
         # automatic run with yearly datetime periods
@@ -1450,7 +1476,7 @@ def rpSOLO_runsofm(ds,SOLO_gui,driverlist,targetlabel,nRecs,si=0,ei=-1):
     badlines = []
     for TheseOnes in driverlist:
         driver,flag,attr = pfp_utils.GetSeries(ds,TheseOnes,si=si,ei=ei)
-        index = numpy.where(abs(driver-float(c.missing_value)<c.eps))[0]
+        index = numpy.where(abs(driver-float(c.missing_value))<c.eps)[0]
         if len(index)!=0:
             logger.error(' SOLO_runsofm: c.missing_value found in driver '+TheseOnes+' at lines '+str(index))
             badlines = badlines+index.tolist()

@@ -9,6 +9,7 @@ import logging
 import math
 import meteorologicalfunctions as mf
 import netCDF4
+import numbers
 import numpy
 import os
 import platform
@@ -27,6 +28,32 @@ def bp(fx,tao):
     """
     bp = 2 * c.Pi * fx * tao
     return bp
+
+def bisection(array,value):
+    '''Given an ``array`` , and given a ``value`` , returns an index j such that ``value`` is between array[j]
+    and array[j+1]. ``array`` must be monotonic increasing. j=-1 or j=len(array) is returned
+    to indicate that ``value`` is out of range below and above respectively.
+    Stolen from https://stackoverflow.com/questions/2566412/find-nearest-value-in-numpy-array/2566508'''
+    n = len(array)
+    if (value < array[0]):
+        return -1
+    elif (value > array[n-1]):
+        return n
+    jl = 0# Initialize lower
+    ju = n-1# and upper limits.
+    while (ju-jl > 1):# If we are not yet done,
+        jm=(ju+jl) >> 1# compute a midpoint with a bitshift
+        if (value >= array[jm]):
+            jl=jm# and replace either the lower limit
+        else:
+            ju=jm# or the upper limit, as appropriate.
+        # Repeat until the test condition is satisfied.
+    if (value == array[0]):# edge cases at bottom
+        return 0
+    elif (value == array[n-1]):# and top
+        return n-1
+    else:
+        return jl
 
 def cfkeycheck(cf,Base='Variables',ThisOne=[],key=[]):
     if len(ThisOne) == 0:
@@ -67,29 +94,27 @@ def CheckQCFlags(ds):
     """
     msg = " Checking missing data and QC flags are consistent"
     logger.info(msg)
+    labels = [label for label in ds.series.keys() if label not in ["DateTime"]]
     # force any values of -9999 with QC flags of 0 to have a QC flag of 8
-    for ThisOne in ds.series.keys():
-        data = numpy.ma.masked_values(ds.series[ThisOne]["Data"],-9999)
-        flag = numpy.ma.masked_equal(numpy.mod(ds.series[ThisOne]["Flag"],10),0)
-        mask = data.mask&flag.mask
-        idx = numpy.ma.where(mask==True)[0]
+    for label in labels:
+        var = GetVariable(ds, label)
+        condition = numpy.ma.getmaskarray(var["Data"]) & (numpy.mod(var["Flag"],10) == 0)
+        idx = numpy.ma.where(condition == True)[0]
         if len(idx)!=0:
-            msg = " "+ThisOne+": "+str(len(idx))+" missing values with flag = 0 (forced to 8)"
+            msg = " "+label+": "+str(len(idx))+" missing values with flag = 0 (forced to 8)"
             logger.warning(msg)
-            ds.series[ThisOne]["Flag"][idx] = numpy.int32(8)
+            var["Flag"][idx] = numpy.int32(8)
+            CreateVariable(ds, var)
     # force all values != -9999 to have QC flag = 0, 10, 20 etc
     nRecs = int(ds.globalattributes["nc_nrecs"])
-    missing_array = numpy.ones(nRecs)*float(c.missing_value)
-    series_list = ds.series.keys()
-    if "DateTime" in series_list:
-        series_list.remove("DateTime")
-    for ThisOne in series_list:
-        bool_array = numpy.isclose(ds.series[ThisOne]["Data"], missing_array)
-        idx = numpy.where((bool_array == False)&(numpy.mod(ds.series[ThisOne]["Flag"],10)!=0))[0]
+    for label in labels:
+        var = GetVariable(ds, label)
+        condition = (numpy.ma.getmaskarray(var["Data"]) == False) & (numpy.mod(var["Flag"],10) != 0)
+        idx = numpy.where(condition == True)[0]
         if len(idx)!=0:
-            msg = " "+ThisOne+": "+str(len(idx))+" non-missing values with flag != 0"
+            msg = " "+label+": "+str(len(idx))+" non-missing values with flag != 0"
             logger.warning(msg)
-            #ds.series[ThisOne]["Data"][idx] = numpy.float64(c.missing_value)
+            #ds.series[label]["Data"][idx] = numpy.float64(c.missing_value)
     return
 
 def CheckTimeStep(ds):
@@ -290,12 +315,17 @@ def convert_units_func(ds, variable, new_units, mode="quiet"):
     # check the units are something we understand
     # add more lists here to cope with water etc
     co2_list = ["umol/m2/s","gC/m2","mg/m3","mgCO2/m3","umol/mol","mg/m2/s","mgCO2/m2/s"]
-    h2o_list = ["g/m3","mmol/mol","%","frac","kg/kg"]
-    t_list = ["C","K"]
-    ok_list = co2_list+h2o_list+t_list
+    h2o_list = ["g/m3", "mmol/mol", "%", "frac", "kg/kg"]
+    t_list = ["C", "K"]
+    ps_list = ["Pa", "hPa", "kPa"]
+    ok_list = co2_list+h2o_list+t_list+ps_list
     # parse the original units
     if old_units not in ok_list:
-        msg = " Unrecognised units in quantity provided ("+old_units+")"
+        if "Label" in variable:
+            label = variable["Label"]
+        else:
+            label = "quantity provided"
+        msg = " Unrecognised units ("+old_units+") in "+label
         logger.error(msg)
     elif new_units not in ok_list:
         msg = " Unrecognised units requested ("+new_units+")"
@@ -315,6 +345,12 @@ def convert_units_func(ds, variable, new_units, mode="quiet"):
     elif new_units in t_list:
         if old_units in t_list:
             variable = convert_units_t(ds, variable, new_units)
+        else:
+            msg = " New units ("+new_units+") not compatible with old ("+old_units+")"
+            logger.error(msg)
+    elif new_units in ps_list:
+        if old_units in ps_list:
+            variable = convert_units_ps(ds, variable, new_units)
         else:
             msg = " New units ("+new_units+") not compatible with old ("+old_units+")"
             logger.error(msg)
@@ -579,7 +615,7 @@ def convert_units_h2o(ds, variable, new_units):
         new_data = numpy.ma.array(old_data,copy=True,mask=True)
     return new_data
 
-def convert_units_t(ds,old_data,old_units,new_units):
+def convert_units_t(ds, var_in, new_units):
     """
     Purpose:
      General purpose routine to convert from one set of temperature units
@@ -588,24 +624,54 @@ def convert_units_t(ds,old_data,old_units,new_units):
       C to K
       K to C
     Usage:
-     new_data = pfp_utils.convert_units_t(ds,old_data,old_units,new_units)
+     new_data = pfp_utils.convert_units_t(ds, variable, new_units)
       where ds is a data structure
-            old_data (numpy array) is the data to be converted
-            old_units (string) is the old units
+            variable is a variable dictionary (pfp_utils.GetVariable())
             new_units (string) is the new units
     Author: PRI
     Date: January 2016
     """
+    var_out = copy.deepcopy(var_in)
     ts = int(ds.globalattributes["time_step"])
-    if old_units=="C" and new_units=="K":
-        new_data = old_data+c.C2K
-    elif old_units=="K" and new_units=="C":
-        new_data = old_data-c.C2K
+    if var_in["Attr"]["units"] == "C" and new_units == "K":
+        var_out["Data"] = var_in["Data"] + c.C2K
+        var_out["Attr"]["units"] = "K"
+    elif var_in["Attr"]["units"] == "K" and new_units == "C":
+        var_out["Data"] = var_in["Data"] - c.C2K
+        var_out["Attr"]["units"] = "C"
     else:
-        msg = " Unrecognised conversion from "+old_units+" to "+new_units
+        msg = " Unrecognised conversion from "+var_in["Attr"]["units"]+" to "+new_units
         logger.error(msg)
-        new_data = numpy.ma.array(old_data,copy=True,mask=True)
-    return new_data
+    return var_out
+
+def convert_units_ps(ds, var_in, new_units):
+    """
+    Purpose:
+     General purpose routine to convert from one set of pressure units
+     to another.
+     Conversions supported are:
+      Pa to kPa
+      hPa to kPa
+    Usage:
+     new_data = pfp_utils.convert_units_ps(ds, variable, new_units)
+      where ds is a data structure
+            variable is a variable dictionary (pfp_utils.GetVariable())
+            new_units (string) is the new units
+    Author: PRI
+    Date: February 2018
+    """
+    var_out = copy.deepcopy(var_in)
+    ts = int(ds.globalattributes["time_step"])
+    if var_in["Attr"]["units"] == "Pa" and new_units == "kPa":
+        var_out["Data"] = var_in["Data"]/float(1000)
+        var_out["Attr"]["units"] = "kPa"
+    elif var_in["Attr"]["units"] == "hPa" and new_units == "kPa":
+        var_out["Data"] = var_in["Data"]/float(10)
+        var_out["Attr"]["units"] = "kPa"
+    else:
+        msg = " Unrecognised conversion from "+var_in["Attr"]["units"]+" to "+new_units
+        logger.error(msg)
+    return var_out
 
 def convert_anglestring(anglestring):
     """
@@ -646,7 +712,7 @@ def convert_anglestring(anglestring):
         # return with the string converted to a float
         return (float(new[0])+float(new[1])/60.0+float(new[2])/3600.0) * direction[new_dir]
 
-def convert_WsWdtoUV(Ws,Wd):
+def convert_WSWDtoUV(WS, WD):
     """
     Purpose:
      Convert wind speed and direction to U and V conponents.
@@ -655,15 +721,41 @@ def convert_WsWdtoUV(Ws,Wd):
       - U is positive towards east
       - V is positive towards north
     Usage:
-     u,v = pfp_utils.convert_WsWdtoUV(Ws,Wd)
+     U, V = pfp_utils.convert_WSWDtoUV(WS, WD)
     Author: PRI
     Date: February 2015
     """
-    u = -Ws*numpy.sin(numpy.radians(Wd))
-    v = -Ws*numpy.cos(numpy.radians(Wd))
-    return u,v
+    nrecs = len(WS["Data"])
+    # create variables of 1s and 0s for QC flags
+    f0 = numpy.zeros(nrecs, dtype=numpy.int32)
+    f1 = numpy.ones(nrecs, dtype=numpy.int32)
+    # create empty variables for U and V
+    U = create_empty_variable("u", nrecs)
+    V = create_empty_variable("v", nrecs)
+    # get the components from the wind speed and direction
+    U["Data"] = -WS["Data"]*numpy.sin(numpy.radians(WD["Data"]))
+    V["Data"] = -WS["Data"]*numpy.cos(numpy.radians(WD["Data"]))
+    # set components to 0 when WS is less than 0.01
+    U["Data"] = numpy.ma.where(WS["Data"] < 0.01, numpy.float64(0), U["Data"])
+    V["Data"] = numpy.ma.where(WS["Data"] < 0.01, numpy.float64(0), V["Data"])
+    # now set the QC flag
+    U["Flag"] = numpy.where(numpy.ma.getmaskarray(U["Data"]) == True, f1, f0)
+    V["Flag"] = numpy.where(numpy.ma.getmaskarray(V["Data"]) == True, f1, f0)
+    # update the variable attributes
+    U["Attr"]["long_name"] = "U component of wind velocity, positive east"
+    U["Attr"]["units"] = "m/s"
+    V["Attr"]["long_name"] = "V component of wind velocity, positive north"
+    V["Attr"]["units"] = "m/s"
+    # copy the datetime if it is available
+    if "DateTime" in WS.keys():
+        U["DateTime"] = copy.deepcopy(WS["DateTime"])
+        V["DateTime"] = copy.deepcopy(WS["DateTime"])
+    elif "DateTime" in WD.keys():
+        U["DateTime"] = copy.deepcopy(WD["DateTime"])
+        V["DateTime"] = copy.deepcopy(WD["DateTime"])
+    return U, V
 
-def convert_UVtoWsWd(u,v):
+def convert_UVtoWSWD(U, V):
     """
     Purpose:
      Convert U and V conponents to wind speed and direction
@@ -672,14 +764,39 @@ def convert_UVtoWsWd(u,v):
       - U is positive towards east
       - V is positive towards north
     Usage:
-     Ws,Wd = pfp_utils.convert_UVtoWsWd(U,V)
+     WS, WD = pfp_utils.convert_UVtoWSWD(U, V)
     Author: PRI
     Date: February 2015
     """
-    Wd = float(270) - (numpy.degrees(numpy.arctan2(v,u)))
-    Wd = numpy.mod(Wd,360)
-    Ws = numpy.sqrt(u*u + v*v)
-    return Ws,Wd
+    nrecs = len(U["Data"])
+    # create variables of 1s and 0s for QC flags
+    f0 = numpy.zeros(nrecs)
+    f1 = numpy.ones(nrecs)
+    # create empty variables for WS and WD
+    WS = create_empty_variable("Ws", nrecs)
+    WD = create_empty_variable("Wd", nrecs)
+    # get the wind speed and direction from the components
+    WD["Data"] = float(270) - (numpy.degrees(numpy.ma.arctan2(V["Data"], U["Data"])))
+    WD["Data"] = numpy.ma.mod(WD["Data"], 360)
+    WS["Data"] = numpy.ma.sqrt(U["Data"]*U["Data"] + V["Data"]*V["Data"])
+    # mask WD when the WS is less than 0.01
+    WD["Data"] = numpy.ma.masked_where(WS["Data"] < 0.01, WD["Data"])
+    # now set the QC flag
+    WS["Flag"] = numpy.where(numpy.ma.getmaskarray(WS["Data"]) == True, f1, f0)
+    WD["Flag"] = numpy.where(numpy.ma.getmaskarray(WD["Data"]) == True, f1, f0)
+    # update the variable attributes
+    WS["Attr"]["long_name"] = "Wind speed"
+    WS["Attr"]["units"] = "m/s"
+    WD["Attr"]["long_name"] = "Wind direction"
+    WD["Attr"]["units"] = "deg"
+    # copy the datetime if it is available
+    if "DateTime" in U.keys():
+        WS["DateTime"] = copy.deepcopy(U["DateTime"])
+        WD["DateTime"] = copy.deepcopy(U["DateTime"])
+    elif "DateTime" in V.keys():
+        WS["DateTime"] = copy.deepcopy(V["DateTime"])
+        WD["DateTime"] = copy.deepcopy(V["DateTime"])
+    return WS, WD
 
 def CreateSeries(ds,Label,Data,Flag,Attr):
     """
@@ -745,7 +862,7 @@ def CreateDatetimeRange(start,stop,step=datetime.timedelta(minutes=30)):
         start = start + step
     return result
 
-def create_empty_variable(label, nrecs):
+def create_empty_variable(label, nrecs, datetime=[]):
     """
     Purpose:
      Returns an empty variable.  Data values are set to -9999, flag values are set to 1
@@ -761,6 +878,8 @@ def create_empty_variable(label, nrecs):
     flag = numpy.ones(nrecs, dtype=numpy.int32)
     attr = make_attribute_dictionary()
     variable = {"Label":label, "Data":data, "Flag":flag, "Attr":attr}
+    if len(datetime) == nrecs:
+        variable["DateTime"] = datetime
     return variable
 
 def CreateVariable(ds,variable):
@@ -807,6 +926,18 @@ def file_exists(filename,mode="verbose"):
     else:
         return True
 
+def find_nearest_value(array, value):
+    """
+    Purpose:
+     pfp_utils.bisection() gives the left bound of the interval of array containing
+     value, this function gives the index of the closest value.
+    """
+    i = bisection(array, value)
+    if i < len(array)-1:
+        if abs(array[i+1]-value) <= abs(array[i]-value):
+            i = i + 1
+    return i
+
 def FindIndicesOfBInA(a,b):
     """
     Purpose:
@@ -829,13 +960,37 @@ def FindIndicesOfBInA(a,b):
     Author: PRI
     Date: July 2015
     Comments: Replaces find_indices used up to V2.9.3.
+    March 2018 - rewritten to handle numpy.ndarray and lists
     """
     if len(set(a))!=len(a):
         msg = " FindIndicesOfBInA: first argument contains duplicate values"
         logger.warning(msg)
-    tmpset = set(a)
-    indices = [i for i,item in enumerate(b) if item in tmpset]
+    if isinstance(a, numpy.ndarray) and isinstance(b, numpy.ndarray):
+        asorted = numpy.argsort(a)
+        bpos = numpy.searchsorted(a[asorted], b)
+        indices = asorted[bpos]
+    elif isinstance(a, list) and isinstance(b, list):
+        tmpset = set(a)
+        indices = [i for i,item in enumerate(b) if item in tmpset]
+    else:
+        msg = " FindIndicesOfBInA: inputs must be both list or both numpy arrays"
+        logger.warning(msg)
+        indices = []
     return indices
+
+def FindMatchingIndices(a, b):
+    a1=numpy.argsort(a)
+    b1=numpy.argsort(b)
+    # use searchsorted:
+    sort_left_a=a[a1].searchsorted(b[b1], side='left')
+    sort_right_a=a[a1].searchsorted(b[b1], side='right')
+    sort_left_b=b[b1].searchsorted(a[a1], side='left')
+    sort_right_b=b[b1].searchsorted(a[a1], side='right')
+    # which values of b are also in a?
+    inds_b=(sort_right_a-sort_left_a > 0).nonzero()[0]
+    # which values of a are also in b?
+    inds_a=(sort_right_b-sort_left_b > 0).nonzero()[0]
+    return inds_a, inds_b
 
 def RemoveDuplicateRecords(ds):
     """ Remove duplicate records."""
@@ -844,9 +999,7 @@ def RemoveDuplicateRecords(ds):
         if item in ds.series.keys():
             ldt,ldt_flag,ldt_attr = GetSeries(ds,item)
             # ldt_nodups is returned as an ndarray
-            ldt_nodups,idx_nodups = numpy.unique(numpy.array(ldt),return_index=True)
-            # now get ldt_nodups as a list
-            ldt_nodups = ldt_nodups.tolist()
+            ldt_nodups,idx_nodups = numpy.unique(ldt,return_index=True)
             # and put it back into the data structure
             ds.series[item]["Data"] = ldt_nodups
             ds.series[item]["Flag"] = ldt_flag[idx_nodups]
@@ -886,14 +1039,16 @@ def FixNonIntegralTimeSteps(ds,fixtimestepmethod=""):
     ans = fixtimestepmethod
     if ans=="": ans = raw_input("Do you want to [Q]uit, [I]nterploate or [R]ound? ")
     if ans.lower()[0]=="q":
-        print "Quiting ..."
+        msg = "Quiting ..."
+        logger.error(msg)
         sys.exit()
     if ans.lower()[0]=="i":
-        print "Interpolation to regular time step not implemented yet ..."
-        sys.exit()
+        msg = "Interpolation to regular time step not implemented yet ..."
+        logger.error(msg)
+        return
     if ans.lower()[0]=="r":
         logger.info(" Rounding to the nearest time step")
-        ldt_rounded = [rounddttots(dt,ts=ts) for dt in ldt]
+        ldt_rounded = numpy.array([rounddttots(dt,ts=ts) for dt in ldt])
         rdt = numpy.array([(ldt_rounded[i]-ldt_rounded[i-1]).total_seconds() for i in range(1,len(ldt))])
         logger.info(" Maximum time step is now "+str(numpy.max(rdt))+" seconds, minimum time step is now "+str(numpy.min(rdt)))
         # replace the existing datetime series with the datetime series rounded to the nearest time step
@@ -920,18 +1075,16 @@ def FixTimeGaps(ds):
     # generate a datetime list from the start datetime to the end datetime
     ldt_start = ldt_gaps[0]
     ldt_end = ldt_gaps[-1]
-    ldt_nogaps = [result for result in perdelta(ldt_start,ldt_end,datetime.timedelta(minutes=ts))]
+    nogaps = [result for result in perdelta(ldt_start,ldt_end,datetime.timedelta(minutes=ts))]
+    ldt_nogaps = numpy.array(nogaps)
     # update the global attribute containing the number of records
     nRecs = len(ldt_nogaps)
     ds.globalattributes['nc_nrecs'] = nRecs
     # find the indices of the no-gap data in the original data
-    idx_gaps = FindIndicesOfBInA(ldt_gaps,ldt_nogaps)
+    idx_gaps = FindIndicesOfBInA(ldt_nogaps,ldt_gaps)
     # update the series of Python datetimes
     ds.series['DateTime']['Data'] = ldt_nogaps
     ds.series['DateTime']['Flag'] = numpy.zeros(len(ldt_nogaps),dtype=numpy.int32)
-    #org_flag = ds.series['DateTime']['Flag'].astype(numpy.int32)
-    #ds.series['DateTime']['Flag'] = numpy.ones(nRecs,dtype=numpy.int32)
-    #ds.series['DateTime']['Flag'][idx_gaps] = org_flag
     # get a list of series in the data structure
     series_list = [item for item in ds.series.keys() if '_QCFlag' not in item]
     # remove the datetime-related series from data structure
@@ -1036,9 +1189,11 @@ def GetAltNameFromCF(cf,ThisOne):
         if 'AltVarName' in cf['Variables'][ThisOne].keys():
             ThisOne = str(cf['Variables'][ThisOne]['AltVarName'])
         else:
-            print 'GetAltNameFromCF: AltVarName key not in control file for '+str(ThisOne)
+            msg = 'GetAltNameFromCF: AltVarName key not in control file for '+str(ThisOne)
+            logger.warning(msg)
     else:
-        print 'GetAltNameFromCF: '+str(ThisOne)+' not in control file'
+        msg = 'GetAltNameFromCF: '+str(ThisOne)+' not in control file'
+        logger.warning(msg)
     return ThisOne
 
 def GetAttributeDictionary(ds,ThisOne):
@@ -1058,9 +1213,11 @@ def GetcbTicksFromCF(cf,ThisOne):
         if 'Ticks' in cf['Variables'][ThisOne].keys():
             Ticks = eval(cf['Variables'][ThisOne]['Ticks'])
         else:
-            print 'GetcbTicksFromCF: Ticks key not in control file for '+str(ThisOne)
+            msg = 'GetcbTicksFromCF: Ticks key not in control file for '+str(ThisOne)
+            logger.warning(msg)
     else:
-        print 'GetcbTicksFromCF: '+str(ThisOne)+' not in control file'
+        msg = 'GetcbTicksFromCF: '+str(ThisOne)+' not in control file'
+        logger.warning(msg)
     return Ticks
 
 def GetRangesFromCF(cf,ThisOne,mode="verbose"):
@@ -1132,7 +1289,7 @@ def GetDateIndex(ldt,date,ts=30,default=0,match='exact'):
                 date = dateutil.parser.parse(date)
                 if (date>=ldt[0]) and (date<=ldt[-1]):
                     # date string parsed OK, is it within the datetime range of the data?
-                    i = numpy.where(numpy.array(ldt) == date)[0][0]
+                    i = find_nearest_value(ldt, date)
                 else:
                     # set to default if not within the datetime range of the data
                     i = default
@@ -1146,7 +1303,7 @@ def GetDateIndex(ldt,date,ts=30,default=0,match='exact'):
         # the input date was a datetime object
         # check it is within the datetime range of the data
         if (date>=ldt[0]) and (date<=ldt[-1]):
-            i = numpy.where(numpy.array(ldt) == date)[0][0]
+            i = find_nearest_value(ldt, date)
         else:
             # set to default if not within the datetime range of the data
             i = default
@@ -1222,11 +1379,14 @@ def GetPlotTitleFromCF(cf, nFig):
             if 'Title' in cf['Plots'][str(nFig)]:
                 Title = str(cf['Plots'][str(nFig)]['Title'])
             else:
-                print 'GetPlotTitleFromCF: Variables key not in control file for plot '+str(nFig)
+                msg = 'GetPlotTitleFromCF: Variables key not in control file for plot '+str(nFig)
+                logger.warning(msg)
         else:
-            print 'GetPlotTitleFromCF: '+str(nFig)+' key not in Plots section of control file'
+            msg = 'GetPlotTitleFromCF: '+str(nFig)+' key not in Plots section of control file'
+            logger.warning(msg)
     else:
-        print 'GetPlotTitleFromCF: Plots key not in control file'
+        msg = 'GetPlotTitleFromCF: Plots key not in control file'
+        logger.warning(msg)
     return Title
 
 def GetPlotVariableNamesFromCF(cf, n):
@@ -1235,11 +1395,14 @@ def GetPlotVariableNamesFromCF(cf, n):
             if 'Variables' in cf['Plots'][str(n)]:
                 SeriesList = eval(cf['Plots'][str(n)]['Variables'])
             else:
-                print 'GetPlotVariableNamesFromCF: Variables key not in control file for plot '+str(n)
+                msg = 'GetPlotVariableNamesFromCF: Variables key not in control file for plot '+str(n)
+                logger.warning(msg)
         else:
-            print 'GetPlotVariableNamesFromCF: '+str(n)+' key not in Plots section of control file'
+            msg = 'GetPlotVariableNamesFromCF: '+str(n)+' key not in Plots section of control file'
+            logger.warning(msg)
     else:
-        print 'GetPlotVariableNamesFromCF: Plots key not in control file'
+        msg = 'GetPlotVariableNamesFromCF: Plots key not in control file'
+        logger.warning(msg)
     return SeriesList
 
 def GetSeries(ds,ThisOne,si=0,ei=-1,mode="truncate"):
@@ -1272,6 +1435,7 @@ def GetSeries(ds,ThisOne,si=0,ei=-1,mode="truncate"):
             Attr = MakeAttributeDictionary()
     else:
         # make an empty series if the requested series does not exist in the data structure
+        logger.warning("GetSeries: "+ThisOne+" not found, making empty series ...")
         Series,Flag,Attr = MakeEmptySeries(ds,ThisOne)
     # tidy up
     if ei==-1: ei = nRecs - 1
@@ -1372,7 +1536,7 @@ def GetSeriesasMA(ds,ThisOne,si=0,ei=-1,mode="truncate"):
     Series,WasND = SeriestoMA(Series)
     return Series,Flag,Attr
 
-def GetVariable(ds,label,si=0,ei=-1,mode="truncate",out_type="ma"):
+def GetVariable(ds, label, start=0, end=-1, mode="truncate", out_type="ma"):
     """
     Purpose:
      Returns a data variable from the data structure as a dictionary.
@@ -1381,8 +1545,8 @@ def GetVariable(ds,label,si=0,ei=-1,mode="truncate",out_type="ma"):
     where the arguments are;
       ds    - the data structure (dict)
       label - label of the data variable in ds (string)
-      si    - start index (integer), default 0
-      ei    - end index (integer), default -1
+      start - start date or index (integer), default 0
+      end   - end date or index (integer), default -1
     and the returned values are;
      The data are returned as a dictionary;
       variable["label"] - variable label in data structure
@@ -1396,12 +1560,18 @@ def GetVariable(ds,label,si=0,ei=-1,mode="truncate",out_type="ma"):
       Fsd = pfp_utils.GetSeriesAsDict(ds,"Fsd")
     Author: PRI
     """
+    nrecs = int(ds.globalattributes["nc_nrecs"])
+    if end == -1:
+        end = nrecs
     ts = int(ds.globalattributes["time_step"])
-    ldt,flag,attr = GetSeries(ds,"DateTime",si=si,ei=ei,mode=mode)
-    data,flag,attr = GetSeries(ds,label,si=si,ei=ei,mode=mode)
-    if out_type == "ma":
-        data,WasND = SeriestoMA(data)
-    variable = {"Label":label,"Data":data,"Flag":flag,"Attr":attr,"DateTime":numpy.array(ldt),"time_step":ts}
+    ldt = ds.series["DateTime"]["Data"]
+    si = get_start_index(ldt, start)
+    ei = get_end_index(ldt, end)
+    data,flag,attr = GetSeries(ds, label, si=si, ei=ei, mode=mode)
+    if isinstance(data, numpy.ndarray):
+        data, WasND = SeriestoMA(data)
+    variable = {"Label":label,"Data":data,"Flag":flag,"Attr":attr,
+                "DateTime":ldt[si:ei+1],"time_step":ts}
     return variable
 
 def GetUnitsFromds(ds, ThisOne):
@@ -1479,7 +1649,7 @@ def get_datetimefromnctime(ds,time,time_units):
     nRecs = int(ds.globalattributes["nc_nrecs"])
     dt = netCDF4.num2date(time,time_units)
     ds.series[unicode("DateTime")] = {}
-    ds.series["DateTime"]["Data"] = list(dt)
+    ds.series["DateTime"]["Data"] = dt
     ds.series["DateTime"]["Flag"] = numpy.zeros(nRecs)
     ds.series["DateTime"]["Attr"] = {}
     ds.series["DateTime"]["Attr"]["long_name"] = "Datetime in local timezone"
@@ -1495,12 +1665,11 @@ def get_datetimefromxldate(ds):
     nRecs = len(ds.series['xlDateTime']['Data'])
     datemode = int(ds.globalattributes['xl_datemode'])
     ds.series[unicode('DateTime')] = {}
-    ds.series['DateTime']['Data'] = [None]*nRecs
     basedate = datetime.datetime(1899, 12, 30)
-    #ldt = [basedate + datetime.timedelta(days=xldate[i] + 1462 * datemode) for i in range(nRecs)]
-    #ds.series['DateTime']['Data'][i] = ldt
+    dt = [None]*nRecs
     for i in range(nRecs):
-        ds.series['DateTime']['Data'][i] = basedate + datetime.timedelta(days=xldate[i] + 1462 * datemode)
+        dt[i] = basedate + datetime.timedelta(days=xldate[i] + 1462 * datemode)
+    ds.series['DateTime']['Data'] = numpy.array(dt)
     ds.series['DateTime']['Flag'] = numpy.zeros(nRecs)
     ds.series['DateTime']['Attr'] = {}
     ds.series['DateTime']['Attr']['long_name'] = 'Datetime in local timezone'
@@ -1517,21 +1686,20 @@ def get_datetimefromymdhms(ds):
     nRecs = get_nrecs(ds)
     ts = ds.globalattributes["time_step"]
     ds.series[unicode('DateTime')] = {}
-    ds.series['DateTime']['Data'] = [None]*nRecs
+    dt = [None]*nRecs
     if "Microseconds" in ds.series.keys():
         microseconds = ds.series["Microseconds"]["Data"]
     else:
         microseconds = numpy.zeros(nRecs,dtype=numpy.float64)
     for i in range(nRecs):
-        #print i,int(ds.series['Year']['Data'][i]),int(ds.series['Month']['Data'][i]),int(ds.series['Day']['Data'][i])
-        #print i,int(ds.series['Hour']['Data'][i]),int(ds.series['Minute']['Data'][i]),int(ds.series['Second']['Data'][i])
-        ds.series['DateTime']['Data'][i] = datetime.datetime(int(ds.series['Year']['Data'][i]),
-                                                       int(ds.series['Month']['Data'][i]),
-                                                       int(ds.series['Day']['Data'][i]),
-                                                       int(ds.series['Hour']['Data'][i]),
-                                                       int(ds.series['Minute']['Data'][i]),
-                                                       int(ds.series['Second']['Data'][i]),
-                                                       int(microseconds[i]))
+        dt = datetime.datetime(int(ds.series['Year']['Data'][i]),
+                                int(ds.series['Month']['Data'][i]),
+                                int(ds.series['Day']['Data'][i]),
+                                int(ds.series['Hour']['Data'][i]),
+                                int(ds.series['Minute']['Data'][i]),
+                                int(ds.series['Second']['Data'][i]),
+                                int(microseconds[i]))
+    ds.series['DateTime']['Data'] = numpy.array(dt)
     ds.series['DateTime']['Flag'] = numpy.zeros(nRecs)
     ds.series['DateTime']['Attr'] = {}
     ds.series['DateTime']['Attr']['long_name'] = 'Date-time object'
@@ -1556,6 +1724,45 @@ def get_diurnalstats(dt,data,info):
     diel_stats["Mx"] = numpy.ma.max(data_2d,axis=0)
     diel_stats["Mn"] = numpy.ma.min(data_2d,axis=0)
     return diel_stats
+
+def get_end_index(ldt, end, mode="quiet"):
+    """
+    Purpose:
+    Usage:
+    Author: PRI
+    Date: October 2016
+    """
+    if isinstance(end, basestring):
+        try:
+            end = dateutil.parser.parse(end)
+            if end <= ldt[-1] and end >= ldt[0]:
+                ei = numpy.where(ldt == end)[0][0]
+            else:
+                if mode == "verbose":
+                    msg = "Requested end date not found, setting to last date"
+                    logger.warning(msg)
+                ei = len(ldt)
+        except ValueError as error:
+            if mode == "verbose":
+                msg = "Error parsing end date string, setting to last date"
+                logger.warning(msg)
+            ei = len(ldt)
+    elif isinstance(end, datetime.datetime):
+        if end >= ldt[0] and end <= ldt[-1]:
+            ei = numpy.where(ldt == end)[0][0]
+        else:
+            if mode == "verbose":
+                msg = "Requested end date not found, setting to last date"
+                logger.warning(msg)
+            ei = len(ldt)
+    elif (isinstance(end, numbers.Number)):
+        ei = min([int(end), len(ldt)])
+    else:
+        if mode == "verbose":
+            msg = "Unrecognised type for end date, setting to last date"
+            logger.warning(msg)
+        ei = len(ldt)
+    return ei
 
 def get_keyvaluefromcf(cf,sections,key,default=None,mode="quiet"):
     """
@@ -1676,6 +1883,30 @@ def get_number_from_heightstring(height):
         z = 0.0
     return z
 
+def get_nctime_from_datetime(ds, time_units="seconds since 1970-01-01 00:00:00.0",
+                             calendar="gregorian"):
+    """
+    Purpose:
+     Generate a time series in the supplied units from the datetime objects stored
+     in the data structure ds.
+    Usage:
+     get_nctime_from_datetime(ds, time_units)
+     where ds is a data structure (data_structure)
+           group is the group in the data structure be handled (string)
+           time_units provides the units and the reference datetime (string)
+                      e.g. time_units = "seconds since 1970-01-01 00:00:00.0"
+    Author: PRI
+    Date: October 2017
+    """
+    ldt = ds.series["DateTime"]["Data"]
+    data = netCDF4.date2num(ldt, time_units, calendar=calendar)
+    flag = numpy.zeros(len(data))
+    attr = {"long_name":"time", "standard_name":"time", "units":time_units, "calendar":calendar}
+    variable = {"Label":"time", "Data":data, "Flag":flag, "Attr":attr}
+    CreateVariable(ds, variable)
+
+    return
+
 def get_nrecs(ds):
     if 'nc_nrecs' in ds.globalattributes.keys():
         nRecs = int(ds.globalattributes['nc_nrecs'])
@@ -1685,6 +1916,45 @@ def get_nrecs(ds):
         series_list = ds.series.keys()
         nRecs = len(ds.series[series_list[0]]['Data'])
     return nRecs
+
+def get_start_index(ldt, start, mode="quiet"):
+    """
+    Purpose:
+    Usage:
+    Author: PRI
+    Date: October 2016
+    """
+    if isinstance(start, basestring):
+        try:
+            start = dateutil.parser.parse(start)
+            if start >= ldt[0] and start <= ldt[-1]:
+                si = numpy.where(ldt == start)[0][0]
+            else:
+                if mode == "verbose":
+                    msg = "Requested start date not found, setting to first date"
+                    logger.warning(msg)
+                si = 0
+        except ValueError as error:
+            if mode == "verbose":
+                msg = "Error parsing start date string, setting to first date"
+                logger.warning(msg)
+            si = 0
+    elif isinstance(start, datetime.datetime):
+        if start >= ldt[0] and start <= ldt[-1]:
+            si = numpy.where(ldt == start)[0][0]
+        else:
+            if mode == "verbose":
+                msg = "Requested start date not found, setting to first date"
+                logger.warning(msg)
+            si = 0
+    elif (isinstance(start, numbers.Number)):
+        si = max([0,int(start)])
+    else:
+        if mode == "verbose":
+            msg = "Unrecognised type for start, setting to first date"
+            logger.warning(msg)
+        si = 0
+    return si
 
 def get_timestep(ds):
     """
@@ -2055,7 +2325,7 @@ def parse_rangecheck_limits(s):
         except:
             # and error if we can't
             msg = "parse_rangecheck_limits: unable to parse string "+s
-            print msg
+            logger.error(msg)
     else:
         # might be a list as a string
         try:
@@ -2120,11 +2390,25 @@ def polyval(p,x):
     return y
 
 def rounddttots(dt,ts=30):
+    """
+    Purpose:
+     Round the time stamp to the nearest time step.
+    Usage:
+    Author: PRI (probably stolen from StackOverFlow)
+    Date: Back in the day
+    """
     dt += datetime.timedelta(minutes=int(ts/2))
     dt -= datetime.timedelta(minutes=dt.minute % int(ts),seconds=dt.second,microseconds=dt.microsecond)
     return dt
 
 def rounddttoseconds(dt):
+    """
+    Purpose:
+     Round the time stamp to the nearest the nearest second.
+    Usage:
+    Author: PRI (probably stolen from StackOverFlow)
+    Date: Back in the day
+    """
     dt += datetime.timedelta(seconds=0.5)
     dt -= datetime.timedelta(seconds=dt.second % 1,microseconds=dt.microsecond)
     return dt
@@ -2162,7 +2446,8 @@ def round_datetime(ds,mode="nearest_timestep"):
         logger.error(" round_datetime: unrecognised mode ("+str(mode)+")"+" ,returning original time series")
         rldt = ds.series["DateTime"]["Data"]
     # replace the original datetime series with the rounded one
-    ds.series["DateTime"]["Data"] = rldt
+    ds.series["DateTime"]["Data"] = numpy.array(rldt)
+    return
 
 def roundtobase(x,base=5):
     return int(base*round(float(x)/base))

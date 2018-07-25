@@ -1,0 +1,476 @@
+#level = L2
+[Files]
+    file_path = examples/Calperum/
+    in_filename = Calperum_2016_L1.nc
+    out_filename = Calperum_2016_L2.nc
+
+[Output]
+
+[Variables]
+    # Radiation
+    [[Flu]]
+        [[[RangeCheck]]]
+            Lower = [250]*12
+            Upper = [625]*12
+    [[Fld]]
+        [[[RangeCheck]]]
+            Lower = [250]*12
+            Upper = [500]*12
+    [[Fsu]]
+        [[[RangeCheck]]]
+            Lower = [-10]*12
+            Upper = [500]*12
+    [[Fsd]]
+        [[[RangeCheck]]]
+            Lower = [-10]*12
+            Upper = [1500]*12
+    [[Fsd_Li]]
+        [[[RangeCheck]]]
+            Lower = [-10]*12
+            Upper = [1500]*12
+    # Covariances: Temperature
+    [[UzT]]
+        [[[RangeCheck]]]
+            Lower = [-0.2]*12
+            Upper = [1]*12
+    #        [[[DiurnalCheck]]]
+    #            NumSd      = "[5]*12"
+    [[UxT]]
+        [[[RangeCheck]]]
+            Lower = [-2]*12
+            Upper = [2]*12
+    [[UyT]]
+        [[[RangeCheck]]]
+            Lower = [-2]*12
+            Upper = [2]*12
+    # Covariances: H2O
+    [[UzA]]
+        [[[RangeCheck]]]
+            Lower = [-0.01]*12
+            Upper = [0.1]*12
+    #        [[[DiurnalCheck]]]
+    #            NumSd      = "[5]*12"
+    [[UxA]]
+        [[[RangeCheck]]]
+            Lower = [-1]*12
+            Upper = [1]*12
+    [[UyA]]
+        [[[RangeCheck]]]
+            Lower = [-1]*12
+            Upper = [1]*12
+    # Covariances: CO2
+    [[UzC]]
+        [[[RangeCheck]]]
+            Lower = [-2]*12
+            Upper = [2]*12
+    #        [[[DiurnalCheck]]]
+    #            NumSd      = "[5]*12"
+    [[UxC]]
+        [[[RangeCheck]]]
+            Lower = [-4]*12
+            Upper = [4]*12
+    [[UyC]]
+        [[[RangeCheck]]]
+            Lower = [-4]*12
+            Upper = [4]*12
+    # Covariances and variances: Momentum
+    [[UxUz]]
+        [[[RangeCheck]]]
+            Lower = [-10]*12
+            Upper = [10]*12
+    #        [[[DiurnalCheck]]]
+    #            NumSd      = "[5]*12"
+    [[UyUz]]
+        [[[RangeCheck]]]
+            Lower = [-10]*12
+            Upper = [10]*12
+    #        [[[DiurnalCheck]]]
+    #            NumSd      = "[5]*12"
+    [[UxUy]]
+        [[[RangeCheck]]]
+            Lower = [-10]*12
+            Upper = [10]*12
+    #        [[[DiurnalCheck]]]
+    #            NumSd      = "[5]*12"
+    [[UxUx]]
+        [[[RangeCheck]]]
+            Lower = [-10]*12
+            Upper = [10]*12
+    #        [[[DiurnalCheck]]]
+    #            NumSd      = "[5]*12"
+    [[UyUy]]
+        [[[RangeCheck]]]
+            Lower = [-10]*12
+            Upper = [10]*12
+    #        [[[DiurnalCheck]]]
+    #            NumSd      = "[5]*12"
+    # Meteorology: CSAT
+    [[Tv_CSAT]]
+        [[[RangeCheck]]]
+            Lower = [0]*12
+            Upper = [50]*12
+    [[Wd_CSAT]]
+        [[[RangeCheck]]]
+            Lower = [0]*12
+            Upper = [360]*12
+    [[Ws_CSAT]]
+        [[[RangeCheck]]]
+            Lower = [0]*12
+            Upper = [20]*12
+    [[Ux]]
+        [[[RangeCheck]]]
+            Lower = [-20]*12
+            Upper = [20]*12
+    [[Uy]]
+        [[[RangeCheck]]]
+            Lower = [-20]*12
+            Upper = [20]*12
+    [[Uz]]
+        [[[RangeCheck]]]
+            Lower = [-1]*12
+            Upper = [1]*12
+    [[Diag_CSAT]]
+        [[[RangeCheck]]]
+            Lower = [-0.5]*12
+            Upper = [10.5]*12
+    # Meteorology: LI-7500
+    [[Ah_7500_Av]]
+        [[[RangeCheck]]]
+            Lower = [0]*12
+            Upper = [35]*12
+    [[Cc_7500_Av]]
+        [[[RangeCheck]]]
+            Lower = [500]*12
+            Upper = [1200]*12
+    [[Ah_7500_Sd]]
+        [[[RangeCheck]]]
+            Lower = [0]*12
+            Upper = [3]*12
+    [[Cc_7500_Sd]]
+        [[[RangeCheck]]]
+            Lower = [0]*12
+            Upper = [20]*12
+    [[ps]]
+        [[[RangeCheck]]]
+            Lower = [95]*12
+            Upper = [105]*12
+    [[Diag_7500]]
+        [[[RangeCheck]]]
+            Lower = [-0.5]*12
+            Upper = [10.5]*12
+    [[AGC_7500]]
+        [[[RangeCheck]]]
+            Lower = [0]*12
+            Upper = [65]*12
+    # Meteorology: HMP45c
+    [[Ah_HMP_2m]]
+        [[[RangeCheck]]]
+            Lower = [0]*12
+            Upper = [25]*12
+        [[[ExcludeDates]]]
+            0 = "['2016-8-03 07:00','2016-8-03 10:00']"
+            1 = "['2016-8-05 06:00','2016-8-05 08:00']"
+            2 = "['2016-8-06 06:00','2016-8-06 09:00']"
+            3 = "['2016-8-10 20:00','2016-8-11 09:00']"
+            4 = "['2016-8-14 04:00','2016-8-14 09:00']"
+            5 = "['2016-8-19 02:00','2016-8-19 10:00']"
+            6 = "['2016-8-20 01:00','2016-8-20 03:00']"
+            7 = "['2016-8-20 05:00','2016-8-20 08:00']"
+            8 = "['2016-8-21 05:00','2016-8-21 08:00']"
+            9 = "['2016-8-23 04:00','2016-8-23 09:00']"
+            10 = "['2016-8-24 06:00','2016-8-24 09:00']"
+            11 = "['2016-8-26 03:00','2016-8-26 03:00']"
+            12 = "['2016-8-30 00:00','2016-8-30 02:00']"
+            13 = "['2016-8-31 05:00','2016-8-31 08:00']"
+    [[Ta_HMP_2m]]
+        [[[RangeCheck]]]
+            Lower = [-5]*12
+            Upper = [50]*12
+        [[[ExcludeDates]]]
+            0 = "['2016-8-03 07:00','2016-8-03 10:00']"
+            1 = "['2016-8-05 06:00','2016-8-05 08:00']"
+            2 = "['2016-8-06 06:00','2016-8-06 09:00']"
+            3 = "['2016-8-10 20:00','2016-8-11 09:00']"
+            4 = "['2016-8-14 04:00','2016-8-14 09:00']"
+            5 = "['2016-8-19 02:00','2016-8-19 10:00']"
+            6 = "['2016-8-20 01:00','2016-8-20 03:00']"
+            7 = "['2016-8-20 05:00','2016-8-20 08:00']"
+            8 = "['2016-8-21 05:00','2016-8-21 08:00']"
+            9 = "['2016-8-23 04:00','2016-8-23 09:00']"
+            10 = "['2016-8-24 06:00','2016-8-24 09:00']"
+            11 = "['2016-8-26 03:00','2016-8-26 03:00']"
+            12 = "['2016-8-30 00:00','2016-8-30 02:00']"
+            13 = "['2016-8-31 05:00','2016-8-31 08:00']"
+    # Meteorology: RMYoung
+    [[Ws_RMY_2m]]
+        [[[RangeCheck]]]
+            Lower = [0]*12
+            Upper = [20]*12
+    [[Wd_RMY_2m]]
+        [[[RangeCheck]]]
+            Lower = [0]*12
+            Upper = [360]*12
+    [[Ws_RMY_10m]]
+        [[[RangeCheck]]]
+            Lower = [0]*12
+            Upper = [20]*12
+    [[Wd_RMY_10m]]
+        [[[RangeCheck]]]
+            Lower = [0]*12
+            Upper = [360]*12
+    # Meteorology: Precip
+    [[Precip]]
+        [[[RangeCheck]]]
+            Lower = [0]*12
+            Upper = [20]*12
+    # Soil: Ground heat flux
+    [[Fg_8cma]]
+        [[[RangeCheck]]]
+            Lower = [-100]*12
+            Upper = [100]*12
+    [[Fg_8cmb]]
+        [[[RangeCheck]]]
+            Lower = [-100]*12
+            Upper = [100]*12
+    [[Fg_8cmc]]
+        [[[RangeCheck]]]
+            Lower = [-100]*12
+            Upper = [100]*12
+    # Soil: Soil moisture
+    [[Sws_10cma]]
+        [[[RangeCheck]]]
+            Lower = [0]*12
+            Upper = [0.5]*12
+        [[[ExcludeDates]]]
+            0 = "['2016-7-07 10:00','2016-7-07 11:00']"
+    [[Sws_10cmb]]
+        [[[RangeCheck]]]
+            Lower = [0]*12
+            Upper = [0.5]*12
+        [[[ExcludeDates]]]
+            0 = "['2016-7-07 10:00','2016-7-07 11:00']"
+    [[Sws_10cmc]]
+        [[[RangeCheck]]]
+            Lower = [0]*12
+            Upper = [0.5]*12
+        [[[ExcludeDates]]]
+            0 = "['2016-7-07 10:00','2016-7-07 11:00']"
+    [[Sws_25cma]]
+        [[[RangeCheck]]]
+            Lower = [0]*12
+            Upper = [0.5]*12
+        [[[ExcludeDates]]]
+            0 = "['2016-7-07 10:00','2016-7-07 11:00']"
+    [[Sws_25cmb]]
+        [[[RangeCheck]]]
+            Lower = [0]*12
+            Upper = [0.5]*12
+        [[[ExcludeDates]]]
+            0 = "['2016-7-07 10:00','2016-7-07 11:00']"
+    [[Sws_25cmc]]
+        [[[RangeCheck]]]
+            Lower = [0]*12
+            Upper = [0.5]*12
+        [[[ExcludeDates]]]
+            0 = "['2016-7-07 10:00','2016-7-07 11:00']"
+    [[Sws_50cma]]
+        [[[RangeCheck]]]
+            Lower = [0]*12
+            Upper = [0.5]*12
+        [[[ExcludeDates]]]
+            0 = "['2016-7-07 10:00','2016-7-07 11:00']"
+    [[Sws_50cmb]]
+        [[[RangeCheck]]]
+            Lower = [0]*12
+            Upper = [0.5]*12
+        [[[ExcludeDates]]]
+            0 = "['2016-7-07 10:00','2016-7-07 11:00']"
+    [[Sws_50cmc]]
+        [[[RangeCheck]]]
+            Lower = [0]*12
+            Upper = [0.5]*12
+        [[[ExcludeDates]]]
+            0 = "['2016-7-07 10:00','2016-7-07 11:00']"
+    [[Sws_100cma]]
+        [[[RangeCheck]]]
+            Lower = [0]*12
+            Upper = [0.5]*12
+        [[[ExcludeDates]]]
+            0 = "['2016-7-07 10:00','2016-7-07 11:00']"
+    [[Sws_100cmb]]
+        [[[RangeCheck]]]
+            Lower = [0]*12
+            Upper = [0.5]*12
+        [[[ExcludeDates]]]
+            0 = "['2016-7-07 10:00','2016-7-07 11:00']"
+    [[Sws_100cmc]]
+        [[[RangeCheck]]]
+            Lower = [0]*12
+            Upper = [0.5]*12
+        [[[ExcludeDates]]]
+            0 = "['2016-7-07 10:00','2016-7-07 11:00']"
+    [[Sws_180cma]]
+        [[[RangeCheck]]]
+            Lower = [0]*12
+            Upper = [0.5]*12
+        [[[ExcludeDates]]]
+            0 = "['2016-7-07 10:00','2016-7-07 11:00']"
+    [[Sws_180cmb]]
+        [[[RangeCheck]]]
+            Lower = [0]*12
+            Upper = [0.5]*12
+        [[[ExcludeDates]]]
+            0 = "['2016-7-07 10:00','2016-7-07 11:00']"
+    [[Sws_180cmc]]
+        [[[RangeCheck]]]
+            Lower = [0]*12
+            Upper = [0.5]*12
+        [[[ExcludeDates]]]
+            0 = "['2016-7-07 10:00','2016-7-07 11:00']"
+    # Soil: Soil temperature
+    [[Ts_8cma]]
+        [[[RangeCheck]]]
+            Lower = [2]*12
+            Upper = [60]*12
+        [[[ExcludeDates]]]
+            0 = "['2016-7-07 10:00','2016-7-07 11:00']"
+    [[Ts_8cmb]]
+        [[[RangeCheck]]]
+            Lower = [2]*12
+            Upper = [60]*12
+        [[[ExcludeDates]]]
+            0 = "['2016-7-07 10:00','2016-7-07 11:00']"
+    [[Ts_8cmc]]
+        [[[RangeCheck]]]
+            Lower = [2]*12
+            Upper = [60]*12
+        [[[ExcludeDates]]]
+            0 = "['2016-7-07 10:00','2016-7-07 11:00']"
+    [[Ts_10cma]]
+        [[[RangeCheck]]]
+            Lower = [2]*12
+            Upper = [60]*12
+        [[[ExcludeDates]]]
+            0 = "['2016-7-07 10:00','2016-7-07 11:00']"
+    [[Ts_10cmb]]
+        [[[RangeCheck]]]
+            Lower = [2]*12
+            Upper = [60]*12
+        [[[ExcludeDates]]]
+            0 = "['2016-7-07 10:00','2016-7-07 11:00']"
+    [[Ts_10cmc]]
+        [[[RangeCheck]]]
+            Lower = [2]*12
+            Upper = [60]*12
+        [[[ExcludeDates]]]
+            0 = "['2016-7-07 10:00','2016-7-07 11:00']"
+    [[Ts_25cma]]
+        [[[RangeCheck]]]
+            Lower = [2]*12
+            Upper = [60]*12
+        [[[ExcludeDates]]]
+            0 = "['2016-7-07 10:00','2016-7-07 11:00']"
+    [[Ts_25cmb]]
+        [[[RangeCheck]]]
+            Lower = [2]*12
+            Upper = [60]*12
+        [[[ExcludeDates]]]
+            0 = "['2016-7-07 10:00','2016-7-07 11:00']"
+    [[Ts_25cmc]]
+        [[[RangeCheck]]]
+            Lower = [2]*12
+            Upper = [60]*12
+        [[[ExcludeDates]]]
+            0 = "['2016-7-07 10:00','2016-7-07 11:00']"
+    [[Ts_50cma]]
+        [[[RangeCheck]]]
+            Lower = [2]*12
+            Upper = [60]*12
+        [[[ExcludeDates]]]
+            0 = "['2016-7-07 10:00','2016-7-07 11:00']"
+    [[Ts_50cmb]]
+        [[[RangeCheck]]]
+            Lower = [2]*12
+            Upper = [60]*12
+        [[[ExcludeDates]]]
+            0 = "['2016-7-07 10:00','2016-7-07 11:00']"
+    [[Ts_50cmc]]
+        [[[RangeCheck]]]
+            Lower = [2]*12
+            Upper = [60]*12
+        [[[ExcludeDates]]]
+            0 = "['2016-7-07 10:00','2016-7-07 11:00']"
+    [[Ts_100cma]]
+        [[[RangeCheck]]]
+            Lower = [2]*12
+            Upper = [60]*12
+        [[[ExcludeDates]]]
+            0 = "['2016-7-07 10:00','2016-7-07 11:00']"
+    [[Ts_100cmb]]
+        [[[RangeCheck]]]
+            Lower = [2]*12
+            Upper = [60]*12
+        [[[ExcludeDates]]]
+            0 = "['2016-7-07 10:00','2016-7-07 11:00']"
+    [[Ts_100cmc]]
+        [[[RangeCheck]]]
+            Lower = [2]*12
+            Upper = [60]*12
+        [[[ExcludeDates]]]
+            0 = "['2016-7-07 10:00','2016-7-07 11:00']"
+    [[Ts_180cma]]
+        [[[RangeCheck]]]
+            Lower = [2]*12
+            Upper = [60]*12
+        [[[ExcludeDates]]]
+            0 = "['2016-7-07 10:00','2016-7-07 11:00']"
+    [[Ts_180cmb]]
+        [[[RangeCheck]]]
+            Lower = [2]*12
+            Upper = [60]*12
+        [[[ExcludeDates]]]
+            0 = "['2016-7-07 10:00','2016-7-07 11:00']"
+    [[Ts_180cmc]]
+        [[[RangeCheck]]]
+            Lower = [2]*12
+            Upper = [60]*12
+        [[[ExcludeDates]]]
+            0 = "['2016-7-07 10:00','2016-7-07 11:00']"
+
+[Plots]
+    [[0]]
+        Title = Radiative fluxes
+        Variables = "['Fsd_Li','Fsd','Fsu','Fld','Flu']"
+    #        YLMin = "['Auto','Auto','Auto','Auto','0']"     # dimensions of the individual plots
+    #        YLMax = "['Auto','Auto','Auto','Auto','500']"   # all four lines must be uncommented to use
+    #        YRMin = "['Auto','Auto','Auto','Auto','0']"     # the number of items in these four lists must be equal
+    #        YRMax = "['Auto','Auto','Auto','Auto','500']"   #     to the number of items in the Variables list
+    [[1]]
+        Title = Covariances (CSAT)
+        Variables = "['UzT','UxT','UyT','UxUz','UyUz','UxUy','UxUx','UyUy']"
+    [[2]]
+        Title = Covariances (CSAT&7500)
+        Variables = "['UzA','UxA','UyA','UzC','UxC','UyC']"
+    [[3]]
+        Title = "Air temperature, humidity and CO2"
+        Variables = "['Ta_HMP_2m','Tv_CSAT','Ah_HMP_2m','Ah_7500_Av','Cc_7500_Av']"
+    [[4]]
+        Title = Rainfall and diagnostics
+        Variables = "['Precip','Ah_7500_Sd','Cc_7500_Sd','AGC_7500','Diag_7500','Diag_CSAT']"
+    [[5]]
+        Title = Soil temperature and heat flux
+        Variables = "['Ts_8cma','Ts_8cmb','Ts_8cmc','Fg_8cma','Fg_8cmb','Fg_8cmc']"
+    [[6]]
+        Title = Soil temperature and water content at 10cm
+        Variables = "['Ts_10cma','Ts_10cmb','Ts_10cmc','Sws_10cma','Sws_10cmb','Sws_10cmc']"
+    [[7]]
+        Title = "Pressure, wind components and rainfall"
+        Variables = "['ps','Ux','Uy','Uz','Precip','Vbat','Tpanel']"
+    [[8]]
+        Title = Wind speed and direction
+        Variables = "['Ws_CSAT','Ws_RMY_2m','Ws_RMY_10m','Wd_CSAT','Wd_RMY_2m','Wd_RMY_10m']"
+    [[9]]
+        Type = xy
+        Title = xy plots:  Ah
+        XSeries = ['Ah_HMP_2m']
+        YSeries = ['Ah_7500_Av']

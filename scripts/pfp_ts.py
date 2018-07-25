@@ -91,11 +91,13 @@ def ApplyLinear(cf,ds,ThisOne):
         for i in range(len(LinearList)):
             LinearItemList = ast.literal_eval(cf['Variables'][ThisOne]['Linear'][str(i)])
             try:
-                si = ldt.index(datetime.datetime.strptime(LinearItemList[0],'%Y-%m-%d %H:%M'))
+                dt = datetime.datetime.strptime(LinearItemList[0],'%Y-%m-%d %H:%M')
+                si = pfp_utils.find_nearest_value(ldt, dt)
             except ValueError:
                 si = 0
             try:
-                ei = ldt.index(datetime.datetime.strptime(LinearItemList[1],'%Y-%m-%d %H:%M')) + 1
+                dt = datetime.datetime.strptime(LinearItemList[1],'%Y-%m-%d %H:%M')
+                ei = pfp_utils.find_nearest_value(ldt, dt)
             except ValueError:
                 ei = -1
             Slope = float(LinearItemList[2])
@@ -130,11 +132,13 @@ def ApplyLinearDrift(cf,ds,ThisOne):
         for i in range(len(DriftList)):
             DriftItemList = ast.literal_eval(cf['Variables'][ThisOne]['Drift'][str(i)])
             try:
-                si = ldt.index(datetime.datetime.strptime(DriftItemList[0],'%Y-%m-%d %H:%M'))
+                dt = datetime.datetime.strptime(DriftItemList[0],'%Y-%m-%d %H:%M')
+                si = pfp_utils.find_nearest_value(ldt, dt)
             except ValueError:
                 si = 0
             try:
-                ei = ldt.index(datetime.datetime.strptime(DriftItemList[1],'%Y-%m-%d %H:%M')) + 1
+                dt = datetime.datetime.strptime(DriftItemList[1],'%Y-%m-%d %H:%M') + 1
+                ei = pfp_utils.find_nearest_value(ldt, dt)
             except ValueError:
                 ei = -1
             Slope = numpy.zeros(len(data))
@@ -174,11 +178,13 @@ def ApplyLinearDriftLocal(cf,ds,ThisOne):
         for i in range(len(DriftList)):
             DriftItemList = ast.literal_eval(cf['Variables'][ThisOne]['LocalDrift'][str(i)])
             try:
-                si = ldt.index(datetime.datetime.strptime(DriftItemList[0],'%Y-%m-%d %H:%M'))
+                dt = datetime.datetime.strptime(DriftItemList[0],'%Y-%m-%d %H:%M')
+                si = pfp_utils.find_nearest_value(ldt, dt)
             except ValueError:
                 si = 0
             try:
-                ei = ldt.index(datetime.datetime.strptime(DriftItemList[1],'%Y-%m-%d %H:%M')) + 1
+                dt = datetime.datetime.strptime(DriftItemList[1],'%Y-%m-%d %H:%M') + 1
+                ei = pfp_utils.find_nearest_value(ldt, dt)
             except ValueError:
                 ei = -1
             Slope = numpy.zeros(len(data))
@@ -637,15 +643,16 @@ def SpecificHumidityFromRH(ds):
         attr = pfp_utils.MakeAttributeDictionary(long_name='Specific humidity',units='kg/kg',standard_name='specific_humidity')
         pfp_utils.CreateSeries(ds,"q",q_new,q_new_flag,attr)
 
-def CalculateMeteorologicalVariables(ds,Ta_name='Ta',Tv_name='Tv_CSAT',ps_name='ps',
+def CalculateMeteorologicalVariables(ds,Ta_name='Ta',Tv_name='Tv_SONIC_Av',ps_name='ps',
                                      q_name="q",Ah_name='Ah',RH_name='RH'):
     """
         Add time series of meteorological variables based on fundamental
         relationships (Stull 1988)
 
-        Usage pfp_ts.CalculateMeteorologicalVariables(ds,Ta_name,ps_name,Ah_name)
+        Usage pfp_ts.CalculateMeteorologicalVariables(ds,Ta_name,Tv_name,ps_name,q_name,Ah_name,RH_name)
         ds: data structure
         Ta_name: data series name for air temperature
+        Tv_name: data series name for sonic virtual air temperature
         ps_name: data series name for pressure
         Ah_name: data series name for absolute humidity
         q_name : data series name for specific humidity
@@ -671,8 +678,15 @@ def CalculateMeteorologicalVariables(ds,Ta_name='Ta',Tv_name='Tv_CSAT',ps_name='
     logger.info(' Adding standard met variables to database')
     # get the required data series
     Ta,f,a = pfp_utils.GetSeriesasMA(ds,Ta_name)
-    # use Tv_CSAT if it is in the data structure, otherwise use Ta
-    if Tv_name not in ds.series.keys(): Tv_name = Ta_name
+    # deal with possible aliases for the sonic temperature for the time being
+    if Tv_name not in ds.series.keys():
+        if "Tv_CSAT_Av" in ds.series.keys():
+            Tv_name = "Tv_CSAT_Av"
+        elif "Tv_CSAT" in ds.series.keys():
+            Tv_name = "Tv_CSAT"
+        else:
+            Tv_name = Ta_name   # use Tv_CSAT if it is in the data structure, otherwise use Ta
+
     Tv,f,a = pfp_utils.GetSeriesasMA(ds,Tv_name)
     ps,f,a = pfp_utils.GetSeriesasMA(ds,ps_name)
     Ah,f,a = pfp_utils.GetSeriesasMA(ds,Ah_name)
@@ -734,6 +748,50 @@ def CalculateMeteorologicalVariables(ds,Ta_name='Ta',Tv_name='Tv_CSAT',ps_name='
     attr = pfp_utils.MakeAttributeDictionary(long_name='H2O mixing ratio',units='mmol/mol',standard_name='mole_concentration_of_water_vapor_in_air')
     flag = numpy.where(numpy.ma.getmaskarray(h2o)==True,ones,zeros)
     pfp_utils.CreateSeries(ds,'H2O',h2o,flag,attr)
+
+def CalculateMoninObukhovLength(ds):
+    """
+    Purpose:
+     Calculate the Monin Obukhov length.
+    Usage:
+     pfp_ts.CalculateMoninObukhovLength(ds)
+     where ds is a data structure
+    Side effects:
+     Creates a new series in the data structure containing the Monin-Obukhov length.
+    Author: PRI
+    Date: April 2018
+    """
+    logger.info(' Calculating Monin-Obukhov length')
+    # create a variable dictionary for L
+    nrecs = int(ds.globalattributes["nc_nrecs"])
+    ldt = pfp_utils.GetVariable(ds, "DateTime")
+    L = pfp_utils.create_empty_variable("L", nrecs, datetime=ldt["Data"])
+    # create QC flags
+    zeros = numpy.zeros(nrecs, dtype=numpy.int32)
+    ones = numpy.ones(nrecs, dtype=numpy.int32)
+    # get the required meteorological variables
+    Ta = pfp_utils.GetVariable(ds, "Ta")
+    ps = pfp_utils.GetVariable(ds, "ps")
+    vp = pfp_utils.GetVariable(ds, "e")
+    # get the required fluxes
+    ustar = pfp_utils.GetVariable(ds, "ustar")
+    Fh = pfp_utils.GetVariable(ds, "Fh")
+    # calculate the density of dry air
+    rho_dry = mf.densitydryair(Ta["Data"], ps["Data"], vp["Data"])
+    # calculate virtual potential temperature
+    Tp = mf.theta(Ta["Data"], ps["Data"])
+    mr = mf.mixingratio(ps["Data"], vp["Data"])
+    Tvp = mf.virtualtheta(Tp, mr)
+    L["Data"] = -Tvp*rho_dry*c.Cp*(ustar["Data"]**3)/(c.g*c.k*Fh["Data"])
+    # get the QC flag
+    L["Flag"] = numpy.where(numpy.ma.getmaskarray(L["Data"]) == True, ones, zeros)
+    # update the variable attributes
+    L["Attr"]["units"] = "m"
+    L["Attr"]["long_name"] = "Monin-Obukhov length"
+    L["Attr"]["standard_name"] = "not defined"
+    # put the Monin-Obukhov variable in the data structure
+    pfp_utils.CreateVariable(ds, L)
+    return
 
 def CalculateNetRadiation(cf,ds,Fn_out='Fn',Fsd_in='Fsd',Fsu_in='Fsu',Fld_in='Fld',Flu_in='Flu'):
     """
@@ -1004,13 +1062,11 @@ def CalculateComponentsFromWsWd(ds):
     Author: PRI/WW/MK/EvG
     Date: July 2016
     """
-    Wd,Wd_flag,attr = pfp_utils.GetSeriesasMA(ds,"Wd")
-    Ws,Ws_flag,attr = pfp_utils.GetSeriesasMA(ds,"Ws")
-    u,v = pfp_utils.convert_WsWdtoUV(Ws,Wd)
-    u_attr = pfp_utils.MakeAttributeDictionary(long_name="U component of wind in meteorological coordinates (positive east)")
-    v_attr = pfp_utils.MakeAttributeDictionary(long_name="V component of wind in meteorological coordinates (positive north)")
-    pfp_utils.CreateSeries(ds,"U",u,Wd_flag,u_attr)
-    pfp_utils.CreateSeries(ds,"V",v,Wd_flag,v_attr)
+    Wd = pfp_utils.GetVariable(ds, "Wd")
+    Ws = pfp_utils.GetVariable(ds, "Ws")
+    u, v = pfp_utils.convert_WSWDtoUV(Ws, Wd)
+    pfp_utils.CreateVariable(ds, u)
+    pfp_utils.CreateVariable(ds, v)
 
 def CalculateFcStorageSinglePoint(cf,ds,Fc_out='Fc_single',CO2_in='CO2'):
     """
@@ -1223,11 +1279,14 @@ def CorrectFgForStorage(cf,ds,Fg_out='Fg',Fg_in='Fg',Ts_in='Ts',Sws_in='Sws'):
     # get the soil temperature difference from time step to time step
     dTs = numpy.ma.zeros(nRecs)
     dTs[1:] = numpy.ma.diff(Ts)
+    # set the temporal difference in Ts for the first value of the series to missing value ...
+    dTs[0] = numpy.ma.masked
     # write the temperature difference into the data structure so we can use its flag later
     dTs_flag = numpy.zeros(nRecs,dtype=numpy.int32)
     index = numpy.where(numpy.ma.getmaskarray(dTs)==True)[0]
     #index = numpy.ma.where(numpy.ma.getmaskarray(dTs)==True)[0]
     dTs_flag[index] = numpy.int32(1)
+    logger.warning('  Setting first SHFstorage in series to missing value')
     attr = pfp_utils.MakeAttributeDictionary(long_name='Change in soil temperature',units='C')
     pfp_utils.CreateSeries(ds,"dTs",dTs,dTs_flag,attr)
     # get the time difference
@@ -1388,11 +1447,13 @@ def CorrectWindDirection(cf,ds,Wd_in):
     for i in range(len(KeyList)):
         ItemList = ast.literal_eval(cf['Variables'][Wd_in]['CorrectWindDirection'][str(i)])
         try:
-            si = ldt.index(datetime.datetime.strptime(ItemList[0],'%Y-%m-%d %H:%M'))
+            dt = datetime.datetime.strptime(ItemList[0],'%Y-%m-%d %H:%M')
+            si = pfp_utils.find_nearest_value(ldt, dt)
         except ValueError:
             si = 0
         try:
-            ei = ldt.index(datetime.datetime.strptime(ItemList[1],'%Y-%m-%d %H:%M')) + 1
+            dt = datetime.datetime.strptime(ItemList[1],'%Y-%m-%d %H:%M')
+            ei = pfp_utils.find_nearest_value(ldt, dt)
         except ValueError:
             ei = -1
         Correction = float(ItemList[2])
@@ -1489,9 +1550,12 @@ def DoFunctions(cf,ds):
     Date: September 2015
     """
     implemented_functions = [name for name,data in inspect.getmembers(pfp_func,inspect.isfunction)]
+    functions = {}
+    convert_vars = []
+    function_vars = []
     for var in cf["Variables"].keys():
         # datetime functions handled elsewhere for now
-        if var=="DateTime": continue
+        if var == "DateTime": continue
         if "Function" not in cf["Variables"][var].keys(): continue
         if "func" not in cf["Variables"][var]["Function"].keys():
             msg = " DoFunctions: 'func' keyword not found in [Functions] for "+var
@@ -1499,12 +1563,23 @@ def DoFunctions(cf,ds):
             continue
         function_string = cf["Variables"][var]["Function"]["func"]
         function_name = function_string.split("(")[0]
+        function_args = function_string.split("(")[1].replace(")","").replace(" ","").split(",")
         if function_name not in implemented_functions:
             msg = " DoFunctions: Requested function "+function_name+" not imlemented, skipping ..."
             logger.error(msg)
             continue
-        function_args = function_string.split("(")[1].replace(")","").split(",")
-        result = getattr(pfp_func,function_name)(ds,var,*function_args)
+        else:
+            functions[var] = {"name":function_name, "arguments":function_args}
+            if "convert" in function_name.lower():
+                convert_vars.append(var)
+            else:
+                function_vars.append(var)
+    for var in convert_vars:
+        result = getattr(pfp_func,functions[var]["name"])(ds,var,*functions[var]["arguments"])
+        msg = " Completed function for "+var
+        logger.info(msg)
+    for var in function_vars:
+        result = getattr(pfp_func,functions[var]["name"])(ds,var,*functions[var]["arguments"])
         msg = " Completed function for "+var
         logger.info(msg)
 
@@ -1825,6 +1900,8 @@ def FhvtoFh(cf,ds,Fh_out='Fh',Fhv_in='Fhv',Tv_in='Tv_SONIC_Av',q_in='q',wA_in='w
     if Tv_in not in ds.series.keys():
         if "Tv_CSAT" in ds.series.keys():
             Tv_in = "Tv_CSAT"
+        elif "Tv_CSAT_Av" in ds.series.keys():
+            Tv_in = "Tv_CSAT_Av"
         else:
             logger.error(" FhvtoFh: sonic virtual temperature not found in data structure")
             return
@@ -2378,43 +2455,47 @@ def MassmanStandard(cf,ds,Ta_in='Ta',Ah_in='Ah',ps_in='ps',ustar_in='ustar',usta
     # *** Massman_2ndpass ends here ***
     return
 
-def MergeSeriesUsingDict(ds,merge_order=""):
+def MergeSeriesUsingDict(ds, merge_order=""):
     """ Merge series as defined in the ds.merge dictionary."""
     # check that ds has a "merge" attribute
-    if "merge" not in dir(ds): raise Exception("MergeSeriesUsingDict: No merge dictionary in ds")
+    if "merge" not in dir(ds):
+        msg = " MergeSeriesUsingDict: No merge dictionary in ds"
+        logger.warning(msg)
+        return
     if merge_order not in ds.merge.keys():
-        msg = "MergeSeriesUsingDict: merge_order ("+merge_order+") not found in merge dictionary"
+        msg = " MergeSeriesUsingDict: merge_order ("+merge_order+") not found in merge dictionary"
         logger.info(msg)
         return
     # loop over the entries in ds.merge
     for target in ds.merge[merge_order].keys():
         srclist = ds.merge[merge_order][target]["source"]
-        logger.info("Merging "+str(srclist)+"==>"+target)
+        logger.info(" Merging "+str(srclist)+"==>"+target)
         if srclist[0] not in ds.series.keys():
-            logger.error('  MergeSeries: primary input series '+srclist[0]+' not found')
+            logger.error("  MergeSeries: primary input series "+srclist[0]+" not found")
             continue
-        data = ds.series[srclist[0]]['Data'].copy()
-        flag1 = ds.series[srclist[0]]['Flag'].copy()
-        flag2 = ds.series[srclist[0]]['Flag'].copy()
-        attr = ds.series[srclist[0]]['Attr'].copy()
+        data = ds.series[srclist[0]]["Data"].copy()
+        flag1 = ds.series[srclist[0]]["Flag"].copy()
+        flag2 = ds.series[srclist[0]]["Flag"].copy()
+        attr = ds.series[srclist[0]]["Attr"].copy()
         SeriesNameString = srclist[0]
         tmplist = list(srclist)
         tmplist.remove(tmplist[0])
         for label in tmplist:
             if label in ds.series.keys():
-                SeriesNameString = SeriesNameString+', '+label
-                index = numpy.where(numpy.mod(flag1,10)==0)[0]         # find the elements with flag = 0, 10, 20 etc
+                SeriesNameString = SeriesNameString+", "+label
+                index = numpy.where(numpy.mod(flag1, 10) == 0)[0]       # find the elements with flag = 0, 10, 20 etc
                 flag2[index] = 0                                        # set them all to 0
                 if label=="Fg":
-                    index = numpy.where(flag2==22)[0]
-                    if len(index)!=0: flag2[index] = 0
-                index = numpy.where(flag2!=0)[0]                        # index of flag values other than 0,10,20,30 ...
-                data[index] = ds.series[label]['Data'][index].copy()  # replace bad primary with good secondary
-                flag1[index] = ds.series[label]['Flag'][index].copy()
+                    index = numpy.where(flag2 == 22)[0]
+                    if len(index) != 0:
+                        flag2[index] = 0
+                index = numpy.where(flag2 != 0)[0]                      # index of flag values other than 0,10,20,30 ...
+                data[index] = ds.series[label]["Data"][index].copy()    # replace bad primary with good secondary
+                flag1[index] = ds.series[label]["Flag"][index].copy()
             else:
                 logger.error(" MergeSeries: secondary input series "+label+" not found")
         attr["long_name"] = attr["long_name"]+", merged from " + SeriesNameString
-        pfp_utils.CreateSeries(ds,target,data,flag1,attr)
+        pfp_utils.CreateSeries(ds, target, data, flag1, attr)
     del ds.merge[merge_order]
 
 def MergeHumidities(cf,ds,convert_units=False):
@@ -2596,7 +2677,6 @@ def ReplaceOnDiff(cf,ds,series=''):
         logger.error('ReplaceOnDiff: No input series specified')
 
 def ReplaceWhereMissing(Destination,Primary,Secondary,FlagOffset=None,FlagValue=None):
-    #print time.strftime('%X')+' Merging series '+Primary+' and '+Secondary+' into '+Destination
     p_data = Primary['Data'].copy()
     p_flag = Primary['Flag'].copy()
     s_data = Secondary['Data'].copy()
@@ -2622,7 +2702,6 @@ def ReplaceWhereMissing(Destination,Primary,Secondary,FlagOffset=None,FlagValue=
     Destination['Attr']['units'] = Primary['Attr']['units']
 
 def ReplaceWhenDiffExceedsRange(DateTime,Destination,Primary,Secondary,RList):
-    #print time.strftime('%X')+' Replacing '+Primary+' with '+Secondary+' when difference exceeds threshold'
     # get the primary data series
     p_data = numpy.ma.array(Primary['Data'])
     p_flag = Primary['Flag'].copy()
@@ -2704,6 +2783,9 @@ def TaFromTv(cf,ds,Ta_out='Ta_SONIC_Av',Tv_in='Tv_SONIC_Av',Ah_in='Ah',RH_in='RH
         if "Tv_CSAT_Av" in ds.series.keys():
             Tv_in = "Tv_CSAT_Av"
             Ta_out = "Ta_CSAT_Av"
+        elif "Tv_CSAT" in ds.series.keys():
+            Tv_in = "Tv_CSAT"
+            Ta_out = "Ta_CSAT"
         else:
             logger.error(" TaFromTv: sonic virtual temperature not found in data structure")
             return
@@ -2738,7 +2820,6 @@ def TaFromTv(cf,ds,Ta_out='Ta_SONIC_Av',Tv_in='Tv_SONIC_Av',Ah_in='Ah',RH_in='RH
 
 def TransformAlternate(TList,DateTime,Series,ts=30):
     # Apply polynomial transform to data series being used as replacement data for gap filling
-    #print time.strftime('%X')+' Applying polynomial transform to '+ThisOne
     si = pfp_utils.GetDateIndex(DateTime,TList[0],ts=ts,default=0,match='exact')
     ei = pfp_utils.GetDateIndex(DateTime,TList[1],ts=ts,default=-1,match='exact')
     Series = numpy.ma.masked_where(abs(Series-float(c.missing_value))<c.eps,Series)

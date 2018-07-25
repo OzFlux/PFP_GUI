@@ -418,8 +418,10 @@ def plottimeseries(cf, nFig, dsa, dsb):
         else:
             logger.error('  plttimeseries: series '+ThisOne+' not in data structure')
     fig.show()
-    plt.pause(0.1)
-    plot_path = p["plot_path"]
+    if "plot_path" in cf["Files"]:
+        plot_path = os.path.join(cf["Files"]["plot_path"],Level)
+    else:
+        plot_path = "plots/"
     if not os.path.exists(plot_path):
         os.makedirs(plot_path)
     fname = os.path.join(plot_path, SiteName.replace(' ','')+'_'+Level+'_'+p['PlotDescription'].replace(' ','')+'.png')

@@ -1,21 +1,26 @@
+# standard modules
 import ast
 import collections
-import constants as c
+import copy
 import datetime
-import dateutil
 import logging
-import matplotlib.pyplot as plt
-import meteorologicalfunctions as mf
-import numpy
 import os
+import sys
+# 3rd party modules
+import dateutil
+import matplotlib.pyplot as plt
+import netCDF4
+import numpy
+import xlrd
+# PFP modules
+import constants as c
+import meteorologicalfunctions as mf
 import pfp_io
 import pfp_rpLL
 import pfp_rpLT
 import pfp_rpNN
 import pfp_ts
 import pfp_utils
-import sys
-import xlrd
 
 logger = logging.getLogger("pfp_log")
 
@@ -171,7 +176,7 @@ def ERUsingFFNET(cf, ds, info):
     call_mode = pfp_utils.get_keyvaluefromcf(cf,["Options"],"call_mode",default="interactive")
     FFNET_info["call_mode"]= call_mode
     if call_mode.lower()=="interactive":
-        FFNET_info["show_plots"] = True
+        #FFNET_info["show_plots"] = True
         # call the FFNET GUI
         pfp_rpNN.rpFFNET_gui(cf,ds,FFNET_info)
     else:
@@ -195,6 +200,8 @@ def ERUsingLasslop(cf, ds, info):
             "window_offset":int(info["er"]["rpLL"][series[0]]["step_size_days"]),
             "fsd_threshold":10}
     ldt = ds.series["DateTime"]["Data"]
+    startdate = ldt[0]
+    enddate = ldt[-1]
     ts = int(ds.globalattributes["time_step"])
     info["ts"] = ts
     site_name = ds.globalattributes["site_name"]
@@ -339,6 +346,16 @@ def ERUsingLasslop(cf, ds, info):
     long_name = "NEE modelled by Lasslop et al (2010)"
     attr = pfp_utils.MakeAttributeDictionary(long_name=long_name,units=units)
     pfp_utils.CreateSeries(ds,"NEE_LL_all",NEE_LL,flag,attr)
+    # plot the respiration estimated using Lasslop et al
+    # set the figure number
+    if len(plt.get_fignums())==0:
+        fig_num = 0
+    else:
+        fig_num = plt.get_fignums()[-1] + 1
+    title = site_name+" : ER estimated using Lasslop et al"
+    pd = pfp_rpLL.rpLL_initplot(site_name=site_name,label="ER",fig_num=fig_num,title=title,
+                         nDrivers=len(data.keys()),startdate=str(startdate),enddate=str(enddate))
+    #pfp_rpLT.rpLT_plot(pd, ds, series, drivers, target, output, LT_info)
 
 def ERUsingLloydTaylor(cf, ds, info):
     """
@@ -385,9 +402,9 @@ def ERUsingLloydTaylor(cf, ds, info):
     series_list = LT_info["er"].keys()
     for series in series_list:
         # create dictionaries for the results
-        E0_results = {}
-        E0_raw_results = {}
-        rb_results = {}
+        E0_results = {"variables":{}}
+        E0_raw_results = {"variables":{}}
+        rb_results = {"variables":{}}
         # add a sheet for this series
         xl_sheet = xl_file.add_sheet(series)
         # get a local copy of the config dictionary
@@ -442,24 +459,23 @@ def ERUsingLloydTaylor(cf, ds, info):
             logger.error(msg)
             logger.error(status["message"])
             return
-        #print 'Done!'
         # Write to result arrays
         year_array = numpy.array([i.year for i in date_array])
         for yr in year_array:
             index = numpy.where(year_array == yr)
             opt_params_dict['Eo'][index] = Eo_dict[yr]
             opt_params_dict['Eo error code'][index] = EoQC_dict[yr]
-        E0_results["DateTime"] = {"data":[datetime.datetime(int(yr),1,1) for yr in Eo_dict.keys()],
-                                  "units":"Year","format":"yyyy"}
-        E0_results["E0"] = {"data":[float(Eo_dict[yr]) for yr in Eo_dict.keys()],
-                            "units":"none","format":"0"}
-        E0_raw_results["DateTime"] = {"data":[datetime.datetime(int(yr),1,1) for yr in Eo_raw_dict.keys()],
-                                  "units":"Year","format":"yyyy"}
-        E0_raw_results["E0"] = {"data":[float(Eo_raw_dict[yr]) for yr in Eo_raw_dict.keys()],
-                            "units":"none","format":"0"}
+        E0_results["variables"]["DateTime"] = {"data":[datetime.datetime(int(yr),1,1) for yr in Eo_dict.keys()],
+                                               "attr":{"units":"Year","format":"yyyy"}}
+        E0_results["variables"]["E0"] = {"data":[float(Eo_dict[yr]) for yr in Eo_dict.keys()],
+                                         "attr":{"units":"none","format":"0"}}
+        E0_raw_results["variables"]["DateTime"] = {"data":[datetime.datetime(int(yr),1,1) for yr in Eo_raw_dict.keys()],
+                                                   "attr":{"units":"Year","format":"yyyy"}}
+        E0_raw_results["variables"]["E0"] = {"data":[float(Eo_raw_dict[yr]) for yr in Eo_raw_dict.keys()],
+                                             "attr":{"units":"none","format":"0"}}
         # write the E0 values to the Excel file
-        pfp_io.xl_write_data(xl_sheet,E0_raw_results,xlCol=0)
-        pfp_io.xl_write_data(xl_sheet,E0_results,xlCol=2)
+        pfp_io.xl_write_data(xl_sheet,E0_raw_results["variables"],xlCol=0)
+        pfp_io.xl_write_data(xl_sheet,E0_results["variables"],xlCol=2)
         # *** end of annual estimates of E0 code ***
         # *** start of estimating rb code for each window ***
         # this section could be a separate routine
@@ -503,16 +519,15 @@ def ERUsingLloydTaylor(cf, ds, info):
         # get the indices of non-NaN elements
         idx = numpy.where(numpy.isnan(rb_data)!=True)[0]
         # get the datetime dictionary
-        rb_results["DateTime"] = {"data":rb_date[idx],
-                                  "units":"Date","format":"dd/mm/yyyy"}
+        rb_results["variables"]["DateTime"] = {"data":rb_date[idx],
+                                  "attr":{"units":"Date","format":"dd/mm/yyyy"}}
         # get the rb values
-        rb_results["rb_noct"] = {"data":rb_data[idx],
-                            "units":"none","format":"0.00"}
+        rb_results["variables"]["rb_noct"] = {"data":rb_data[idx],
+                            "attr":{"units":"none","format":"0.00"}}
         # write to the Excel file
-        pfp_io.xl_write_data(xl_sheet,rb_results,xlCol=4)
+        pfp_io.xl_write_data(xl_sheet,rb_results["variables"],xlCol=4)
         # Interpolate
         opt_params_dict['rb_noct'] = pfp_rpLT.interp_params(opt_params_dict['rb_noct'])
-        #print 'Done!'
         # *** end of estimating rb code for each window ***
         # *** start of code to calculate ER from fit parameters
         # this section could be a separate routine
@@ -574,7 +589,7 @@ def ERUsingSOLO(cf, ds, info):
     # check to see if this is a batch or an interactive run
     call_mode = pfp_utils.get_keyvaluefromcf(cf,["Options"],"call_mode",default="interactive")
     solo_info["call_mode"]= call_mode
-    if call_mode.lower()=="interactive": solo_info["show_plots"] = True
+    #if call_mode.lower()=="interactive": solo_info["show_plots"] = True
     if call_mode.lower()=="interactive":
         # call the ERUsingSOLO GUI
         pfp_rpNN.rpSOLO_gui(cf,ds,solo_info)
@@ -1054,7 +1069,7 @@ def get_ustar_thresholds_annual(ldt,ustar_threshold):
         ustar_dict[year]["ustar_mean"] = ustar_threshold
     return ustar_dict
 
-def L6_summary(cf,ds):
+def L6_summary(cf, ds):
     """
     Purpose:
      Produce summaries of L6 data, write them to an Excel spreadsheet and plot them.
@@ -1064,38 +1079,54 @@ def L6_summary(cf,ds):
     """
     logger.info("Doing the L6 summary")
     # set up a dictionary of lists
-    series_dict = L6_summary_createseriesdict(cf,ds)
+    series_dict = L6_summary_createseriesdict(cf, ds)
     # open the Excel workbook
-    nc_name = pfp_io.get_outfilenamefromcf(cf)
-    xl_name = nc_name.replace(".nc","_Summary.xls")
-    xl_file = pfp_io.xl_open_write(xl_name)
-    if xl_file=='':
+    out_name = pfp_io.get_outfilenamefromcf(cf)
+    xl_name = out_name.replace(".nc", "_Summary.xls")
+    try:
+        xl_file = pfp_io.xl_open_write(xl_name)
+    except IOError:
         logger.error(" L6_summary: error opening Excel file "+xl_name)
-        return
+        return 0
+    # open the netCDF file for the summary results
+    nc_name = out_name.replace(".nc", "_Summary.nc")
+    try:
+        nc_file = pfp_io.nc_open_write(nc_name, nctype='NETCDF4')
+        pfp_io.nc_write_globalattributes(nc_file, ds, flag_defs=False)
+    except IOError:
+        logger.error(" L6_summary: error opening netCDF file "+nc_name)
+        return 0
     # daily averages and totals
-    daily_dict = L6_summary_daily(ds,series_dict)
-    L6_summary_write_xlfile(xl_file,"Daily (all)",daily_dict)
+    daily_dict = L6_summary_daily(ds, series_dict)
+    L6_summary_write_xlfile(xl_file, "Daily (all)", daily_dict)
+    L6_summary_write_ncfile(nc_file, "Daily (all)", daily_dict)
     #flag_dict = L6_summary_daily_flag(ds,series_dict)
-    fluxes_dict = L6_summary_co2andh2o_fluxes(ds,series_dict,daily_dict)
-    L6_summary_write_xlfile(xl_file,"Daily (CO2,H2O)",fluxes_dict)
+    fluxes_dict = L6_summary_co2andh2o_fluxes(ds, series_dict, daily_dict)
+    L6_summary_write_xlfile(xl_file, "Daily (CO2,H2O)", fluxes_dict)
+    L6_summary_write_ncfile(nc_file, "Daily (CO2,H2O)", fluxes_dict)
     # monthly averages and totals
-    monthly_dict = L6_summary_monthly(ds,series_dict)
-    L6_summary_write_xlfile(xl_file,"Monthly",monthly_dict)
+    monthly_dict = L6_summary_monthly(ds, series_dict)
+    L6_summary_write_xlfile(xl_file, "Monthly", monthly_dict)
+    L6_summary_write_ncfile(nc_file, "Monthly", monthly_dict)
     # annual averages and totals
-    annual_dict = L6_summary_annual(ds,series_dict)
-    L6_summary_write_xlfile(xl_file,"Annual",annual_dict)
+    annual_dict = L6_summary_annual(ds, series_dict)
+    L6_summary_write_xlfile(xl_file, "Annual", annual_dict)
+    L6_summary_write_ncfile(nc_file, "Annual", annual_dict)
     # cumulative totals
-    cumulative_dict = L6_summary_cumulative(ds,series_dict)
+    cumulative_dict = L6_summary_cumulative(ds, series_dict)
     for year in cumulative_dict.keys():
-        L6_summary_write_xlfile(xl_file,"Cummulative("+str(year)+")",cumulative_dict[str(year)])
+        L6_summary_write_xlfile(xl_file, "Cummulative("+str(year)+")", cumulative_dict[str(year)])
+        L6_summary_write_ncfile(nc_file, "Cummulative("+str(year)+")", cumulative_dict[str(year)])
     # close the Excel workbook
     xl_file.save(xl_name)
+    # close the netCDF file
+    nc_file.close()
     # plot the daily averages and sums
-    L6_summary_plotdaily(cf,ds,daily_dict)
+    L6_summary_plotdaily(cf, ds, daily_dict)
     # plot the cumulative sums
-    L6_summary_plotcumulative(cf,ds,cumulative_dict)
+    L6_summary_plotcumulative(cf, ds, cumulative_dict)
 
-def L6_summary_plotdaily(cf,ds,daily_dict):
+def L6_summary_plotdaily(cf, ds, daily_dict):
     """
     Purpose:
      Plot the daily averages or sums with a 30 day filter.
@@ -1105,15 +1136,16 @@ def L6_summary_plotdaily(cf,ds,daily_dict):
     Author: PRI
     Date: June 2015
     """
+    ddv = daily_dict["variables"]
     type_list = []
-    for item in daily_dict.keys():
+    for item in ddv.keys():
         if item[0:2]=="ER": type_list.append(item[2:])
     for item in type_list:
-        if "NEE"+item not in daily_dict or "GPP"+item not in daily_dict:
+        if "NEE"+item not in ddv or "GPP"+item not in ddv:
             type_list.remove(item)
     # plot time series of NEE, GPP and ER
-    sdate = daily_dict["DateTime"]["data"][0].strftime("%d-%m-%Y")
-    edate = daily_dict["DateTime"]["data"][-1].strftime("%d-%m-%Y")
+    sdate = ddv["DateTime"]["data"][0].strftime("%d-%m-%Y")
+    edate = ddv["DateTime"]["data"][-1].strftime("%d-%m-%Y")
     site_name = ds.globalattributes["site_name"]
     title_str = site_name+": "+sdate+" to "+edate
     for item in type_list:
@@ -1124,22 +1156,22 @@ def L6_summary_plotdaily(cf,ds,daily_dict):
         fig = plt.figure(figsize=(16,4))
         fig.canvas.set_window_title("Carbon Budget: "+item.replace("_",""))
         plt.figtext(0.5,0.95,title_str,horizontalalignment='center')
-        plt.plot(daily_dict["DateTime"]["data"],daily_dict["NEE"+item]["data"],'b-',alpha=0.3)
-        plt.plot(daily_dict["DateTime"]["data"],pfp_ts.smooth(daily_dict["NEE"+item]["data"],window_len=30),
+        plt.plot(ddv["DateTime"]["data"],ddv["NEE"+item]["data"],'b-',alpha=0.3)
+        plt.plot(ddv["DateTime"]["data"],pfp_ts.smooth(ddv["NEE"+item]["data"],window_len=30),
                  'b-',linewidth=2,label="NEE"+item+" (30 day filter)")
-        plt.plot(daily_dict["DateTime"]["data"],daily_dict["GPP"+item]["data"],'g-',alpha=0.3)
-        plt.plot(daily_dict["DateTime"]["data"],pfp_ts.smooth(daily_dict["GPP"+item]["data"],window_len=30),
+        plt.plot(ddv["DateTime"]["data"],ddv["GPP"+item]["data"],'g-',alpha=0.3)
+        plt.plot(ddv["DateTime"]["data"],pfp_ts.smooth(ddv["GPP"+item]["data"],window_len=30),
                  'g-',linewidth=2,label="GPP"+item+" (30 day filter)")
-        plt.plot(daily_dict["DateTime"]["data"],daily_dict["ER"+item]["data"],'r-',alpha=0.3)
-        plt.plot(daily_dict["DateTime"]["data"],pfp_ts.smooth(daily_dict["ER"+item]["data"],window_len=30),
+        plt.plot(ddv["DateTime"]["data"],ddv["ER"+item]["data"],'r-',alpha=0.3)
+        plt.plot(ddv["DateTime"]["data"],pfp_ts.smooth(ddv["ER"+item]["data"],window_len=30),
                  'r-',linewidth=2,label="ER"+item+" (30 day filter)")
         plt.axhline(0)
         plt.xlabel("Date")
-        plt.ylabel(daily_dict["NEE"+item]["units"])
+        plt.ylabel(ddv["NEE"+item]["attr"]["units"])
         plt.legend(loc='upper left',prop={'size':8})
         plt.tight_layout()
-        sdt = daily_dict["DateTime"]["data"][0].strftime("%Y%m%d")
-        edt = daily_dict["DateTime"]["data"][-1].strftime("%Y%m%d")
+        sdt = ddv["DateTime"]["data"][0].strftime("%Y%m%d")
+        edt = ddv["DateTime"]["data"][-1].strftime("%Y%m%d")
         plot_path = cf["Files"]["plot_path"]+"L6/"
         if not os.path.exists(plot_path): os.makedirs(plot_path)
         figname = plot_path+site_name.replace(" ","")+"_CarbonBudget"+item
@@ -1160,16 +1192,16 @@ def L6_summary_plotdaily(cf,ds,daily_dict):
     fig.canvas.set_window_title("Surface Energy Budget")
     plt.figtext(0.5,0.95,title_str,horizontalalignment='center')
     for label, line in zip(["Fn", "Fg", "Fh", "Fe"], ["k-", "g-", "r-", "b-"]):
-        if label in daily_dict:
-            plt.plot(daily_dict["DateTime"]["data"], daily_dict[label]["data"], line, alpha=0.3)
-            plt.plot(daily_dict["DateTime"]["data"], pfp_ts.smooth(daily_dict[label]["data"], window_len=30),
+        if label in daily_dict["variables"]:
+            plt.plot(ddv["DateTime"]["data"], ddv[label]["data"], line, alpha=0.3)
+            plt.plot(ddv["DateTime"]["data"], pfp_ts.smooth(ddv[label]["data"], window_len=30),
                      line, linewidth=2, label=label+" (30 day filter)")
     plt.xlabel("Date")
-    plt.ylabel(daily_dict["Fn"]["units"])
+    plt.ylabel(ddv["Fn"]["attr"]["units"])
     plt.legend(loc='upper left',prop={'size':8})
     plt.tight_layout()
-    sdt = daily_dict["DateTime"]["data"][0].strftime("%Y%m%d")
-    edt = daily_dict["DateTime"]["data"][-1].strftime("%Y%m%d")
+    sdt = ddv["DateTime"]["data"][0].strftime("%Y%m%d")
+    edt = ddv["DateTime"]["data"][-1].strftime("%Y%m%d")
     plot_path = cf["Files"]["plot_path"]+"L6/"
     if not os.path.exists(plot_path): os.makedirs(plot_path)
     figname = plot_path+site_name.replace(" ","")+"_SEB"
@@ -1182,17 +1214,18 @@ def L6_summary_plotdaily(cf,ds,daily_dict):
         plt.close(fig)
         plt.ion()
 
-def L6_summary_plotcumulative(cf,ds,cumulative_dict):
+def L6_summary_plotcumulative(cf, ds, cumulative_dict):
     ts = int(ds.globalattributes["time_step"])
     # cumulative plots
     color_list = ["blue","red","green","yellow","magenta","black","cyan","brown"]
     year_list = cumulative_dict.keys()
     year_list.sort()
+    cdy0 = cumulative_dict[year_list[0]]
     type_list = []
-    for item in cumulative_dict[year_list[0]].keys():
+    for item in cdy0["variables"].keys():
         if item[0:2]=="ER": type_list.append(item[2:])
     for item in type_list:
-        if "NEE"+item not in cumulative_dict[year_list[0]] or "GPP"+item not in cumulative_dict[year_list[0]]:
+        if "NEE"+item not in cdy0["variables"] or "GPP"+item not in cdy0["variables"]:
             type_list.remove(item)
     # do the plots
     site_name = ds.globalattributes["site_name"]
@@ -1208,40 +1241,44 @@ def L6_summary_plotcumulative(cf,ds,cumulative_dict):
         plt.subplot(221)
         plt.title("NEE: "+item.replace("_",""),fontsize=12)
         for n,year in enumerate(year_list):
-            x = numpy.arange(0,len(cumulative_dict[year]["NEE"+item]["data"]))*ts/float(60)
-            plt.plot(x,cumulative_dict[year]["NEE"+item]["data"],color=color_list[numpy.mod(n,8)],
+            cdyv = cumulative_dict[year]["variables"]
+            x = numpy.arange(0,len(cdyv["NEE"+item]["data"]))*ts/float(60)
+            plt.plot(x,cdyv["NEE"+item]["data"],color=color_list[numpy.mod(n,8)],
                      label=str(year))
             plt.xlabel("Hour of Year")
-            plt.ylabel(cumulative_dict[year]["NEE"+item]["units"])
+            plt.ylabel(cdyv["NEE"+item]["attr"]["units"])
             plt.legend(loc='lower left',prop={'size':8})
         plt.subplot(222)
         plt.title("GPP: "+item.replace("_",""),fontsize=12)
         for n,year in enumerate(year_list):
-            x = numpy.arange(0,len(cumulative_dict[year]["GPP"+item]["data"]))*ts/float(60)
-            plt.plot(x,cumulative_dict[year]["GPP"+item]["data"],color=color_list[numpy.mod(n,8)],
+            cdyv = cumulative_dict[year]["variables"]
+            x = numpy.arange(0,len(cdyv["GPP"+item]["data"]))*ts/float(60)
+            plt.plot(x,cdyv["GPP"+item]["data"],color=color_list[numpy.mod(n,8)],
                      label=str(year))
             plt.xlabel("Hour of Year")
-            plt.ylabel(cumulative_dict[year]["GPP"+item]["units"])
+            plt.ylabel(cdyv["GPP"+item]["attr"]["units"])
             plt.legend(loc='lower right',prop={'size':8})
         plt.subplot(223)
         plt.title("ER: "+item.replace("_",""),fontsize=12)
         for n,year in enumerate(year_list):
-            x = numpy.arange(0,len(cumulative_dict[year]["ER"+item]["data"]))*ts/float(60)
-            plt.plot(x,cumulative_dict[year]["ER"+item]["data"],color=color_list[numpy.mod(n,8)],
+            cdyv = cumulative_dict[year]["variables"]
+            x = numpy.arange(0,len(cdyv["ER"+item]["data"]))*ts/float(60)
+            plt.plot(x,cdyv["ER"+item]["data"],color=color_list[numpy.mod(n,8)],
                      label=str(year))
             plt.xlabel("Hour of Year")
-            plt.ylabel(cumulative_dict[year]["ER"+item]["units"])
+            plt.ylabel(cdyv["ER"+item]["attr"]["units"])
             plt.legend(loc='lower right',prop={'size':8})
         plt.subplot(224)
         plt.title("ET & Precip",fontsize=12)
         for n,year in enumerate(year_list):
-            x = numpy.arange(0,len(cumulative_dict[year]["ET"]["data"]))*ts/float(60)
-            plt.plot(x,cumulative_dict[year]["ET"]["data"],color=color_list[numpy.mod(n,8)],
+            cdyv = cumulative_dict[year]["variables"]
+            x = numpy.arange(0,len(cdyv["ET"]["data"]))*ts/float(60)
+            plt.plot(x,cdyv["ET"]["data"],color=color_list[numpy.mod(n,8)],
                      label=str(year))
-            plt.plot(x,cumulative_dict[year]["Precip"]["data"],color=color_list[numpy.mod(n,8)],
+            plt.plot(x,cdyv["Precip"]["data"],color=color_list[numpy.mod(n,8)],
                      linestyle='--')
             plt.xlabel("Hour of Year")
-            plt.ylabel(cumulative_dict[year]["ET"]["units"])
+            plt.ylabel(cdyv["ET"]["attr"]["units"])
             plt.legend(loc='upper left',prop={'size':8})
         plt.tight_layout(rect=[0, 0, 1, 0.98])
         # save a hard copy of the plot
@@ -1337,13 +1374,13 @@ def L6_summary_createseriesdict(cf,ds):
     series_dict["monthly"] = series_dict["daily"]
     return series_dict
 
-def L6_summary_daily(ds,series_dict):
+def L6_summary_daily(ds, series_dict):
     """
     Purpose:
      Calculate the daily averages or sums of various quantities and write
      them to a worksheet in an Excel workbook.
     Usage:
-     L6_summary_daily(ds,series_dict)
+     L6_summary_daily(ds, series_dict)
      where ds is an OzFluxQC data structure
            series_dict is a dictionary of various variable lists
     Author: PRI
@@ -1357,41 +1394,50 @@ def L6_summary_daily(ds,series_dict):
     ldt = dt[si:ei+1]
     ntsInDay = int(24.0*60.0/float(ts))
     nDays = int(len(ldt))/ntsInDay
+    # create an empty data array and an array of zeros for the flag
+    mt_data = numpy.full(nDays, c.missing_value, dtype=numpy.float64)
+    f0 = numpy.zeros(nDays, dtype=numpy.int32)
     ldt_daily = [ldt[0]+datetime.timedelta(days=i) for i in range(0,nDays)]
-    daily_dict = {}
-    daily_dict["DateTime"] = {"data":ldt_daily,"units":"Days","format":"dd/mm/yyyy"}
+    # create a dictionary to hold the daily statistics
+    daily_dict = {"globalattributes":{},"variables":{}}
+    # copy the global attributes
+    daily_dict["globalattributes"] = copy.deepcopy(ds.globalattributes)
+    # create the datetime variable
+    daily_dict["variables"]["DateTime"] = {"data":ldt_daily,
+                                           "flag":f0,
+                                           "attr":{"units":"Days","format":"dd/mm/yyyy"}}
     series_list = series_dict["daily"].keys()
     series_list.sort()
     for item in series_list:
         if item not in ds.series.keys(): continue
-        daily_dict[item] = {}
-        variable = pfp_utils.GetVariable(ds, item, si=si, ei=ei)
+        daily_dict["variables"][item] = {"data":[],"attr":{}}
+        variable = pfp_utils.GetVariable(ds, item, start=si, end=ei)
         if item in series_dict["lists"]["co2"]:
             variable = pfp_utils.convert_units_func(ds, variable, "gC/m2")
-            daily_dict[item]["units"] = "gC/m2"
+            daily_dict["variables"][item]["attr"]["units"] = "gC/m2"
         else:
-            daily_dict[item]["units"] = variable["Attr"]["units"]
+            daily_dict["variables"][item]["attr"]["units"] = variable["Attr"]["units"]
         data_2d = variable["Data"].reshape(nDays, ntsInDay)
         if series_dict["daily"][item]["operator"].lower() == "average":
-            daily_dict[item]["data"] = numpy.ma.average(data_2d, axis=1)
+            daily_dict["variables"][item]["data"] = numpy.ma.average(data_2d, axis=1)
         elif series_dict["daily"][item]["operator"].lower() == "sum":
-            daily_dict[item]["data"] = numpy.ma.sum(data_2d, axis=1)
-            daily_dict[item]["units"] = daily_dict[item]["units"]+"/day"
+            daily_dict["variables"][item]["data"] = numpy.ma.sum(data_2d, axis=1)
+            daily_dict["variables"][item]["attr"]["units"] = daily_dict["variables"][item]["attr"]["units"]+"/day"
         else:
             msg = "Unrecognised operator ("+series_dict["daily"][item]["operator"]
             msg = msg+") for series "+item
             logger.error(msg)
             continue
         # add the format to be used
-        daily_dict[item]["format"] = series_dict["daily"][item]["format"]
+        daily_dict["variables"][item]["attr"]["format"] = series_dict["daily"][item]["format"]
         # now do the flag, this is the fraction of data with QC flag = 0 in the day
-        daily_dict[item]["flag"] = numpy.zeros(nDays, dtype=numpy.float64)
+        daily_dict["variables"][item]["flag"] = numpy.zeros(nDays, dtype=numpy.float64)
         flag_2d = variable["Flag"].reshape(nDays, ntsInDay)
         for i in range(nDays):
-            daily_dict[item]["flag"][i] = 1-float(numpy.count_nonzero(flag_2d[i,:]))/float(ntsInDay)
+            daily_dict["variables"][item]["flag"][i] = 1-float(numpy.count_nonzero(flag_2d[i,:]))/float(ntsInDay)
     return daily_dict
 
-def L6_summary_co2andh2o_fluxes(ds,series_dict,daily_dict):
+def L6_summary_co2andh2o_fluxes(ds, series_dict, daily_dict):
     """
     Purpose:
     Usage:
@@ -1401,23 +1447,39 @@ def L6_summary_co2andh2o_fluxes(ds,series_dict,daily_dict):
     logger.info(" Doing the daily summary (fluxes) at L6")
     sdl = series_dict["lists"]
     series_list = sdl["h2o"]+sdl["co2"]
-    fluxes_dict = {}
-    fluxes_dict["DateTime"] = daily_dict["DateTime"]
+    fluxes_dict = {"globalattributes":{}, "variables":{}}
+    # copy the global attributes
+    fluxes_dict["globalattributes"] = copy.deepcopy(ds.globalattributes)
+    # create the datetime variable
+    fluxes_dict["variables"]["DateTime"] = daily_dict["variables"]["DateTime"]
     for item in series_list:
-        fluxes_dict[item] = {}
-        fluxes_dict[item]["data"] = daily_dict[item]["data"]
-        fluxes_dict[item]["units"] = daily_dict[item]["units"]
-        fluxes_dict[item]["format"] = daily_dict[item]["format"]
-        fluxes_dict[item+"_flag"] = {}
-        fluxes_dict[item+"_flag"]["data"] = daily_dict[item]["flag"]
-        fluxes_dict[item+"_flag"]["units"] = "frac"
-        fluxes_dict[item+"_flag"]["format"] = "0.00"
+        fluxes_dict["variables"][item] = {}
+        fluxes_dict["variables"][item]["data"] = daily_dict["variables"][item]["data"]
+        fluxes_dict["variables"][item]["attr"] = daily_dict["variables"][item]["attr"]
+        fluxes_dict["variables"][item+"_flag"] = {}
+        fluxes_dict["variables"][item+"_flag"]["data"] = daily_dict["variables"][item]["flag"]
+        fluxes_dict["variables"][item+"_flag"]["attr"] = {"units":"frac","format":"0.00"}
     return fluxes_dict
+
+def L6_summary_write_ncfile(nc_file, nc_group, data_dict):
+    """
+    Purpose:
+     Write the L6 summary statistics (daily, monthly, annual and cummulative)
+     to a single netCDF file with different groups for each time period.
+    Usage:
+    Author: PRI
+    Date: January 2018
+    """
+    # create the group in the netCDF file
+    nc_group = nc_file.createGroup(nc_group)
+    # write the data to the group
+    pfp_io.nc_write_data(nc_group, data_dict)
+    return
 
 def L6_summary_write_xlfile(xl_file,sheet_name,data_dict):
     # add the daily worksheet to the summary Excel file
     xl_sheet = xl_file.add_sheet(sheet_name)
-    pfp_io.xl_write_data(xl_sheet,data_dict)
+    pfp_io.xl_write_data(xl_sheet,data_dict["variables"])
 
 def L6_summary_monthly(ds,series_dict):
     """
@@ -1436,14 +1498,20 @@ def L6_summary_monthly(ds,series_dict):
     ts = int(ds.globalattributes["time_step"])
     si = pfp_utils.GetDateIndex(dt,str(dt[0]),ts=ts,default=0,match="startnextmonth")
     ldt = dt[si:]
-    monthly_dict = {}
-    monthly_dict["DateTime"] = {"data":[],"units":"Months","format":"dd/mm/yyyy"}
+    monthly_dict = {"globalattributes":{}, "variables":{}}
+    # copy the global attributes
+    monthly_dict["globalattributes"] = copy.deepcopy(ds.globalattributes)
+    monthly_dict["variables"]["DateTime"] = {"data":[],
+                                             "flag":numpy.array([]),
+                                             "attr":{"units":"Months", "format":"dd/mm/yyyy"}}
     # create arrays in monthly_dict
     series_list = series_dict["monthly"].keys()
     series_list.sort()
     # create the data arrays
     for item in series_list:
-        monthly_dict[item] = {"data":numpy.ma.array([])}
+        monthly_dict["variables"][item] = {"data":numpy.ma.array([]),
+                                           "flag":numpy.array([]),
+                                           "attr":{"units":'',"format":''}}
     # loop over the months in the data file
     start_date = ldt[0]
     end_date = start_date+dateutil.relativedelta.relativedelta(months=1)
@@ -1451,28 +1519,28 @@ def L6_summary_monthly(ds,series_dict):
     last_date = ldt[-1]
     while start_date<=last_date:
         # *** The Elise Pendall bug fix ***
-        si = pfp_utils.GetDateIndex(dt,str(start_date),ts=ts,default=0)
-        ei = pfp_utils.GetDateIndex(dt,str(end_date),ts=ts,default=len(dt)-1)
-        monthly_dict["DateTime"]["data"].append(dt[si])
+        si = pfp_utils.GetDateIndex(dt, str(start_date), ts=ts, default=0)
+        ei = pfp_utils.GetDateIndex(dt, str(end_date), ts=ts, default=len(dt)-1)
+        monthly_dict["variables"]["DateTime"]["data"].append(dt[si])
         for item in series_list:
             if item not in ds.series.keys(): continue
-            variable = pfp_utils.GetVariable(ds, item, si=si, ei=ei)
+            variable = pfp_utils.GetVariable(ds, item, start=si, end=ei)
             if item in series_dict["lists"]["co2"]:
                 variable = pfp_utils.convert_units_func(ds, variable, "gC/m2")
-                monthly_dict[item]["units"] = "gC/m2"
+                monthly_dict["variables"][item]["attr"]["units"] = "gC/m2"
             else:
-                monthly_dict[item]["units"] = variable["Attr"]["units"]
+                monthly_dict["variables"][item]["attr"]["units"] = variable["Attr"]["units"]
             if series_dict["monthly"][item]["operator"].lower()=="average":
-                monthly_dict[item]["data"] = numpy.append(monthly_dict[item]["data"],
-                                                          numpy.ma.average(variable["Data"]))
+                monthly_dict["variables"][item]["data"] = numpy.append(monthly_dict["variables"][item]["data"],
+                                                                       numpy.ma.average(variable["Data"]))
             elif series_dict["monthly"][item]["operator"].lower()=="sum":
-                monthly_dict[item]["data"] = numpy.append(monthly_dict[item]["data"],
-                                                          numpy.ma.sum(variable["Data"]))
-                monthly_dict[item]["units"] = monthly_dict[item]["units"]+"/month"
+                monthly_dict["variables"][item]["data"] = numpy.append(monthly_dict["variables"][item]["data"],
+                                                                       numpy.ma.sum(variable["Data"]))
+                monthly_dict["variables"][item]["attr"]["units"] = monthly_dict["variables"][item]["attr"]["units"]+"/month"
             else:
                 msg = "L6_summary_monthly: unrecognised operator"
                 logger.error(msg)
-            monthly_dict[item]["format"] = series_dict["monthly"][item]["format"]
+            monthly_dict["variables"][item]["attr"]["format"] = series_dict["monthly"][item]["format"]
         start_date = end_date+dateutil.relativedelta.relativedelta(minutes=ts)
         end_date = start_date+dateutil.relativedelta.relativedelta(months=1)
         end_date = end_date-dateutil.relativedelta.relativedelta(minutes=ts)
@@ -1494,22 +1562,29 @@ def L6_summary_annual(ds, series_dict):
     dt = ds.series["DateTime"]["Data"]
     ts = int(ds.globalattributes["time_step"])
     nperDay = int(24/(float(ts)/60.0)+0.5)
-    si = pfp_utils.GetDateIndex(dt,str(dt[0]),ts=ts,default=0,match="startnextday")
-    ei = pfp_utils.GetDateIndex(dt,str(dt[-1]),ts=ts,default=len(dt)-1,match="endpreviousday")
+    si = pfp_utils.GetDateIndex(dt, str(dt[0]), ts=ts, default=0, match="startnextday")
+    ei = pfp_utils.GetDateIndex(dt, str(dt[-1]), ts=ts, default=len(dt)-1, match="endpreviousday")
     ldt = dt[si:ei+1]
     start_year = ldt[0].year
     end_year = ldt[-1].year
-    year_list = range(start_year,end_year+1,1)
-    annual_dict = {}
-    annual_dict["DateTime"] = {"data":[datetime.datetime(yr,1,1) for yr in year_list],
-                               "units":"Years","format":"dd/mm/yyyy"}
-    annual_dict["nDays"] = {"data":numpy.array([float(-9999)]*len(year_list)),
-                            "units":"","format":"0"}
+    year_list = range(start_year, end_year+1, 1)
+    nYears = len(year_list)
+    annual_dict = {"globalattributes":{}, "variables":{}}
+    # copy the global attributes
+    annual_dict["globalattributes"] = copy.deepcopy(ds.globalattributes)
+    annual_dict["variables"]["DateTime"] = {"data":[datetime.datetime(yr,1,1) for yr in year_list],
+                                            "flag":numpy.zeros(nYears, dtype=numpy.int32),
+                                            "attr":{"units":"Years", "format":"dd/mm/yyyy"}}
+    annual_dict["variables"]["nDays"] = {"data":numpy.full(nYears, c.missing_value, dtype=numpy.float64),
+                                         "flag":numpy.zeros(nYears, dtype=numpy.int32),
+                                         "attr":{"units":"Number of days","format":"0"}}
     # create arrays in annual_dict
     series_list = series_dict["annual"].keys()
     series_list.sort()
     for item in series_list:
-        annual_dict[item] = {"data":numpy.ma.array([float(-9999)]*len(year_list))}
+        annual_dict["variables"][item] = {"data":numpy.ma.array([float(-9999)]*len(year_list)),
+                                          "flag":numpy.zeros(nYears, dtype=numpy.int32),
+                                          "attr":{"units":"Number of days","format":"0"}}
     for i,year in enumerate(year_list):
         if ts==30:
             start_date = str(year)+"-01-01 00:30"
@@ -1519,27 +1594,27 @@ def L6_summary_annual(ds, series_dict):
         si = pfp_utils.GetDateIndex(dt,start_date,ts=ts,default=0)
         ei = pfp_utils.GetDateIndex(dt,end_date,ts=ts,default=len(dt)-1)
         nDays = int((ei-si+1)/nperDay+0.5)
-        annual_dict["nDays"]["data"][i] = nDays
+        annual_dict["variables"]["nDays"]["data"][i] = nDays
         for item in series_list:
             if item not in ds.series.keys(): continue
-            variable = pfp_utils.GetVariable(ds, item, si=si, ei=ei)
+            variable = pfp_utils.GetVariable(ds, item, start=si, end=ei)
             if item in series_dict["lists"]["co2"]:
                 variable = pfp_utils.convert_units_func(ds, variable, "gC/m2")
-                annual_dict[item]["units"] = "gC/m2"
+                annual_dict["variables"][item]["attr"]["units"] = "gC/m2"
             else:
-                annual_dict[item]["units"] = variable["Attr"]["units"]
+                annual_dict["variables"][item]["attr"]["units"] = variable["Attr"]["units"]
             if series_dict["annual"][item]["operator"].lower()=="average":
-                annual_dict[item]["data"][i] = numpy.ma.average(variable["Data"])
+                annual_dict["variables"][item]["data"][i] = numpy.ma.average(variable["Data"])
             elif series_dict["annual"][item]["operator"].lower()=="sum":
-                annual_dict[item]["data"][i] = numpy.ma.sum(variable["Data"])
-                annual_dict[item]["units"] = annual_dict[item]["units"]+"/year"
+                annual_dict["variables"][item]["data"][i] = numpy.ma.sum(variable["Data"])
+                annual_dict["variables"][item]["attr"]["units"] = annual_dict["variables"][item]["attr"]["units"]+"/year"
             else:
                 msg = "L6_summary_annual: unrecognised operator"
                 logger.error(msg)
-            annual_dict[item]["format"] = series_dict["annual"][item]["format"]
+            annual_dict["variables"][item]["attr"]["format"] = series_dict["annual"][item]["format"]
     return annual_dict
 
-def L6_summary_cumulative(ds,series_dict):
+def L6_summary_cumulative(ds, series_dict):
     """
     Purpose:
      Calculate the cumulative sums of various quantities and write
@@ -1555,37 +1630,40 @@ def L6_summary_cumulative(ds,series_dict):
     logger.info(" Doing the cumulative summaries at L6")
     dt = ds.series["DateTime"]["Data"]
     ts = int(ds.globalattributes["time_step"])
-    si = pfp_utils.GetDateIndex(dt,str(dt[0]),ts=ts,default=0,match="startnextday")
-    ei = pfp_utils.GetDateIndex(dt,str(dt[-1]),ts=ts,default=len(dt)-1,match="endpreviousday")
+    si = pfp_utils.GetDateIndex(dt, str(dt[0]), ts=ts, default=0, match="startnextday")
+    ei = pfp_utils.GetDateIndex(dt, str(dt[-1]), ts=ts, default=len(dt)-1, match="endpreviousday")
     ldt = dt[si:ei+1]
     start_year = ldt[0].year
     end_year = ldt[-1].year
-    year_list = range(start_year,end_year+1,1)
+    year_list = range(start_year, end_year+1, 1)
     series_list = series_dict["cumulative"].keys()
     cumulative_dict = {}
     for i,year in enumerate(year_list):
-        cumulative_dict[str(year)] = {}
+        cumulative_dict[str(year)] = cdyr = {"globalattributes":{}, "variables":{}}
+        # copy the global attributes
+        cdyr["globalattributes"] = copy.deepcopy(ds.globalattributes)
         if ts==30:
             start_date = str(year)+"-01-01 00:30"
         elif ts==60:
             start_date = str(year)+"-01-01 01:00"
         end_date = str(year+1)+"-01-01 00:00"
-        si = pfp_utils.GetDateIndex(dt,start_date,ts=ts,default=0)
-        ei = pfp_utils.GetDateIndex(dt,end_date,ts=ts,default=len(dt)-1)
+        si = pfp_utils.GetDateIndex(dt, start_date, ts=ts, default=0)
+        ei = pfp_utils.GetDateIndex(dt, end_date, ts=ts, default=len(dt)-1)
         ldt = dt[si:ei+1]
-        cumulative_dict[str(year)]["DateTime"] = {"data":ldt,"units":"Year",
-                                                  "format":"dd/mm/yyyy HH:MM"}
+        f0 = numpy.zeros(len(ldt), dtype=numpy.int32)
+        cdyr["variables"]["DateTime"] = {"data":ldt,"flag":f0,
+                                         "attr":{"units":"Year","format":"dd/mm/yyyy HH:MM"}}
         for item in series_list:
-            cumulative_dict[str(year)][item] = {}
-            variable = pfp_utils.GetVariable(ds, item, si=si, ei=ei)
+            cdyr["variables"][item] = {"data":[],"attr":{}}
+            variable = pfp_utils.GetVariable(ds, item, start=si, end=ei)
             if item in series_dict["lists"]["co2"]:
                 variable = pfp_utils.convert_units_func(ds, variable, "gC/m2")
-                cumulative_dict[str(year)][item]["units"] = "gC/m2"
+                cdyr["variables"][item]["attr"]["units"] = "gC/m2"
             else:
-                cumulative_dict[str(year)][item]["units"] = variable["Attr"]["units"]
-            cumulative_dict[str(year)][item]["data"] = numpy.ma.cumsum(variable["Data"])
-            cumulative_dict[str(year)][item]["format"] = series_dict["cumulative"][item]["format"]
-            cumulative_dict[str(year)][item]["units"] = cumulative_dict[str(year)][item]["units"]+"/year"
+                cdyr["variables"][item]["attr"]["units"] = variable["Attr"]["units"]
+            cdyr["variables"][item]["data"] = numpy.ma.cumsum(variable["Data"])
+            cdyr["variables"][item]["attr"]["format"] = series_dict["cumulative"][item]["format"]
+            cdyr["variables"][item]["attr"]["units"] = cdyr["variables"][item]["attr"]["units"]+"/year"
     return cumulative_dict
 
 def ParseL6ControlFile(cf,ds):

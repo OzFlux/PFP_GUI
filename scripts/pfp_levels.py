@@ -1,19 +1,25 @@
-import sys
-import logging
+# standard modules
 import ast
-import constants as c
 import copy
-import numpy
+import logging
 import os
+import sys
+import time
+# 3rd party modules
+import numpy
+import xlrd
+# PFP modules
+import constants as c
+import meteorologicalfunctions as mf
 import pfp_ck
 import pfp_gf
+import pfp_gfALT
+import pfp_gfMDS
+import pfp_gfSOLO
 import pfp_io
 import pfp_rp
 import pfp_ts
 import pfp_utils
-import time
-import xlrd
-import meteorologicalfunctions as mf
 
 logger = logging.getLogger("pfp_log")
 
@@ -183,6 +189,10 @@ def l3qc(cf,ds2):
         # correct the H2O & CO2 flux due to effects of flux on density measurements
         pfp_ts.Fe_WPL(cf, ds3)
         pfp_ts.Fc_WPL(cf, ds3)
+    # **************************************
+    # *** Calculate Monin-Obukhov length ***
+    # **************************************
+    pfp_ts.CalculateMoninObukhovLength(ds3)
     # **************************
     # *** CO2 and Fc section ***
     # **************************
@@ -264,12 +274,12 @@ def l4qc(main_gui, cf, ds3):
     #  - copy the L3 data to the L4 data structure
     #  - replace the L3 data with the L4 data
     #ds4 = copy.deepcopy(ds3)
-    ds4 = pfp_io.copy_datastructure(cf,ds3)
+    ds4 = pfp_io.copy_datastructure(cf, ds3)
     # ds4 will be empty (logical false) if an error occurs in copy_datastructure
     # return from this routine if this is the case
     if not ds4: return ds4
     # set some attributes for this level
-    pfp_utils.UpdateGlobalAttributes(cf,ds4,"L4")
+    pfp_utils.UpdateGlobalAttributes(cf, ds4, "L4")
     ds4.cf = cf
     ## calculate the available energy
     #if "Fa" not in ds4.series.keys():
@@ -277,37 +287,37 @@ def l4qc(main_gui, cf, ds3):
     # create a dictionary to hold the gap filling data
     ds_alt = {}
     # check to see if we have any imports
-    pfp_gf.ImportSeries(cf,ds4)
+    pfp_gf.ImportSeries(cf, ds4)
     # re-apply the quality control checks (range, diurnal and rules)
-    pfp_ck.do_qcchecks(cf,ds4)
+    pfp_ck.do_qcchecks(cf, ds4)
     # now do the meteorological driver gap filling
     for ThisOne in cf["Drivers"].keys():
         if ThisOne not in ds4.series.keys(): logger.error("Series "+ThisOne+" not in data structure"); continue
         # parse the control file for information on how the user wants to do the gap filling
-        pfp_gf.GapFillParseControlFile(cf,ds4,ThisOne,ds_alt)
+        pfp_gf.GapFillParseControlFile(cf, ds4, ThisOne, ds_alt)
     # *** start of the section that does the gap filling of the drivers ***
     # fill short gaps using interpolation
-    pfp_gf.GapFillUsingInterpolation(cf,ds4)
+    pfp_gf.GapFillUsingInterpolation(cf, ds4)
     # gap fill using climatology
     pfp_gf.GapFillFromClimatology(ds4)
     # do the gap filling using the ACCESS output
-    pfp_gf.GapFillFromAlternate(main_gui, cf, ds4, ds_alt)
+    pfp_gfALT.GapFillFromAlternate(main_gui, cf, ds4, ds_alt)
     if ds4.returncodes["alternate"]=="quit": return ds4
     # gap fill using SOLO
-    pfp_gf.GapFillUsingSOLO(cf,ds3,ds4)
-    if ds4.returncodes["solo"]=="quit": return ds4
+    #pfp_gfSOLO.GapFillUsingSOLO(cf,ds3,ds4)
+    #if ds4.returncodes["solo"]=="quit": return ds4
     # merge the first group of gap filled drivers into a single series
-    pfp_ts.MergeSeriesUsingDict(ds4,merge_order="prerequisite")
-    ## re-calculate the ground heat flux but only if requested in control file
-    #opt = pfp_utils.get_keyvaluefromcf(cf,["Options"],"CorrectFgForStorage",default="No",mode="quiet")
-    #if opt.lower()!="no":
-        #pfp_ts.CorrectFgForStorage(cf,ds4,Fg_out='Fg',Fg_in='Fg_Av',Ts_in='Ts',Sws_in='Sws')
-    ## re-calculate the net radiation
-    #pfp_ts.CalculateNetRadiation(cf,ds4,Fn_out='Fn',Fsd_in='Fsd',Fsu_in='Fsu',Fld_in='Fld',Flu_in='Flu')
-    ## re-calculate the available energy
-    #pfp_ts.CalculateAvailableEnergy(ds4,Fa_out='Fa',Fn_in='Fn',Fg_in='Fg')
+    pfp_ts.MergeSeriesUsingDict(ds4, merge_order="prerequisite")
+    # re-calculate the ground heat flux but only if requested in control file
+    opt = pfp_utils.get_keyvaluefromcf(cf,["Options"], "CorrectFgForStorage", default="No", mode="quiet")
+    if opt.lower()!="no":
+        pfp_ts.CorrectFgForStorage(cf, ds4, Fg_out='Fg', Fg_in='Fg_Av', Ts_in='Ts', Sws_in='Sws')
+    # re-calculate the net radiation
+    pfp_ts.CalculateNetRadiation(cf, ds4, Fn_out='Fn', Fsd_in='Fsd', Fsu_in='Fsu', Fld_in='Fld', Flu_in='Flu')
+    # re-calculate the available energy
+    pfp_ts.CalculateAvailableEnergy(ds4, Fa_out='Fa', Fn_in='Fn', Fg_in='Fg')
     # merge the second group of gap filled drivers into a single series
-    pfp_ts.MergeSeriesUsingDict(ds4,merge_order="standard")
+    pfp_ts.MergeSeriesUsingDict(ds4, merge_order="standard")
     # re-calculate the water vapour concentrations
     pfp_ts.CalculateHumiditiesAfterGapFill(ds4)
     # re-calculate the meteorological variables
@@ -323,41 +333,43 @@ def l4qc(main_gui, cf, ds3):
 
     return ds4
 
-def l5qc(cf,ds4):
-    ds5 = pfp_io.copy_datastructure(cf,ds4)
+def l5qc(cf, ds4):
+    ds5 = pfp_io.copy_datastructure(cf, ds4)
     # ds4 will be empty (logical false) if an error occurs in copy_datastructure
     # return from this routine if this is the case
-    if not ds5: return ds5
+    if not ds5:
+        return ds5
     # set some attributes for this level
-    pfp_utils.UpdateGlobalAttributes(cf,ds5,"L5")
+    pfp_utils.UpdateGlobalAttributes(cf, ds5, "L5")
     ds5.cf = cf
     # create a dictionary to hold the gap filling data
     ds_alt = {}
     # check to see if we have any imports
-    pfp_gf.ImportSeries(cf,ds5)
+    pfp_gf.ImportSeries(cf, ds5)
     # re-apply the quality control checks (range, diurnal and rules)
-    pfp_ck.do_qcchecks(cf,ds5)
+    pfp_ck.do_qcchecks(cf, ds5)
     # now do the flux gap filling methods
     label_list = pfp_utils.get_label_list_from_cf(cf)
-    for ThisOne in label_list:
+    for label in label_list:
         # parse the control file for information on how the user wants to do the gap filling
-        pfp_gf.GapFillParseControlFile(cf,ds5,ThisOne,ds_alt)
+        pfp_gf.GapFillParseControlFile(cf, ds5, label, ds_alt)
     # *** start of the section that does the gap filling of the fluxes ***
     # apply the turbulence filter (if requested)
-    pfp_ck.ApplyTurbulenceFilter(cf,ds5)
+    pfp_ck.ApplyTurbulenceFilter(cf, ds5)
     # fill short gaps using interpolation
-    #pfp_gf.GapFillUsingInterpolation(cf,ds5)
+    pfp_gf.GapFillUsingInterpolation(cf, ds5)
     # do the gap filling using SOLO
-    pfp_gf.GapFillUsingSOLO(cf,ds4,ds5)
-    if ds5.returncodes["solo"]=="quit": return ds5
-    ## gap fill using marginal distribution sampling
-    #pfp_gf.GapFillFluxUsingMDS(cf,ds5)
-    ## gap fill using ratios
-    #pfp_gf.GapFillFluxFromDayRatio(cf,ds5)
+    pfp_gfSOLO.GapFillUsingSOLO(cf, ds4, ds5)
+    if ds5.returncodes["solo"] == "quit":
+        return ds5
+    # gap fill using marginal distribution sampling
+    pfp_gfMDS.GapFillFluxUsingMDS(cf, ds5)
     # gap fill using climatology
     pfp_gf.GapFillFromClimatology(ds5)
     # merge the gap filled drivers into a single series
-    pfp_ts.MergeSeriesUsingDict(ds5,merge_order="standard")
+    pfp_ts.MergeSeriesUsingDict(ds5, merge_order="standard")
+    # calculate Monin-Obukhov length
+    pfp_ts.CalculateMoninObukhovLength(ds5)
     # write the percentage of good data as a variable attribute
     pfp_utils.get_coverage_individual(ds5)
     # write the percentage of good data for groups
@@ -380,7 +392,7 @@ def l6qc(cf,ds5):
     Fc_list = [label for label in ds6.series.keys() if label[0:2] == "Fc"]
     pfp_utils.CheckUnits(ds6, Fc_list, "umol/m2/s", convert_units=True)
     ## apply the turbulence filter (if requested)
-    #pfp_ck.ApplyTurbulenceFilter(cf,ds6)
+    pfp_ck.ApplyTurbulenceFilter(cf,ds6)
     # get ER from the observed Fc
     pfp_rp.GetERFromFc(cf, ds6, l6_info)
     # estimate ER using SOLO

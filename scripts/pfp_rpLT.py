@@ -54,6 +54,9 @@ def get_configs_dict(cf,ds):
                                      "output_plots",default="False")
     configs_dict["output_plots"] = (opt=="True")
     opt = pfp_utils.get_keyvaluefromcf(cf,["ER","ER_LT","ERUsingLloydTaylor"],
+                                     "show_plots",default="False")
+    configs_dict["show_plots"] = (opt=="True")
+    opt = pfp_utils.get_keyvaluefromcf(cf,["ER","ER_LT","ERUsingLloydTaylor"],
                                      "target",default="ER")
     configs_dict["target"] = str(opt)
     opt = pfp_utils.get_keyvaluefromcf(cf,["ER","ER_LT","ERUsingLloydTaylor"],
