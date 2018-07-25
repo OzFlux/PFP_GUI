@@ -6,6 +6,7 @@ import matplotlib
 from PyQt4 import QtCore
 # PFP modules
 import pfp_clim
+import pfp_cpd
 import pfp_io
 import pfp_levels
 import pfp_plot
@@ -325,7 +326,7 @@ def do_utilities_climatology(mode="standard"):
     logger.info(' Finished climatology')
     logger.info("")
     return
-def do_utilities_ustar_cpd():
+def do_utilities_ustar_cpd(mode="standard"):
     logger.info(" Starting u* threshold detection (CPD)")
     if mode == "standard":
         stdname = "controlfiles/standard/cpd.txt"
@@ -351,7 +352,7 @@ def do_utilities_ustar_cpd():
         if len(cf) == 0:
             return
     logger.info("Doing u* threshold detection (CPD)")
-    pfp_cpd.CPD_run(cf)
+    pfp_cpd.cpd_main(cf)
     logger.info(" Finished u* threshold detection (CPD)")
     logger.info("")
     return
