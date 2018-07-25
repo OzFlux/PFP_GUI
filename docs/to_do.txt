@@ -101,3 +101,11 @@ L4
 L5
 
 L6
+
+Update to PFP V0.1.4
+1) pfp_cfg.py - copy notes from earlier versions to PFP_GUI
+2) constants.py - no change
+3) meteorologicalfunctions.py
+   - change import statements from qc* to pfp_*
+4) pfp_ck.py
+   - change import names

@@ -95,7 +95,8 @@ def ApplyTurbulenceFilter(cf,ds,ustar_threshold=None):
     # get data for the indicator series
     ustar,ustar_flag,ustar_attr = pfp_utils.GetSeriesasMA(ds,"ustar")
     Fsd,f,a = pfp_utils.GetSeriesasMA(ds,"Fsd")
-    if "solar_altitude" not in ds.series.keys(): pfp_ts.get_synthetic_fsd(ds)
+    if "solar_altitude" not in ds.series.keys():
+        pfp_ts.get_synthetic_fsd(ds)
     Fsd_syn,f,a = pfp_utils.GetSeriesasMA(ds,"Fsd_syn")
     sa,f,a = pfp_utils.GetSeriesasMA(ds,"solar_altitude")
     # get the day/night indicator series
@@ -437,7 +438,7 @@ def do_diurnalcheck(cf,ds,section,series,code=5):
             lHdh = ds.series['Hdh']['Data'][mindex]
             l2ds = ds.series[series]['Data'][mindex]
             for i in range(nInts):
-                li = numpy.where(abs(lHdh-(float(i)/float(n))<c.eps)&(l2ds!=float(c.missing_value)))
+                li = numpy.where((abs(lHdh-(float(i)/float(n)))<c.eps)&(l2ds!=float(c.missing_value)))
                 if numpy.size(li)!=0:
                     Av[i] = numpy.mean(l2ds[li])
                     Sd[i] = numpy.std(l2ds[li])
@@ -528,11 +529,13 @@ def do_excludedates(cf,ds,section,series,code=6):
     for i in range(NumExclude):
         ExcludeDateList = ast.literal_eval(cf[section][series]['ExcludeDates'][str(i)])
         try:
-            si = ldt.index(datetime.datetime.strptime(ExcludeDateList[0],'%Y-%m-%d %H:%M'))
+            dt = datetime.datetime.strptime(ExcludeDateList[0],'%Y-%m-%d %H:%M')
+            si = pfp_utils.find_nearest_value(ldt, dt)
         except ValueError:
             si = 0
         try:
-            ei = ldt.index(datetime.datetime.strptime(ExcludeDateList[1],'%Y-%m-%d %H:%M')) + 1
+            dt = datetime.datetime.strptime(ExcludeDateList[1],'%Y-%m-%d %H:%M')
+            ei = pfp_utils.find_nearest_value(ldt, dt)
         except ValueError:
             ei = -1
         ds.series[series]['Data'][si:ei] = numpy.float64(c.missing_value)
@@ -549,11 +552,13 @@ def do_excludehours(cf,ds,section,series,code=7):
     for i in range(NumExclude):
         ExcludeHourList = ast.literal_eval(cf[section][series]['ExcludeHours'][str(i)])
         try:
-            si = ldt.index(datetime.datetime.strptime(ExcludeHourList[0],'%Y-%m-%d %H:%M'))
+            dt = datetime.datetime.strptime(ExcludeHourList[0],'%Y-%m-%d %H:%M')
+            si = pfp_utils.find_nearest_value(ldt, dt)
         except ValueError:
             si = 0
         try:
-            ei = ldt.index(datetime.datetime.strptime(ExcludeHourList[1],'%Y-%m-%d %H:%M')) + 1
+            dt = datetime.datetime.strptime(ExcludeHourList[1],'%Y-%m-%d %H:%M')
+            ei = pfp_utils.find_nearest_value(ldt, dt)
         except ValueError:
             ei = -1
         for j in range(len(ExcludeHourList[2])):

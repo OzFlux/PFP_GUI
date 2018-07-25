@@ -6,10 +6,6 @@ import matplotlib.pyplot as plt
 import numpy
 import pfp_utils
 from scipy.optimize import curve_fit
-import warnings
-
-# suppress warning from curve_fit that covariance could not be calculated
-warnings.filterwarnings("ignore",".*Covariance of the parameters could not be estimated*")
 
 logger = logging.getLogger("pfp_log")
 
@@ -78,7 +74,6 @@ def get_LL_params(ldt,Fsd,D,T,NEE,ER,LT_results,info):
     last_date = ldt[-1]
     end_date = start_date+datetime.timedelta(days=info["window_length"])
     while end_date<=last_date:
-        #print start_date,end_date
         sub_results = {"RMSE":[],"alpha":[],"beta":[],"k":[],"rb":[]}
         si = pfp_utils.GetDateIndex(ldt,str(start_date),ts=info["ts"])
         ei = pfp_utils.GetDateIndex(ldt,str(end_date),ts=info["ts"])
@@ -104,7 +99,6 @@ def get_LL_params(ldt,Fsd,D,T,NEE,ER,LT_results,info):
                 alpha_low,rb_low = numpy.nan,numpy.nan
             if len(ERsub)>=10: LL_prior["rb"] = numpy.mean(ERsub)
             for bm in [0.5,1,2]:
-                #print "Doing beta multiplier: ",bm
                 LL_prior["beta"] = numpy.abs(numpy.percentile(NEEsub,3)-numpy.percentile(NEEsub,97))
                 LL_prior["beta"] = bm*LL_prior["beta"]
                 E0 = LL_results["E0"][-1]
@@ -115,7 +109,6 @@ def get_LL_params(ldt,Fsd,D,T,NEE,ER,LT_results,info):
                     alpha,beta,k,rb = popt[0],popt[1],popt[2],popt[3]
                     last_alpha_OK = True
                 except RuntimeError:
-                    #print " Setting all parameters to NaN: 1"
                     alpha,beta,k,rb = numpy.nan,numpy.nan,numpy.nan,numpy.nan
                     last_alpha_OK = False
                 # QC the parameters
@@ -129,7 +122,6 @@ def get_LL_params(ldt,Fsd,D,T,NEE,ER,LT_results,info):
                         alpha,beta,rb = popt[0],popt[1],popt[2]
                         last_alpha_OK = True
                     except RuntimeError:
-                        #print " Setting all parameters to NaN: 2"
                         alpha,beta,k,rb = numpy.nan,numpy.nan,numpy.nan,numpy.nan
                         last_alpha_OK = False
                 # then alpha
@@ -144,7 +136,6 @@ def get_LL_params(ldt,Fsd,D,T,NEE,ER,LT_results,info):
                         popt,pcov = curve_fit(fopt,drivers,NEEsub,p0=p0)
                         beta,k,rb = popt[0],popt[1],popt[2]
                     except RuntimeError:
-                        #print " Setting all parameters to NaN: 3"
                         alpha,beta,k,rb = numpy.nan,numpy.nan,numpy.nan,numpy.nan
                 # then beta
                 if beta<0:
@@ -155,14 +146,11 @@ def get_LL_params(ldt,Fsd,D,T,NEE,ER,LT_results,info):
                         popt,pcov = curve_fit(fopt,drivers,NEEsub,p0=p0)
                         alpha,k,rb = popt[0],popt[1],popt[2]
                     except RuntimeError:
-                        #print " Setting all parameters to NaN: 4"
                         alpha,beta,k,rb = numpy.nan,numpy.nan,numpy.nan,numpy.nan
                 elif beta>250:
-                    #print " Setting all parameters to NaN: 5"
                     alpha,beta,k,rb = numpy.nan,numpy.nan,numpy.nan,numpy.nan
                 # and finally rb
                 if rb<0:
-                    #print " Setting all parameters to NaN: 6"
                     alpha,beta,k,rb = numpy.nan,numpy.nan,numpy.nan,numpy.nan
                 # now get the RMSE for this set of parameters
                 if not numpy.isnan(alpha) and not numpy.isnan(beta) and not numpy.isnan(k) and not numpy.isnan(rb):
@@ -373,3 +361,16 @@ def rpLL_createdict(cf,ds,series):
         data,flag,attr = pfp_utils.MakeEmptySeries(ds,ds.merge["standard"][series]["output"])
         pfp_utils.CreateSeries(ds,ds.merge["standard"][series]["output"],data,flag,attr)
     return rpLL_info
+
+def rpLL_initplot(**kwargs):
+    # set the margins, heights, widths etc
+    pd = {"margin_bottom":0.075,"margin_top":0.075,"margin_left":0.05,"margin_right":0.05,
+          "xy_height":0.20,"xy_width":0.20,"xyts_space":0.05,"xyts_space":0.05,
+          "ts_width":0.9}
+    # set the keyword arguments
+    for key, value in kwargs.iteritems():
+        pd[key] = value
+    # calculate bottom of the first time series and the height of the time series plots
+    pd["ts_bottom"] = pd["margin_bottom"]+pd["xy_height"]+pd["xyts_space"]
+    pd["ts_height"] = (1.0 - pd["margin_top"] - pd["ts_bottom"])/float(pd["nDrivers"]+1)
+    return pd

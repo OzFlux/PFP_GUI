@@ -11,13 +11,12 @@ import netCDF4
 import numpy
 import ntpath
 import os
+import pandas
 import pdb
 import platform
 import sys
 import time
-#import Tkinter, tkFileDialog
-from PyQt4.QtGui import QFileDialog
-from PyQt4.QtCore import QStringList
+import Tkinter, tkFileDialog
 import xlrd
 import xlwt
 import xlsxwriter
@@ -144,147 +143,156 @@ def copy_datastructure(cf,ds_in):
                         pass
     return ds_out
 
-def csv_read_series(cf):
-    """
-    Purpose:
-     Reads a CSV file and returns the data in a data structure.
-     The CSV file must conform to the following rules:
-      1) the first line of the CSV file is a header line that contains
-         the variable names for each column
-      2) the second and all subsequent lines must contain data
-      3) the first colume must contain a string representation
-         of the datetime
-      4) missing data in the CSV file is represented by a blank
-         or by "NA".
-    Usage:
-     ds = csv_read_series(cf)
-     where cf is a control file
-           ds is a data structure
-    Author: PRI
-    Date: September 2015
-    """
-    # get a data structure
-    ds = DataStructure()
-    # return if [[[Function]]] not in [[DateTime]]
+def csv_read_parse_cf(cf):
+    info = {"cf_ok":False}
     if "DateTime" not in cf["Variables"]:
         msg = "No [[DateTime]] section in control file ..."
         logger.error(msg)
-        ds.returncodes = {"value":1,"message":msg}
-        return ds
+        return info
     if "Function" not in cf["Variables"]["DateTime"]:
         msg = "No [[[Function]]] section in [[DateTime]] section ..."
         logger.error(msg)
-        ds.returncodes = {"value":1,"message":msg}
-        return ds
+        return info
     # get the filename, return if missing or doesn't exist
     csv_filename = get_infilenamefromcf(cf)
     if len(csv_filename)==0:
         msg = ' in_filename not found in control file'
         logger.error(msg)
-        ds.returncodes = {"value":1,"message":msg}
-        return ds
+        return info
     if not os.path.exists(csv_filename):
         msg = ' Input file '+csv_filename+' specified in control file not found'
         logger.error(msg)
-        ds.returncodes = {"value":1,"message":msg}
-        return ds
+        return info
+    else:
+        info["csv_filename"] = csv_filename
+
     # get the header row, first data row and units row
     opt = pfp_utils.get_keyvaluefromcf(cf,["Files"],"in_firstdatarow",default=2)
-    first_data_row = int(opt)
+    info["first_data_row"] = int(opt)
+    info["skip_header"] = info["first_data_row"]-1
     opt = pfp_utils.get_keyvaluefromcf(cf,["Files"],"in_headerrow",default=1)
-    header_row = int(opt)
+    info["header_row"] = int(opt)
     opt = pfp_utils.get_keyvaluefromcf(cf,["Files"],"in_unitsrow",default=-1)
-    units_row = int(opt)
+    info["units_row"] = int(opt)
     # set the delimiters
-    delimiters = [",", "\t"]
-    # sniff the file to find out the dialect and the delimiter
-    csv_file = open(csv_filename,'rb')
-    # skip to the header row
-    for i in range(0, header_row):
-        line = csv_file.readline()
-    # sniff the CSV dialect
-    dialect = csv.Sniffer().sniff(line, delimiters)
-    # rewind to the start
-    csv_file.seek(0)
-    # and read the file with the dialect set
-    csv_reader = csv.reader(csv_file,dialect)
-    # get the header and units lines
-    for i in range(1,first_data_row):
-        line = csv_reader.next()
-        if i==header_row:
-            header = line
-            for i in range(len(header)):
-                if "*" in header[i]:
-                    header[i] = header[i].replace("*","star")
-        if units_row!=-1:
-            if i==units_row: units = line
-    csv_file.close()
+    info["delimiters"] = [",", "\t"]
 
+    # sniff the file to find out the dialect and the delimiter
+    csv_file = open(info["csv_filename"],'rb')
+    # skip to the header row
+    for i in range(0, info["first_data_row"]):
+        line = csv_file.readline()
+        if i == info["header_row"]-1 or i == info["units_row"]-1:
+            # sniff the CSV dialect
+            info["dialect"] = csv.Sniffer().sniff(line, info["delimiters"])
+        if i == info["header_row"]-1:
+            info["header_line"] = line
+            # header line from comma separated string to list
+            info["header_list"] = info["header_line"].split(info["dialect"].delimiter)
+        if i == info["units_row"]-1:
+            info["units_line"] = line
+            # units line from comma separated string to list
+            info["units_list"] = info["units_line"].split(info["dialect"].delimiter)
+    csv_file.close()
     # get a list of series to be read from CSV file and check
     # to make sure the requested variables are in the csv file,
     # dump them if they aren't
     csv_varnames = {}
     for item in cf["Variables"].keys():
         if "csv" in cf["Variables"][item].keys():
-            opt = pfp_utils.get_keyvaluefromcf(cf,["Variables",item,"csv"],"name",default="")
-            if "*" in opt:
-                opt = opt.replace("*","star")
-            if opt in header:
+            opt = pfp_utils.get_keyvaluefromcf(cf, ["Variables", item, "csv"], "name", default="")
+            if opt in info["header_line"]:
                 csv_varnames[item] = str(opt)
             else:
                 msg = "  "+str(opt)+" not found in CSV file, skipping ..."
                 logger.error(msg)
                 continue
-        # 2017-09-07 - deprecate use of "xl" sectiuon names for CSV files
-        #elif "xl" in cf["Variables"][item].keys():
-            #opt = pfp_utils.get_keyvaluefromcf(cf,["Variables",item,"xl"],"name",default="")
-            #if csv_varname in header:
-                #csv_varnames[item] = str(opt)
         elif "Function" not in cf["Variables"][item].keys():
-            msg = " No csv, xl or Function section in control file for "+item
+            msg = " No csv or Function section in control file for "+item
             logger.info(msg)
-    var_list = csv_varnames.keys()
-    csv_list = [csv_varnames[x] for x in var_list]
-    col_list = [header.index(item) for item in csv_list]
-    # read the csv file using numpy's genfromtxt
-    file_name = os.path.split(csv_filename)
-    logger.info(" Reading "+file_name[1])
-    skip = first_data_row-1
+            continue
+    info["csv_varnames"] = csv_varnames
+    info["var_list"] = csv_varnames.keys()
+    info["csv_list"] = [csv_varnames[x] for x in info["var_list"]]
+    info["col_list"] = [info["header_list"].index(item) for item in info["csv_list"]]
+
     # define the missing values and the value with which to fill them
-    missing_values = {}
-    filling_values = {}
-    for item in col_list:
-        missing_values[item] = ["NA","N/A","NAN","#NAME?","#VALUE!","#DIV/0!","#REF!"]
-        filling_values[item] = c.missing_value
+    info["missing_values"] = "NA,N/A,NAN,NaN,nan,#NAME?,#VALUE!,#DIV/0!,#REF!,Infinity,-Infinity"
+    info["filling_values"] = c.missing_value
+    info["deletechars"] = set("""~!@#$%^&=+~\|]}[{';: ?.>,<""")
+
+    info["cf_ok"] = True
+
+    return info
+
+def csv_read_series(cf):
+    """
+    Purpose:
+     Reads a CSV file and returns the data in a data structure.
+    Usage:
+     ds = csv_read_series(cf)
+     where cf is a control file
+           ds is a data structure
+    Author: PRI
+    Date: September 2015
+    Mods: February 2018 (PRI) - rewrite
+    """
+    # get a data structure
+    ds = DataStructure()
+    # parse the control file
+    info = csv_read_parse_cf(cf)
+    # return with an empty data structure if parsing failed
+    if not info["cf_ok"]:
+        return ds
+    # read the csv file using numpy's genfromtxt
+    file_name = os.path.split(info["csv_filename"])
+    logger.info(" Reading "+file_name[1])
     # read the CSV file
-    data = numpy.genfromtxt(csv_filename,delimiter=dialect.delimiter,skip_header=skip,
-                            names=header,usecols=col_list,missing_values=missing_values,
-                            filling_values=filling_values,dtype=None)
+    data_array = numpy.genfromtxt(info["csv_filename"], delimiter=info["dialect"].delimiter,
+                                  skip_header=info["skip_header"], names=info["header_line"],
+                                  usecols=info["col_list"], missing_values=info["missing_values"],
+                                  filling_values=info["filling_values"], deletechars=info["deletechars"],
+                                  usemask=True, dtype=None)
     # get the variables and put them into the data structure
-    # we'll deal with DateTime and xlDateTime separately
-    for item in ["xlDateTime","DateTime"]:
-        if item in var_list: var_list.remove(item)
+    # we'll deal with DateTime separately
+    for item in ["DateTime"]:
+        if item in info["var_list"]:
+            info["var_list"].remove(item)
     # put the data into the data structure
-    # NOTE: we will let the function to be called deal with missing
-    # dates or empty lines
-    for var in var_list:
-        ds.series[var] = {}
-        ds.series[var]["Data"] = data[csv_varnames[var]]
-        zeros = numpy.zeros(len(data[csv_varnames[var]]),dtype=numpy.int32)
-        ones = numpy.ones(len(data[csv_varnames[var]]),dtype=numpy.int32)
-        ds.series[var]["Flag"] = numpy.where(ds.series[var]["Data"]==c.missing_value,ones,zeros)
-    # call the function given in the control file
-    # NOTE: the function being called needs to deal with missing date values
-    # and empty lines
+    for label in info["var_list"]:
+        csv_label = info["csv_varnames"][label]
+        variable = {"Label":label}
+        # make the flag
+        flag = numpy.zeros(len(data_array[csv_label]), dtype=numpy.int32)
+        # get the data
+        try:
+            data = numpy.array(data_array[info["csv_varnames"][label]], dtype=numpy.float64)
+            idx = numpy.where(numpy.isfinite(data) == False)[0]
+            data[idx] = numpy.float64(c.missing_value)
+            flag[idx] = numpy.int32(1)
+        except ValueError:
+            data = data_array[info["csv_varnames"][label]]
+        # set flag of missing data to 1
+        missing = numpy.full_like(data, c.missing_value)
+        idx = numpy.where(data == missing)[0]
+        flag[idx] = numpy.int32(1)
+        variable["Data"] = data
+        variable["Flag"] = flag
+        # make the attribute dictionary ...
+        attr = {}
+        variable["Attr"] = copy.deepcopy(attr)
+        pfp_utils.CreateVariable(ds, variable)
+    # call the function given in the control file to convert the date/time string to a datetime object
+    # NOTE: the function being called needs to deal with missing date values and empty lines
     function_string = cf["Variables"]["DateTime"]["Function"]["func"]
     function_name = function_string.split("(")[0]
     function_args = function_string.split("(")[1].replace(")","").split(",")
-    result = getattr(pfp_func,function_name)(ds,*function_args)
+    result = getattr(pfp_func,function_name)(ds, *function_args)
     # set some global attributes
     ds.globalattributes['featureType'] = 'timeseries'
-    ds.globalattributes['csv_filename'] = csv_filename
+    ds.globalattributes['csv_filename'] = info["csv_filename"]
     ds.globalattributes['xl_datemode'] = str(0)
-    s = os.stat(csv_filename)
+    s = os.stat(info["csv_filename"])
     t = time.localtime(s.st_mtime)
     ds.globalattributes['csv_moddatetime'] = str(datetime.datetime(t[0],t[1],t[2],t[3],t[4],t[5]))
     ds.returncodes = {"value":0,"message":"OK"}
@@ -379,13 +387,15 @@ def read_eddypro_full(csvname):
 def reddyproc_write_csv(cf):
     # this needs to be re-written!
     # get the file names
-    ncFileName = cf["Files"]["in_filename"]
+    file_path = cf["Files"]["file_path"]
+    nc_name = cf["Files"]["in_filename"]
+    ncFileName = os.path.join(file_path, nc_name)
     if not os.path.exists(ncFileName):
-        file_name = os.path.split(ncFileName)
-        msg = " netCDF file "+file_name[1]+" not found"
+        msg = " netCDF file "+ncFileName+" not found"
         logger.warning(msg)
         return
-    csvFileName = cf["Files"]["out_filename"]
+    csv_name = cf["Files"]["out_filename"]
+    csvFileName = os.path.join(file_path, csv_name)
     file_name = os.path.split(csvFileName)
     if not os.path.exists(file_name[0]):
         os.makedirs(file_name[0])
@@ -555,7 +565,8 @@ def smap_updatedatadictionary(cfvars,data_dict,data,flag,smap_label,nperday,nday
     elif cfvars[smap_label]["daily"].lower()=="skip":
         data_dict[smap_label]["data"] = numpy.reshape(data,[ndays,nperday])[:,0]
     else:
-        print "smap_updatedatadictionary: unrecognised option for daily ("+str(cfvars[smap_label]["daily"])+")"
+        msg = "smap_updatedatadictionary: unrecognised option for daily ("+str(cfvars[smap_label]["daily"])+")"
+        logger.warning(msg)
     data_dict[smap_label]["fmt"] = cfvars[smap_label]["format"]
     if cfvars[smap_label]["genqc"]=="True":
         smap_qc_label = smap_qclabel(smap_label)
@@ -975,27 +986,22 @@ def fn_write_csv(cf):
 
 def get_controlfilecontents(ControlFileName,mode="verbose"):
     if mode!="quiet": logger.info(' Processing the control file ')
-    #logger.info("Processing the control file")
     if len(ControlFileName)!=0:
         cf = ConfigObj(ControlFileName)
-        cf["controlfile_name"] = ControlFileName
+        cf['controlfile_name'] = ControlFileName
+    else:
+        cf = ConfigObj()
     if "Files" in cf:
         if "plot_path" not in cf["Files"].keys():
             cf["Files"]["plot_path"] = "plots/"
     return cf
 
-#def get_controlfilename(path='.',title='Choose a control file'):
-    #logger.info(' Choosing the control file ')
-    ##root = Tkinter.Tk(); root.withdraw()
-    ##name = tkFileDialog.askopenfilename(parent=root,initialdir=path,title=title)
-    ##root.destroy()
-    #dlg = QFileDialog()
-    #dlg.setFileMode(QFileDialog.AnyFile)
-    #dlg.setFilter("Text files (*.txt)")
-    #filename = QStringList()
-    #if dlg.exec_():
-        #filename = dlg.selectedFiles()
-    #return filename
+def get_controlfilename(path='.',title='Choose a control file'):
+    logger.info(' Choosing the control file ')
+    root = Tkinter.Tk(); root.withdraw()
+    name = tkFileDialog.askopenfilename(parent=root,initialdir=path,title=title)
+    root.destroy()
+    return name
 
 def get_ncdtype(Series):
     sd = Series.dtype.name
@@ -1005,7 +1011,7 @@ def get_ncdtype(Series):
     if sd=='int64': dt = 'l'
     return dt
 
-def get_filename_dialog(path='',title='Choose a file'):
+def get_filename_dialog(path='.',title='Choose a file'):
     """
     Purpose:
      Put up a file open dialog and let the user browse to open a file
@@ -1018,8 +1024,10 @@ def get_filename_dialog(path='',title='Choose a file'):
     Author: PRI
     Date: Back in the day
     """
-    filename = QFileDialog.getOpenFileName(caption=title)
-    return str(filename)
+    root = Tkinter.Tk(); root.withdraw()
+    FileName = tkFileDialog.askopenfilename(parent=root,initialdir=path,title=title)
+    root.destroy()
+    return str(FileName)
 
 def get_infilenamefromcf(cf):
     path = pfp_utils.get_keyvaluefromcf(cf,["Files"],"file_path",default="")
@@ -1143,11 +1151,8 @@ def load_controlfile(path='.',title='Choose a control file'):
     Author: PRI
     Date: Back in the day
     """
-    filename = get_filename_dialog(title=title)
-    if len(filename) != 0:
-        cf = get_controlfilecontents(filename)
-    else:
-        cf = ConfigObj()
+    name = get_controlfilename(path=path,title=title)
+    cf = get_controlfilecontents(name)
     return cf
 
 def nc_concatenate(cf):
@@ -1240,7 +1245,6 @@ def nc_concatenate(cf):
         ncFileName = cf['Files']['In'][InFile_list[int(n)]]
         nc_file_name = os.path.split(ncFileName)
         logger.info(' Reading data from '+nc_file_name[1])
-        #print 'ncconcat: reading data from '+ncFileName
         ds_n = nc_read_series(ncFileName,fixtimestepmethod=fixtimestepmethod)
         if len(ds.series.keys())==0:
             logger.error(' An error occurred reading the netCDF file: '+nc_file_name[1])
@@ -1266,8 +1270,6 @@ def nc_concatenate(cf):
             else:
                 msg = " Both Wd and Wd_CSAT missing from file"
                 logger.warning(msg)
-        #print ds.series['DateTime']['Data'][-1],ds_n.series['DateTime']['Data'][-1]
-        #print dt[-1],dt[-1]+datetime.timedelta(minutes=ts),dt_n[0]
         if dt_n[0]<dt[-1]+datetime.timedelta(minutes=ts):
             logger.info(' Overlapping times detected in consecutive files')
             si = pfp_utils.GetDateIndex(dt_n,str(dt[-1]),ts=ts)+1
@@ -1584,7 +1586,7 @@ def nc_read_series(ncFullName,checktimestep=True,fixtimestepmethod=""):
     Author: PRI
     Date: Back in the day
     """
-    logger.info("Reading netCDF file "+ntpath.split(ncFullName)[1])
+    logger.info(" Reading netCDF file "+ntpath.split(ncFullName)[1])
     netCDF4.default_encoding = 'latin-1'
     ds = DataStructure()
     # check to see if the requested file exists, return empty ds if it doesn't
@@ -1601,7 +1603,6 @@ def nc_read_series(ncFullName,checktimestep=True,fixtimestepmethod=""):
     if len(gattrlist)!=0:
         for gattr in gattrlist:
             ds.globalattributes[gattr] = getattr(ncFile,gattr)
-        if "time_step" in ds.globalattributes: c.ts = ds.globalattributes["time_step"]
     # get a list of the variables in the netCDF file (not their QC flags)
     varlist = [x for x in ncFile.variables.keys() if "_QCFlag" not in x]
     for ThisOne in varlist:
@@ -1642,7 +1643,7 @@ def nc_read_series(ncFullName,checktimestep=True,fixtimestepmethod=""):
     logger.info(msg)
     return ds
 
-def nc_read_todf(ncFullName,var_data=[]):
+def nc_read_todf(ncFullName, var_list=[], include_qcflags=False):
     """
     Purpose:
      Read an OzFlux netCDF file and return the data in an Pandas data frame.
@@ -1657,45 +1658,49 @@ def nc_read_todf(ncFullName,var_data=[]):
     logger.info(" Reading netCDF file "+ncFullName+" to Pandas data frame")
     netCDF4.default_encoding = 'latin-1'
     # check to see if the requested file exists, return empty ds if it doesn't
-    if not pfp_utils.file_exists(ncFullName,mode="quiet"):
+    if not pfp_utils.file_exists(ncFullName, mode="quiet"):
         logger.error(' netCDF file '+ncFullName+' not found')
         raise Exception("nc_read_todf: file not found")
     # file probably exists, so let's read it
-    ncFile = netCDF4.Dataset(ncFullName,"r")
+    ncFile = netCDF4.Dataset(ncFullName, "r")
+    # disable automatic masking of data when valid_range specified
+    ncFile.set_auto_mask(False)
     # now deal with the global attributes
     gattrlist = ncFile.ncattrs()
     if len(gattrlist)!=0:
         gattr = {}
         for attr in gattrlist:
             gattr[attr] = getattr(ncFile,attr)
-            if "time_step" in gattr.keys(): c.ts = gattr["time_step"]
-    # get a list of Python datetimes from the xlDatetime
-    # this may be better replaced with one of the standard OzFluxQC routines
-    dates_list=[datetime.datetime(*xlrd.xldate_as_tuple(elem,0)) for elem in ncFile.variables['xlDateTime']]
     # get a list of variables to read from the netCDF file
-    if len(var_data)==0:
+    if len(var_list) == 0:
         # get the variable list from the netCDF file contents
-        var_data = ncFile.variables.keys()
-    else:
+        var_list = [l for l in ncFile.variables.keys() if "_QCFlag" not in l]
+    if include_qcflags:
         # add the QC flags to the list entered as an argument
         var_flag = []
-        for var in var_data: var_flag.append(var+"_QCFlag")
-        var_list = var_data+var_flag
+        for var in var_list:
+            var_flag.append(var+"_QCFlag")
+        var_list = var_list+var_flag
     # read the variables and attributes from the netCDF file
     # create dictionaries to hold the data and the variable attributes
-    d = {}
+    data = {}
     vattr = {}
     for item in var_list:
-        d[item] = ncFile.variables[item][:]
-        vattrlist = ncFile.variables[item].ncattrs()
-        if len(vattrlist)!=0:
-            vattr[item] = {}
-            for attr in vattrlist:
-                vattr[item][attr] = getattr(ncFile.variables[item],attr)
+        # skip variables that do not have time as a dimension
+        dimlist = [x.lower() for x in ncFile.variables[item].dimensions]
+        if "time" not in dimlist:
+            continue
+        data[item], flag, vattr[item] = nc_read_var(ncFile, item)
+        data[item] = numpy.ma.filled(data[item], fill_value=c.missing_value)
     ncFile.close()
+    # get a list of Python datetimes from the xlDatetime
+    # this may be better replaced with one of the standard OzFluxQC routines
+    dates = netCDF4.num2date(data["time"], vattr["time"]["units"])
     # convert the dictionary to a Pandas data frame
-    df = pd.DataFrame(d,index=dates_list)
-    return df,gattr,vattr
+    df = pandas.DataFrame(data, index=dates)
+    # replace missing values with NaN
+    df.replace(to_replace=c.missing_value, value=numpy.NaN, inplace=True)
+    return df, gattr, vattr
 
 def df_droprecords(df,qc_list=[0,10]):
     # replace configured error values with NaNs
@@ -1789,15 +1794,56 @@ def nc_open_write(ncFullName,nctype='NETCDF4'):
         ncFile = ''
     return ncFile
 
-def nc_write_series(ncFile,ds,outputlist=None,ndims=3):
+def nc_write_data(nc_obj, data_dict):
     """
     Purpose:
-     Write the contents of a data structure to a netCDF file.
+     Write a dictionary to a netCDF file or group within a netCDF file.
     Usage:
-     nc_file = pfp_io.nc_open_write(nc_name)
-     pfp_io.nc_write_series(nc_file,ds)
-     where nc_file is a netCDF file object returned by pfp_io.nc_open_write
-           ds is a data structure
+    Author: PRI
+    Date: January 2018
+    """
+    nrecs = len(data_dict["variables"]["DateTime"]["data"])
+    # and give it dimensions of time, latitude and longitude
+    nc_obj.createDimension("time", nrecs)
+    nc_obj.createDimension("latitude", 1)
+    nc_obj.createDimension("longitude", 1)
+    dims = ("time", "latitude", "longitude")
+    # write the time variable to the netCDF object
+    nc_time_units = "seconds since 1970-01-01 00:00:00.0"
+    nc_time = netCDF4.date2num(data_dict["variables"]["DateTime"]["data"], nc_time_units, calendar="gregorian")
+    nc_var = nc_obj.createVariable("time", "d", ("time",))
+    nc_var[:] = nc_time
+    setattr(nc_var, "long_name", "time")
+    setattr(nc_var, "standard_name", "time")
+    setattr(nc_var, "units", nc_time_units)
+    setattr(nc_var, "calendar", "gregorian")
+    # write the latitude and longitude variables to the group
+    nc_var = nc_obj.createVariable("latitude", "d", ("latitude",))
+    nc_var[:] = float(data_dict["globalattributes"]["latitude"])
+    setattr(nc_var, 'long_name', 'latitude')
+    setattr(nc_var, 'standard_name', 'latitude')
+    setattr(nc_var, 'units', 'degrees north')
+    nc_var = nc_obj.createVariable("longitude", "d", ("longitude",))
+    nc_var[:] = float(data_dict["globalattributes"]["longitude"])
+    setattr(nc_var, 'long_name', 'longitude')
+    setattr(nc_var, 'standard_name', 'longitude')
+    setattr(nc_var, 'units', 'degrees east')
+    # get a list of variables to write to the netCDF file
+    labels = sorted([label for label in data_dict["variables"].keys() if label != "DateTime"])
+    # write the variables to the netCDF file object
+    for label in labels:
+        nc_var = nc_obj.createVariable(label, "d", dims)
+        nc_var[:, 0, 0] = data_dict["variables"][label]["data"].tolist()
+        for attr_key in data_dict["variables"][label]["attr"]:
+            attr_value = data_dict["variables"][label]["attr"][attr_key]
+            nc_var.setncattr(attr_key, attr_value)
+
+    return
+
+def nc_write_globalattributes(nc_file, ds, flag_defs=True):
+    """
+    Purpose:
+    Usage:
     Author: PRI
     Date: Back in the day
     """
@@ -1823,15 +1869,32 @@ def nc_write_series(ncFile,ds,outputlist=None,ndims=3):
             attr = ds.globalattributes[item].encode('ascii','ignore')
         else:
             attr = str(ds.globalattributes[item])
-        setattr(ncFile,item,attr)
-    for item in flag_list:
-        if isinstance(ds.globalattributes[item],str):
-            attr = ds.globalattributes[item]
-        elif isinstance(ds.globalattributes[item],unicode):
-            attr = ds.globalattributes[item].encode('ascii','ignore')
-        else:
-            attr = str(ds.globalattributes[item])
-        setattr(ncFile,item,attr)
+        setattr(nc_file,item,attr)
+    if flag_defs:
+        for item in flag_list:
+            if isinstance(ds.globalattributes[item],str):
+                attr = ds.globalattributes[item]
+            elif isinstance(ds.globalattributes[item],unicode):
+                attr = ds.globalattributes[item].encode('ascii','ignore')
+            else:
+                attr = str(ds.globalattributes[item])
+            setattr(nc_file,item,attr)
+    return
+
+def nc_write_series(ncFile, ds, outputlist=None, ndims=3):
+    """
+    Purpose:
+     Write the contents of a data structure to a netCDF file.
+    Usage:
+     nc_file = pfp_io.nc_open_write(nc_name)
+     pfp_io.nc_write_series(nc_file,ds)
+     where nc_file is a netCDF file object returned by pfp_io.nc_open_write
+           ds is a data structure
+    Author: PRI
+    Date: Back in the day
+    """
+    # write the global attributes to the netCDF file
+    nc_write_globalattributes(ncFile, ds)
     # we specify the size of the Time dimension because netCDF4 is slow to write files
     # when the Time dimension is unlimited
     if "nc_nrecs" in ds.globalattributes.keys():
@@ -1858,6 +1921,7 @@ def nc_write_series(ncFile,ds,outputlist=None,ndims=3):
     for ThisOne in ["DateTime","DateTime_UTC"]:
         if ThisOne in outputlist: outputlist.remove(ThisOne)
     # write the time variable
+    ldt = ds.series["DateTime"]["Data"]
     nc_time = netCDF4.date2num(ldt,"days since 1800-01-01 00:00:00.0",calendar="gregorian")
     ncVar = ncFile.createVariable("time","d",("time",))
     ncVar[:] = nc_time
@@ -1925,8 +1989,8 @@ def nc_write_var(ncFile, ds, ThisOne, dim):
     try:
         ncVar = ncFile.createVariable(ThisOne, dt, dim)
     except RuntimeError:
-        print ThisOne
-        raise Exception("Error writing variable to netCDF file")
+        msg = "Error writing variable to netCDF file: "+ThisOne
+        raise Exception(msg)
     # different writes to the variable depending on whether it is 1D or 3D
     if len(dim)==1:
         ncVar[:] = ds.series[ThisOne]["Data"].tolist()
@@ -2115,27 +2179,27 @@ def xl_check_cf_section(cf, label):
     Author: PRI
     Date: March 2017
     """
-    if "Function" in cf["Variables"][label].keys():
-        result = False
-    elif "xl" not in cf["Variables"][label].keys():
-        logger.error("  Key 'xl' not found in control file entry for "+label)
-        result = False
-    elif "sheet" not in cf["Variables"][label]["xl"].keys():
-        logger.error("  Key 'sheet' not found in control file entry for "+label)
-        result = False
-    else:
-        result = True
+    result = False
+    cf_label = cf["Variables"][label]
+    if "xl" in cf_label.keys():
+        if "xl" in cf_label.keys():
+            if "sheet" in cf_label["xl"].keys():
+                result = True
+            else:
+                logger.error("  Key 'sheet' not found in control file entry for "+label)
+                result = False
     return result
 
 def xl_write_AlternateStats(ds):
     if "alternate" not in dir(ds): return
     # open an Excel file for the fit statistics
     cfname = ds.globalattributes["controlfile_name"]
-    cf = get_controlfilecontents(cfname)
+    cf = get_controlfilecontents(cfname,mode="quiet")
     out_filename = get_outfilenamefromcf(cf)
     # get the Excel file name
     xl_filename = out_filename.replace('.nc','_AlternateStats.xls')
-    logger.info(' Writing alternate fit statistics to Excel file '+xl_filename)
+    file_name = os.path.split(xl_filename)
+    logger.info(' Writing alternate fit statistics to '+file_name[1])
     # open the Excel file
     xlfile = xlwt.Workbook()
     # list of outputs to write to the Excel file
@@ -2161,13 +2225,13 @@ def xl_write_AlternateStats(ds):
             xlRow = 9
             xlCol = xlCol + 1
         for output in output_list:
-            xlResultsSheet.write(xlRow,xlCol,output)
+            xlResultsSheet.write(xlRow, xlCol, output)
             # convert masked array to ndarray
-            output_array = numpy.ma.filled(ds.alternate[label]["results"][output],float(c.missing_value))
+            output_array = numpy.ma.filled(ds.alternate[label]["results"][output], float(c.missing_value))
             for item in output_array:
                 xlRow = xlRow + 1
                 # xlwt under Anaconda seems to only allow float64!
-                xlResultsSheet.write(xlRow,xlCol,numpy.float64(item))
+                xlResultsSheet.write(xlRow, xlCol, numpy.float64(item))
             xlRow = 9
             xlCol = xlCol + 1
     xlfile.save(xl_filename)
@@ -2180,7 +2244,8 @@ def xl_write_SOLOStats(ds):
     out_filename = get_outfilenamefromcf(cf)
     # get the Excel file name
     xl_filename = out_filename.replace('.nc','_SOLOStats.xls')
-    logger.info(' Writing SOLO fit statistics to Excel file '+xl_filename)
+    xl_name = os.path.split(xl_filename)
+    logger.info(' Writing SOLO statistics to '+xl_name[1])
     # open the Excel file
     xlfile = xlwt.Workbook()
     # list of outputs to write to the Excel file
@@ -2209,10 +2274,7 @@ def xl_write_SOLOStats(ds):
         for output in output_list:
             xlResultsSheet.write(xlRow,xlCol,output)
             # convert masked array to ndarray
-            if numpy.ma.isMA(ds.solo[label]["results"][output]):
-                output_array = numpy.ma.filled(ds.solo[label]["results"][output],float(c.missing_value))
-            else:
-                output_array = numpy.array(ds.solo[label]["results"][output],copy=True)
+            output_array = numpy.ma.filled(ds.solo[label]["results"][output],float(c.missing_value))
             for item in output_array:
                 xlRow = xlRow + 1
                 # xlwt under Anaconda seems to only allow float64!
@@ -2259,16 +2321,13 @@ def xl_write_ISD_timesteps(xl_file_path, data):
         for row, site in enumerate(site_list):
             xl_sheet.write(row+1,0,site)
             for col, year in enumerate(year_list):
-                print site,year,stat
-                if stat == "mode":
-                    pass
                 xl_sheet.write(row+1,col+1,data[site][year][stat])
     # save the workbook
     xl_book.save(xl_file_path)
 
     return
 
-def xl_write_data(xl_sheet,data,xlCol=0):
+def xl_write_data(xl_sheet, data, xlCol=0):
     """
     Purpose:
      Writes a dictionary to a worksheet in an Excel workbook.
@@ -2280,12 +2339,12 @@ def xl_write_data(xl_sheet,data,xlCol=0):
                                       worksheet
          data["DateTime"]["units"]  - units of the date time eg "Days", "Years"
          data["DateTime"]["format"] - a format string for xlwt.easyxf eg "dd/mm/yyy"
-      2) data[variable]["data"]   - a numpy array of data values
-         data[variable]["units"]  - units of the data
-         data[variable]["format"] - an xlwt.easyxf format string eg "0.00" for 2 decimal places
+      2) data[variable]["data"]     - a numpy array of data values
+         data[variable]["units"]    - units of the data
+         data[variable]["format"]   - an xlwt.easyxf format string eg "0.00" for 2 decimal places
          There can be multiple variables but each must follow the above template.
     Usage:
-     pfp_io.xl_write_data(xl_sheet,data)
+     pfp_io.xl_write_data(xl_sheet, data)
       where xl_sheet is an Excel worksheet instance
             data     is a dictionary as defined above
     Side effects:
@@ -2298,22 +2357,19 @@ def xl_write_data(xl_sheet,data,xlCol=0):
     #xlCol = 0
     # write the data to the xl file
     series_list = data.keys()
-    xl_sheet.write(1,xlCol,data["DateTime"]["units"])
+    xl_sheet.write(1,xlCol,data["DateTime"]["attr"]["units"])
     nrows = len(data["DateTime"]["data"])
     ncols = len(series_list)
-    d_xf = xlwt.easyxf(num_format_str=data["DateTime"]["format"])
+    d_xf = xlwt.easyxf(num_format_str=data["DateTime"]["attr"]["format"])
     for j in range(nrows):
         xl_sheet.write(j+2,xlCol,data["DateTime"]["data"][j],d_xf)
     series_list.remove("DateTime")
     series_list.sort()
     for item in series_list:
         xlCol = xlCol + 1
-        try:
-            xl_sheet.write(0,xlCol,data[item]["units"])
-        except:
-            pass
+        xl_sheet.write(0,xlCol,data[item]["attr"]["units"])
         xl_sheet.write(1,xlCol,item)
-        d_xf = xlwt.easyxf(num_format_str=data[item]["format"])
+        d_xf = xlwt.easyxf(num_format_str=data[item]["attr"]["format"])
         if numpy.ma.isMA(data[item]["data"]):
             tmp = numpy.ma.filled(data[item]["data"],fill_value=numpy.NaN)
         else:
@@ -2351,11 +2407,11 @@ def xl_write_series(ds, xlfullname, outputlist=None):
     globalattrlist.sort()
     for ThisOne in sorted([x for x in globalattrlist if 'Flag' not in x]):
         xlAttrSheet.write(xlrow,xlcol,ThisOne)
-        xlAttrSheet.write(xlrow,xlcol+1,str(ds.globalattributes[ThisOne]))
+        xlAttrSheet.write(xlrow,xlcol+1,str(ds.globalattributes[ThisOne].encode('ascii','ignore')))
         xlrow = xlrow + 1
     for ThisOne in sorted([x for x in globalattrlist if 'Flag' in x]):
         xlAttrSheet.write(xlrow,xlcol,ThisOne)
-        xlAttrSheet.write(xlrow,xlcol+1,str(ds.globalattributes[ThisOne]))
+        xlAttrSheet.write(xlrow,xlcol+1,str(ds.globalattributes[ThisOne].encode('ascii','ignore')))
         xlrow = xlrow + 1
     # write the variable attributes
     logger.info(' Writing the variable attributes to Excel file '+xlfullname)

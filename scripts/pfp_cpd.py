@@ -239,7 +239,6 @@ def cpd_main(cf):
             lst.append(fit(temp_df))
         stats_df = pd.DataFrame(np.vstack(lst), columns = cols, index = results_df.index)
         results_df = results_df.join(stats_df)
-        #print 'Done!'
 
         results_df['bMod_CP'] = results_df['bMod_CP'].astype(int)
         results_df['aMod_CP'] = results_df['aMod_CP'].astype(int)
@@ -247,12 +246,10 @@ def cpd_main(cf):
         # QC the results
         #if i==1: logger.info(' Doing within-sample QC...')
         results_df = QC1(results_df)
-        #print 'Done!'
 
         # Output results and plots (if user has set output flags in config file to true)
         if bootstrap_flag == False:
             #if 'results_output_path' in d.keys():
-                #print 'Outputting results for all years / seasons / T classes in observational dataset'
                 #results_df.to_csv(os.path.join(d['results_output_path'],'Observational_ustar_threshold_statistics.csv'))
             if 'plot_path' in d.keys() and d["plot_tclass"]:
                 logger.info('Doing plotting for observational data')
@@ -300,7 +297,6 @@ def cpd_main(cf):
     # QC the combined results
     logger.info(' Doing cross-sample QC...')
     output_stats_df = QC2(all_results_df, counts_df, d['num_bootstraps'])
-    #print 'Done!'
 
     # Calculate final values
     logger.info(' Calculating final results')
@@ -330,13 +326,11 @@ def cpd_main(cf):
 
     # Output final stats if requested by user
     #if 'results_output_path' in d.keys():
-        #print 'Outputting final results'
         #output_stats_df.to_csv(os.path.join(d['results_output_path'], 'annual_statistics.csv'))
     xlsheet = "Annual"
     output_stats_df.to_excel(xlwriter,sheet_name=xlsheet)
     xlwriter.save()
     # close any open plot windows if we are doing batch processing
-    #print d["call_mode"]
     if d["call_mode"]!="interactive": plt.close('all')
 
     logger.info(' CPD analysis complete!')
