@@ -13,6 +13,7 @@ import matplotlib.dates as mdt
 import matplotlib.pyplot as plt
 import numpy
 import pylab
+from PyQt4 import QtGui
 # PFP modules
 import constants as c
 import pfp_ck
@@ -23,7 +24,7 @@ import pfp_utils
 logger = logging.getLogger("pfp_log")
 
 # functions for GapFillUsingSOLO
-def GapFillUsingSOLO(cf, dsa, dsb):
+def GapFillUsingSOLO(main_gui, cf, dsa, dsb):
     '''
     This is the "Run SOLO" GUI.
     The SOLO GUI is displayed separately from the main OzFluxQC GUI.
@@ -54,7 +55,7 @@ def GapFillUsingSOLO(cf, dsa, dsb):
         # put up a plot of the data coverage at L4
         gfSOLO_plotcoveragelines(dsb, solo_info)
         # call the GapFillUsingSOLO GUI
-        gfSOLO_gui(dsa, dsb, solo_info)
+        gfSOLO_gui(main_gui, dsa, dsb, solo_info)
     else:
         if "GUI" in cf:
             if "SOLO" in cf["GUI"]:
@@ -62,122 +63,134 @@ def GapFillUsingSOLO(cf, dsa, dsb):
             else:
                 logger.warning(" No GUI sub-section found in Options section of control file")
                 gfSOLO_plotcoveragelines(dsb, solo_info)
-                gfSOLO_gui(dsa, dsb, solo_info)
+                gfSOLO_gui(main_gui, dsa, dsb, solo_info)
         else:
             logger.warning(" No GUI sub-section found in Options section of control file")
             gfSOLO_plotcoveragelines(dsb, solo_info)
-            gfSOLO_gui(dsa, dsb, solo_info)
+            gfSOLO_gui(main_gui, dsa, dsb, solo_info)
 
-def  gfSOLO_gui(dsa, dsb, solo_info):
-    ldt = dsb.series["DateTime"]["Data"]
-    # set up the GUI
-    solo_gui = Tkinter.Toplevel()
-    solo_gui.wm_title("SOLO GUI (Fluxes)")
-    solo_gui.grid()
-    # top row
-    nrow = 0
-    solo_gui.nodesLabel = Tkinter.Label(solo_gui,text="Nodes")
-    solo_gui.nodesLabel.grid(row=nrow,column=0,columnspan=1,sticky="E")
-    solo_gui.nodesEntry = Tkinter.Entry(solo_gui,width=6)
-    solo_gui.nodesEntry.grid(row=nrow,column=1,columnspan=1,sticky="W")
-    solo_gui.nodesEntry.insert(0,"Auto")
-    solo_gui.trainingLabel = Tkinter.Label(solo_gui,text="Training")
-    solo_gui.trainingLabel.grid(row=nrow,column=2,columnspan=1,sticky="E")
-    solo_gui.trainingEntry = Tkinter.Entry(solo_gui,width=6)
-    solo_gui.trainingEntry.grid(row=nrow,column=3,columnspan=1,sticky="W")
-    solo_gui.trainingEntry.insert(0,"500")
-    solo_gui.factorLabel = Tkinter.Label(solo_gui,text="Nda factor")
-    solo_gui.factorLabel.grid(row=nrow,column=4,columnspan=1,sticky="E")
-    solo_gui.factorEntry = Tkinter.Entry(solo_gui,width=6)
-    solo_gui.factorEntry.grid(row=nrow,column=5,columnspan=1,sticky="W")
-    solo_gui.factorEntry.insert(0,"5")
-    # second row
-    nrow = nrow + 1
-    solo_gui.learningrateLabel = Tkinter.Label(solo_gui,text="Learning")
-    solo_gui.learningrateLabel.grid(row=nrow,column=2,columnspan=1,sticky="E")
-    solo_gui.learningrateEntry = Tkinter.Entry(solo_gui,width=6)
-    solo_gui.learningrateEntry.grid(row=nrow,column=3,columnspan=1,sticky="W")
-    solo_gui.learningrateEntry.insert(0,"0.001")
-    solo_gui.iterationsLabel = Tkinter.Label(solo_gui,text="Iterations")
-    solo_gui.iterationsLabel.grid(row=nrow,column=4,columnspan=1,sticky="E")
-    solo_gui.iterationsEntry = Tkinter.Entry(solo_gui,width=6)
-    solo_gui.iterationsEntry.grid(row=nrow,column=5,columnspan=1,sticky="W")
-    solo_gui.iterationsEntry.insert(0,"500")
-    # third row
-    nrow = nrow + 1
-    solo_gui.filestartLabel = Tkinter.Label(solo_gui,text="File start date")
-    solo_gui.filestartLabel.grid(row=nrow,column=0,columnspan=3)
-    solo_gui.fileendLabel = Tkinter.Label(solo_gui,text="File end date")
-    solo_gui.fileendLabel.grid(row=nrow,column=3,columnspan=3)
-    # fourth row
-    nrow = nrow + 1
-    solo_gui.filestartValue = Tkinter.Label(solo_gui,text=str(ldt[0]))
-    solo_gui.filestartValue.grid(row=nrow,column=0,columnspan=3)
-    solo_gui.fileendValue = Tkinter.Label(solo_gui,text=str(ldt[-1]))
-    solo_gui.fileendValue.grid(row=nrow,column=3,columnspan=3)
-    # fifth row
-    nrow = nrow + 1
-    solo_gui.startLabel = Tkinter.Label(solo_gui, text="Start date (YYYY-MM-DD)")
-    solo_gui.startLabel.grid(row=nrow,column=0,columnspan=3)
-    solo_gui.startEntry = Tkinter.Entry(solo_gui)
-    solo_gui.startEntry.grid(row=nrow,column=3,columnspan=3)
-    # sixth row
-    nrow = nrow + 1
-    solo_gui.endLabel = Tkinter.Label(solo_gui, text="End date   (YYYY-MM-DD)")
-    solo_gui.endLabel.grid(row=nrow,column=0,columnspan=3)
-    solo_gui.endEntry = Tkinter.Entry(solo_gui)
-    solo_gui.endEntry.grid(row=nrow,column=3,columnspan=3)
-    # seventh row
-    nrow = nrow + 1
-    solo_gui.peropt = Tkinter.IntVar()
-    solo_gui.peropt.set(2)
-    solo_gui.manualperiod = Tkinter.Radiobutton(solo_gui,text="Manual",variable=solo_gui.peropt,value=1)
-    solo_gui.manualperiod.grid(row=nrow,column=0,columnspan=1,sticky="W")
-    #solo_gui.manualperiod = Tkinter.Radiobutton(solo_gui,text="Auto",variable=solo_gui.peropt,value=4)
-    #solo_gui.manualperiod.grid(row=nrow,column=1,columnspan=1,sticky="W")
-    solo_gui.minptsLabel = Tkinter.Label(solo_gui,text="Min. pts (%)")
-    solo_gui.minptsLabel.grid(row=nrow,column=3,columnspan=1,sticky="E")
-    solo_gui.minptsEntry = Tkinter.Entry(solo_gui,width=5)
-    solo_gui.minptsEntry.grid(row=nrow,column=4,columnspan=1,sticky="W")
-    solo_gui.minptsEntry.insert(0,"25")
-    # eigth row
-    nrow = nrow + 1
-    solo_gui.automonthly = Tkinter.Radiobutton(solo_gui,text="Monthly",variable=solo_gui.peropt,value=2)
-    solo_gui.automonthly.grid(row=nrow,column=0,columnspan=1,sticky="W")
-    solo_gui.daysLabel = Tkinter.Radiobutton(solo_gui,text="Days",variable=solo_gui.peropt,value=3)
-    solo_gui.daysLabel.grid(row=nrow,column=1,columnspan=1,sticky="W")
-    solo_gui.daysEntry = Tkinter.Entry(solo_gui,width=3)
-    solo_gui.daysEntry.grid(row=nrow,column=2,columnspan=1,sticky="W")
-    solo_gui.daysEntry.insert(0,"90")
-    solo_gui.autocompleteopt = Tkinter.IntVar()
-    solo_gui.autocompleteopt.set(1)
-    solo_gui.autocomplete = Tkinter.Checkbutton(solo_gui, text="Auto complete", variable=solo_gui.autocompleteopt)
-    solo_gui.autocomplete.grid(row=nrow,column=3,columnspan=3,sticky="w")
-    # ninth row
-    nrow = nrow + 1
-    solo_gui.pltopt = Tkinter.IntVar()
-    solo_gui.pltopt.set(1)
-    solo_gui.showplots = Tkinter.Checkbutton(solo_gui, text="Show plots", variable=solo_gui.pltopt)
-    solo_gui.showplots.grid(row=nrow,column=0,columnspan=3,sticky="w")
-    solo_gui.owopt = Tkinter.IntVar()
-    solo_gui.owopt.set(0)
-    solo_gui.overwrite = Tkinter.Checkbutton(solo_gui, text="Overwrite", variable=solo_gui.owopt)
-    solo_gui.overwrite.grid(row=nrow,column=3,columnspan=3,sticky="w")
-    # tenth row
-    nrow = nrow + 1
-    solo_gui.doneButton = Tkinter.Button (solo_gui, text="Done",command=lambda:gfSOLO_done(dsb,solo_gui,solo_info))
-    solo_gui.doneButton.grid(row=nrow,column=0,columnspan=2)
-    solo_gui.runButton = Tkinter.Button (solo_gui, text="Run",command=lambda:gfSOLO_run_gui(dsa,dsb,solo_gui,solo_info))
-    solo_gui.runButton.grid(row=nrow,column=2,columnspan=2)
-    solo_gui.quitButton = Tkinter.Button (solo_gui, text="Quit",command=lambda:gfSOLO_quit(dsb,solo_gui))
-    solo_gui.quitButton.grid(row=nrow,column=4,columnspan=2)
-    # eleventh row
-    nrow = nrow + 1
-    solo_gui.progress_row = nrow
-    solo_gui.progress = Tkinter.Label(solo_gui, text='Waiting for input ...')
-    solo_gui.progress.grid(row=nrow,column=0,columnspan=6,sticky="W")
+def  gfSOLO_gui(main_gui, dsa, dsb, solo_info):
+    """ Display the SOLO GUI and wait for the user to finish."""
+    # put up the start and end dates
+    start_date = dsb.series["DateTime"]["Data"][0].strftime("%Y-%m-%d %H:%M")
+    end_date = dsb.series["DateTime"]["Data"][-1].strftime("%Y-%m-%d %H:%M")
+    main_gui.l5_ui.label_DataStartDate_value.setText(start_date)
+    main_gui.l5_ui.label_DataEndDate_value.setText(end_date)
+    main_gui.l5_ui.RunButton.clicked.connect(lambda:gfSOLO_run_gui(dsa, dsb, main_gui.l5_ui, solo_info))
+    main_gui.l5_ui.DoneButton.clicked.connect(lambda:gfSOLO_done(dsb, main_gui.l5_ui))
+    main_gui.l5_ui.QuitButton.clicked.connect(lambda:gfSOLO_quit(dsb, main_gui.l5_ui))
+    main_gui.l5_ui.show()
+    main_gui.l5_ui.exec_()
 
-    solo_gui.wait_window(solo_gui)
+    #ldt = dsb.series["DateTime"]["Data"]
+    ## set up the GUI
+    #solo_gui = Tkinter.Toplevel()
+    #solo_gui.wm_title("SOLO GUI (Fluxes)")
+    #solo_gui.grid()
+    ## top row
+    #nrow = 0
+    #solo_gui.nodesLabel = Tkinter.Label(solo_gui,text="Nodes")
+    #solo_gui.nodesLabel.grid(row=nrow,column=0,columnspan=1,sticky="E")
+    #solo_gui.nodesEntry = Tkinter.Entry(solo_gui,width=6)
+    #solo_gui.nodesEntry.grid(row=nrow,column=1,columnspan=1,sticky="W")
+    #solo_gui.nodesEntry.insert(0,"Auto")
+    #solo_gui.trainingLabel = Tkinter.Label(solo_gui,text="Training")
+    #solo_gui.trainingLabel.grid(row=nrow,column=2,columnspan=1,sticky="E")
+    #solo_gui.trainingEntry = Tkinter.Entry(solo_gui,width=6)
+    #solo_gui.trainingEntry.grid(row=nrow,column=3,columnspan=1,sticky="W")
+    #solo_gui.trainingEntry.insert(0,"500")
+    #solo_gui.factorLabel = Tkinter.Label(solo_gui,text="Nda factor")
+    #solo_gui.factorLabel.grid(row=nrow,column=4,columnspan=1,sticky="E")
+    #solo_gui.factorEntry = Tkinter.Entry(solo_gui,width=6)
+    #solo_gui.factorEntry.grid(row=nrow,column=5,columnspan=1,sticky="W")
+    #solo_gui.factorEntry.insert(0,"5")
+    ## second row
+    #nrow = nrow + 1
+    #solo_gui.learningrateLabel = Tkinter.Label(solo_gui,text="Learning")
+    #solo_gui.learningrateLabel.grid(row=nrow,column=2,columnspan=1,sticky="E")
+    #solo_gui.learningrateEntry = Tkinter.Entry(solo_gui,width=6)
+    #solo_gui.learningrateEntry.grid(row=nrow,column=3,columnspan=1,sticky="W")
+    #solo_gui.learningrateEntry.insert(0,"0.001")
+    #solo_gui.iterationsLabel = Tkinter.Label(solo_gui,text="Iterations")
+    #solo_gui.iterationsLabel.grid(row=nrow,column=4,columnspan=1,sticky="E")
+    #solo_gui.iterationsEntry = Tkinter.Entry(solo_gui,width=6)
+    #solo_gui.iterationsEntry.grid(row=nrow,column=5,columnspan=1,sticky="W")
+    #solo_gui.iterationsEntry.insert(0,"500")
+    ## third row
+    #nrow = nrow + 1
+    #solo_gui.filestartLabel = Tkinter.Label(solo_gui,text="File start date")
+    #solo_gui.filestartLabel.grid(row=nrow,column=0,columnspan=3)
+    #solo_gui.fileendLabel = Tkinter.Label(solo_gui,text="File end date")
+    #solo_gui.fileendLabel.grid(row=nrow,column=3,columnspan=3)
+    ## fourth row
+    #nrow = nrow + 1
+    #solo_gui.filestartValue = Tkinter.Label(solo_gui,text=str(ldt[0]))
+    #solo_gui.filestartValue.grid(row=nrow,column=0,columnspan=3)
+    #solo_gui.fileendValue = Tkinter.Label(solo_gui,text=str(ldt[-1]))
+    #solo_gui.fileendValue.grid(row=nrow,column=3,columnspan=3)
+    ## fifth row
+    #nrow = nrow + 1
+    #solo_gui.startLabel = Tkinter.Label(solo_gui, text="Start date (YYYY-MM-DD)")
+    #solo_gui.startLabel.grid(row=nrow,column=0,columnspan=3)
+    #solo_gui.startEntry = Tkinter.Entry(solo_gui)
+    #solo_gui.startEntry.grid(row=nrow,column=3,columnspan=3)
+    ## sixth row
+    #nrow = nrow + 1
+    #solo_gui.endLabel = Tkinter.Label(solo_gui, text="End date   (YYYY-MM-DD)")
+    #solo_gui.endLabel.grid(row=nrow,column=0,columnspan=3)
+    #solo_gui.endEntry = Tkinter.Entry(solo_gui)
+    #solo_gui.endEntry.grid(row=nrow,column=3,columnspan=3)
+    ## seventh row
+    #nrow = nrow + 1
+    #solo_gui.peropt = Tkinter.IntVar()
+    #solo_gui.peropt.set(2)
+    #solo_gui.manualperiod = Tkinter.Radiobutton(solo_gui,text="Manual",variable=solo_gui.peropt,value=1)
+    #solo_gui.manualperiod.grid(row=nrow,column=0,columnspan=1,sticky="W")
+    ##solo_gui.manualperiod = Tkinter.Radiobutton(solo_gui,text="Auto",variable=solo_gui.peropt,value=4)
+    ##solo_gui.manualperiod.grid(row=nrow,column=1,columnspan=1,sticky="W")
+    #solo_gui.minptsLabel = Tkinter.Label(solo_gui,text="Min. pts (%)")
+    #solo_gui.minptsLabel.grid(row=nrow,column=3,columnspan=1,sticky="E")
+    #solo_gui.minptsEntry = Tkinter.Entry(solo_gui,width=5)
+    #solo_gui.minptsEntry.grid(row=nrow,column=4,columnspan=1,sticky="W")
+    #solo_gui.minptsEntry.insert(0,"25")
+    ## eigth row
+    #nrow = nrow + 1
+    #solo_gui.automonthly = Tkinter.Radiobutton(solo_gui,text="Monthly",variable=solo_gui.peropt,value=2)
+    #solo_gui.automonthly.grid(row=nrow,column=0,columnspan=1,sticky="W")
+    #solo_gui.daysLabel = Tkinter.Radiobutton(solo_gui,text="Days",variable=solo_gui.peropt,value=3)
+    #solo_gui.daysLabel.grid(row=nrow,column=1,columnspan=1,sticky="W")
+    #solo_gui.daysEntry = Tkinter.Entry(solo_gui,width=3)
+    #solo_gui.daysEntry.grid(row=nrow,column=2,columnspan=1,sticky="W")
+    #solo_gui.daysEntry.insert(0,"90")
+    #solo_gui.autocompleteopt = Tkinter.IntVar()
+    #solo_gui.autocompleteopt.set(1)
+    #solo_gui.autocomplete = Tkinter.Checkbutton(solo_gui, text="Auto complete", variable=solo_gui.autocompleteopt)
+    #solo_gui.autocomplete.grid(row=nrow,column=3,columnspan=3,sticky="w")
+    ## ninth row
+    #nrow = nrow + 1
+    #solo_gui.pltopt = Tkinter.IntVar()
+    #solo_gui.pltopt.set(1)
+    #solo_gui.showplots = Tkinter.Checkbutton(solo_gui, text="Show plots", variable=solo_gui.pltopt)
+    #solo_gui.showplots.grid(row=nrow,column=0,columnspan=3,sticky="w")
+    #solo_gui.owopt = Tkinter.IntVar()
+    #solo_gui.owopt.set(0)
+    #solo_gui.overwrite = Tkinter.Checkbutton(solo_gui, text="Overwrite", variable=solo_gui.owopt)
+    #solo_gui.overwrite.grid(row=nrow,column=3,columnspan=3,sticky="w")
+    ## tenth row
+    #nrow = nrow + 1
+    #solo_gui.doneButton = Tkinter.Button (solo_gui, text="Done",command=lambda:gfSOLO_done(dsb,solo_gui,solo_info))
+    #solo_gui.doneButton.grid(row=nrow,column=0,columnspan=2)
+    #solo_gui.runButton = Tkinter.Button (solo_gui, text="Run",command=lambda:gfSOLO_run_gui(dsa,dsb,solo_gui,solo_info))
+    #solo_gui.runButton.grid(row=nrow,column=2,columnspan=2)
+    #solo_gui.quitButton = Tkinter.Button (solo_gui, text="Quit",command=lambda:gfSOLO_quit(dsb,solo_gui))
+    #solo_gui.quitButton.grid(row=nrow,column=4,columnspan=2)
+    ## eleventh row
+    #nrow = nrow + 1
+    #solo_gui.progress_row = nrow
+    #solo_gui.progress = Tkinter.Label(solo_gui, text='Waiting for input ...')
+    #solo_gui.progress.grid(row=nrow,column=0,columnspan=6,sticky="W")
+
+    #solo_gui.wait_window(solo_gui)
 
 def gfSOLO_autocomplete(dsa, dsb, solo_info):
     if not solo_info["auto_complete"]: return
@@ -215,15 +228,15 @@ def gfSOLO_autocomplete(dsa, dsb, solo_info):
             gfSOLO_main(dsa, dsb, solo_info, output_list=[output])
             gfSOLO_plotcoveragelines(dsb, solo_info)
 
-def gfSOLO_done(ds,solo_gui,solo_info):
+def gfSOLO_done(ds, solo_gui, solo_info):
     # plot the summary statistics if gap filling was done manually
-    if solo_gui.peropt.get()==1:
+    if solo_gui.peropt.get() == 1:
         # write Excel spreadsheet with fit statistics
         pfp_io.xl_write_SOLOStats(ds)
         # plot the summary statistics
-        gfSOLO_plotsummary(ds,solo_info)
+        gfSOLO_plotsummary(ds, solo_info)
     # destroy the SOLO GUI
-    solo_gui.destroy()
+    solo_gui.close()
     # remove the solo dictionary from the data structure
     ds.returncodes["solo"] = "normal"
 
@@ -665,9 +678,9 @@ def gfSOLO_progress(solo_gui,text):
     solo_gui.progress.grid(row=solo_gui.progress_row,column=0,columnspan=6,sticky="W")
     solo_gui.update()
 
-def gfSOLO_quit(ds,solo_gui):
+def gfSOLO_quit(ds, solo_gui):
     # destroy the GUI
-    solo_gui.destroy()
+    solo_gui.close()
     # put the return code in ds.returncodes
     ds.returncodes["solo"] = "quit"
 
@@ -675,21 +688,32 @@ def gfSOLO_resetnodesEntry(solo_gui):
     solo_gui.nodesEntry.delete(0,Tkinter.END)
     solo_gui.nodesEntry.insert(0,"Auto")
 
-def gfSOLO_run_gui(dsa,dsb,solo_gui,solo_info):
+def gfSOLO_run_gui(dsa, dsb, solo_gui, solo_info):
+    # As of 2018/07/25, two calls to QApplication.processEvents() seem to
+    # be necessary to prevent this function (gfSOLO_run_gui) from being
+    # fired twice.
+    QtGui.QApplication.processEvents()
+    QtGui.QApplication.processEvents()
     # populate the solo_info dictionary with things that will be useful
-    solo_info["peropt"] = solo_gui.peropt.get()
-    solo_info["overwrite"] = True
-    if solo_gui.owopt.get()==0: solo_info["overwrite"] = False
-    solo_info["show_plots"] = True
-    if solo_gui.pltopt.get()==0: solo_info["show_plots"] = False
-    solo_info["auto_complete"] = True
-    if solo_gui.autocompleteopt.get()==0: solo_info["auto_complete"] = False
-    solo_info["min_percent"] = int(solo_gui.minptsEntry.get())
-    solo_info["nodes"] = str(solo_gui.nodesEntry.get())
-    solo_info["training"] = str(solo_gui.trainingEntry.get())
-    solo_info["factor"] = str(solo_gui.factorEntry.get())
-    solo_info["learningrate"] = str(solo_gui.learningrateEntry.get())
-    solo_info["iterations"] = str(solo_gui.iterationsEntry.get())
+    if str(solo_gui.radioButtons.checkedButton().text()) == "Manual":
+        solo_info["peropt"] = 1
+    elif str(solo_gui.radioButtons.checkedButton().text()) == "Months":
+        solo_info["peropt"] = 2
+    elif str(solo_gui.radioButtons.checkedButton().text()) == "Days":
+        solo_info["peropt"] = 3
+
+    solo_info["overwrite"] = solo_gui.checkBox_Overwrite.isChecked()
+    solo_info["show_plots"] = solo_gui.checkBox_ShowPlots.isChecked()
+    solo_info["show_all"] = solo_gui.checkBox_PlotAll.isChecked()
+    solo_info["auto_complete"] = solo_gui.checkBox_AutoComplete.isChecked()
+    solo_info["min_percent"] = max(int(str(solo_gui.lineEdit_MinPercent.text())), 1)
+
+    solo_info["nodes"] = str(solo_gui.lineEdit_Nodes.text())
+    solo_info["training"] = str(solo_gui.lineEdit_Training.text())
+    solo_info["factor"] = str(solo_gui.label_NdaFactor.text())
+    solo_info["learningrate"] = str(solo_gui.lineEdit_Learning.text())
+    solo_info["iterations"] = str(solo_gui.lineEdit_Iterations.text())
+
     solo_info["site_name"] = dsb.globalattributes["site_name"]
     solo_info["time_step"] = int(dsb.globalattributes["time_step"])
     solo_info["nperhr"] = int(float(60)/solo_info["time_step"]+0.5)
@@ -700,74 +724,85 @@ def gfSOLO_run_gui(dsa,dsb,solo_gui,solo_info):
     solo_info["alternate"] = {}
     series_list = [dsb.solo[item]["label_tower"] for item in dsb.solo.keys()]
     logger.info(" Gap filling "+str(series_list)+" using SOLO")
-    if solo_gui.peropt.get()==1:
-        gfSOLO_progress(solo_gui,"Starting manual run ...")
+    if solo_info["peropt"] == 1:
+        #gfSOLO_progress(solo_gui,"Starting manual run ...")
+        logger.info("Starting manual run ...")
         # get the start and end datetimes entered in the SOLO GUI
-        if len(solo_gui.startEntry.get())!=0: solo_info["startdate"] = solo_gui.startEntry.get()
-        if len(solo_gui.endEntry.get())!=0: solo_info["enddate"] = solo_gui.endEntry.get()
-        gfSOLO_main(dsa,dsb,solo_info)
-        gfSOLO_plotcoveragelines(dsb,solo_info)
-        gfSOLO_progress(solo_gui,"Finished manual run ...")
-        logger.info(" GapFillUsingSOLO: Finished manual run ...")
-    elif solo_gui.peropt.get()==2:
-        gfSOLO_progress(solo_gui,"Starting auto (monthly) run ...")
+        if len(str(solo_gui.lineEdit_StartDate.text())) != 0:
+            solo_info["startdate"] = str(solo_gui.lineEdit_StartDate.text())
+        if len(str(solo_gui.lineEdit_EndDate.text())) != 0:
+            solo_info["enddate"] = str(solo_gui.endEntry.text())
+        gfSOLO_main(dsa, dsb, solo_info)
+        gfSOLO_plotcoveragelines(dsb, solo_info)
+        #gfSOLO_progress(solo_gui,"Finished manual run ...")
+        logger.info("Finished manual run")
+    elif solo_info["peropt"] == 2:
+        logger.info("Starting auto (months) run ...")
+        #gfSOLO_progress(solo_gui,"Starting auto (monthly) run ...")
         # get the start datetime entered in the SOLO GUI
-        if len(solo_gui.startEntry.get())!=0: solo_info["startdate"] = solo_gui.startEntry.get()
+        nMonths = int(solo_gui.lineEdit_NumberMonths.text())
+        if len(str(solo_gui.lineEdit_StartDate.text())) != 0:
+            solo_info["startdate"] = str(solo_gui.lineEdit_StartDate.text())
+        if len(str(solo_gui.lineEdit_EndDate.text())) != 0:
+            solo_info["enddate"] = str(solo_gui.lineEdit_EndDate.text())
         startdate = dateutil.parser.parse(solo_info["startdate"])
         file_startdate = dateutil.parser.parse(solo_info["file_startdate"])
         file_enddate = dateutil.parser.parse(solo_info["file_enddate"])
-        enddate = startdate+dateutil.relativedelta.relativedelta(months=1)
-        enddate = min([file_enddate,enddate])
-        solo_info["enddate"] = datetime.datetime.strftime(enddate,"%Y-%m-%d %H:%M")
-        while startdate<file_enddate:
-            gfSOLO_main(dsa,dsb,solo_info)
-            gfSOLO_plotcoveragelines(dsb,solo_info)
+        enddate = startdate+dateutil.relativedelta.relativedelta(months=nMonths)
+        enddate = min([file_enddate, enddate])
+        solo_info["enddate"] = datetime.datetime.strftime(enddate, "%Y-%m-%d %H:%M")
+        while startdate < file_enddate:
+            gfSOLO_main(dsa, dsb, solo_info)
+            gfSOLO_plotcoveragelines(dsb, solo_info)
             startdate = enddate
-            enddate = startdate+dateutil.relativedelta.relativedelta(months=1)
+            enddate = startdate+dateutil.relativedelta.relativedelta(months=nMonths)
             solo_info["startdate"] = startdate.strftime("%Y-%m-%d %H:%M")
             solo_info["enddate"] = enddate.strftime("%Y-%m-%d %H:%M")
         # now fill any remaining gaps
-        gfSOLO_autocomplete(dsa,dsb,solo_info)
+        gfSOLO_autocomplete(dsa, dsb, solo_info)
         # write Excel spreadsheet with fit statistics
         pfp_io.xl_write_SOLOStats(dsb)
         # plot the summary statistics
         gfSOLO_plotsummary(dsb,solo_info)
-        gfSOLO_progress(solo_gui,"Finished auto (monthly) run ...")
-        logger.info(" GapFillUsingSOLO: Finished auto (monthly) run ...")
-    elif solo_gui.peropt.get()==3:
-        gfSOLO_progress(solo_gui,"Starting auto (days) run ...")
+        #gfSOLO_progress(solo_gui,"Finished auto (monthly) run ...")
+        logger.info(" Finished auto (months) run ...")
+    elif solo_info["peropt"] == 3:
+        logger.info("Starting auto (days) run ...")
+        #gfSOLO_progress(solo_gui,"Starting auto (days) run ...")
         # get the start datetime entered in the SOLO GUI
-        if len(solo_gui.startEntry.get())!=0: solo_info["startdate"] = solo_gui.startEntry.get()  # if you read the GUIs startdate
-        if len(solo_gui.endEntry.get())!=0: solo_info["enddate"] = solo_gui.endEntry.get()        # you need to include end date too
+        nDays = int(alt_gui.lineEdit_NumberDays.text())
+        if len(str(solo_gui.lineEdit_StartDate.text())) != 0:
+            solo_info["startdate"] = str(solo_gui.lineEdit_StartDate.text())
+        if len(solo_gui.lineEdit_EndDate.text()) != 0:
+            solo_info["enddate"] = str(solo_gui.lineEdit_EndDate.text())
         solo_info["gui_startdate"] = solo_info["startdate"]
         solo_info["gui_enddate"] = solo_info["enddate"]
         startdate = dateutil.parser.parse(solo_info["startdate"])
         gui_enddate = dateutil.parser.parse(solo_info["gui_enddate"])
         file_startdate = dateutil.parser.parse(solo_info["file_startdate"])
         file_enddate = dateutil.parser.parse(solo_info["file_enddate"])
-        nDays = int(solo_gui.daysEntry.get())
         enddate = startdate+dateutil.relativedelta.relativedelta(days=nDays)
-        enddate = min([file_enddate,enddate,gui_enddate])
-        solo_info["enddate"] = datetime.datetime.strftime(enddate,"%Y-%m-%d %H:%M")
-        solo_info["startdate"] = datetime.datetime.strftime(startdate,"%Y-%m-%d %H:%M")
-        stopdate = min([file_enddate,gui_enddate])
-        while startdate<stopdate: #file_enddate:
-            gfSOLO_main(dsa,dsb,solo_info)
-            gfSOLO_plotcoveragelines(dsb,solo_info)
+        enddate = min([file_enddate, enddate, gui_enddate])
+        solo_info["enddate"] = datetime.datetime.strftime(enddate, "%Y-%m-%d %H:%M")
+        solo_info["startdate"] = datetime.datetime.strftime(startdate, "%Y-%m-%d %H:%M")
+        stopdate = min([file_enddate, gui_enddate])
+        while startdate < stopdate:
+            gfSOLO_main(dsa, dsb, solo_info)
+            gfSOLO_plotcoveragelines(dsb, solo_info)
             startdate = enddate
             enddate = startdate+dateutil.relativedelta.relativedelta(days=nDays)
-            run_enddate = min([stopdate,enddate])
+            run_enddate = min([stopdate, enddate])
             solo_info["startdate"] = startdate.strftime("%Y-%m-%d %H:%M")
             solo_info["enddate"] = run_enddate.strftime("%Y-%m-%d %H:%M")
         # now fill any remaining gaps
-        gfSOLO_autocomplete(dsa,dsb,solo_info)
+        gfSOLO_autocomplete(dsa, dsb, solo_info)
         # write Excel spreadsheet with fit statistics
         pfp_io.xl_write_SOLOStats(dsb)
         # plot the summary statistics
-        gfSOLO_plotsummary(dsb,solo_info)
-        gfSOLO_progress(solo_gui,"Finished auto (days) run ...")
-        logger.info(" GapFillUsingSOLO: Finished auto (days) run ...")
-    elif solo_gui.peropt.get()==4:
+        gfSOLO_plotsummary(dsb, solo_info)
+        #gfSOLO_progress(solo_gui,"Finished auto (days) run ...")
+        logger.info(" Finished auto (days) run ...")
+    elif solo_info["peropt"] == 4:
         pass
 
 def gfSOLO_run_nogui(cf,dsa,dsb,solo_info):
