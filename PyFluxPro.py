@@ -14,6 +14,26 @@ from PyQt4 import QtCore, QtGui
 sys.path.append('scripts')
 import pfp_top_level
 import pfp_gui
+# now check the logfiles and plots directories are present
+dir_list = ["./logfiles/", "./plots/"]
+for item in dir_list:
+    if not os.path.exists(item):
+        os.makedirs(item)
+# now check the solo/inf, solo/input, solo/log and solo/output directories are present
+dir_list = ["./solo/inf", "./solo/input", "./solo/log", "./solo/output"]
+for item in dir_list:
+    if not os.path.exists(item):
+        os.makedirs(item)
+# next we make sure the MPT directories are present ...
+dir_list = ["./mpt/input", "./mpt/log", "./mpt/output"]
+for item in dir_list:
+    if not os.path.exists(item):
+        os.makedirs(item)
+# ... and make sure the MDS directories are present
+dir_list = ["./mds/input", "./mds/log", "./mds/output"]
+for item in dir_list:
+    if not os.path.exists(item):
+        os.makedirs(item)
 
 logger = logging.getLogger("pfp_log")
 logfmt = logging.Formatter('%(asctime)s %(levelname)s %(message)s','%H:%M:%S')
@@ -246,6 +266,8 @@ class pfp_main_ui(QtGui.QWidget, QPlainTextEditLogger):
         self.actionUtilitiesUstarCPD.triggered.connect(lambda:pfp_top_level.do_utilities_ustar_cpd(mode="standard"))
         # add the L4 GUI
         self.l4_ui = pfp_gui.pfp_l4_ui(self)
+        # add the L5 GUI
+        self.l5_ui = pfp_gui.pfp_l5_ui(self)
 
     def open_controlfile(self):
         # get the control file path
@@ -278,7 +300,11 @@ class pfp_main_ui(QtGui.QWidget, QPlainTextEditLogger):
             self.tabs.tab_dict[self.tabs.tab_index_all] = pfp_gui.edit_cfg_L4(self)
             self.tabs.cfg_dict[self.tabs.tab_index_all] = self.tabs.tab_dict[self.tabs.tab_index_all].get_data_from_model()
             self.tabs.cfg_dict[self.tabs.tab_index_all]["controlfile_name"] = cfgpath
-        elif self.cfg["level"] in ["L5", "L6"]:
+        elif self.cfg["level"] in ["L5"]:
+            self.tabs.tab_dict[self.tabs.tab_index_all] = pfp_gui.edit_cfg_L5(self)
+            self.tabs.cfg_dict[self.tabs.tab_index_all] = self.tabs.tab_dict[self.tabs.tab_index_all].get_data_from_model()
+            self.tabs.cfg_dict[self.tabs.tab_index_all]["controlfile_name"] = cfgpath
+        elif self.cfg["level"] in ["L6"]:
             logger.error(" Level "+self.cfg["level"]+" not implemented yet")
         else:
             logger.error(" Unrecognised control file type: "+self.cfg["level"])
@@ -311,111 +337,124 @@ class pfp_main_ui(QtGui.QWidget, QPlainTextEditLogger):
         elif self.check_cfg_L4():
             logger.info(" L4 control file detected")
             self.cfg["level"] = "L4"
+        # check for L5
+        elif self.check_cfg_L5():
+            logger.info(" L5 control file detected")
+            self.cfg["level"] = "L5"
         return self.cfg["level"]
 
     def check_cfg_L1(self):
         """ Return true if a control file is an L1 file."""
         result = False
-        cfg_sections = self.cfg.keys()
-        # remove the common sections
-        common_sections = ["Files", "Global", "Output", "Plots", "General", "Options", "Soil", "Massman", "GUI"]
-        for section in list(self.cfg.keys()):
-            if section in common_sections:
-                cfg_sections.remove(section)
-        # now loop over the remaining sections
-        for section in cfg_sections:
-            subsections = self.cfg[section].keys()
-            for subsection in subsections:
-                if "Attr" in self.cfg[section][subsection].keys():
-                    result = True
-                    break
+        try:
+            cfg_sections = self.cfg.keys()
+            # remove the common sections
+            common_sections = ["Files", "Global", "Output", "Plots", "General", "Options", "Soil", "Massman", "GUI"]
+            for section in list(self.cfg.keys()):
+                if section in common_sections:
+                    cfg_sections.remove(section)
+            # now loop over the remaining sections
+            for section in cfg_sections:
+                subsections = self.cfg[section].keys()
+                for subsection in subsections:
+                    if "Attr" in self.cfg[section][subsection].keys():
+                        result = True
+                        break
+        except:
+            result = False
         return result
 
     def check_cfg_L2(self):
         """ Return true if a control file is an L2 file."""
         result = False
-        got_sections = False
-        cfg_sections = self.cfg.keys()
-        if (("Files" in cfg_sections) and
-            ("Variables" in cfg_sections)):
-            got_sections = True
-        # remove the common sections
-        common_sections = ["Files", "Global", "Output", "Plots", "General", "Options", "Soil",
-                           "Massman", "GUI"]
-        for section in list(self.cfg.keys()):
-            if section in common_sections:
-                cfg_sections.remove(section)
-        # loop over remaining sections
-        got_qc = False
-        qc_list = ["RangeCheck", "DiurnalCheck", "ExcludeDates", "DependencyCheck", "UpperCheck",
-                   "LowerCheck", "ExcludeHours", "Linear", "CorrectWindDirection"]
-        for section in cfg_sections:
-            subsections = self.cfg[section].keys()
-            for subsection in subsections:
-                for qc in qc_list:
-                    if qc in self.cfg[section][subsection].keys():
-                        got_qc = True
-                        break
-        # final check
-        if got_sections and got_qc and not self.check_cfg_L3() and not self.check_cfg_L4():
-            result = True
+        try:
+            got_sections = False
+            cfg_sections = self.cfg.keys()
+            if (("Files" in cfg_sections) and
+                ("Variables" in cfg_sections)):
+                got_sections = True
+            # remove the common sections
+            common_sections = ["Files", "Global", "Output", "Plots", "General", "Options", "Soil",
+                               "Massman", "GUI"]
+            for section in list(self.cfg.keys()):
+                if section in common_sections:
+                    cfg_sections.remove(section)
+            # loop over remaining sections
+            got_qc = False
+            qc_list = ["RangeCheck", "DiurnalCheck", "ExcludeDates", "DependencyCheck", "UpperCheck",
+                       "LowerCheck", "ExcludeHours", "Linear", "CorrectWindDirection"]
+            for section in cfg_sections:
+                subsections = self.cfg[section].keys()
+                for subsection in subsections:
+                    for qc in qc_list:
+                        if qc in self.cfg[section][subsection].keys():
+                            got_qc = True
+                            break
+            # final check
+            if got_sections and got_qc and not self.check_cfg_L3() and not self.check_cfg_L4():
+                result = True
+        except:
+            result = False
         return result
 
     def check_cfg_L3(self):
         """ Return true if a control file is an L3 file."""
         result = False
-        cfg_sections = self.cfg.keys()
-        if (("General" in cfg_sections) or
-            ("Soil" in cfg_sections) or
-            ("Massman" in cfg_sections)):
-            result = True
+        try:
+            cfg_sections = self.cfg.keys()
+            if (("General" in cfg_sections) or
+                ("Soil" in cfg_sections) or
+                ("Massman" in cfg_sections)):
+                result = True
+        except:
+            result = False
         return result
 
     def check_cfg_concatenate(self):
         """ Return true if control file is concatenation."""
         result = False
-        cfg_sections = self.cfg.keys()
-        if "Files" in cfg_sections:
-            if (("Out" in self.cfg["Files"].keys()) and
-                ("In" in self.cfg["Files"].keys())):
-                result = True
+        try:
+            cfg_sections = self.cfg.keys()
+            if "Files" in cfg_sections:
+                if (("Out" in self.cfg["Files"].keys()) and
+                    ("In" in self.cfg["Files"].keys())):
+                    result = True
+        except:
+            result = False
         return result
-
-    #def check_cfg_L4(self):
-        #""" Return true if control file is L4."""
-        #result = False
-        #cfg_sections = self.cfg.keys()
-        ## remove the common sections
-        #common_sections = ["Files", "Global", "Output", "Plots", "General", "Options", "Soil", "Massman", "GUI", "Alternate_Summary"]
-        #for section in cfg_sections:
-            #if section in common_sections:
-                #cfg_sections.remove(section)
-        ## now loop over the remaining sections
-        #for section in cfg_sections:
-            #subsections = self.cfg[section].keys()
-            #for subsection in subsections:
-                #if (("GapFillFromAlternate" in self.cfg[section][subsection].keys()) or
-                    #("GapFillFromClimatology" in self.cfg[section][subsection].keys()) or
-                    #("MergeSeries" in self.cfg[section][subsection].keys())):
-                    #result = True
-                    #break
-        #return result
 
     def check_cfg_L4(self):
         """ Return true if control file is L4."""
         result = False
-        cfg_sections = self.cfg.keys()
-        # remove the common sections
-        common_sections = ["Files", "Global", "Output", "Plots", "General", "Options", "Soil", "Massman", "GUI", "Alternate_Summary"]
-        for section in cfg_sections:
-            if section in ["Variables", "Drivers", "Fluxes"]:
-                subsections = self.cfg[section].keys()
-                for subsection in subsections:
-                    if (("GapFillFromAlternate" in self.cfg[section][subsection].keys()) or
-                        ("GapFillFromClimatology" in self.cfg[section][subsection].keys()) or
-                        ("MergeSeries" in self.cfg[section][subsection].keys())):
-                        result = True
-                        break
+        try:
+            cfg_sections = self.cfg.keys()
+            for section in cfg_sections:
+                if section in ["Variables", "Drivers", "Fluxes"]:
+                    subsections = self.cfg[section].keys()
+                    for subsection in subsections:
+                        if (("GapFillFromAlternate" in self.cfg[section][subsection].keys()) or
+                            ("GapFillFromClimatology" in self.cfg[section][subsection].keys())):
+                            result = True
+                            break
+        except:
+            result = False
+        return result
+
+    def check_cfg_L5(self):
+        """ Return true if control file is L5."""
+        result = False
+        try:
+            cfg_sections = self.cfg.keys()
+            for section in cfg_sections:
+                if section in ["Variables", "Drivers", "Fluxes"]:
+                    subsections = self.cfg[section].keys()
+                    for subsection in subsections:
+                        if (("GapFillUsingSOLO" in self.cfg[section][subsection].keys()) or
+                            ("GapFillUsingMDS" in self.cfg[section][subsection].keys())):
+                            result = True
+                            break
+        except:
+            result = False
         return result
 
     def save_controlfile(self):
@@ -474,6 +513,8 @@ class pfp_main_ui(QtGui.QWidget, QPlainTextEditLogger):
             pfp_top_level.do_file_concatenate(cfg=cfg)
         elif self.tabs.cfg_dict[tab_index_current]["level"] == "L4":
             pfp_top_level.do_run_l4(self, cfg=cfg)
+        elif self.tabs.cfg_dict[tab_index_current]["level"] == "L5":
+            pfp_top_level.do_run_l5(self, cfg=cfg)
         else:
             logger.error("Level not implemented yet ...")
 

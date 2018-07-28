@@ -1,17 +1,16 @@
 level = L5
-controlfile_name = /home/peter/PFP_GUI/controlfiles/templates/L5_and_L6/filter_at_L5/L5.txt
+controlfile_name = /home/peter/PFP_GUI/controlfiles/L5.txt
 [Files]
-    file_path = /home/peter/AmeriFlux/Sites/UICU_Switchgrass/Data/Tower/all/
-    in_filename = Switchgrass_L4.nc
-    out_filename = Switchgrass_L5.nc
+    file_path = /home/peter/AmeriFlux/Sites/UICU_Switchgrass/Data/Tower/
+    in_filename = UICU_Switchgrass_L4.nc
+    out_filename = UICU_Switchgrass_L5.nc
     plot_path = /home/peter/AmeriFlux/Sites/UICU_Switchgrass/Plots/
-    cpd_filename = Switchgrass_L3_CPD.xls
+    cpd_filename = UICU_Switchgrass_L3_CPD.xls
 
 [Output]
     nc = "['Ah','Cc','e','Fa','Fc','Fc_storage','Fe','Fg','Fh','Fld','Flu','Fm','Fn','Fsd','Fsu','Precip','ps','q','RH','Sws','SHD','Ta','Ts','ustar','VPD','Ws','Wd']"
 
 [Options]
-    MaxGapInterpolate = 0
     FilterList = ['Fc']
     TurbulenceFilter = ustar
     DayNightFilter = Fsd
@@ -21,6 +20,7 @@ controlfile_name = /home/peter/PFP_GUI/controlfiles/templates/L5_and_L6/filter_a
     EveningFilterLength = 3
     Fsd_threshold = 10
     sa_threshold = -5
+    MaxGapInterpolate = 3
 
 [ustar_threshold]
     # put a line here for each date period being used (usually one year)
@@ -53,7 +53,7 @@ controlfile_name = /home/peter/PFP_GUI/controlfiles/templates/L5_and_L6/filter_a
         [[[GapFillUsingSOLO]]]
             [[[[Fc_SOLO]]]]
                 drivers = "['Fn','Fg','q','VPD','Ta','Ts']"
-                solo_settings = "[25,500,5,0.001,500]"
+                solo_settings = "[10,500,5,0.001,500]"
         [[[MergeSeries]]]
             Source = "['Fc','Fc_SOLO']"
 

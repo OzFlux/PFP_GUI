@@ -710,7 +710,7 @@ def gfSOLO_run_gui(dsa, dsb, solo_gui, solo_info):
 
     solo_info["nodes"] = str(solo_gui.lineEdit_Nodes.text())
     solo_info["training"] = str(solo_gui.lineEdit_Training.text())
-    solo_info["factor"] = str(solo_gui.label_NdaFactor.text())
+    solo_info["factor"] = str(solo_gui.lineEdit_NdaFactor.text())
     solo_info["learningrate"] = str(solo_gui.lineEdit_Learning.text())
     solo_info["iterations"] = str(solo_gui.lineEdit_Iterations.text())
 
@@ -731,7 +731,7 @@ def gfSOLO_run_gui(dsa, dsb, solo_gui, solo_info):
         if len(str(solo_gui.lineEdit_StartDate.text())) != 0:
             solo_info["startdate"] = str(solo_gui.lineEdit_StartDate.text())
         if len(str(solo_gui.lineEdit_EndDate.text())) != 0:
-            solo_info["enddate"] = str(solo_gui.endEntry.text())
+            solo_info["enddate"] = str(solo_gui.lineEdit_EndDate.text())
         gfSOLO_main(dsa, dsb, solo_info)
         gfSOLO_plotcoveragelines(dsb, solo_info)
         #gfSOLO_progress(solo_gui,"Finished manual run ...")

@@ -3354,10 +3354,22 @@ class edit_cfg_L5(QtGui.QWidget):
             subsection_name = str(indexes[0].parent().parent().data().toString())
             subsubsection_name = str(indexes[0].parent().data().toString())
             subsubsubsection_name = str(indexes[0].data().toString())
+            self.context_menu.actionAddSOLOSettings = QtGui.QAction(self)
+            self.context_menu.actionAddSOLOSettings.setText("Add SOLO settings")
+            self.context_menu.addAction(self.context_menu.actionAddSOLOSettings)
+            self.context_menu.actionAddSOLOSettings.triggered.connect(self.add_solo_settings)
+            self.context_menu.addSeparator()
             self.context_menu.actionRemoveGFMethodVariable = QtGui.QAction(self)
             self.context_menu.actionRemoveGFMethodVariable.setText("Remove variable")
             self.context_menu.addAction(self.context_menu.actionRemoveGFMethodVariable)
             self.context_menu.actionRemoveGFMethodVariable.triggered.connect(self.remove_gf_method_variable)
+        elif level == 4:
+            subsubsubsubsection_name = str(indexes[0].data().toString())
+            if subsubsubsubsection_name in ["solo_settings"]:
+                self.context_menu.actionRemoveSOLOSettings = QtGui.QAction(self)
+                self.context_menu.actionRemoveSOLOSettings.setText("Remove item")
+                self.context_menu.addAction(self.context_menu.actionRemoveSOLOSettings)
+                self.context_menu.actionRemoveSOLOSettings.triggered.connect(self.remove_gf_method_variable_setting)
 
         self.context_menu.exec_(self.tree.viewport().mapToGlobal(position))
 
@@ -3374,6 +3386,27 @@ class edit_cfg_L5(QtGui.QWidget):
         subsection, j = self.get_subsection_from_text(section, subsection_text)
         # add the subsubsection (RangeCheck)
         self.add_subsubsubsection(subsection, dict_to_add)
+        # update the tab text with an asterix if required
+        self.update_tab_text()
+
+    def add_solo_settings(self):
+        """ Add solo_settings to a variable."""
+        idx = self.tree.selectedIndexes()[0]
+        # get the parent and sub section text
+        subsubsubsection_text = str(idx.data().toString())
+        subsubsection_text = str(idx.parent().data().toString())
+        subsection_text = str(idx.parent().parent().data().toString())
+        section_text = str(idx.parent().parent().parent().data().toString())
+        # get the top level and sub sections
+        model = self.tree.model()
+        section, i = self.get_section_from_text(model, section_text)
+        subsection, j = self.get_subsection_from_text(section, subsection_text)
+        subsubsection, k = self.get_subsection_from_text(subsection, subsubsection_text)
+        subsubsubsection, l = self.get_subsection_from_text(subsubsection, subsubsubsection_text)
+        # add the subsubsection
+        child0 = QtGui.QStandardItem("solo_settings")
+        child1 = QtGui.QStandardItem("[5,500,5,0.001,500]")
+        subsubsubsection.appendRow([child0, child1])
         # update the tab text with an asterix if required
         self.update_tab_text()
 
@@ -3808,6 +3841,30 @@ class edit_cfg_L5(QtGui.QWidget):
             # get the variable gap fill method section
             subsubsubsection, l = self.get_subsection_from_text(subsubsection, subsubsubsection_text)
             subsubsection.removeRow(l)
+            self.update_tab_text()
+
+    def remove_gf_method_variable_setting(self):
+        """ Remove a setting for a gap filling method variable."""
+        # loop over selected items in the tree
+        for idx in self.tree.selectedIndexes():
+            # get the parents text
+            subsubsubsubsection_text = str(idx.data().toString())
+            subsubsubsection_text = str(idx.parent().data().toString())
+            subsubsection_text = str(idx.parent().parent().data().toString())
+            subsection_text = str(idx.parent().parent().parent().data().toString())
+            section_text = str(idx.parent().parent().parent().parent().data().toString())
+            # get the [Variables] section
+            model = self.tree.model()
+            section, i = self.get_section_from_text(model, section_text)
+            # get the variable section
+            subsection, j = self.get_subsection_from_text(section, subsection_text)
+            # get the gap filling method section
+            subsubsection, k = self.get_subsection_from_text(subsection, subsubsection_text)
+            # get the variable gap fill method section
+            subsubsubsection, l = self.get_subsection_from_text(subsubsection, subsubsubsection_text)
+            # get the setting for the variable in gap fill method section
+            subsubsubsubsection, m = self.get_subsection_from_text(subsubsubsection, subsubsubsubsection_text)
+            subsubsubsection.removeRow(m)
             self.update_tab_text()
 
     def remove_item_options(self):
