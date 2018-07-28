@@ -1,11 +1,11 @@
 level = L5
 controlfile_name = /home/peter/PFP_GUI/controlfiles/L5.txt
 [Files]
-    file_path = /home/peter/AmeriFlux/Sites/UICU_Switchgrass/Data/Tower/
-    in_filename = UICU_Switchgrass_L4.nc
-    out_filename = UICU_Switchgrass_L5.nc
+    file_path = /home/peter/AmeriFlux/Sites/UICU_Switchgrass/Data/Tower/all/
+    in_filename = Switchgrass_L4.nc
+    out_filename = Switchgrass_L5.nc
     plot_path = /home/peter/AmeriFlux/Sites/UICU_Switchgrass/Plots/
-    cpd_filename = UICU_Switchgrass_L3_CPD.xls
+    cpd_filename = Switchgrass_L3_CPD.xls
 
 [Output]
     nc = "['Ah','Cc','e','Fa','Fc','Fc_storage','Fe','Fg','Fh','Fld','Flu','Fm','Fn','Fsd','Fsu','Precip','ps','q','RH','Sws','SHD','Ta','Ts','ustar','VPD','Ws','Wd']"

@@ -5,6 +5,7 @@ import os
 from PyQt4 import QtCore, QtGui
 # PFP modules
 import pfp_utils
+import pfp_gfSOLO
 
 class edit_cfg_L1(QtGui.QWidget):
     def __init__(self, main_gui):
@@ -4149,3 +4150,8 @@ class pfp_l5_ui(QtGui.QDialog):
         self.QuitButton = QtGui.QPushButton(self)
         self.QuitButton.setGeometry(QtCore.QRect(270, row10_y, button_width, button_height))
         self.QuitButton.setText("Quit")
+        # connect the "Run", "Done" and "Quit" buttons to their slots
+        self.RunButton.clicked.connect(lambda:pfp_gfSOLO.gfSOLO_run_gui(self))
+        self.DoneButton.clicked.connect(lambda:pfp_gfSOLO.gfSOLO_done(self))
+        self.QuitButton.clicked.connect(lambda:pfp_gfSOLO.gfSOLO_quit(self))
+
