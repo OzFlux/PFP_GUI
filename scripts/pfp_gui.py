@@ -3354,11 +3354,12 @@ class edit_cfg_L5(QtGui.QWidget):
             subsection_name = str(indexes[0].parent().parent().data().toString())
             subsubsection_name = str(indexes[0].parent().data().toString())
             subsubsubsection_name = str(indexes[0].data().toString())
-            self.context_menu.actionAddSOLOSettings = QtGui.QAction(self)
-            self.context_menu.actionAddSOLOSettings.setText("Add SOLO settings")
-            self.context_menu.addAction(self.context_menu.actionAddSOLOSettings)
-            self.context_menu.actionAddSOLOSettings.triggered.connect(self.add_solo_settings)
-            self.context_menu.addSeparator()
+            if subsubsection_name == "GapFillUsingSOLO":
+                self.context_menu.actionAddSOLOSettings = QtGui.QAction(self)
+                self.context_menu.actionAddSOLOSettings.setText("Add SOLO settings")
+                self.context_menu.addAction(self.context_menu.actionAddSOLOSettings)
+                self.context_menu.actionAddSOLOSettings.triggered.connect(self.add_solo_settings)
+                self.context_menu.addSeparator()
             self.context_menu.actionRemoveGFMethodVariable = QtGui.QAction(self)
             self.context_menu.actionRemoveGFMethodVariable.setText("Remove variable")
             self.context_menu.addAction(self.context_menu.actionRemoveGFMethodVariable)
@@ -3384,6 +3385,9 @@ class edit_cfg_L5(QtGui.QWidget):
         model = self.tree.model()
         section, i = self.get_section_from_text(model, section_text)
         subsection, j = self.get_subsection_from_text(section, subsection_text)
+        # change to the variable name
+        var_name = subsection_text+"_SOLO"
+        dict_to_add["GapFillUsingSOLO"][var_name] = dict_to_add["GapFillUsingSOLO"].pop("<var>_SOLO")
         # add the subsubsection (RangeCheck)
         self.add_subsubsubsection(subsection, dict_to_add)
         # update the tab text with an asterix if required
@@ -3554,7 +3558,8 @@ class edit_cfg_L5(QtGui.QWidget):
     def add_MDS(self):
         """ Add GapFillUsingMDS to a variable."""
         idx = self.tree.selectedIndexes()[0]
-        dict_to_add = {"GapFillUsingMDS":{"<var>_MDS": {"source": "MDS"}}}
+        dict_to_add = {"GapFillUsingMDS":{"<var>_MDS": {"drivers": "['Fsd','Ta','VPD']",
+                                                        "tolerances":"[(20, 50), 2.5, 0.5]"}}}
         # get the parent and sub section text
         subsection_text = str(idx.data().toString())
         section_text = str(idx.parent().data().toString())
@@ -3562,6 +3567,9 @@ class edit_cfg_L5(QtGui.QWidget):
         model = self.tree.model()
         section, i = self.get_section_from_text(model, section_text)
         subsection, j = self.get_subsection_from_text(section, subsection_text)
+        # change to the variable name
+        var_name = subsection_text+"_MDS"
+        dict_to_add["GapFillUsingMDS"][var_name] = dict_to_add["GapFillUsingMDS"].pop("<var>_MDS")
         # add the subsubsection (MDS)
         self.add_subsubsubsection(subsection, dict_to_add)
         # update the tab text with an asterix if required
