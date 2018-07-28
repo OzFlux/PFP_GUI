@@ -59,7 +59,7 @@ def GapFillFromAlternate(main_gui, cf, ds4, ds_alt):
         # put up a plot of the data coverage at L3
         gfalternate_plotcoveragelines(ds4)
         # call the GapFillFromAlternate GUI
-        gfalternate_gui(main_gui, cf, ds4, ds_alt, alternate_info)
+        gfalternate_gui(main_gui, ds4, ds_alt, alternate_info)
     else:
         if "GUI" in cf:
             if "Alternate" in cf["GUI"]:
@@ -67,13 +67,13 @@ def GapFillFromAlternate(main_gui, cf, ds4, ds_alt):
             else:
                 logger.warning(" No GUI sub-section found in Options section of control file")
                 gfalternate_plotcoveragelines(ds4)
-                gfalternate_gui(main_gui, cf, ds4, ds_alt, alternate_info)
+                gfalternate_gui(main_gui, ds4, ds_alt, alternate_info)
         else:
             logger.warning(" No GUI sub-section found in Options section of control file")
             gfalternate_plotcoveragelines(ds4)
-            gfalternate_gui(main_gui, cf, ds4, ds_alt, alternate_info)
+            gfalternate_gui(main_gui, ds4, ds_alt, alternate_info)
 
-def gfalternate_gui(main_gui, cf, ds4, ds_alt, alternate_info):
+def gfalternate_gui(main_gui, ds4, ds_alt, alternate_info):
     # put up the start and end dates
     start_date = ds4.series["DateTime"]["Data"][0].strftime("%Y-%m-%d %H:%M")
     end_date = ds4.series["DateTime"]["Data"][-1].strftime("%Y-%m-%d %H:%M")
@@ -245,7 +245,7 @@ def gfalternate_createdataandstatsdict(ldt_tower,data_tower,attr_tower,alternate
     stat_dict[label_composite] = {"startdate":alternate_info["startdate"],"enddate":alternate_info["enddate"]}
     return data_dict,stat_dict
 
-def gfalternate_done(ds,alt_gui):
+def gfalternate_done(ds, alt_gui):
     """
     Purpose:
      Finishes up after gap filling from alternate data:
@@ -1266,7 +1266,7 @@ def gfalternate_run_gui(ds_tower,ds_alt,alt_gui,alternate_info):
             alternate_info["enddate"] = enddate.strftime("%Y-%m-%d %H:%M")
         gfalternate_autocomplete(ds_tower,ds_alt,alternate_info)
         #gfalternate_progress(alt_gui,"Finished auto (monthly) run ...")
-        logger.info("Finished auto (monthly) run ...")
+        logger.info("Finished auto (months) run ...")
         # get the start and end datetime of the tower data
         ldt_tower = ds_tower.series["DateTime"]["Data"]
         startdate = ldt_tower[0]

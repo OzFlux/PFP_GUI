@@ -221,8 +221,46 @@ def do_run_l4(main_gui, cfg=None):
         logger.info("Finished saving L4 gap filled data")
     logger.info("")
     return
-def do_run_l5():
-    logger.warning("L5 processing not implemented yet")
+def do_run_l5(main_gui, cfg=None):
+    """
+    Purpose:
+     Top level routine for running the L5 gap filling.
+    Usage:
+     pfp_top_level.do_run_l5()
+    Side effects:
+     Creates an L5 netCDF file with gap filled meteorology.
+    Author: PRI
+    Date: Back in the day
+    Mods:
+     December 2017: rewrite for use with new GUI
+    """
+    logger.info("Starting L5 processing")
+    if not cfg:
+        cfg = pfp_io.load_controlfile(path='controlfiles')
+        if len(cfg) == 0:
+            logger.info("Quiting L5 processing (no control file)")
+            return
+    in_filepath = pfp_io.get_infilenamefromcf(cfg)
+    if not pfp_utils.file_exists(in_filepath):
+        in_filename = os.path.split(in_filepath)
+        logger.error("File "+in_filename[1]+" not found")
+        return
+    ds4 = pfp_io.nc_read_series(in_filepath)
+    ds4.globalattributes['controlfile_name'] = cfg['controlfile_name']
+    sitename = ds4.globalattributes['site_name']
+    if "Options" not in cfg:
+        cfg["Options"] = {}
+    cfg["Options"]["call_mode"] = "interactive"
+    ds5 = pfp_levels.l5qc(main_gui, cfg, ds4)
+    if ds5.returncodes["solo"] == "quit":
+        logger.info("Quitting L5: "+sitename)
+    else:
+        logger.info("Finished L5: "+sitename)
+        out_filepath = pfp_io.get_outfilenamefromcf(cfg)
+        nc_file = pfp_io.nc_open_write(out_filepath)
+        pfp_io.nc_write_series(nc_file, ds5)
+        logger.info("Finished saving L5 gap filled data")
+    logger.info("")
     return
 def do_run_l6():
     logger.warning("L6 processing not implemented yet")

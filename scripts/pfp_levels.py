@@ -333,7 +333,7 @@ def l4qc(main_gui, cf, ds3):
 
     return ds4
 
-def l5qc(cf, ds4):
+def l5qc(main_gui, cf, ds4):
     ds5 = pfp_io.copy_datastructure(cf, ds4)
     # ds4 will be empty (logical false) if an error occurs in copy_datastructure
     # return from this routine if this is the case
@@ -359,7 +359,7 @@ def l5qc(cf, ds4):
     # fill short gaps using interpolation
     pfp_gf.GapFillUsingInterpolation(cf, ds5)
     # do the gap filling using SOLO
-    pfp_gfSOLO.GapFillUsingSOLO(cf, ds4, ds5)
+    pfp_gfSOLO.GapFillUsingSOLO(main_gui, cf, ds4, ds5)
     if ds5.returncodes["solo"] == "quit":
         return ds5
     # gap fill using marginal distribution sampling
