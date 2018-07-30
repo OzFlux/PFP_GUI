@@ -177,20 +177,20 @@ def DateTimeFromTimeStamp(ds,TimeStamp_in,fmt=""):
     ds.globalattributes["nc_nrecs"] = nRecs
     return 1
 
-def DateTimeFromDateAndTimeString(ds,DateString_in,TimeString_in):
-    if DateString_in not in ds.series.keys():
-        logger.error(" Requested date series "+DateString_in+" not found")
+def DateTimeFromDateAndTimeString(ds, Date, Time):
+    if Date not in ds.series.keys():
+        logger.error(" Requested date series "+Date+" not found")
         return 0
-    if TimeString_in not in ds.series.keys():
-        logger.error(" Requested time series "+TimeString_in+" not found")
+    if Time not in ds.series.keys():
+        logger.error(" Requested time series "+Time+" not found")
         return 0
-    DateString = ds.series[DateString_in]["Data"]
-    TimeString = ds.series[TimeString_in]["Data"]
+    DateString = ds.series[Date]["Data"]
+    TimeString = ds.series[Time]["Data"]
     # guard against empty fields in what we assume is the datetime
     idx = [i for i in range(len(DateString)) if len(str(DateString[i]))>0]
     dt = [dateutil.parser.parse(str(DateString[i])+" "+str(TimeString[i])) for i in idx]
     # we have finished with the date and time strings so delete them from the data structure
-    del ds.series[DateString_in],ds.series[TimeString_in]
+    del ds.series[Date], ds.series[Time]
     nRecs = len(dt)
     ds.series["DateTime"] = {}
     ds.series["DateTime"]["Data"] = dt

@@ -1,0 +1,767 @@
+level = L1
+controlfile_name = /home/peter/PFP_GUI/controlfiles/templates/L1/L1_eddypro.txt
+[Files]
+    file_path = ../Sites/<site_name>/Data/Tower/<year>/
+    in_filename = <site_name>_<year>_L1.xls
+    in_headerrow = 2
+    in_firstdatarow = 4
+    out_filename = <site_name>_<year>_L1.nc
+
+[Global]
+    acknowledgement = ""
+    contact = ""
+    canopy_height = <canopy_height>m
+    comment = ""
+    conventions = CF-1.6
+    conventions_names = "CF convention standard names table version 27, 28 Nov 2013, audited 4 Jan 2015"
+    data_url = ""
+    doi = ""
+    history = ""
+    institution = ""
+    latitude = <latitude>
+    license_type = ""
+    license_url = ""
+    longitude = <longitude>
+    metadata_url = ""
+    references = ""
+    site_name = <site_name>
+    site_pi = ""
+    soil = ""
+    source = ""
+    title = Flux tower data set from the <site_name> site for the calendar year <year>
+    time_step = 30
+    time_zone = <country>/<time_zone>
+    tower_height = <tower_height>m
+    vegetation = ""
+    altitude = <altitude>m
+
+[Variables]
+    [[DateTime]]
+        [[[Attr]]]
+            long_name = Date/time in Excel format
+            units = days since 1899-12-31 00:00:00 -5:00
+            standard_name = not defined
+            cf_role = timeseries_id
+        [[[Function]]]
+            func = "DateTimeFromDateAndTimeString(Date,Time)"
+    [[Date]]
+        [[[xl]]]
+            sheet = full_output
+            name = date
+        [[[Attr]]]
+            long_name = Date from full_output file
+            standard_name = ""
+            units = ""
+    [[Time]]
+        [[[xl]]]
+            sheet = full_output
+            name = time
+        [[[Attr]]]
+            long_name = Time from full_output file
+            standard_name = ""
+            units = ""
+    [[Fn]]
+        [[[xl]]]
+            sheet = biomet
+            name = RN_1_1_1
+        [[[Attr]]]
+            height = <height>m
+            instrument = Kipp and Zonen CNR1
+            long_name = Net radiation (CNR1 4 components)
+            serial_number = ""
+            standard_name = surface_net_downwawrd_radiative_flux
+            units = W/m2
+    [[Fld]]
+        [[[xl]]]
+            sheet = biomet
+            name = LW_IN_1_1_1
+        [[[Attr]]]
+            height = <height>m
+            instrument = Kipp and Zonen CNR1
+            long_name = Down-welling long wave radiation
+            serial_number = ""
+            standard_name = surface_downwelling_longwave_flux_in_air
+            units = W/m2
+    [[Flu]]
+        [[[xl]]]
+            sheet = biomet
+            name = LW_OUT_1_1_1
+        [[[Attr]]]
+            height = <height>m
+            instrument = Kipp and Zonen CNR1
+            long_name = Up-welling long wave radiation
+            serial_number = ""
+            standard_name = surface_upwelling_longwave_flux_in_air
+            units = W/m2
+    [[Fsu]]
+        [[[xl]]]
+            sheet = biomet
+            name = SW_OUT_1_1_1
+        [[[Attr]]]
+            height = <height>m
+            instrument = Kipp and Zonen CNR1
+            long_name = Up-welling short wave radiation
+            serial_number = ""
+            standard_name = surface_upwelling_shortwave_flux_in_air
+            units = W/m2
+    [[Fsd]]
+        [[[xl]]]
+            sheet = biomet
+            name = SW_IN_1_1_1
+        [[[Attr]]]
+            height = <height>m
+            instrument = Kipp and Zonen CNR1
+            long_name = Down-welling short wave radiation
+            serial_number = ""
+            standard_name = surface_downwelling_shortwave_flux_in_air
+            units = W/m2
+    [[Fm]]
+        [[[xl]]]
+            sheet = full_output
+            name = Tau
+        [[[Attr]]]
+            height = <height>m
+            instrument = SONIC
+            long_name = Momentum flux
+            serial_number = ""
+            standard_name = ""
+            units = kg/m2
+    [[Fm_EPFlag]]
+        [[[xl]]]
+            sheet = full_output
+            name = qc_Tau
+        [[[Attr]]]
+            height = <height>m
+            instrument = SONIC
+            long_name = Momentum flux quality control flag
+            serial_number = ""
+            standard_name = ""
+            units = ""
+    [[Fh]]
+        [[[xl]]]
+            sheet = full_output
+            name = H
+        [[[Attr]]]
+            height = <height>m
+            instrument = SONIC
+            long_name = Sensible heat flux
+            serial_number = ""
+            standard_name = ""
+            units = W/m2
+    [[Fh_EPFlag]]
+        [[[xl]]]
+            sheet = full_output
+            name = qc_H
+        [[[Attr]]]
+            height = <height>m
+            instrument = SONIC
+            long_name = Sensible heat flux quality control flag
+            serial_number = ""
+            standard_name = ""
+            units = ""
+    [[Fe]]
+        [[[xl]]]
+            sheet = full_output
+            name = LE
+        [[[Attr]]]
+            height = <height>m
+            instrument = SONIC/IRGA
+            long_name = Latent heat flux
+            serial_number = ""
+            standard_name = ""
+            units = W/m2
+    [[Fe_EPFlag]]
+        [[[xl]]]
+            sheet = full_output
+            name = qc_LE
+        [[[Attr]]]
+            height = <height>m
+            instrument = SONIC/IRGA
+            long_name = Latent heat flux quality control flag
+            serial_number = ""
+            standard_name = ""
+            units = ""
+    [[Fc]]
+        [[[xl]]]
+            sheet = full_output
+            name = co2_flux
+        [[[Attr]]]
+            height = <height>m
+            instrument = SONIC/IRGA
+            long_name = Carbon dioxide flux
+            serial_number = ""
+            standard_name = ""
+            units = umol/m2/s
+    [[Fc_EPFlag]]
+        [[[xl]]]
+            sheet = full_output
+            name = qc_co2_flux
+        [[[Attr]]]
+            height = <height>m
+            instrument = SONIC/IRGA
+            long_name = Carbon dioxide flux quality control flag
+            serial_number = ""
+            standard_name = ""
+            units = ""
+    [[ustar]]
+        [[[xl]]]
+            sheet = full_output
+            name = u*
+        [[[Attr]]]
+            ancillary_variables = Fm QC flag
+            height = 3m
+            instrument = CSAT
+            long_name = friction velocity
+            serial_number = ""
+            standard_name = ""
+            units = m/s
+    [[U_CSAT_Vr]]
+        [[[xl]]]
+            sheet = full_output
+            name = u_var
+        [[[Attr]]]
+            ancillary_variables = U_Vr QC flag
+            height = 3m
+            instrument = CSAT
+            long_name = Variance of longitudinal component of wind velocity
+            serial_number = ""
+            standard_name = ""
+            units = (m/s)2
+    [[V_CSAT_Vr]]
+        [[[xl]]]
+            sheet = full_output
+            name = v_var
+        [[[Attr]]]
+            ancillary_variables = V_Vr QC flag
+            height = 3m
+            instrument = CSAT
+            long_name = Variance of lateral component of wind velocity
+            serial_number = ""
+            standard_name = ""
+            units = (m/s)2
+    [[W_CSAT_Vr]]
+        [[[xl]]]
+            sheet = full_output
+            name = w_var
+        [[[Attr]]]
+            ancillary_variables = W_Vr QC flag
+            height = 3m
+            instrument = CSAT
+            long_name = Variance of veritcal component of wind velocity
+            serial_number = ""
+            standard_name = ""
+            units = (m/s)2
+    [[Tv_CSAT_Av]]
+        [[[xl]]]
+            sheet = full_output
+            name = sonic_temperature_C
+        [[[Attr]]]
+            ancillary_variables = Tv_CSAT QC flag
+            height = 3m
+            instrument = RM Young 81000
+            long_name = Virtual air temperature
+            serial_number = ""
+            standard_name = virtual_temperature
+            units = C
+    [[Tv_CSAT_Vr]]
+        [[[xl]]]
+            sheet = full_output
+            name = ts_var
+        [[[Attr]]]
+            ancillary_variables = Tv_CSAT_Vr QC flag
+            height = 3m
+            instrument = CSAT
+            long_name = Variance of virtual temperature from CSAT
+            serial_number = ""
+            standard_name = ""
+            units = K2
+    [[CO2_7500_Av]]
+        [[[xl]]]
+            sheet = full_output
+            name = co2_mixing_ratio
+        [[[Attr]]]
+            ancillary_variables = Cc_7500 QC flag
+            height = 3m
+            instrument = Li-7500A
+            long_name = "CO2 concentration, average"
+            serial_number = ""
+            standard_name = ""
+            units = umol/mol
+    [[H2O_7500_Av]]
+        [[[xl]]]
+            sheet = full_output
+            name = h2o_mixing_ratio
+        [[[Attr]]]
+            ancillary_variables = H2O_7500_Av QC flag
+            height = 3m
+            instrument = Li-7500A
+            long_name = "h2o mixing ratio, average"
+            serial_number = ""
+            standard_name = ""
+            units = mmol/mol
+    [[RH_7500_Av]]
+        [[[xl]]]
+            sheet = full_output
+            name = RH
+        [[[Attr]]]
+            ancillary_variables = RH_7500_Av QC flag
+            height = 3m
+            instrument = Li-7500A
+            long_name = "Relative humidity, average"
+            serial_number = ""
+            standard_name = ""
+            units = %
+    [[H2O_7500_Vr]]
+        [[[xl]]]
+            sheet = full_output
+            name = h2o_var
+        [[[Attr]]]
+            ancillary_variables = AhAh QC flag
+            height = 3m
+            instrument = Li-7500A
+            long_name = "H2O concentration, variance"
+            serial_number = ""
+            standard_name = not defined
+            units = (mmol/m3)2
+    [[CO2_7500_Vr]]
+        [[[xl]]]
+            sheet = full_output
+            name = co2_var
+        [[[Attr]]]
+            ancillary_variables = CcCc QC flag
+            height = 3m
+            instrument = Li-7500A
+            long_name = "CO2 concentration, variance"
+            serial_number = ""
+            standard_name = not defined
+            units = (mmol/m3)2
+    [[Ah_HMP_3m]]
+        [[[xl]]]
+            sheet = Met_data_30
+            name = Ah_fromRH
+        [[[Attr]]]
+            ancillary_variables = Ah_HMP_3m QC flag
+            height = 3m
+            instrument = HMP45C
+            long_name = "Absolute humidity, average"
+            serial_number = ""
+            standard_name = mass_concentration_of_water_vapor_in_air
+            units = g/m3
+    [[RH_HMP_3m]]
+        [[[xl]]]
+            sheet = Met_data_30
+            name = RH_Avg
+        [[[Attr]]]
+            ancillary_variables = RH_HMP_3m QC flag
+            height = 3m
+            instrument = HMP45C
+            long_name = "Relative humidity, average"
+            serial_number = ""
+            standard_name = ""
+            units = %
+    [[Ta_HMP_3m]]
+        [[[xl]]]
+            sheet = Met_data_30
+            name = AirTC_Avg
+        [[[Attr]]]
+            ancillary_variables = Ta_HMP_3m QC flag
+            height = 3m
+            instrument = HMP45C
+            long_name = "Air temperature, average"
+            serial_number = ""
+            standard_name = air_temperature
+            units = C
+    [[Fg_10cma]]
+        [[[xl]]]
+            sheet = Met_data_30
+            name = shf_cal_Avg(1)
+        [[[Attr]]]
+            ancillary_variables = Fg_10cma QC flag
+            height = -0.1m
+            instrument = Hukseflux
+            long_name = "Ground heat flux, sensor 1a"
+            serial_number = ""
+            standard_name = downward_heat_flux_in_soil
+            units = W/m2
+    [[Fg_10cmb]]
+        [[[xl]]]
+            sheet = Met_data_30
+            name = shf_cal_Avg(2)
+        [[[Attr]]]
+            ancillary_variables = Fg_10cmb QC flag
+            height = -0.1m
+            instrument = Hukseflux
+            long_name = "Ground heat flux, sensor 1b"
+            serial_number = ""
+            standard_name = downward_heat_flux_in_soil
+            units = W/m2
+    [[Sws_5cma]]
+        [[[xl]]]
+            sheet = Met_data_30
+            name = MoistureA5_Avg
+        [[[Attr]]]
+            ancillary_variables = Sws_5cma QC flag
+            height = -0.05m
+            instrument = Hydra probe
+            long_name = "Soil water fraction, sensor 5cma"
+            serial_number = ""
+            standard_name = soil_moisture_content
+            units = wfv
+    [[Sws_5cmb]]
+        [[[xl]]]
+            sheet = Met_data_30
+            name = MoistureB5_Avg
+        [[[Attr]]]
+            ancillary_variables = Sws_5cmb QC flag
+            height = -0.05m
+            instrument = Hydra probe
+            long_name = "Soil water fraction, sensor 5cmb"
+            serial_number = ""
+            standard_name = soil_moisture_content
+            units = wfv
+    [[Sws_10cma]]
+        [[[xl]]]
+            sheet = Met_data_30
+            name = MoistureA10_Avg
+        [[[Attr]]]
+            ancillary_variables = Sws_10cma QC flag
+            height = -0.1m
+            instrument = Hydra probe
+            long_name = "Soil water fraction, sensor 10cma"
+            serial_number = ""
+            standard_name = soil_moisture_content
+            units = wfv
+    [[Sws_10cmb]]
+        [[[xl]]]
+            sheet = Met_data_30
+            name = MoistureB10_Avg
+        [[[Attr]]]
+            ancillary_variables = Sws_10cmb QC flag
+            height = -0.1m
+            instrument = Hydra probe
+            long_name = "Soil water fraction, sensor 10cmb"
+            serial_number = ""
+            standard_name = soil_moisture_content
+            units = wfv
+    [[Sws_20cma]]
+        [[[xl]]]
+            sheet = Met_data_30
+            name = MoistureA20_Avg
+        [[[Attr]]]
+            ancillary_variables = Sws_20cma QC flag
+            height = -0.2m
+            instrument = Hydra probe
+            long_name = "Soil water fraction, sensor 20cma"
+            serial_number = ""
+            standard_name = soil_moisture_content
+            units = wfv
+    [[Sws_20cmb]]
+        [[[xl]]]
+            sheet = Met_data_30
+            name = MoistureB20_Avg
+        [[[Attr]]]
+            ancillary_variables = Sws_20cmb QC flag
+            height = -0.2m
+            instrument = Hydra probe
+            long_name = "Soil water fraction, sensor 20cmb"
+            serial_number = ""
+            standard_name = soil_moisture_content
+            units = wfv
+    [[Sws_50cma]]
+        [[[xl]]]
+            sheet = Met_data_30
+            name = MoistureA50_Avg
+        [[[Attr]]]
+            ancillary_variables = Sws_50cma QC flag
+            height = -0.5m
+            instrument = Hydra probe
+            long_name = "Soil water fraction, sensor 50cma"
+            serial_number = ""
+            standard_name = soil_moisture_content
+            units = wfv
+    [[Sws_50cmb]]
+        [[[xl]]]
+            sheet = Met_data_30
+            name = MoistureB50_Avg
+        [[[Attr]]]
+            ancillary_variables = Sws_50cmb QC flag
+            height = -0.5m
+            instrument = Hydra probe
+            long_name = "Soil water fraction, sensor 50cmb"
+            serial_number = ""
+            standard_name = soil_moisture_content
+            units = wfv
+    [[Sws_100cma]]
+        [[[xl]]]
+            sheet = Met_data_30
+            name = MoistureA100_Avg
+        [[[Attr]]]
+            ancillary_variables = Sws_100cma QC flag
+            height = -1.0m
+            instrument = Hydra probe
+            long_name = "Soil water fraction, sensor 100cma"
+            serial_number = ""
+            standard_name = soil_moisture_content
+            units = wfv
+    [[Sws_100cmb]]
+        [[[xl]]]
+            sheet = Met_data_30
+            name = MoistureB100_Avg
+        [[[Attr]]]
+            ancillary_variables = Sws_100cmb QC flag
+            height = -1.0m
+            instrument = Hydra probe
+            long_name = "Soil water fraction, sensor 100cmb"
+            serial_number = ""
+            standard_name = soil_moisture_content
+            units = wfv
+    [[Ts_5cma]]
+        [[[xl]]]
+            sheet = Met_data_30
+            name = SoilTempCA5_Avg
+        [[[Attr]]]
+            ancillary_variables = Ts_5cma QC flag
+            height = -0.05m
+            instrument = Hydra probe
+            long_name = "Soil temperature, sensor 5cma"
+            serial_number = ""
+            standard_name = soil_temperature
+            units = C
+    [[Ts_5cmb]]
+        [[[xl]]]
+            sheet = Met_data_30
+            name = SoilTempCB5_Avg
+        [[[Attr]]]
+            ancillary_variables = Ts_5cmb QC flag
+            height = -0.05m
+            instrument = Hydra probe
+            long_name = "Soil temperature, sensor 5cmb"
+            serial_number = ""
+            standard_name = soil_temperature
+            units = C
+    [[Ts_10cma]]
+        [[[xl]]]
+            sheet = Met_data_30
+            name = SoilTempCA10_Avg
+        [[[Attr]]]
+            ancillary_variables = Ts_10cma QC flag
+            height = -0.1m
+            instrument = Hydra probe
+            long_name = "Soil temperature, sensor 10cma"
+            serial_number = ""
+            standard_name = soil_temperature
+            units = C
+    [[Ts_10cmb]]
+        [[[xl]]]
+            sheet = Met_data_30
+            name = SoilTempCB10_Avg
+        [[[Attr]]]
+            ancillary_variables = Ts_10cmb QC flag
+            height = -0.1m
+            instrument = Hydra probe
+            long_name = "Soil temperature, sensor 10cmb"
+            serial_number = ""
+            standard_name = soil_temperature
+            units = C
+    [[Ts_20cma]]
+        [[[xl]]]
+            sheet = Met_data_30
+            name = SoilTempCA20_Avg
+        [[[Attr]]]
+            ancillary_variables = Ts_20cma QC flag
+            height = -0.2m
+            instrument = Hydra probe
+            long_name = "Soil temperature, sensor 20cma"
+            serial_number = ""
+            standard_name = soil_temperature
+            units = C
+    [[Ts_20cmb]]
+        [[[xl]]]
+            sheet = Met_data_30
+            name = SoilTempCB20_Avg
+        [[[Attr]]]
+            ancillary_variables = Ts_20cmb QC flag
+            height = -0.2m
+            instrument = Hydra probe
+            long_name = "Soil temperature, sensor 20cmb"
+            serial_number = ""
+            standard_name = soil_temperature
+            units = C
+    [[Ts_50cma]]
+        [[[xl]]]
+            sheet = Met_data_30
+            name = SoilTempCA50_Avg
+        [[[Attr]]]
+            ancillary_variables = Ts_50cma QC flag
+            height = -0.5m
+            instrument = Hydra probe
+            long_name = "Soil temperature, sensor 50cma"
+            serial_number = ""
+            standard_name = soil_temperature
+            units = C
+    [[Ts_50cmb]]
+        [[[xl]]]
+            sheet = Met_data_30
+            name = SoilTempCB50_Avg
+        [[[Attr]]]
+            ancillary_variables = Ts_50cmb QC flag
+            height = -0.5m
+            instrument = Hydra probe
+            long_name = "Soil temperature, sensor 50cmb"
+            serial_number = ""
+            standard_name = soil_temperature
+            units = C
+    [[Ts_100cma]]
+        [[[xl]]]
+            sheet = Met_data_30
+            name = SoilTempCA100_Avg
+        [[[Attr]]]
+            ancillary_variables = Ts_100cma QC flag
+            height = -1.0m
+            instrument = Hydra probe
+            long_name = "Soil temperature, sensor 100cma"
+            serial_number = ""
+            standard_name = soil_temperature
+            units = C
+    [[Ts_100cmb]]
+        [[[xl]]]
+            sheet = Met_data_30
+            name = SoilTempCB100_Avg
+        [[[Attr]]]
+            ancillary_variables = Ts_100cmb QC flag
+            height = -1.0m
+            instrument = Hydra probe
+            long_name = "Soil temperature, sensor 100cmb"
+            serial_number = ""
+            standard_name = soil_temperature
+            units = C
+    [[Precip]]
+        [[[xl]]]
+            sheet = Met_data_30
+            name = RAIN
+        [[[Attr]]]
+            ancillary_variables = Precip QC flag
+            height = 0.6m
+            instrument = ETI NOAH IV
+            long_name = "Rainfall, 30 minute total"
+            serial_number = ""
+            standard_name = rainfall_amount
+            units = mm
+    [[Wd_alt]]
+        [[[xl]]]
+            sheet = Met_data_30
+            name = WindDir_Avg
+        [[[Attr]]]
+            ancillary_variables = WindDir_Avg QC flag
+            height = 3m
+            instrument = RM Yound 2D anemometer
+            long_name = Wind direction
+            serial_number = ""
+            standard_name = wind_from_direction
+            units = deg
+    [[Ws_alt]]
+        [[[xl]]]
+            sheet = Met_data_30
+            name = WindSpeed_Avg
+        [[[Attr]]]
+            ancillary_variables = WindSpeed_Avg QC flag
+            height = 3m
+            instrument = RM Yound 2D anemometer
+            long_name = Wind speed
+            serial_number = ""
+            standard_name = wind_speed
+            units = m/s
+    [[Wd_CSAT]]
+        [[[xl]]]
+            sheet = full_output
+            name = wind_dir
+        [[[Attr]]]
+            ancillary_variables = Wd_CSAT QC flag
+            height = 3m
+            instrument = RM Young 81000
+            long_name = Wind direction
+            serial_number = ""
+            standard_name = wind_from_direction
+            units = deg
+    [[Ws_CSAT]]
+        [[[xl]]]
+            sheet = full_output
+            name = wind_speed
+        [[[Attr]]]
+            ancillary_variables = Ws_CSAT QC flag
+            height = 3m
+            instrument = RM Young 81000
+            long_name = Wind speed
+            serial_number = ""
+            standard_name = wind_speed
+            units = m/s
+    [[U_CSAT]]
+        [[[xl]]]
+            sheet = full_output
+            name = u_rot
+        [[[Attr]]]
+            ancillary_variables = U QC flag
+            height = 3m
+            instrument = RM Young 81000
+            long_name = "Wind speed, longitudinal component, coordinate rotated"
+            serial_number = ""
+            standard_name = not defined
+            units = m/s
+    [[V_CSAT]]
+        [[[xl]]]
+            sheet = full_output
+            name = v_rot
+        [[[Attr]]]
+            ancillary_variables = V QC flag
+            height = 3m
+            instrument = RM Young 81000
+            long_name = "Wind speed, lateral component, coordinate rotated"
+            serial_number = ""
+            standard_name = not defined
+            units = m/s
+    [[W_CSAT]]
+        [[[xl]]]
+            sheet = full_output
+            name = w_rot
+        [[[Attr]]]
+            ancillary_variables = W QC flag
+            height = 3m
+            instrument = RM Young 81000
+            long_name = "Wind speed, vertical component, coordinate rotated"
+            serial_number = ""
+            standard_name = not defined
+            units = m/s
+    [[ps]]
+        [[[xl]]]
+            sheet = full_output
+            name = air_pressure_kpa
+        [[[Attr]]]
+            ancillary_variables = ps QC flag
+            height = 3m
+            instrument = Li-7500A
+            long_name = "Air pressure, average"
+            serial_number = ""
+            standard_name = surface_air_pressure
+            units = kPa
+    [[Vbat]]
+        [[[xl]]]
+            sheet = Met_data_30
+            name = Batt_Volt_Min
+        [[[Attr]]]
+            ancillary_variables = None
+            instrument = Campbell Scientific CR3000 logger
+            long_name = Battery voltage at logger
+            serial_number = ""
+            standard_name = not defined
+            units = V
+    [[Tpanel]]
+        [[[xl]]]
+            sheet = Met_data_30
+            name = PanelT_Avg
+        [[[Attr]]]
+            ancillary_variables = None
+            instrument = Campbell Scientific CR3000 logger
+            long_name = Panel temperature at logger
+            serial_number = ""
+            standard_name = not defined
+            units = C

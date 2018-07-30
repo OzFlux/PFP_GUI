@@ -23,6 +23,11 @@ L1
 11) implement support for [Output]
 12) disable "Remove item" on right click in [Files] section
     - done
+13) implement support for functions
+    - ability to delete "xl" or "csv"
+    - ability to add "Function" at variable level
+    - ability to remove "sheet" and "name" entries
+14) implement sort variables and "drag and drop" to re-order
 
 L2
 1) browse for plot_path
