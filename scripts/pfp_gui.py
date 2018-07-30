@@ -1,9 +1,11 @@
 # standard modules
 import copy
+import inspect
 import os
 # 3rd party modules
 from PyQt4 import QtCore, QtGui
 # PFP modules
+import pfp_func
 import pfp_utils
 import pfp_gfSOLO
 
@@ -40,6 +42,7 @@ class edit_cfg_L1(QtGui.QWidget):
     def get_model_from_data(self):
         """ Build the data model."""
         self.tree.setModel(QtGui.QStandardItemModel())
+        self.tree.setDragDropMode(QtGui.QAbstractItemView.InternalMove)
         self.tree.model().setHorizontalHeaderLabels(['Parameter', 'Value'])
         self.tree.model().itemChanged.connect(self.handleItemChanged)
         # there must be some way to do this recursively
@@ -98,6 +101,22 @@ class edit_cfg_L1(QtGui.QWidget):
                             val4 = str(subsubsection.child(l, 1).text())
                             cfg[key1][key2][key3][key4] = val4
         return cfg
+
+    def get_section_from_text(self, model, section_name):
+        """ Gets a section from a model by matching the section name."""
+        for i in range(model.rowCount()):
+            section = model.item(i)
+            if str(section.text()) == str(section_name):
+                break
+        return section, i
+
+    def get_subsection_from_text(self, section, text):
+        """ Gets a subsection from a model by matching the subsection name"""
+        for i in range(section.rowCount()):
+            subsection = section.child(i)
+            if str(subsection.text()) == text:
+                break
+        return subsection, i
 
     def handleItemChanged(self, item):
         """ Handler for when view items are edited."""
@@ -174,23 +193,45 @@ class edit_cfg_L1(QtGui.QWidget):
                 self.context_menu.addAction(self.context_menu.actionRemoveGlobal)
                 self.context_menu.actionRemoveGlobal.triggered.connect(self.remove_global)
             elif str(indexes[0].parent().data().toString()) == "Variables":
+                self.context_menu.actionAddFunction = QtGui.QAction(self)
+                self.context_menu.actionAddFunction.setText("Add Function")
+                self.context_menu.addAction(self.context_menu.actionAddFunction)
+                self.context_menu.actionAddFunction.triggered.connect(self.add_function)
+                self.context_menu.addSeparator()
                 self.context_menu.actionRemoveVariable = QtGui.QAction(self)
                 self.context_menu.actionRemoveVariable.setText("Remove variable")
                 self.context_menu.addAction(self.context_menu.actionRemoveVariable)
                 self.context_menu.actionRemoveVariable.triggered.connect(self.remove_variable)
         elif level == 2:
-            if ((str(indexes[0].parent().parent().data().toString()) == "Variables") and
-                (str(indexes[0].data().toString()) == "Attr")):
-                self.context_menu.actionAddAttribute = QtGui.QAction(self)
-                self.context_menu.actionAddAttribute.setText("Add attribute")
-                self.context_menu.addAction(self.context_menu.actionAddAttribute)
-                self.context_menu.actionAddAttribute.triggered.connect(self.add_attribute)
+            section_text = str(indexes[0].parent().parent().data().toString())
+            subsection_text = str(indexes[0].parent().data().toString())
+            subsubsection_text = str(indexes[0].data().toString())
+            if section_text == "Variables":
+                if subsubsection_text == "Attr":
+                    self.context_menu.actionAddAttribute = QtGui.QAction(self)
+                    self.context_menu.actionAddAttribute.setText("Add attribute")
+                    self.context_menu.addAction(self.context_menu.actionAddAttribute)
+                    self.context_menu.actionAddAttribute.triggered.connect(self.add_attribute)
+                elif subsubsection_text in ["xl", "Function"]:
+                    self.context_menu.actionRemoveSubSubSection = QtGui.QAction(self)
+                    self.context_menu.actionRemoveSubSubSection.setText("Remove item")
+                    self.context_menu.addAction(self.context_menu.actionRemoveSubSubSection)
+                    self.context_menu.actionRemoveSubSubSection.triggered.connect(self.remove_subsubsection)
         elif level == 3:
             if str(indexes[0].parent().data().toString()) == "Attr":
                 self.context_menu.actionRemoveAttribute = QtGui.QAction(self)
                 self.context_menu.actionRemoveAttribute.setText("Remove attribute")
                 self.context_menu.addAction(self.context_menu.actionRemoveAttribute)
                 self.context_menu.actionRemoveAttribute.triggered.connect(self.remove_attribute)
+            elif (str(indexes[0].parent().data().toString()) == "Function" and
+                  str(indexes[0].data().toString()) == "Right click to browse"):
+                implemented_functions_name = [name for name,data in inspect.getmembers(pfp_func,inspect.isfunction)]
+                self.context_menu.actionAddFunction = {}
+                for item in implemented_functions_name:
+                    self.context_menu.actionAddFunction[item] = QtGui.QAction(self)
+                    self.context_menu.actionAddFunction[item].setText(str(item))
+                    self.context_menu.addAction(self.context_menu.actionAddFunction[item])
+                    self.context_menu.actionAddFunction[item].triggered.connect(self.add_function_entry)
 
         self.context_menu.exec_(self.tree.viewport().mapToGlobal(position))
 
@@ -222,6 +263,44 @@ class edit_cfg_L1(QtGui.QWidget):
         if "*" not in tab_text:
             self.tabs.setTabText(self.tabs.tab_index_current, tab_text+"*")
 
+    def add_function(self):
+        """ Add a function to a variable."""
+        idx = self.tree.selectedIndexes()[0]
+        dict_to_add = {"Function":{"func": "Right click to browse"}}
+        # get the parent and sub section text
+        subsection_text = str(idx.data().toString())
+        section_text = str(idx.parent().data().toString())
+        # get the top level and sub sections
+        model = self.tree.model()
+        section, i = self.get_section_from_text(model, section_text)
+        subsection, j = self.get_subsection_from_text(section, subsection_text)
+        # add the subsubsection
+        self.add_subsubsection(subsection, dict_to_add)
+        # update the tab text with an asterix if required
+        self.update_tab_text()
+
+    def add_function_entry(self):
+        """ Add the selected function to the variables [Function] subsection."""
+        # get the index of the selected item
+        idx = self.tree.selectedIndexes()[0]
+        # get a list of function names in pfp_func
+        implemented_functions_name = [name for name,data in inspect.getmembers(pfp_func,inspect.isfunction)]
+        # get the arguments for the functions in pfp_func
+        implemented_functions_data = [data for name,data in inspect.getmembers(pfp_func,inspect.isfunction)]
+        # get the context menu entry that has been selected
+        sender = str(self.context_menu.sender().text())
+        # get the arguments for the selected function
+        args = inspect.getargspec(implemented_functions_data[implemented_functions_name.index(sender)])
+        # construct the function string
+        function_string = sender+"("
+        for item in args[0][1:]:
+            function_string = function_string + str(item) + ","
+        function_string = function_string[:-1] + ")"
+        # get the selected item from the index
+        item = idx.model().itemFromIndex(idx)
+        # change the text of the selected item
+        item.setText(function_string)
+
     def add_fileentry(self):
         """ Add a new entry to the 'Files' section."""
         child0 = QtGui.QStandardItem("New item")
@@ -241,6 +320,30 @@ class edit_cfg_L1(QtGui.QWidget):
         tab_text = str(self.tabs.tabText(self.tabs.tab_index_current))
         if "*" not in tab_text:
             self.tabs.setTabText(self.tabs.tab_index_current, tab_text+"*")
+
+    def add_subsubsection(self, subsection, dict_to_add):
+        """ Add a subsubsection to the model."""
+        for key1 in dict_to_add:
+            subsubsection = QtGui.QStandardItem(key1)
+            for key2 in dict_to_add[key1]:
+                child0 = QtGui.QStandardItem(key2)
+                child1 = QtGui.QStandardItem(str(dict_to_add[key1][key2]))
+                subsubsection.appendRow([child0, child1])
+            subsection.appendRow(subsubsection)
+
+    def add_subsubsubsection(self, subsection, dict_to_add):
+        """ Add a subsubsubsection to the model."""
+        for key3 in dict_to_add:
+            subsubsection = QtGui.QStandardItem(key3)
+            for key4 in dict_to_add[key3]:
+                subsubsubsection = QtGui.QStandardItem(key4)
+                for val in dict_to_add[key3][key4]:
+                    value = dict_to_add[key3][key4][val]
+                    child0 = QtGui.QStandardItem(val)
+                    child1 = QtGui.QStandardItem(str(value))
+                    subsubsubsection.appendRow([child0, child1])
+                subsubsection.appendRow(subsubsubsection)
+            subsection.appendRow(subsubsection)
 
     def add_variable(self):
         """ Add a new variable."""
@@ -424,6 +527,22 @@ class edit_cfg_L1(QtGui.QWidget):
                         self.tabs.setTabText(self.tabs.tab_index_current, tab_text+"*")
                     break
 
+    def remove_subsubsection(self):
+        """ Remove a subsubsection."""
+        idx = self.tree.selectedIndexes()[0]
+        subsubsection_text = str(idx.data().toString())
+        subsection_text = str(idx.parent().data().toString())
+        section_text = str(idx.parent().parent().data().toString())
+        # get the [Variables] section
+        model = self.tree.model()
+        section, i = self.get_section_from_text(model, section_text)
+        # get the variable section
+        subsection, j = self.get_subsection_from_text(section, subsection_text)
+        # get the gap filling method section
+        subsubsection, k = self.get_subsection_from_text(subsection, subsubsection_text)
+        subsection.removeRow(k)
+        self.update_tab_text()
+
     def remove_variable(self):
         """ Remove a variable."""
         model = self.tree.model()
@@ -449,6 +568,13 @@ class edit_cfg_L1(QtGui.QWidget):
                     if "*" not in tab_text:
                         self.tabs.setTabText(self.tabs.tab_index_current, tab_text+"*")
                     break
+
+    def update_tab_text(self):
+        """ Add an asterisk to the tab title text to indicate tab contents have changed."""
+        # add an asterisk to the tab text to indicate the tab contents have changed
+        tab_text = str(self.tabs.tabText(self.tabs.tab_index_current))
+        if "*" not in tab_text:
+            self.tabs.setTabText(self.tabs.tab_index_current, tab_text+"*")
 
 class edit_cfg_L2(QtGui.QWidget):
     def __init__(self, main_gui):
