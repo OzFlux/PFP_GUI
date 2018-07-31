@@ -2084,8 +2084,8 @@ def xl_read_series(cf):
         ds.returncodes = {"value":1,"message":msg}
         return ds
     label_list = cf['Variables'].keys()
-    if "xlDateTime" not in label_list:
-        msg = " No xlDateTime section found in control file"
+    if "xlDateTime" not in label_list and "DateTime" not in label_list:
+        msg = " No xlDateTime or DateTime section found in control file"
         logger.error(msg)
         ds.returncodes = {"value":1,"message":msg}
         return ds
@@ -2110,7 +2110,7 @@ def xl_read_series(cf):
     # Loop over the variables defined in the 'Variables' section of the
     # configuration file.
     # We do the xlDateTime variable first so as to set the default number of records
-    if xl_check_cf_section(cf, "xlDateTime"):
+    if "xlDateTime" in cf["Variables"]:
         xlsheet_name = cf["Variables"]["xlDateTime"]["xl"]["sheet"]
         if xlsheet_name.lower() in xlsheet_names:
             xlsheet_index = xlsheet_names.index(xlsheet_name.lower())

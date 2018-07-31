@@ -102,6 +102,32 @@ class edit_cfg_L1(QtGui.QWidget):
                             cfg[key1][key2][key3][key4] = val4
         return cfg
 
+    def get_keyval_by_key_name(self, section, key):
+        """ Get the value from a section based on the key name."""
+        found = False
+        val_child = ""
+        key_child = ""
+        for i in range(section.rowCount()):
+            if str(section.child(i, 0).text()) == str(key):
+                found = True
+                key_child = str(section.child(i, 0).text())
+                val_child = str(section.child(i, 1).text())
+                break
+        return key_child, val_child, found, i
+
+    def get_keyval_by_val_name(self, section, val):
+        """ Get the value from a section based on the value name."""
+        found = False
+        key_child = ""
+        val_child = ""
+        for i in range(section.rowCount()):
+            if str(section.child(i, 1).text()) == str(val):
+                found = True
+                key_child = str(section.child(i, 0).text())
+                val_child = str(section.child(i, 1).text())
+                break
+        return key_child, val_child, found, i
+
     def get_section_from_text(self, model, section_name):
         """ Gets a section from a model by matching the section name."""
         for i in range(model.rowCount()):
@@ -382,65 +408,55 @@ class edit_cfg_L1(QtGui.QWidget):
                 break
         # dialog for new directory
         new_dir = QtGui.QFileDialog.getExistingDirectory(self, "Open a folder", val, QtGui.QFileDialog.ShowDirsOnly)
+        new_dir = os.path.join(str(new_dir), "")
         # update the model
         if len(str(new_dir)) > 0:
             section.child(i,1).setText(new_dir)
 
     def browse_input_file(self):
         """ Browse for the input data file path."""
+        """ Browse for the input data file path."""
         model = self.tree.model()
-        indexes = self.tree.selectedIndexes()
+        idx = self.tree.selectedIndexes()[0]
         # get the section containing the selected item
-        for i in range(model.rowCount()):
-            section = model.item(i)
-            if str(section.text()) == "Files":
-                break
-        # get the key and value of the file path
-        for i in range(section.rowCount()):
-            key = str(section.child(i, 0).text())
-            val = str(section.child(i, 1).text())
-            if key == "file_path":
-                file_path = val
-                break
-        # get the key and value of the selected item
-        for i in range(section.rowCount()):
-            key = str(section.child(i, 0).text())
-            val = str(section.child(i, 1).text())
-            if str(indexes[0].data().toString()) == val:
-                break
+        section_text = str(idx.parent().data().toString())
+        subsection_text = str(idx.data().toString())
+        # get the top level and sub sections
+        model = self.tree.model()
+        section, i = self.get_section_from_text(model, section_text)
+        # get the file_path so it can be used as a default directory
+        key, file_path, found, j = self.get_keyval_by_key_name(section, "file_path")
+        # get the row number for the selected item
+        key, val, found, k = self.get_keyval_by_val_name(section, subsection_text)
         # dialog for open file
-        new_file = QtGui.QFileDialog.getOpenFileName(caption="Choose an input file ...", directory=file_path)
+        new_file_path = QtGui.QFileDialog.getOpenFileName(caption="Choose an input file ...",
+                                                              directory=file_path)
         # update the model
-        if len(str(new_file)) > 0:
-            section.child(i,1).setText(new_file)
+        if len(str(new_file_path)) > 0:
+            new_file_parts = os.path.split(str(new_file_path))
+            section.child(k, 1).setText(new_file_parts[1])
 
     def browse_output_file(self):
         """ Browse for the output data file path."""
         model = self.tree.model()
-        indexes = self.tree.selectedIndexes()
+        idx = self.tree.selectedIndexes()[0]
         # get the section containing the selected item
-        for i in range(model.rowCount()):
-            section = model.item(i)
-            if str(section.text()) == "Files":
-                break
-        # get the key and value of the file path
-        for i in range(section.rowCount()):
-            key = str(section.child(i, 0).text())
-            val = str(section.child(i, 1).text())
-            if key == "file_path":
-                file_path = val
-                break
-        # get the key and value of the selected item
-        for i in range(section.rowCount()):
-            key = str(section.child(i, 0).text())
-            val = str(section.child(i, 1).text())
-            if str(indexes[0].data().toString()) == val:
-                break
+        section_text = str(idx.parent().data().toString())
+        subsection_text = str(idx.data().toString())
+        # get the top level and sub sections
+        model = self.tree.model()
+        section, i = self.get_section_from_text(model, section_text)
+        # get the file_path so it can be used as a default directory
+        key, file_path, found, j = self.get_keyval_by_key_name(section, "file_path")
+        # get the row number for the selected item
+        key, val, found, k = self.get_keyval_by_val_name(section, subsection_text)
         # dialog for open file
-        new_file = QtGui.QFileDialog.getOpenFileName(caption="Choose an output file ...", directory=file_path, filter="*.nc")
+        new_file_path = QtGui.QFileDialog.getSaveFileName(caption="Choose an output file ...",
+                                                              directory=file_path, filter="*.nc")
         # update the model
-        if len(str(new_file)) > 0:
-            section.child(i,1).setText(new_file)
+        if len(str(new_file_path)) > 0:
+            new_file_parts = os.path.split(str(new_file_path))
+            section.child(k, 1).setText(new_file_parts[1])
 
     def remove_attribute(self):
         """ Remove a variable attribute from a variable."""
