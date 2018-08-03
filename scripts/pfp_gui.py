@@ -52,10 +52,10 @@ class edit_cfg_L1(QtGui.QWidget):
                 continue
             if key1 in ["Files", "Global", "Output", "General", "Options", "Soil", "Massman"]:
                 self.tree.sections[key1] = QtGui.QStandardItem(key1)
-                for val in self.cfg_mod[key1]:
-                    value = self.cfg_mod[key1][val]
-                    child0 = QtGui.QStandardItem(val)
-                    child1 = QtGui.QStandardItem(str(value))
+                for key in self.cfg_mod[key1]:
+                    val = self.cfg_mod[key1][key]
+                    child0 = QtGui.QStandardItem(key)
+                    child1 = QtGui.QStandardItem(val.replace('"',''))
                     self.tree.sections[key1].appendRow([child0, child1])
                 self.tree.model().appendRow(self.tree.sections[key1])
             elif key1 in ["Variables"]:
@@ -64,10 +64,10 @@ class edit_cfg_L1(QtGui.QWidget):
                     parent2 = QtGui.QStandardItem(key2)
                     for key3 in self.cfg_mod[key1][key2]:
                         parent3 = QtGui.QStandardItem(key3)
-                        for val in self.cfg_mod[key1][key2][key3]:
-                            value = self.cfg_mod[key1][key2][key3][val]
-                            child0 = QtGui.QStandardItem(val)
-                            child1 = QtGui.QStandardItem(str(value))
+                        for key in self.cfg_mod[key1][key2][key3]:
+                            val = self.cfg_mod[key1][key2][key3][key]
+                            child0 = QtGui.QStandardItem(key)
+                            child1 = QtGui.QStandardItem(val.replace('"',''))
                             parent3.appendRow([child0, child1])
                         parent2.appendRow(parent3)
                     self.tree.sections[key1].appendRow(parent2)

@@ -38,21 +38,22 @@ def l1qc(cf):
         if ds1.returncodes["value"] != 0:
             return ds1
         # get a series of Excel datetime from the Python datetime objects
-        pfp_utils.get_xldatefromdatetime(ds1)
+        #pfp_utils.get_xldatefromdatetime(ds1)
     else:
         ds1 = pfp_io.xl_read_series(cf)
         if ds1.returncodes["value"] != 0:
             return ds1
         # get a series of Python datetime objects from the Excel datetime
-        pfp_utils.get_datetimefromxldate(ds1)
+        #pfp_utils.get_datetimefromxldate(ds1)
     # get the netCDF attributes from the control file
-    pfp_ts.do_attributes(cf,ds1)
+    #pfp_ts.do_attributes(cf,ds1)
+    pfp_utils.get_datetime(cf, ds1)
     # round the Python datetime to the nearest second
-    pfp_utils.round_datetime(ds1,mode="nearest_second")
+    pfp_utils.round_datetime(ds1, mode="nearest_second")
     #check for gaps in the Python datetime series and fix if present
-    fixtimestepmethod = pfp_utils.get_keyvaluefromcf(cf,["options"],"FixTimeStepMethod",default="round")
+    fixtimestepmethod = pfp_utils.get_keyvaluefromcf(cf, ["options"], "FixTimeStepMethod", default="round")
     if pfp_utils.CheckTimeStep(ds1):
-        pfp_utils.FixTimeStep(ds1,fixtimestepmethod=fixtimestepmethod)
+        pfp_utils.FixTimeStep(ds1, fixtimestepmethod=fixtimestepmethod)
     # recalculate the Excel datetime
     pfp_utils.get_xldatefromdatetime(ds1)
     # get the Year, Month, Day etc from the Python datetime

@@ -277,7 +277,7 @@ class pfp_main_ui(QtGui.QWidget, QPlainTextEditLogger):
         if len(str(cfgpath)) == 0:
             return
         # read the contents of the control file
-        self.cfg = ConfigObj(cfgpath, indent_type="    ")
+        self.cfg = ConfigObj(cfgpath, indent_type="    ", list_values=False)
         self.cfg["level"] = self.get_cf_level()
         # create a QtTreeView to edit the control file
         if self.cfg["level"] in ["L1"]:
