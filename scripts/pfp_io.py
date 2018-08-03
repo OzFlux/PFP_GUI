@@ -239,6 +239,9 @@ def csv_read_series(cf):
     """
     # get a data structure
     ds = DataStructure()
+    # add the global atributes
+    for gattr in cf['Global'].keys():
+        ds.globalattributes[gattr] = cf['Global'][gattr]
     # parse the control file
     info = csv_read_parse_cf(cf)
     # return with an empty data structure if parsing failed
@@ -282,12 +285,12 @@ def csv_read_series(cf):
         attr = {}
         variable["Attr"] = copy.deepcopy(attr)
         pfp_utils.CreateVariable(ds, variable)
-    # call the function given in the control file to convert the date/time string to a datetime object
-    # NOTE: the function being called needs to deal with missing date values and empty lines
-    function_string = cf["Variables"]["DateTime"]["Function"]["func"]
-    function_name = function_string.split("(")[0]
-    function_args = function_string.split("(")[1].replace(")","").split(",")
-    result = getattr(pfp_func,function_name)(ds, *function_args)
+    ## call the function given in the control file to convert the date/time string to a datetime object
+    ## NOTE: the function being called needs to deal with missing date values and empty lines
+    #function_string = cf["Variables"]["DateTime"]["Function"]["func"]
+    #function_name = function_string.split("(")[0]
+    #function_args = function_string.split("(")[1].replace(")","").split(",")
+    #result = getattr(pfp_func,function_name)(ds, *function_args)
     # set some global attributes
     ds.globalattributes['featureType'] = 'timeseries'
     ds.globalattributes['csv_filename'] = info["csv_filename"]
@@ -2068,9 +2071,115 @@ def xl_read_flags(cf,ds,level,VariablesInFile):
                         logger.error('  xl_read_flags: flags for '+ThisOne+' not found in xl file')
     return ds
 
+#def xl_read_series(cf):
+    ## Instance the data structure object.
+    #ds = DataStructure()
+    ## get the filename
+    #FileName = get_infilenamefromcf(cf)
+    #if len(FileName)==0:
+        #msg = " in_filename not found in control file"
+        #logger.error(msg)
+        #ds.returncodes = {"value":1,"message":msg}
+        #return ds
+    #if not os.path.exists(FileName):
+        #msg = ' Input file '+FileName+' specified in control file not found'
+        #logger.error(msg)
+        #ds.returncodes = {"value":1,"message":msg}
+        #return ds
+    #label_list = cf['Variables'].keys()
+    #if "xlDateTime" not in label_list and "DateTime" not in label_list:
+        #msg = " No xlDateTime or DateTime section found in control file"
+        #logger.error(msg)
+        #ds.returncodes = {"value":1,"message":msg}
+        #return ds
+    ## convert from Excel row number to xlrd row number
+    #first_data_row = int(pfp_utils.get_keyvaluefromcf(cf,["Files"],"in_firstdatarow")) - 1
+    #header_row = int(pfp_utils.get_keyvaluefromcf(cf,["Files"],"in_headerrow")) - 1
+    ## get the Excel workbook object.
+    #file_name = os.path.split(FileName)
+    #logger.info(" Reading Excel file "+file_name[1])
+    #xl_book = xlrd.open_workbook(FileName)
+    ##log.info(" Opened and read Excel file "+FileName)
+    #ds.globalattributes['featureType'] = 'timeseries'
+    #ds.globalattributes['xl_filename'] = FileName
+    #ds.globalattributes['xl_datemode'] = str(xl_book.datemode)
+    #xlsheet_names = [x.lower() for x in xl_book.sheet_names()]
+    ## Get the Excel file modification date and time, these will be
+    ## written to the netCDF file to uniquely identify the version
+    ## of the Excel file used to create this netCDF file.
+    #s = os.stat(FileName)
+    #t = time.localtime(s.st_mtime)
+    #ds.globalattributes['xl_moddatetime'] = str(datetime.datetime(t[0],t[1],t[2],t[3],t[4],t[5]))
+    ## Loop over the variables defined in the 'Variables' section of the
+    ## configuration file.
+    ## We do the xlDateTime variable first so as to set the default number of records
+    #if "xlDateTime" in cf["Variables"]:
+        #xlsheet_name = cf["Variables"]["xlDateTime"]["xl"]["sheet"]
+        #if xlsheet_name.lower() in xlsheet_names:
+            #xlsheet_index = xlsheet_names.index(xlsheet_name.lower())
+            #active_sheet = xl_book.sheet_by_index(xlsheet_index)
+            #header_list = [x.lower() for x in active_sheet.row_values(header_row)]
+            #if cf["Variables"]["xlDateTime"]["xl"]["name"].lower() in header_list:
+                #logger.info(" Getting xlDateTime from sheet "+xlsheet_name)
+                #last_data_row = int(active_sheet.nrows)
+                #ds.series[unicode("xlDateTime")] = {}
+                #xl_col = header_list.index(cf["Variables"]["xlDateTime"]["xl"]["name"].lower())
+                #values = active_sheet.col_values(xl_col)[first_data_row:last_data_row]
+                #types = active_sheet.col_types(xl_col)[first_data_row:last_data_row]
+                #nrecs = len(values)
+                #ds.series["xlDateTime"]["Data"] = numpy.ones(nrecs,dtype=numpy.float64)*float(c.missing_value)
+                #ds.series["xlDateTime"]["Flag"] = numpy.ones(nrecs,dtype=numpy.int32)
+                #for i in range(nrecs):
+                    #if (types[i]==3) or (types[i]==2):
+                        #ds.series["xlDateTime"]["Data"][i] = numpy.float64(values[i])
+                        #ds.series["xlDateTime"]["Flag"][i] = numpy.int32(0)
+                #ds.globalattributes['nc_nrecs'] = str(nrecs)
+            #else:
+                #logger.error("  xlDateTime not found on sheet "+xlsheet_name)
+        #else:
+            #logger.error("  Sheet "+xlsheet_name+" (xlDateTime) not found in Excel workbook")
+    ## remove xlDateTime from the list of series to be read
+    #if "xlDateTime" in label_list:
+        #label_list.remove("xlDateTime")
+    ## and now loop over the series to be read from the Excel file
+    #for label in label_list:
+        #if xl_check_cf_section(cf, label):
+            #xlsheet_name = cf["Variables"][label]["xl"]["sheet"]
+            #if xlsheet_name.lower() in xlsheet_names:
+                #xlsheet_index = xlsheet_names.index(xlsheet_name.lower())
+                #active_sheet = xl_book.sheet_by_index(xlsheet_index)
+                #header_list = [x.lower() for x in active_sheet.row_values(header_row)]
+                #if cf["Variables"][label]["xl"]["name"].lower() in header_list:
+                    #logger.info(" Getting "+label+" from sheet "+xlsheet_name)
+                    #last_data_row = int(active_sheet.nrows)
+                    #if last_data_row-first_data_row == nrecs:
+                        #ds.series[unicode(label)] = {}
+                        #xl_col = header_list.index(cf["Variables"][label]["xl"]["name"].lower())
+                        #values = active_sheet.col_values(xl_col)[first_data_row:last_data_row]
+                        #types = active_sheet.col_types(xl_col)[first_data_row:last_data_row]
+                        #nrecs = len(values)
+                        #ds.series[label]["Data"] = numpy.ones(nrecs,dtype=numpy.float64)*float(c.missing_value)
+                        #ds.series[label]["Flag"] = numpy.ones(nrecs,dtype=numpy.int32)
+                        #for i in range(nrecs):
+                            #if (types[i]==3) or (types[i]==2) and (values[i]!=c.missing_value):
+                                #ds.series[label]["Data"][i] = numpy.float64(values[i])
+                                #ds.series[label]["Flag"][i] = numpy.int32(0)
+                    #else:
+                        #logger.error("  "+label+" on sheet "+xlsheet_name+" is the wrong length")
+                        #continue
+                #else:
+                    #logger.error("  "+label+" not found on sheet "+xlsheet_name)
+            #else:
+                #logger.error("  Sheet "+xlsheet_name+" ("+label+") not found in Excel workbook")
+    #ds.returncodes = {"value":0,"message":"OK"}
+    #return ds
+
 def xl_read_series(cf):
     # Instance the data structure object.
     ds = DataStructure()
+    # add the global atributes
+    for gattr in cf['Global'].keys():
+        ds.globalattributes[gattr] = cf['Global'][gattr]
     # get the filename
     FileName = get_infilenamefromcf(cf)
     if len(FileName)==0:
@@ -2084,8 +2193,8 @@ def xl_read_series(cf):
         ds.returncodes = {"value":1,"message":msg}
         return ds
     label_list = cf['Variables'].keys()
-    if "xlDateTime" not in label_list:
-        msg = " No xlDateTime section found in control file"
+    if "xlDateTime" not in label_list and "DateTime" not in label_list:
+        msg = " No xlDateTime or DateTime section found in control file"
         logger.error(msg)
         ds.returncodes = {"value":1,"message":msg}
         return ds
@@ -2107,39 +2216,9 @@ def xl_read_series(cf):
     s = os.stat(FileName)
     t = time.localtime(s.st_mtime)
     ds.globalattributes['xl_moddatetime'] = str(datetime.datetime(t[0],t[1],t[2],t[3],t[4],t[5]))
-    # Loop over the variables defined in the 'Variables' section of the
-    # configuration file.
-    # We do the xlDateTime variable first so as to set the default number of records
-    if xl_check_cf_section(cf, "xlDateTime"):
-        xlsheet_name = cf["Variables"]["xlDateTime"]["xl"]["sheet"]
-        if xlsheet_name.lower() in xlsheet_names:
-            xlsheet_index = xlsheet_names.index(xlsheet_name.lower())
-            active_sheet = xl_book.sheet_by_index(xlsheet_index)
-            header_list = [x.lower() for x in active_sheet.row_values(header_row)]
-            if cf["Variables"]["xlDateTime"]["xl"]["name"].lower() in header_list:
-                logger.info(" Getting xlDateTime from sheet "+xlsheet_name)
-                last_data_row = int(active_sheet.nrows)
-                ds.series[unicode("xlDateTime")] = {}
-                xl_col = header_list.index(cf["Variables"]["xlDateTime"]["xl"]["name"].lower())
-                values = active_sheet.col_values(xl_col)[first_data_row:last_data_row]
-                types = active_sheet.col_types(xl_col)[first_data_row:last_data_row]
-                nrecs = len(values)
-                ds.series["xlDateTime"]["Data"] = numpy.ones(nrecs,dtype=numpy.float64)*float(c.missing_value)
-                ds.series["xlDateTime"]["Flag"] = numpy.ones(nrecs,dtype=numpy.int32)
-                for i in range(nrecs):
-                    if (types[i]==3) or (types[i]==2):
-                        ds.series["xlDateTime"]["Data"][i] = numpy.float64(values[i])
-                        ds.series["xlDateTime"]["Flag"][i] = numpy.int32(0)
-                ds.globalattributes['nc_nrecs'] = str(nrecs)
-            else:
-                logger.error("  xlDateTime not found on sheet "+xlsheet_name)
-        else:
-            logger.error("  Sheet "+xlsheet_name+" (xlDateTime) not found in Excel workbook")
-    # remove xlDateTime from the list of series to be read
-    if "xlDateTime" in label_list:
-        label_list.remove("xlDateTime")
-    # and now loop over the series to be read from the Excel file
-    for label in label_list:
+    # Loop over the variables defined in the 'Variables' section of the configuration file.
+    info = {}
+    for n, label in enumerate(label_list):
         if xl_check_cf_section(cf, label):
             xlsheet_name = cf["Variables"][label]["xl"]["sheet"]
             if xlsheet_name.lower() in xlsheet_names:
@@ -2149,26 +2228,43 @@ def xl_read_series(cf):
                 if cf["Variables"][label]["xl"]["name"].lower() in header_list:
                     logger.info(" Getting "+label+" from sheet "+xlsheet_name)
                     last_data_row = int(active_sheet.nrows)
-                    if last_data_row-first_data_row == nrecs:
-                        ds.series[unicode(label)] = {}
-                        xl_col = header_list.index(cf["Variables"][label]["xl"]["name"].lower())
-                        values = active_sheet.col_values(xl_col)[first_data_row:last_data_row]
-                        types = active_sheet.col_types(xl_col)[first_data_row:last_data_row]
-                        nrecs = len(values)
-                        ds.series[label]["Data"] = numpy.ones(nrecs,dtype=numpy.float64)*float(c.missing_value)
-                        ds.series[label]["Flag"] = numpy.ones(nrecs,dtype=numpy.int32)
-                        for i in range(nrecs):
-                            if (types[i]==3) or (types[i]==2) and (values[i]!=c.missing_value):
-                                ds.series[label]["Data"][i] = numpy.float64(values[i])
-                                ds.series[label]["Flag"][i] = numpy.int32(0)
-                    else:
-                        logger.error("  "+label+" on sheet "+xlsheet_name+" is the wrong length")
-                        continue
+                    ds.series[unicode(label)] = {}
+                    xl_col = header_list.index(cf["Variables"][label]["xl"]["name"].lower())
+                    values = active_sheet.col_values(xl_col)[first_data_row:last_data_row]
+                    types = active_sheet.col_types(xl_col)[first_data_row:last_data_row]
+                    nrecs = len(values)
+                    ds.series[label]["Data"] = numpy.ones(nrecs,dtype=numpy.float64)*float(c.missing_value)
+                    ds.series[label]["Flag"] = numpy.ones(nrecs,dtype=numpy.int32)
+                    for i in range(nrecs):
+                        if (types[i]==3) or (types[i]==2) and (values[i]!=c.missing_value):
+                            ds.series[label]["Data"][i] = numpy.float64(values[i])
+                            ds.series[label]["Flag"][i] = numpy.int32(0)
+                    ds.series[label]["Attr"] = {"nrecs":nrecs}
+                    for attr in cf["Variables"][label]["Attr"].keys():
+                        ds.series[label]["Attr"][attr] = cf["Variables"][label]["Attr"][attr]
+                    if "missing_value" not in ds.series[label]["Attr"].keys():
+                        ds.series[label]["Attr"]["missing_value"] = numpy.int32(c.missing_value)
+                    info[label] = {"sheet":active_sheet, "nrecs":nrecs}
                 else:
                     logger.error("  "+label+" not found on sheet "+xlsheet_name)
             else:
                 logger.error("  Sheet "+xlsheet_name+" ("+label+") not found in Excel workbook")
-    ds.returncodes = {"value":0,"message":"OK"}
+    # check that all variables have the same length
+    all_good = True
+    label_list = info.keys()
+    nrecs0 = info[label_list[0]]["nrecs"]
+    for label in label_list[1:]:
+        if info[label]["nrecs"] != nrecs0:
+            msg = "  Series " + label + " has " + str(info[label]["nrecs"])
+            msg = msg + ", expected "+str(nrecs0)
+            logger.error(msg)
+            all_good = False
+    if all_good:
+        ds.returncodes = {"value":0, "message":"OK"}
+        ds.globalattributes["nc_nrecs"] = nrecs0
+    else:
+        msg = "Series with unequal lengths found"
+        ds.returncodes = {"value":1, "message":msg}
     return ds
 
 def xl_check_cf_section(cf, label):

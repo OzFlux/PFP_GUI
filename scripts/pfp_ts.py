@@ -1562,6 +1562,7 @@ def DoFunctions(cf,ds):
             logger.error(msg)
             continue
         function_string = cf["Variables"][var]["Function"]["func"]
+        function_string = function_string.replace('"','')
         function_name = function_string.split("(")[0]
         function_args = function_string.split("(")[1].replace(")","").replace(" ","").split(",")
         if function_name not in implemented_functions:

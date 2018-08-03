@@ -177,6 +177,19 @@ def DateTimeFromTimeStamp(ds,TimeStamp_in,fmt=""):
     ds.globalattributes["nc_nrecs"] = nRecs
     return 1
 
+def DateTimeFromExcelDateAndTime(ds, xlDate, xlTime):
+    """ Get Datetime from Excel date and time fields."""
+    xldate = ds.series[xlDate]
+    xltime = ds.series[xlTime]
+    nrecs = len(xldate["Data"])
+    xldatetime = pfp_utils.create_empty_variable("xlDateTime", nrecs)
+    xldatetime["Data"] = xldate["Data"] + xltime["Data"]
+    xldatetime["Attr"]["long_name"] = "Date/time in Excel format"
+    xldatetime["Attr"]["units"] = "days since 1899-12-31 00:00:00"
+    pfp_utils.CreateVariable(ds, xldatetime)
+    pfp_utils.get_datetimefromxldate(ds)
+    return
+
 def DateTimeFromDateAndTimeString(ds, Date, Time):
     if Date not in ds.series.keys():
         logger.error(" Requested date series "+Date+" not found")

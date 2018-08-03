@@ -1,24 +1,28 @@
 # the following line needed for unicode character in convert_anglestring
 # -*- coding: latin-1 -*-
+# standard modules
 import ast
-import constants as c
 import copy
 import datetime
-import dateutil
 import logging
 import math
-import meteorologicalfunctions as mf
-import netCDF4
 import numbers
-import numpy
 import os
 import platform
-import pytz
 import sys
 import time
 import Tkinter,tkSimpleDialog
+# third party modules
+import dateutil
+import netCDF4
+import numpy
+import pytz
 import xlrd
 import xlwt
+# PFP modules
+import constants as c
+import meteorologicalfunctions as mf
+import pfp_func
 
 logger = logging.getLogger("pfp_log")
 
@@ -1633,6 +1637,28 @@ def get_coverage_individual(ds):
         num_good = len(numpy.where(abs(ds.series[ThisOne]['Data']-float(c.missing_value))>c.eps)[0])
         coverage = 100*float(num_good)/float(ds.globalattributes['nc_nrecs'])
         ds.series[ThisOne]['Attr']['coverage_'+level] = str('%d'%coverage)
+
+def get_datetime(cf, ds):
+    """
+    Purpose:
+    Usage:
+    Side effects:
+    Author: PRI
+    Date: August 2018
+    """
+    if "xlDateTime" in ds.series.keys():
+        get_datetimefromxldate(ds)
+    elif "DateTime" in cf["Variables"].keys():
+        if "Function" in cf["Variables"]["DateTime"]:
+            # call the function given in the control file to convert the date/time string to a datetime object
+            # NOTE: the function being called needs to deal with missing date values and empty lines
+            function_string = cf["Variables"]["DateTime"]["Function"]["func"]
+            function_string = function_string.replace('"','')
+            function_name = function_string.split("(")[0]
+            function_args = function_string.split("(")[1].replace(")","").replace(" ","").split(",")
+            result = getattr(pfp_func,function_name)(ds, *function_args)
+
+    return
 
 def get_datetimefromnctime(ds,time,time_units):
     """
