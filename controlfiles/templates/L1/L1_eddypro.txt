@@ -43,7 +43,7 @@ controlfile_name = /home/peter/PFP_GUI/controlfiles/templates/L1/L1_eddypro.txt
             standard_name = not defined
             cf_role = timeseries_id
         [[[Function]]]
-            func = "DateTimeFromDateAndTimeString(Date,Time)"
+            func = "DateTimeFromDateAndTime(Date,Time)"
     [[Date]]
         [[[xl]]]
             sheet = full_output
