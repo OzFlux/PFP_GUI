@@ -625,6 +625,7 @@ class edit_cfg_L2(QtGui.QWidget):
     def get_model_from_data(self):
         """ Build the data model."""
         self.tree.setModel(QtGui.QStandardItemModel())
+        self.tree.setDragDropMode(QtGui.QAbstractItemView.InternalMove)
         self.tree.model().setHorizontalHeaderLabels(['Parameter', 'Value'])
         self.tree.model().itemChanged.connect(self.handleItemChanged)
         # there must be some way to do this recursively
@@ -644,7 +645,11 @@ class edit_cfg_L2(QtGui.QWidget):
             elif  key1 in ["Plots"]:
                 self.tree.sections[key1] = QtGui.QStandardItem(key1)
                 for key2 in self.cfg_mod[key1]:
-                    parent2 = QtGui.QStandardItem(key2)
+                    if "Title" in self.cfg_mod[key1][key2]:
+                        title = self.cfg_mod[key1][key2]["Title"]
+                        parent2 = QtGui.QStandardItem(title)
+                    else:
+                        parent2 = QtGui.QStandardItem(key2)
                     for val in self.cfg_mod[key1][key2]:
                         value = self.cfg_mod[key1][key2][val]
                         child0 = QtGui.QStandardItem(val)
@@ -859,7 +864,7 @@ class edit_cfg_L2(QtGui.QWidget):
                 child1 = QtGui.QStandardItem(str(value))
                 parent3.appendRow([child0, child1])
             parent2.appendRow(parent3)
-        self.tree.variables.appendRow(parent2)
+        self.tree.sections["Variables"].appendRow(parent2)
         # add an asterisk to the tab text to indicate the tab contents have changed
         tab_text = str(self.tabs.tabText(self.tabs.tab_index_current))
         if "*" not in tab_text:

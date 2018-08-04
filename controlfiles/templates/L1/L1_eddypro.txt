@@ -13,7 +13,7 @@ controlfile_name = /home/peter/PFP_GUI/controlfiles/templates/L1/L1_eddypro.txt
     canopy_height = <canopy_height>m
     comment = ""
     conventions = CF-1.6
-    conventions_names = "CF convention standard names table version 27, 28 Nov 2013, audited 4 Jan 2015"
+    conventions_names = CF convention standard names table version 27, 28 Nov 2013, audited 4 Jan 2015
     data_url = ""
     doi = ""
     history = ""
@@ -43,7 +43,7 @@ controlfile_name = /home/peter/PFP_GUI/controlfiles/templates/L1/L1_eddypro.txt
             standard_name = not defined
             cf_role = timeseries_id
         [[[Function]]]
-            func = "DateTimeFromDateAndTime(Date,Time)"
+            func = DateTimeFromDateAndTime(Date,Time)
     [[Date]]
         [[[xl]]]
             sheet = full_output
@@ -214,39 +214,6 @@ controlfile_name = /home/peter/PFP_GUI/controlfiles/templates/L1/L1_eddypro.txt
             serial_number = ""
             standard_name = ""
             units = m/s
-    [[U_SONIC_Vr]]
-        [[[xl]]]
-            sheet = full_output
-            name = u_var
-        [[[Attr]]]
-            height = <height>m
-            instrument = SONIC
-            long_name = Variance of longitudinal component of wind velocity
-            serial_number = ""
-            standard_name = ""
-            units = (m/s)2
-    [[V_SONIC_Vr]]
-        [[[xl]]]
-            sheet = full_output
-            name = v_var
-        [[[Attr]]]
-            height = <height>m
-            instrument = SONIC
-            long_name = Variance of lateral component of wind velocity
-            serial_number = ""
-            standard_name = ""
-            units = (m/s)2
-    [[W_SONIC_Vr]]
-        [[[xl]]]
-            sheet = full_output
-            name = w_var
-        [[[Attr]]]
-            height = <height>m
-            instrument = SONIC
-            long_name = Variance of veritcal component of wind velocity
-            serial_number = ""
-            standard_name = ""
-            units = (m/s)2
     [[Tv_SONIC_Av]]
         [[[xl]]]
             sheet = full_output
@@ -259,7 +226,7 @@ controlfile_name = /home/peter/PFP_GUI/controlfiles/templates/L1/L1_eddypro.txt
             standard_name = virtual_temperature
             units = K
         [[[Function]]]
-            func = "ConvertK2C(Tv_SONIC_Av,Tv_SONIC_Av)"
+            func = ConvertK2C(Tv_SONIC_Av,Tv_SONIC_Av)
     [[Tv_SONIC_Vr]]
         [[[xl]]]
             sheet = full_output
@@ -271,210 +238,84 @@ controlfile_name = /home/peter/PFP_GUI/controlfiles/templates/L1/L1_eddypro.txt
             serial_number = ""
             standard_name = ""
             units = C2
-    [[CO2_IRGA_Av]]
+    [[U_SONIC_Av]]
         [[[xl]]]
             sheet = full_output
-            name = co2_mixing_ratio
+            name = u_rot
         [[[Attr]]]
             height = <height>m
-            instrument = Li-7500A
-            long_name = "CO2 concentration, average"
-            serial_number = ""
-            standard_name = ""
-            units = umol/mol
-    [[H2O_IRGA_Av]]
-        [[[xl]]]
-            sheet = full_output
-            name = h2o_mixing_ratio
-        [[[Attr]]]
-            height = <height>m
-            instrument = Li-7500A
-            long_name = "h2o mixing ratio, average"
-            serial_number = ""
-            standard_name = ""
-            units = mmol/mol
-    [[RH_IRGA_Av]]
-        [[[xl]]]
-            sheet = full_output
-            name = RH
-        [[[Attr]]]
-            height = <height>m
-            instrument = Li-7500A
-            long_name = "Relative humidity, average"
-            serial_number = ""
-            standard_name = ""
-            units = %
-    [[H2O_IRGA_Vr]]
-        [[[xl]]]
-            sheet = full_output
-            name = h2o_var
-        [[[Attr]]]
-            height = <height>m
-            instrument = Li-7500A
-            long_name = "H2O concentration, variance"
+            instrument = SONIC
+            long_name = Wind speed, longitudinal component, coordinate rotated
             serial_number = ""
             standard_name = not defined
-            units = (mmol/m3)2
-    [[CO2_IRGA_Vr]]
-        [[[xl]]]
-            sheet = full_output
-            name = co2_var
-        [[[Attr]]]
-            height = <height>m
-            instrument = Li-7500A
-            long_name = "CO2 concentration, variance"
-            serial_number = ""
-            standard_name = not defined
-            units = (mmol/m3)2
-    [[Ah_HMP_<height>m]]
-        [[[Attr]]]
-            height = <height>m
-            instrument = HMP45C
-            long_name = "Absolute humidity, average"
-            serial_number = ""
-            standard_name = mass_concentration_of_water_vapor_in_air
-            units = g/m3
-        [[[Function]]]
-            func = "AhfromRH(Ah_HMP_<height>m,RH_HMP_<height>m,Ta_HMP_<height>m)"
-    [[RH_HMP_<height>m]]
-        [[[xl]]]
-            sheet = biomet
-            name = RH_1_1_1
-        [[[Attr]]]
-            height = <height>m
-            instrument = HMP45C
-            long_name = "Relative humidity, average"
-            serial_number = ""
-            standard_name = ""
-            units = %
-    [[Ta_HMP_<height>m]]
-        [[[xl]]]
-            sheet = biomet
-            name = TA_1_1_1
-        [[[Attr]]]
-            height = <height>m
-            instrument = HMP45C
-            long_name = "Air temperature, average"
-            serial_number = ""
-            standard_name = air_temperature
-            units = K
-        [[[Function]]]
-            func = "ConvertK2C(Ta_HMP_<height>m,Ta_HMP_<height>m)"
-    [[Fg_<depth>cma]]
-        [[[xl]]]
-            sheet = biomet
-            name = SHF_1_1_1
-        [[[Attr]]]
-            height = <depth>m
-            instrument = ""
-            long_name = "Ground heat flux, sensor 1a"
-            serial_number = ""
-            standard_name = downward_heat_flux_in_soil
-            units = W/m2
-    [[Fg_<depth>cmb]]
-        [[[xl]]]
-            sheet = biomet
-            name = SHF_1_1_2
-        [[[Attr]]]
-            height = <depth>m
-            instrument = ""
-            long_name = "Ground heat flux, sensor 1b"
-            serial_number = ""
-            standard_name = downward_heat_flux_in_soil
-            units = W/m2
-    [[Sws_<depth>cma]]
-        [[[xl]]]
-            sheet = biomet
-            name = SWC_1_1_1
-        [[[Attr]]]
-            height = <depth>m
-            instrument = ""
-            long_name = "Soil water fraction, sensor <depth>cma"
-            serial_number = ""
-            standard_name = soil_moisture_content
-            units = m3/m3
-    [[Sws_<depth>cmb]]
-        [[[xl]]]
-            sheet = biomet
-            name = SWC_1_1_2
-        [[[Attr]]]
-            height = <depth>m
-            instrument = ""
-            long_name = "Soil water fraction, sensor <depth>cmb"
-            serial_number = ""
-            standard_name = soil_moisture_content
-            units = m3/m3
-    [[Ts_<depth>cma]]
-        [[[xl]]]
-            sheet = biomet
-            name = TS_1_1_1
-        [[[Attr]]]
-            height = <depth>m
-            instrument = ""
-            long_name = "Soil temperature, sensor <depth>cma"
-            serial_number = ""
-            standard_name = soil_temperature
-            units = K
-        [[[Function]]]
-            func = "ConvertK2C(Ts_<depth>cma,Ts_<depth>cma)"
-    [[Ts_<depth>cmb]]
-        [[[xl]]]
-            sheet = biomet
-            name = TS_1_1_2
-        [[[Attr]]]
-            height = <depth>m
-            instrument = ""
-            long_name = "Soil temperature, sensor <depth>cmb"
-            serial_number = ""
-            standard_name = soil_temperature
-            units = K
-        [[[Function]]]
-            func = "ConvertK2C(Ts_<depth>cmb,Ts_<depth>cmb)"
-    [[Precip]]
-        [[[xl]]]
-            sheet = biomet
-            name = P_1_1_1
-        [[[Attr]]]
-            height = <height>m
-            instrument = ""
-            long_name = "Rainfall, 30 minute total"
-            serial_number = ""
-            standard_name = rainfall_amount
-            units = mm
-    [[Wd_RMY]]
-        [[[xl]]]
-            sheet = biomet
-            name = WD_1_1_1
-        [[[Attr]]]
-            height = <height>m
-            instrument = RM Yound 2D anemometer
-            long_name = "Wind direction, true, in degrees from North"
-            serial_number = ""
-            standard_name = wind_from_direction
-            units = deg
-    [[Ws_RMY]]
-        [[[xl]]]
-            sheet = biomet
-            name = WS_1_1_1
-        [[[Attr]]]
-            height = <height>m
-            instrument = RM Yound 2D anemometer
-            long_name = Wind speed
-            serial_number = ""
-            standard_name = wind_speed
             units = m/s
-    [[Wd_SONIC]]
+    [[U_SONIC_Vr]]
+        [[[xl]]]
+            sheet = full_output
+            name = u_var
+        [[[Attr]]]
+            height = <height>m
+            instrument = SONIC
+            long_name = Variance of longitudinal component of wind velocity
+            serial_number = ""
+            standard_name = ""
+            units = (m/s)2
+    [[V_SONIC_Av]]
+        [[[xl]]]
+            sheet = full_output
+            name = v_rot
+        [[[Attr]]]
+            height = <height>m
+            instrument = SONIC
+            long_name = Wind speed, lateral component, coordinate rotated
+            serial_number = ""
+            standard_name = not defined
+            units = m/s
+    [[V_SONIC_Vr]]
+        [[[xl]]]
+            sheet = full_output
+            name = v_var
+        [[[Attr]]]
+            height = <height>m
+            instrument = SONIC
+            long_name = Variance of lateral component of wind velocity
+            serial_number = ""
+            standard_name = ""
+            units = (m/s)2
+    [[W_SONIC_Av]]
+        [[[xl]]]
+            sheet = full_output
+            name = w_rot
+        [[[Attr]]]
+            height = <height>m
+            instrument = SONIC
+            long_name = Wind speed, vertical component, coordinate rotated
+            serial_number = ""
+            standard_name = not defined
+            units = m/s
+    [[W_SONIC_Vr]]
+        [[[xl]]]
+            sheet = full_output
+            name = w_var
+        [[[Attr]]]
+            height = <height>m
+            instrument = SONIC
+            long_name = Variance of veritcal component of wind velocity
+            serial_number = ""
+            standard_name = ""
+            units = (m/s)2
+    [[Wd_SONIC_Av]]
         [[[xl]]]
             sheet = full_output
             name = wind_dir
         [[[Attr]]]
             height = <height>m
             instrument = SONIC
-            long_name = "Wind direction, true, degrees from North"
+            long_name = Wind direction, true, degrees from North
             serial_number = ""
             standard_name = wind_from_direction
             units = deg
-    [[Ws_SONIC]]
+    [[Ws_SONIC_Av]]
         [[[xl]]]
             sheet = full_output
             name = wind_speed
@@ -485,39 +326,128 @@ controlfile_name = /home/peter/PFP_GUI/controlfiles/templates/L1/L1_eddypro.txt
             serial_number = ""
             standard_name = wind_speed
             units = m/s
-    [[U_SONIC_Av]]
+    [[CO2_IRGA_Av]]
         [[[xl]]]
             sheet = full_output
-            name = u_rot
+            name = co2_mixing_ratio
         [[[Attr]]]
             height = <height>m
-            instrument = SONIC
-            long_name = "Wind speed, longitudinal component, coordinate rotated"
+            instrument = Li-7500A
+            long_name = CO2 concentration, average
             serial_number = ""
-            standard_name = not defined
-            units = m/s
-    [[V_SONIC_Av]]
+            standard_name = ""
+            units = umol/mol
+    [[CO2_IRGA_Vr]]
         [[[xl]]]
             sheet = full_output
-            name = v_rot
+            name = co2_var
         [[[Attr]]]
             height = <height>m
-            instrument = SONIC
-            long_name = "Wind speed, lateral component, coordinate rotated"
+            instrument = Li-7500A
+            long_name = CO2 concentration, variance
             serial_number = ""
             standard_name = not defined
-            units = m/s
-    [[W_SONIC_Av]]
+            units = (mmol/m3)2
+    [[H2O_IRGA_Av]]
         [[[xl]]]
             sheet = full_output
-            name = w_rot
+            name = h2o_mixing_ratio
         [[[Attr]]]
             height = <height>m
-            instrument = SONIC
-            long_name = "Wind speed, vertical component, coordinate rotated"
+            instrument = Li-7500A
+            long_name = h2o mixing ratio, average
+            serial_number = ""
+            standard_name = ""
+            units = mmol/mol
+    [[H2O_IRGA_Vr]]
+        [[[xl]]]
+            sheet = full_output
+            name = h2o_var
+        [[[Attr]]]
+            height = <height>m
+            instrument = Li-7500A
+            long_name = H2O concentration, variance
             serial_number = ""
             standard_name = not defined
+            units = (mmol/m3)2
+    [[RH_IRGA_Av]]
+        [[[xl]]]
+            sheet = full_output
+            name = RH
+        [[[Attr]]]
+            height = <height>m
+            instrument = Li-7500A
+            long_name = Relative humidity, average
+            serial_number = ""
+            standard_name = ""
+            units = %
+    [[Ta_<inst>_<height>m]]
+        [[[xl]]]
+            sheet = biomet
+            name = TA_1_1_1
+        [[[Attr]]]
+            height = <height>m
+            instrument = HMP45C
+            long_name = Air temperature, average
+            serial_number = ""
+            standard_name = air_temperature
+            units = K
+        [[[Function]]]
+            func = ConvertK2C(Ta_HMP_<height>m,Ta_HMP_<height>m)
+    [[Ah_<inst>_<height>m]]
+        [[[Attr]]]
+            height = <height>m
+            instrument = HMP45C
+            long_name = Absolute humidity, average
+            serial_number = ""
+            standard_name = mass_concentration_of_water_vapor_in_air
+            units = g/m3
+        [[[Function]]]
+            func = AhfromRH(Ah_HMP_<height>m,RH_HMP_<height>m,Ta_HMP_<height>m)
+    [[RH_<inst>_<height>m]]
+        [[[xl]]]
+            sheet = biomet
+            name = RH_1_1_1
+        [[[Attr]]]
+            height = <height>m
+            instrument = HMP45C
+            long_name = Relative humidity, average
+            serial_number = ""
+            standard_name = ""
+            units = %
+    [[Ws_<inst>_Av]]
+        [[[xl]]]
+            sheet = biomet
+            name = WS_1_1_1
+        [[[Attr]]]
+            height = <height>m
+            instrument = RM Yound 2D anemometer
+            long_name = Wind speed
+            serial_number = ""
+            standard_name = wind_speed
             units = m/s
+    [[Wd_<inst>_Av]]
+        [[[xl]]]
+            sheet = biomet
+            name = WD_1_1_1
+        [[[Attr]]]
+            height = <height>m
+            instrument = RM Yound 2D anemometer
+            long_name = Wind direction, true, in degrees from North
+            serial_number = ""
+            standard_name = wind_from_direction
+            units = deg
+    [[Precip]]
+        [[[xl]]]
+            sheet = biomet
+            name = P_1_1_1
+        [[[Attr]]]
+            height = <height>m
+            instrument = ""
+            long_name = Rainfall, 30 minute total
+            serial_number = ""
+            standard_name = rainfall_amount
+            units = mm
     [[ps]]
         [[[xl]]]
             sheet = full_output
@@ -525,9 +455,79 @@ controlfile_name = /home/peter/PFP_GUI/controlfiles/templates/L1/L1_eddypro.txt
         [[[Attr]]]
             height = <height>m
             instrument = IRGA
-            long_name = "Air pressure, average"
+            long_name = Air pressure, average
             serial_number = ""
             standard_name = surface_air_pressure
             units = Pa
         [[[Function]]]
-            func = "ConvertPa2kPa(ps,ps)"
+            func = ConvertPa2kPa(ps,ps)
+    [[Fg_<depth>cma]]
+        [[[xl]]]
+            sheet = biomet
+            name = SHF_1_1_1
+        [[[Attr]]]
+            height = <depth>m
+            instrument = ""
+            long_name = Ground heat flux, sensor 1a
+            serial_number = ""
+            standard_name = downward_heat_flux_in_soil
+            units = W/m2
+    [[Fg_<depth>cmb]]
+        [[[xl]]]
+            sheet = biomet
+            name = SHF_1_1_2
+        [[[Attr]]]
+            height = <depth>m
+            instrument = ""
+            long_name = Ground heat flux, sensor 1b
+            serial_number = ""
+            standard_name = downward_heat_flux_in_soil
+            units = W/m2
+    [[Sws_<depth>cma]]
+        [[[xl]]]
+            sheet = biomet
+            name = SWC_1_1_1
+        [[[Attr]]]
+            height = <depth>m
+            instrument = ""
+            long_name = Soil water fraction, sensor <depth>cma
+            serial_number = ""
+            standard_name = soil_moisture_content
+            units = m3/m3
+    [[Sws_<depth>cmb]]
+        [[[xl]]]
+            sheet = biomet
+            name = SWC_1_1_2
+        [[[Attr]]]
+            height = <depth>m
+            instrument = ""
+            long_name = Soil water fraction, sensor <depth>cmb
+            serial_number = ""
+            standard_name = soil_moisture_content
+            units = m3/m3
+    [[Ts_<depth>cma]]
+        [[[xl]]]
+            sheet = biomet
+            name = TS_1_1_1
+        [[[Attr]]]
+            height = <depth>m
+            instrument = ""
+            long_name = Soil temperature, sensor <depth>cma
+            serial_number = ""
+            standard_name = soil_temperature
+            units = K
+        [[[Function]]]
+            func = ConvertK2C(Ts_<depth>cma,Ts_<depth>cma)
+    [[Ts_<depth>cmb]]
+        [[[xl]]]
+            sheet = biomet
+            name = TS_1_1_2
+        [[[Attr]]]
+            height = <depth>m
+            instrument = ""
+            long_name = Soil temperature, sensor <depth>cmb
+            serial_number = ""
+            standard_name = soil_temperature
+            units = K
+        [[[Function]]]
+            func = ConvertK2C(Ts_<depth>cmb,Ts_<depth>cmb)

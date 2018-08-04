@@ -1,0 +1,214 @@
+level = L2
+controlfile_name = /home/peter/PFP_GUI/controlfiles/templates/L2/L2_eddypro.txt
+[Files]
+    file_path = ../Sites/<site_name>/Data/Tower/<year>/
+    in_filename = <site_name>_<year>_L1.nc
+    out_filename = <site_name>_<year>_L2.nc
+
+[Output]
+
+[Variables]
+    [[Fn]]
+        [[[RangeCheck]]]
+            Lower = [-100]*12
+            Upper = [1000]*12
+    [[Fld]]
+        [[[RangeCheck]]]
+            Lower = [150]*12
+            Upper = [500]*12
+    [[Flu]]
+        [[[RangeCheck]]]
+            Lower = [200]*12
+            Upper = [700]*12
+    [[Fsu]]
+        [[[RangeCheck]]]
+            Lower = [-10]*12
+            Upper = [500]*12
+    [[Fsd]]
+        [[[RangeCheck]]]
+            Lower = [-10]*12
+            Upper = [1500]*12
+    [[Fm]]
+        [[[RangeCheck]]]
+            Lower = [-1]*12
+            Upper = [1]*12
+        [[[DependencyCheck]]]
+            Source = ['Fm_EPFlag','U_CSAT_Vr','V_CSAT_Vr','W_CSAT_Vr']
+    [[Fm_EPFlag]]
+        [[[RangeCheck]]]
+            Lower = [-0.5]*12
+            Upper = [1.5]*12
+    [[Fh]]
+        [[[RangeCheck]]]
+            Lower = [-200]*12
+            Upper = [600]*12
+        [[[DependencyCheck]]]
+            Source = ['Fh_EPFlag','W_CSAT_Vr','Tv_CSAT_Vr']
+    [[Fh_EPFlag]]
+        [[[RangeCheck]]]
+            Lower = [-0.5]*12
+            Upper = [1.5]*12
+    [[Fe]]
+        [[[RangeCheck]]]
+            Lower = [-200]*12
+            Upper = [1000]*12
+        [[[DependencyCheck]]]
+            Source = ['Fe_EPFlag','W_CSAT_Vr','H2O_7500_Vr','CO2_7500_Vr']
+    [[Fe_EPFlag]]
+        [[[RangeCheck]]]
+            Lower = [-0.5]*12
+            Upper = [1.5]*12
+    [[Fc]]
+        [[[RangeCheck]]]
+            Lower = [-50]*12
+            Upper = [50]*12
+        [[[DependencyCheck]]]
+            Source = ['Fc_EPFlag','W_CSAT_Vr','H2O_7500_Vr','CO2_7500_Vr']
+    [[Fc_EPFlag]]
+        [[[RangeCheck]]]
+            Lower = [-0.5]*12
+            Upper = [1.5]*12
+    [[ustar]]
+        [[[RangeCheck]]]
+            Lower = [0]*12
+            Upper = [3]*12
+        [[[DependencyCheck]]]
+            Source = ['Fm_EPFlag','U_CSAT_Vr','V_CSAT_Vr','W_CSAT_Vr']
+    [[Tv_SONIC_Av]]
+        [[[RangeCheck]]]
+            Lower = [-30]*12
+            Upper = [40]*12
+    [[Tv_SONIC_Vr]]
+        [[[RangeCheck]]]
+            Lower = [0]*12
+            Upper = [2]*12
+    [[U_SONIC_Av]]
+        [[[RangeCheck]]]
+            Lower = [0]*12
+            Upper = [10]*12
+    [[U_SONIC_Vr]]
+        [[[RangeCheck]]]
+            Lower = [0]*12
+            Upper = [5]*12
+    [[V_SONIC_Av]]
+        [[[RangeCheck]]]
+            Lower = [-1]*12
+            Upper = [1]*12
+    [[V_SONIC_Vr]]
+        [[[RangeCheck]]]
+            Lower = [0]*12
+            Upper = [5]*12
+    [[W_SONIC_Av]]
+        [[[RangeCheck]]]
+            Lower = [-1]*12
+            Upper = [1]*12
+    [[W_SONIC_Vr]]
+        [[[RangeCheck]]]
+            Lower = [0]*12
+            Upper = [1.5]*12
+    [[Wd_SONIC_Av]]
+        [[[RangeCheck]]]
+            Lower = [0]*12
+            Upper = [360]*12
+    [[Ws_SONIC_Av]]
+        [[[RangeCheck]]]
+            Lower = [0]*12
+            Upper = [20]*12
+    [[CO2_IRGA_Av]]
+        [[[RangeCheck]]]
+            Lower = [250]*12
+            Upper = [1000]*12
+    [[CO2_IRGA_Vr]]
+        [[[RangeCheck]]]
+            Lower = [0]*12
+            Upper = [1.5]*12
+    [[H2O_IRGA_Av]]
+        [[[RangeCheck]]]
+            Lower = [0]*12
+            Upper = [3000]*12
+    [[H2O_IRGA_Vr]]
+        [[[RangeCheck]]]
+            Lower = [0]*12
+            Upper = [5000]*12
+    [[RH_IRGA_Av]]
+        [[[RangeCheck]]]
+            Upper = 110
+            Lower = 0
+    [[Ta_<inst>_<height>m]]
+        [[[RangeCheck]]]
+            Lower = [-35]*12
+            Upper = [50]*12
+    [[Ah_<inst>_<height>m]]
+        [[[RangeCheck]]]
+            Lower = [0]*12
+            Upper = [30]*12
+    [[RH_<inst>_<height>m]]
+        [[[RangeCheck]]]
+            Upper = 110
+            Lower = 0
+    [[Ws_<inst>_Av]]
+        [[[RangeCheck]]]
+            Lower = [0]*12
+            Upper = [20]*12
+    [[Wd_<inst>_Av]]
+        [[[RangeCheck]]]
+            Lower = [0]*12
+            Upper = [360]*12
+    [[Precip]]
+        [[[RangeCheck]]]
+            Lower = [0]*12
+            Upper = [100]*12
+    [[ps]]
+        [[[RangeCheck]]]
+            Lower = [95]*12
+            Upper = [105]*12
+    [[Fg_<depth>cma]]
+        [[[RangeCheck]]]
+            Lower = [-100]*12
+            Upper = [250]*12
+    [[Fg_<depth>cmb]]
+        [[[RangeCheck]]]
+            Lower = [-100]*12
+            Upper = [250]*12
+    [[Sws_<depth>cma]]
+        [[[RangeCheck]]]
+            Lower = [0.0]*12
+            Upper = [0.5]*12
+    [[Sws_<depth>cmb]]
+        [[[RangeCheck]]]
+            Lower = [0.0]*12
+            Upper = [0.5]*12
+    [[Ts_<depth>cma]]
+        [[[RangeCheck]]]
+            Lower = [-10]*12
+            Upper = [60]*12
+    [[Ts_<depth>cmb]]
+        [[[RangeCheck]]]
+            Lower = [-10]*12
+            Upper = [60]*12
+
+[Plots]
+    [[Radiative fluxes]]
+        Title = Radiative fluxes
+        Variables = ['Fsd','Fsu','Fld','Flu','Fn']
+    [[Turbulent fluxes]]
+        Title = Turbulent fluxes
+        Variables = ['Fm','ustar','Fh','Fe','Fc']
+    [[Air temperature, humidity and CO2]]
+        Title = Air temperature, humidity and CO2
+        Variables = ['Ta_<inst>_<depth>m','Tv_SONIC_Av','RH_<inst>_<depth>m','RH_IRGA_Av','CO2_IRGA_Av','Precip']
+    [[Soil water content & rain]]
+        Title = Soil water content & rain
+        Variables = ['Sws_<depth>cma','Sws_<depth>cmb','Precip']
+    [[Soil temperature & rain]]
+        Title = Soil temperature & rain
+        Variables = ['Ts_<depth>cma','Ts_<depth>cmb','Precip']
+    [[Soil heat flux & rain]]
+        Title = Soil heat flux & rain
+        Variables = ['Fg_<depth>cma','Fg_<depth>cmb','Precip']
+    [[Pressure, wind speed, wind direction & rainfall]]
+        Title = Pressure, wind speed, wind direction & rainfall
+        Variables = ['ps','Ws_SONIC_Av','U_SONIC_Av','V_SONIC_Av','W_SONIC_Av','Wd_SONIC_Av','Precip']
+    [[CO2 flux diagnostics]]
+        Title = CO2 flux diagnostics
+        Variables = ['Fc','H2O_IRGA_Av','H2O_IRGA_Vr','CO2_IRGA_Av','CO2_IRGA_Vr','Precip']
