@@ -10,9 +10,7 @@ solo/bin/sofm
 solo/bin/solo
 solo/bin/seqsolo
 solo/output/
-solo/inf/sofm.inf
-solo/inf/solo.inf
-solo/inf/seqsolo.inf
+solo/inf/
 solo/input/
 solo/log/
 

@@ -215,7 +215,7 @@ def l3qc(cf,ds2):
     # merge the incoming shortwave radiation
     pfp_ts.MergeSeries(cf, ds3, 'Fsd')
     # calculate the net radiation from the Kipp and Zonen CNR1
-    pfp_ts.CalculateNetRadiation(cf,ds3,Fn_out='Fn_KZ',Fsd_in='Fsd',Fsu_in='Fsu',Fld_in='Fld',Flu_in='Flu')
+    pfp_ts.CalculateNetRadiation(cf,ds3,Fn_out='Fn_4Cmpt',Fsd_in='Fsd',Fsu_in='Fsu',Fld_in='Fld',Flu_in='Flu')
     pfp_ts.MergeSeries(cf,ds3,'Fn')
     # ****************************************
     # *** Wind speed and direction section ***

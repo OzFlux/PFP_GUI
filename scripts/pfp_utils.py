@@ -1367,7 +1367,15 @@ def GetGlobalAttributeValue(cf,ds,ThisOne):
 def GetMergeSeriesKeys(cf,ThisOne,section=''):
     if len(section)==0: section = 'Variables'
     if 'Source' in cf[section][ThisOne]['MergeSeries'].keys():
-        mlist = ast.literal_eval(cf[section][ThisOne]['MergeSeries']['Source'])
+        #mlist = ast.literal_eval(cf[section][ThisOne]['MergeSeries']['Source'])
+        src_string = cf[section][ThisOne]['MergeSeries']['Source']
+        for c in ["[", "]", "'", '"', " "]:
+            if c in src_string:
+                src_string.replace(c,"")
+        if "," in src_string:
+            src_list = src_string.split(",")
+        else:
+            src_list = [src_string]
     else:
         logger.error('  GetMergeSeriesKeys: key "Source" not in control file MergeSeries section for '+ThisOne)
         mlist = []

@@ -1,6 +1,7 @@
 # standard modules
 import copy
 import inspect
+import logging
 import os
 # 3rd party modules
 from PyQt4 import QtCore, QtGui
@@ -8,6 +9,8 @@ from PyQt4 import QtCore, QtGui
 import pfp_func
 import pfp_utils
 import pfp_gfSOLO
+
+logger = logging.getLogger("pfp_log")
 
 class edit_cfg_L1(QtGui.QWidget):
     def __init__(self, main_gui):
@@ -639,7 +642,7 @@ class edit_cfg_L2(QtGui.QWidget):
                 for val in self.cfg_mod[key1]:
                     value = self.cfg_mod[key1][val]
                     child0 = QtGui.QStandardItem(val)
-                    child1 = QtGui.QStandardItem(str(value))
+                    child1 = QtGui.QStandardItem(value.replace('"',''))
                     self.tree.sections[key1].appendRow([child0, child1])
                 self.tree.model().appendRow(self.tree.sections[key1])
             elif  key1 in ["Plots"]:
@@ -653,7 +656,7 @@ class edit_cfg_L2(QtGui.QWidget):
                     for val in self.cfg_mod[key1][key2]:
                         value = self.cfg_mod[key1][key2][val]
                         child0 = QtGui.QStandardItem(val)
-                        child1 = QtGui.QStandardItem(str(value))
+                        child1 = QtGui.QStandardItem(value.replace('"',''))
                         parent2.appendRow([child0, child1])
                     self.tree.sections[key1].appendRow(parent2)
                 self.tree.model().appendRow(self.tree.sections[key1])
@@ -666,8 +669,9 @@ class edit_cfg_L2(QtGui.QWidget):
                         parent3 = QtGui.QStandardItem(key3)
                         for val in self.cfg_mod[key1][key2][key3]:
                             value = self.cfg_mod[key1][key2][key3][val]
+                            value = self.parse_cfg_value(key3, value)
                             child0 = QtGui.QStandardItem(val)
-                            child1 = QtGui.QStandardItem(str(value))
+                            child1 = QtGui.QStandardItem(value)
                             parent3.appendRow([child0, child1])
                         parent2.appendRow(parent3)
                     self.tree.sections[key1].appendRow(parent2)
@@ -1065,6 +1069,7 @@ class edit_cfg_L2(QtGui.QWidget):
                 break
         # dialog for new directory
         new_dir = QtGui.QFileDialog.getExistingDirectory(self, "Open a folder", val, QtGui.QFileDialog.ShowDirsOnly)
+        new_dir = os.path.join(str(new_dir), "")
         # update the model
         if len(str(new_dir)) > 0:
             section.child(i,1).setText(new_dir)
@@ -1206,6 +1211,30 @@ class edit_cfg_L2(QtGui.QWidget):
                                 self.tabs.setTabText(self.tabs.tab_index_current, tab_text+"*")
                             break
 
+    def parse_cfg_value(self, k, v):
+        """ Parse value from control file to remove unnecessary characters."""
+        try:
+            # check to see if it is a number
+            r = float(v)
+        except ValueError as e:
+            if ("[" in v) and ("]" in v) and ("*" in v):
+                # old style of [value]*12
+                v = v[v.index("[")+1:v.index("]")]
+            elif ("[" in v) and ("]" in v) and ("," in v) and ("*" not in v):
+                # old style of [1,2,3,4,5,6,7,8,9,10,11,12]
+                v = v.replace("[", "").replace("]", "")
+            elif ("[" not in v) and ("]" not in v) and ("," in v) and ("*" not in v):
+                # new style 1,2,3,4,5,6,7,8,9,10,11,12
+                pass
+            else:
+                msg = " Unrecognised format in " + k + " (" + v + ")"
+                logger.error(msg)
+        # remove white space and quotes
+        for c in [" ", '"', "'"]:
+            if c in v:
+                v = v.replace(c, "")
+        return v
+
     def remove_excludedaterange(self):
         """ Remove an ExcludeDates date range."""
         model = self.tree.model()
@@ -1272,6 +1301,7 @@ class edit_cfg_L3(QtGui.QWidget):
     def get_model_from_data(self):
         """ Build the data model."""
         self.tree.setModel(QtGui.QStandardItemModel())
+        self.tree.setDragDropMode(QtGui.QAbstractItemView.InternalMove)
         self.tree.model().setHorizontalHeaderLabels(['Parameter', 'Value'])
         self.tree.model().itemChanged.connect(self.handleItemChanged)
         # there must be some way to do this recursively
@@ -1285,18 +1315,22 @@ class edit_cfg_L3(QtGui.QWidget):
                 for val in self.cfg_mod[key1]:
                     value = self.cfg_mod[key1][val]
                     child0 = QtGui.QStandardItem(val)
-                    child1 = QtGui.QStandardItem(str(value))
+                    child1 = QtGui.QStandardItem(value.replace('"',''))
                     self.tree.sections[key1].appendRow([child0, child1])
                 self.tree.model().appendRow(self.tree.sections[key1])
             elif key1 in ["Plots"]:
                 # sections with 2 levels
                 self.tree.sections[key1] = QtGui.QStandardItem(key1)
                 for key2 in self.cfg_mod[key1]:
-                    parent2 = QtGui.QStandardItem(key2)
+                    if "Title" in self.cfg_mod[key1][key2]:
+                        title = self.cfg_mod[key1][key2]["Title"]
+                        parent2 = QtGui.QStandardItem(title.replace('"',''))
+                    else:
+                        parent2 = QtGui.QStandardItem(key2)
                     for val in self.cfg_mod[key1][key2]:
                         value = self.cfg_mod[key1][key2][val]
                         child0 = QtGui.QStandardItem(val)
-                        child1 = QtGui.QStandardItem(str(value))
+                        child1 = QtGui.QStandardItem(value.replace('"',''))
                         parent2.appendRow([child0, child1])
                     self.tree.sections[key1].appendRow(parent2)
                 self.tree.model().appendRow(self.tree.sections[key1])
@@ -1310,7 +1344,7 @@ class edit_cfg_L3(QtGui.QWidget):
                         for val in self.cfg_mod[key1][key2][key3]:
                             value = self.cfg_mod[key1][key2][key3][val]
                             child0 = QtGui.QStandardItem(val)
-                            child1 = QtGui.QStandardItem(str(value))
+                            child1 = QtGui.QStandardItem(value.replace('"',''))
                             parent3.appendRow([child0, child1])
                         parent2.appendRow(parent3)
                     self.tree.sections[key1].appendRow(parent2)

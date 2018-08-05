@@ -1,0 +1,233 @@
+# AAHYWEH
+# Control file for L2 (input) to L3 (output) quality control.
+#
+# TEMPLATE VERSION
+#  To convert this template to a version that works for data output by the standard OzFlux
+#  data logger program:
+#   1) Replace the following place holders with values for your site:
+#      <site_name> - the name of the site
+#      <year>      - the year of the data
+#      <latitude>  - the latitude of the site, decimal degrees
+#      <longitude> - the longitude of the site, decimal degrees
+#      <height>    - the height of the measurement (above ground), m
+#      <depth>     - the depth of the measurement (below ground), cm for depths <= 1m, m for depths > 1m
+#      <letter>    - the letter used to distinguish sensors at the same depth or height
+#   2) Replace the default quality control limits (eg Lower, Upper etc) with site-specific values.
+#
+# [General]   - general settings
+#    PlotWidth               = 10.7          # default plot width, inches
+#    PlotHeight              = 8             # default plot height, inches
+#    zms                     = <height>      # height of EC instruments above the surface, m
+# [Files]     - contains paths and file names
+# [Options]   - specify processing options
+#             - the following 2 switches must be present with one of the 2 possible values indicated
+#    CO2Units                = umol/mol      # 'mg/m3' or 'umol/mol', units for Cc
+#    FcUnits                 = umol/m2/s     # 'mg/m2/s' or 'umol/m2/s', units for Fc
+#             - the following switches control processing options
+#               - defaults as indicated, options are listed after the # symbol
+#               - default values are used if these switches are not present
+#    UseL2Fluxes             = No            # Yes/No, use fluxes from L2 file, do not calculate fluxes from covariances
+#    2DCoordRotation         = Yes           # Yes/No, apply the 2D coordinate rotation
+#    MassmanCorrection       = No            # Yes/No, apply the Massman correction
+#    ApplyFcStorage          = No            # Yes/No, correct Fc for storage, single point
+#    CorrectIndividualFg     = No            # Yes/No, correct individual Fg for storage or correct average Fg
+#    CorrectFgForStorage     = Yes           # Yes/No, correct Fg for storage in soil column above sensor
+#    CoordinateFluxGaps      = No            # Yes/No, remove Fh and Fe when Fc missing and vice versa
+#    CoordinateAh7500&FcGaps = No            # Yes/No, remove Fc data when any Li-7500 missing and vice versa
+#             - the following switches are for advanced users only
+#    RelaxRotation           = No            # Yes/No, replace missing rotated covariance with unrotated if good
+#    RelaxFgStorage          = No            # Yes/No, replace missing Fg corrected for storage with uncorrected if good
+#    RelaxFeWPL              = No            # Yes/No, replace missing Fe corrected for WPL with uncorrected if good
+#    RelaxFhvtoFh            = No            # Yes/No, replace missing Fh with Fhv if good
+#    DisableFeWPL            = No            # Yes/No, diable the WPL correction for Fe
+#    DisableFcWPL            = No            # Yes/No, diable the WPL correction for Fc
+# [Output]    - specify the variables to be written to the output file
+#               - 2 output list can be specified:
+#                 - "xl" defines which variables will be written to the Excel file output at L3
+#                 - "nc" defines which variables will be written to the netCDF file output at L3
+#               - if no list is specified, all variables are written out
+# [Soil]      - constants used in correcting Fg for storage
+# [Variables] - variable names and quality control keys, only those variables
+#               corrected or calculated at this level need to be specified in
+#               this control file.
+#               Valid quality control sections are:
+#                RangeCheck   - reject data less than "Lower" or greater than "Upper"
+#                DiurnalCheck - reject data outside Avg(H.h)+/-NumSd*Stdev(H.h) where
+#                                Avg(H.h) is the average of all data at time H.h and
+#                                Stdev(H.h) is the standard deviation of all data at time H.h
+#                                 eg H.h = 8.5 is 0830
+#                 NOTE: The "Lower", "Upper" and "NumSd" keywords require a value for each
+#                       month of the year (12).  This can be written in shorthand as:
+#                        eg "[100]*12" (same value for each month)
+#                       or in longhand as:
+#                        eg "[100,110,120,130,140,150,150,140,130,120,110,100]" (different each month)
+#                  [[[RangeCheck]]]
+#                      Lower      = "[-100]*12"
+#                      Upper      = "[600]*12"
+#                  [[[DiurnalCheck]]]
+#                      NumSd      = "[3]*12"
+#                ExcludeDates - reject data between specified dates, multiple date ranges can be
+#                               specified on separate lines but the lines must be numbered
+#                               sequentially from 0 (eg 0, 1, 2 etc)
+#                 NOTE: The date range is specified as:
+#                        eg "['2010-1-1 00:00','2010-9-16 00:00']"
+#                ExcludeHours - reject data at specified times between the specified date range,
+#                               multiple ranges can be specified on separate lines but the
+#                               lines must be numbered sequentially from 0 (eg 0, 1, 2, etc)
+#                 NOTE: The date range and hours to be rejected are specified as:
+#                        eg "['2008-04-22 00:00','2008-07-26 23:30',['09:30','10:00','10:30']]"
+#                Linear       - apply a linear correction to the data within a date range,
+#                               multiple ranges can be specified on separate lines but the
+#                               lines must be numbered sequentially from 0 (eg 0, 1, 2, etc)
+#                 NOTE: The date range, slope and offset are specified as:
+#                        eg "['2010-01-01 00:00','2011-01-01 00:00',1.0,0.0]"
+#                Correction   - apply an offset to a wind direction measurement to correct for alignment
+#                               multiple ranges can be specified on separate lines but the
+#                               lines must be numbered sequentially from 0 (eg 0, 1, 2, etc)
+#                 NOTE: The date range and correction are specified as follows:
+#                        eg "['2009-1-1 00:00','2010-1-1 00:00',180]"
+# [Plots]     - definition of time series plots
+#    # subsection that defines a collection of plots on a single page
+#    [[1]]
+#        # title for the page, required
+#        Title     = "Radiative fluxes"
+#        # list of series to be plotted, required
+#        Variables = "['Fsd','Fsu','Fld','Flu','Fn_NR']"
+#        # Y axis minimum limits for left time series axis, optional, must be a number or 'Auto'
+#        YLMin     = "['Auto',   0 , 250 , 250 ,'Auto']"
+#        # Y axis maximum limits for left time series axis, optional, must be a number or 'Auto'
+#        YLMax     = "['Auto', 300 , 600 , 600 ,'Auto']"
+#        # Y axis minimum limits for right time series axis, optional, must be a number or 'Auto'
+#        YRMin     = "[   0 ,   0 , 250 , 250 ,  -150 ]"
+#        # Y axis maximum limits for right time series axis, optional, must be a number or 'Auto'
+#        YRMax     = "[1200 , 300 , 600 , 600 ,   600 ]"
+#
+level = L3
+controlfile_name = /home/peter/PFP_GUI/controlfiles/templates/L3/L3_eddypro.txt
+[General]
+    zms = <height>
+
+[Files]
+    file_path = ../Sites/<site_name>/Data/Processed/<year>/
+    in_filename = <site_name>_<year>_L2.nc
+    out_filename = <site_name>_<year>_L3.nc
+
+[Options]
+    CO2Units = umol/mol
+    FcUnits = umol/m2/s
+
+[Output]
+#xl = "['Ah','Cc','eta','Fa','Fc','Fe','Fg','Fg_Av','Fh','Fld','Flu','Fm','Fn','Fsd','Fsu','Precip','ps','Sws','Ta','theta','Ts','ustar','Ws','Wd']"
+#nc = "['Ah','Cc','eta','Fa','Fc','Fe','Fg','Fg_Av','Fh','Fld','Flu','Fm','Fn','Fsd','Fsu','Precip','ps','Sws','Ta','theta','Ts','ustar','Ws','Wd']"
+
+[Soil]
+    FgDepth = <depth>
+    BulkDensity = <bulk_density>
+    OrganicContent = <organic_content>
+    SwsDefault = <default_soil_moisture>
+    SwsSeries = ['Sws']
+
+#[Massman]
+#    # TEST ONLY - values for Alice Springs Mulga
+#    zmd = 7.3           # instrument height above displacement plane, d = 2 / 3 * h = 4.3, h = 6.5, z = 11.635 m
+#    z0 = 0.8            # roughness length from Brutseart 1982, eqn 5.7: h / z = 3 * e
+#    angle = 16          # angle between CSAT3 mounting point and IRGA sensor head mid-path
+#    CSATarm = 0.475     # distance from CSAT mounting point to CSAT sensor
+#    IRGAarm = 0.315     # distance from CSAT mounting point to IRGA sensor
+
+[Variables]
+    [[Fn]]
+        [[[MergeSeries]]]
+            Source = ['Fn_4Cmpt','Fn']
+        [[[RangeCheck]]]
+            Lower = -150
+            Upper = 1100
+    [[Ta]]
+        [[[MergeSeries]]]
+            Source = ['Ta_<inst>_<height>m','Ta_SONIC_Av']
+        [[[RangeCheck]]]
+            Lower = -10
+            Upper = 50
+    [[RH]]
+        [[[RangeCheck]]]
+            Upper = 100
+            Lower = 0
+        [[[MergeSeries]]]
+            Source = ['RH_<inst>_<height>m','RH_IRGA_Av']
+    [[Ah]]
+        [[[MergeSeries]]]
+            Source = ['Ah_<inst>_<height>m','Ah_IRGA_Av']
+        [[[RangeCheck]]]
+            Lower = 0
+            Upper = 35
+    [[H2O]]
+        [[[RangeCheck]]]
+            Upper = 3000
+            Lower = 0
+        [[[MergeSeries]]]
+            Source = ['H2O_IRGA_Av']
+    [[CO2]]
+        [[[MergeSeries]]]
+            Source = ['CO2_IRGA_Av']
+            standard_name = not defined
+        [[[RangeCheck]]]
+            Lower = 250
+            Upper = 900
+    [[Ws]]
+        [[[MergeSeries]]]
+            Source = ['Ws_<inst>_Av','Ws_SONIC_Av']
+            standard_name = not defined
+        [[[RangeCheck]]]
+            Lower = 0
+            Upper = 20
+    [[Wd]]
+        [[[MergeSeries]]]
+            Source = ['Wd_<inst>_Av','Wd_SONIC_Av']
+            standard_name = not defined
+        [[[RangeCheck]]]
+            Lower = 0
+            Upper = 360
+    [[Fg]]
+        [[[AverageSeries]]]
+            Source = ['Fg_<depth>cma','Fg_<depth>cmb']
+        [[[RangeCheck]]]
+            Lower = -300
+            Upper = 300
+    [[Sws]]
+        [[[AverageSeries]]]
+            Source = ['Sws_<depth>cma','Sws_<depth>cmb']
+        [[[RangeCheck]]]
+            Lower = 0
+            Upper = 0.5
+    [[Ts]]
+        [[[AverageSeries]]]
+            Source = ['Ts_<depth>cma','Ts_<depth>cmb']
+        [[[RangeCheck]]]
+            Lower = 0
+            Upper = 60
+
+[Plots]
+    [[1]]
+        Title = "Radiative fluxes"
+        Variables = "['Fsd','Fsu','Fld','Flu','Fn']"
+    [[2]]
+        Title = "Turbulent fluxes"
+        Variables = "['Fh','Fe','Fc','ustar','Fm']"
+    [[3]]
+        Title = "Fh diagnostics"
+        Variables = "['Fh','UzT','Diag_CSAT','Diag_7500','AGC_7500','Ah_7500_Sd','Cc_7500_Sd']"
+    [[4]]
+        Title = "Fe diagnostics"
+        Variables = "['Fe','UzA','Diag_CSAT','Diag_7500','AGC_7500','Ah_7500_Sd','Cc_7500_Sd']"
+    [[5]]
+        Title = "Fc diagnostics"
+        Variables = "['Fc','UzC','Diag_CSAT','Diag_7500','AGC_7500','Ah_7500_Sd','Cc_7500_Sd']"
+    [[6]]
+        Title = "Air temperature, humidity and CO2"
+        Variables = "['Ta','Ta_HMP_<height>m','Ah','Ah_HMP_<height>m','Cc_7500_Av']"
+    [[7]]
+        Title = "Soil temperature, water content and heat flux"
+        Variables = "['Precip','Ts','Sws','Sws_<depth><letter>','Fg']"
+    [[8]]
+        Title = "Pressure, wind speed and direction"
+        Variables = "['ps','Ws','Ux','Uy','Uz','Wd']"

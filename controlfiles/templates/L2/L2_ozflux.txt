@@ -1,0 +1,468 @@
+# AAHYWEH
+# Control file for L2 (input) to L3 (output) quality control.
+#
+# TEMPLATE VERSION
+#  To convert this template to a version that works for data output by the standard OzFlux
+#  data logger program:
+#   1) Replace the following place holders with values for your site:
+#      <site_name> - the name of the site
+#      <year>      - the year of the data
+#      <latitude>  - the latitude of the site, decimal degrees
+#      <longitude> - the longitude of the site, decimal degrees
+#      <height>    - the height of the measurement (above ground), m
+#      <depth>     - the depth of the measurement (below ground), cm for depths <= 1m, m for depths > 1m
+#      <letter>    - the letter used to distinguish sensors at the same depth or height
+#   2) Replace the default quality control limits (eg Lower, Upper etc) with site-specific values.
+#
+# DESCRIPTION OF CONTROL FILE SECTIONS
+# [Files]     - contains paths and file names
+# [Output]    - specifies the variables to be written to the output file
+#               - 2 output lists can be specified:
+#                 - "xl" defines which variables will be written to the Excel file output
+#                 - "nc" defines which variables will be written to the netCDF file output
+#               - if no list is specified, all variables are written out
+# [Variables] - variable names and quality control keys, only those variables
+#               corrected or calculated at this level need to be specified in
+#               this control file.
+#               Valid quality control sections are:
+#                RangeCheck      - reject data outside plausible ranges
+#                DiurnalCheck    - reject data outside Avg(H.h)+/-NumSd*Stdev(H.h), see below
+#                ExcludeDates    - reject data outside specified date ranges
+#                ExcludeHours    - reject data for give hours within a date range
+#                DependencyCheck - reject data based on status of other series
+#                Linear          - apply a linear correct to a specified date range
+# [Plots]     - definition of time series plots
+#
+# DETAILED DESCRIPTION OF QUALITY CONTROL CHECKS
+# [[RangeCheck]]
+#     Purpose:
+#         Reject data less than a lower limit or greater than an upper limit
+#     Example:
+#        [[[RangeCheck]]]
+#            reset_qcflag = "no"/"yes"
+#            Lower = "[-10]*12"
+#            Upper = "[1500]*12"
+#        where;
+#            Lower - an expression that evaluates to a Python list of 12 values
+#            Upper - an expression that evaluates to a Python list of 12 values
+#            reset_qcflag - a strang that evaluates to either "no" or "yes"
+#     Syntax rules for "Lower" and "Upper":
+#         1) the expressions for "Lower" and "Upper" must be enclosed in double quote marks ("")
+#         2) the lower and upper limit values must be enclosed in square brackets ([])
+#         3) the expression must evaluate to 12 values for the lower or upper limit,
+#            one for each month of the year, this can be done in 2 ways;
+#            a) shorthand eg [-10]*12
+#               - repeats a value of -10 for all 12 months
+#            b) longhand eg [-10,-20,-30,-40,-50,-60,-60,-50,-40,-30,-20,-10]
+#               - allows a separate value to be specified for each month
+#     Switches:
+#      reset_qcflag - when set to "yes", the range check is first applied to find the values
+#                     within the range of Upper and Lower and the QC flag for these values
+#                     is set to 0
+#                   - this allows the user to set up a sequence of operations that result
+#                     in the merging of EddyPro and PFP fluxes and the QC of the result
+#                     based on the EddyPro QC flag.
+#
+# [[UpperCheck]]
+#     Purpose:
+#         Reject data greater than an upper limit
+#     Example:
+#        [[[UpperCheck]]]
+#            0 = <start_date>,<start_value>,<end_date>,<end_value>
+#        where;
+#         <start_date> - datetime string of format YYYY-MM-DD HH:mm
+#         <start_value> - upper limit value at the start datetime
+#         <end_date> - datetime string of format YYYY-MM-DD HH:mm
+#         <end_value> - upper limit value at the end datetime
+#     Syntax rules for UpperCheck:
+#         1) There can be an arbitrary number of entries under [[UpperCheck]]
+#            but each entry must have a unique number.
+#         2) Each entry must be a string of comma separated values as
+#            described above.
+#         3) The date range defined by each start_date and end_date pair
+#            must be in chronological order.
+#     Operation:
+#         The upper limit applied to the data is calculated by interpolating
+#         from the start value to the end value over the date range from
+#         start_date to end_date.
+#     Switches:
+#
+# [[LowerCheck]]
+#     Purpose:
+#         Reject data less than a lower limit
+#     Example:
+#        [[[LowerCheck]]]
+#            0 = <start_date>,<start_value>,<end_date>,<end_value>
+#        where;
+#         <start_date> - datetime string of format YYYY-MM-DD HH:mm
+#         <start_value> - lower limit value at the start datetime
+#         <end_date> - datetime string of format YYYY-MM-DD HH:mm
+#         <end_value> - lower limit value at the end datetime
+#     Syntax rules for LowerCheck:
+#         1) There can be an arbitrary number of entries under [[LowerCheck]]
+#            but each entry must have a unique number.
+#         2) Each entry must be a string of comma separated values as
+#            described above.
+#         3) The date range defined by each start_date and end_date pair
+#            must be in chronological order.
+#     Operation:
+#         The lower limit applied to the data is calculated by interpolating
+#         from the start value to the end value over the date range from
+#         start_date to end_date.
+#     Switches:
+#
+# [[DependencyCheck]]
+#     Purpose:
+#         Reject data in the target series based on rejected data in precursor series.
+#         The usual way to use this QC check is to apply the other QC checks to the
+#         precursor series first, place the [[DependencyChecks]] key in the target
+#         series section and list the precursor series in the Source key of the
+#         [[DependencyCheck]].
+#     Example:
+#        [[[DependencyCheck]]]
+#            Source     = "['Fh_EPFlag']"
+#        where;
+#            Source - a list of series on which the target depends.
+#     Syntax rules for [[DependencyCheck]]
+#         1) only 1 Source line can be specified
+#         2) the list of sources must be enclosed in DOUBLE quotes (""), in square
+#            brackets ([]) and with each series label enclosed in SINGLE quotes ('')
+#            and separated by commas(,).
+#
+# [[DiurnalCheck]]
+#     CAUTION:
+#         This is a powerful command.  Unsupervised application can remove a great
+#         deal of good data.  Use it sparingly when other methods for rejecting
+#         spikes don't work.
+#     Purpose:
+#         Reject data outside that falls out the range Avg(H.h)+/-NumSd*Stdev(H.h
+#         where Avg(H.h) is the average of all data at time H.h (eg 8.5 is 08:30)
+#               Stdev(H.h) is the standard deviation of all data at time H.h
+#               NumSd is the number of standard deviations either side of the mean
+#               that marks the boundary between accepted and rejected data
+#         Data values less than Avg(H.h)-NumSd*Stdev(H.h) and greater than Avg(H.h)+NumSd*Stdev(H.h)
+#         will be rejected.
+#     Example:
+#        [[[DiurnalCheck]]]
+#            NumSd = "[3]*12"
+#     where;
+#         NumSd - the number of standard deviations either side of the mean within which
+#                 data must lie to be accepted
+#     Syntax rules for "NumSd":
+#         1) the expressions for "NumSd" must be enclosed in double quote marks ("")
+#         2) the number of standard deviation values must be enclosed in square brackets ([])
+#         3) the expression must evaluate to 12 values for the number of standard deviations,
+#            one for each month of the year, this can be done in 2 ways;
+#            a) shorthand eg [5]*12
+#               - repeats a value of 5 for all 12 months
+#            b) longhand eg [5,5,5,3,3,2,2,3,3,5,5,5]
+#               - allows a separate value to be specified for each month
+#
+# [[ExcludeDates]]
+#     Purpose:
+#         Reject data between specified dates.
+#         Multiple date ranges can be specified on separate lines but the lines must be
+#         numbered sequentially from 0 (eg 0, 1, 2 etc)
+#     Example:
+#        [[[ExcludeDates]]]
+#            0 = "['2010-01-01 00:00','2010-01-01 00:00']"
+#        where;
+#            0 - a unique key to identify each date range for which data is to be rejected
+#     Syntax rules for date range:
+#         1) each date range to be excluded must be on a separate line and must have a
+#            unique key eg 0,1,2,3 etc
+#         2) each date range must be enclosed in DOUBLE quote marks ("")
+#         3) each date range must be enclosed in square brackets ([])
+#         4) each date range must consist of a start date and an end date enclosed
+#            in SINGLE quote marks ('')
+#         5) the format for the dates is YYYY-MM-DD HH:mm where YYYY is the 4 digit year,
+#            MM is the 2 digit month, DD is the 2 digit day of the month, HH is the 2 digit
+#            hour (24 hour format) and mm is the 2 digit minute
+#
+# [[ExcludeHours]]
+#     Purpose:
+#         Reject data at specified times between the specified date range.
+#         Multiple ranges can be specified on separate lines but the lines must be numbered
+#         sequentially from 0 (eg 0, 1, 2, etc)
+#     Example:
+#        [[[ExcludeHours]]]
+#            0 = "['2010-04-22 00:00','2010-07-26 23:30',['09:30','10:00','10:30']]"
+#     Syntax rules for date and hour range:
+#         1) each date and hour range to be excluded must be on a separate line and must have a
+#            unique key eg 0,1,2,3 etc
+#         2) each date and hour range must be enclosed in DOUBLE quote marks ("")
+#         3) each date and hour range must be enclosed in square brackets ([])
+#         4) each date and hour range must consist of;
+#            a) a start date and an end date enclosed in SINGLE quote marks ('')
+#            b) a list of hours enclosed in square brackets ([]) with each hour enclosed
+#               in SINGLE quote marks ('') and separated by commas (,)
+#         5) the format for the dates is YYYY-MM-DD HH:mm where YYYY is the 4 digit year,
+#            MM is the 2 digit month, DD is the 2 digit day of the month, HH is the 2 digit
+#            hour (24 hour format) and mm is the 2 digit minute
+#         6) the format of the times to be rejected is HH:mm where HH is the 2 digit hour
+#            (24 hour format) and mm is the 2 digit minute.
+#
+# [[Linear]]
+#     Purpose:
+#         Apply a linear correction to the data within a date range.
+#         Multiple ranges can be specified on separate lines but the lines must be numbered
+#         sequentially from 0 (eg 0, 1, 2, etc)
+#     Example:
+#        [[[Linear]]]
+#            0 = "['2010-01-01 00:00','2011-01-01 00:00',1.0,0.0]"
+#     Syntax rules for [[Linear]]:
+#         1) each linear correction must be on a separate line and must have a unique
+#            key eg 0,1,2,3, etc
+#         2) each linear correction must be enclosed in DOUBLE quote marks ("")
+#         3) each linear correction must be enclosed in square brackets ([])
+#         4) each linear correction must consist of;
+#            a) a start date and an end date enclosed in SINGLE quote marks ('')
+#            b) a value for the slope and offset, separated by commas
+#         5) the format for the dates is YYYY-MM-DD HH:mm where YYYY is the 4 digit year,
+#            MM is the 2 digit month, DD is the 2 digit day of the month, HH is the 2 digit
+#            hour (24 hour format) and mm is the 2 digit minute
+#
+# [[CorrectWindDirection]]
+#     Purpose:
+#        Apply an offset to a wind direction measurement to correct for alignment.
+#        Multiple ranges can be specified on separate lines but the lines must be numbered
+#        sequentially from 0 (eg 0, 1, 2, etc)
+#     Example
+#        [[[CorrectWindDirection]]]
+#            0 = "['2010-01-01 00:00','2011-01-01 00:00',180]"
+#     Syntax rules for [[Correction]]:
+#         1) each wind direction correction must be on a separate line and must have a unique
+#            key eg 0,1,2,3, etc
+#         2) each wind direction correction must be enclosed in DOUBLE quote marks ("")
+#         3) each wind direction correction must be enclosed in square brackets ([])
+#         4) each wind direction correction must consist of;
+#            a) a start date and an end date enclosed in SINGLE quote marks ('')
+#            b) a value for the correction to the wind direction
+#         5) the format for the dates is YYYY-MM-DD HH:mm where YYYY is the 4 digit year,
+#            MM is the 2 digit month, DD is the 2 digit day of the month, HH is the 2 digit
+#            hour (24 hour format) and mm is the 2 digit minute
+#
+# DETAILED DESCRIPTION OF PLOTS SECTION
+# [Plots]     - definition of time series plots
+#    # subsection that defines a collection of plots on a single page
+#    [[1]]
+#        # title for the page, required
+#        Title     = "Radiative fluxes"
+#        # list of series to be plotted, required
+#        Variables = "['Fsd','Fsu','Fld','Flu','Fn_NR']"
+#        # Y axis minimum limits for left time series axis, optional, must be a number or 'Auto'
+#        YLMin     = "['Auto',   0 , 250 , 250 ,'Auto']"
+#        # Y axis maximum limits for left time series axis, optional, must be a number or 'Auto'
+#        YLMax     = "['Auto', 300 , 600 , 600 ,'Auto']"
+#        # Y axis minimum limits for right time series axis, optional, must be a number or 'Auto'
+#        YRMin     = "[   0 ,   0 , 250 , 250 ,  -150 ]"
+#        # Y axis maximum limits for right time series axis, optional, must be a number or 'Auto'
+#        YRMax     = "[1200 , 300 , 600 , 600 ,   600 ]"
+#
+level = L2
+controlfile_name = /home/peter/PFP_GUI/controlfiles/templates/L2/L2_ozflux.txt
+[Files]
+    file_path = ../Sites/<site_name>/Data/Processed/<year>/
+    in_filename = <site_name>_<year>_L1.nc
+    out_filename = <site_name>_<year>_L2.nc
+
+[Output]
+
+[Variables]
+    [[Fn]]
+        [[[RangeCheck]]]
+            Lower = -100
+            Upper = 1000
+    [[Fld]]
+        [[[RangeCheck]]]
+            Lower = [250]*12
+            Upper = [700]*12
+    [[Flu]]
+        [[[RangeCheck]]]
+            Lower = [300]*12
+            Upper = [700]*12
+    [[Fsu]]
+        [[[RangeCheck]]]
+            Lower = [-10]*12
+            Upper = [500]*12
+    [[Fsd]]
+        [[[RangeCheck]]]
+            Lower = -10
+            Upper = 1500
+    [[UzT]]
+        [[[RangeCheck]]]
+            Lower = -0.2
+            Upper = 1
+    [[UxT]]
+        [[[RangeCheck]]]
+            Lower = -2
+            Upper = 2
+    [[UyT]]
+        [[[RangeCheck]]]
+            Lower = -2
+            Upper = 2
+    [[UzA]]
+        [[[RangeCheck]]]
+            Lower = -0.01
+            Upper = 0.5
+    [[UxA]]
+        [[[RangeCheck]]]
+            Lower = -1
+            Upper = 1
+    [[UyA]]
+        [[[RangeCheck]]]
+            Lower = -1
+            Upper = 1
+    [[UzC]]
+        [[[RangeCheck]]]
+            Lower = -2
+            Upper = 2
+    [[UxC]]
+        [[[RangeCheck]]]
+            Lower = -4
+            Upper = 4
+    [[UyC]]
+        [[[RangeCheck]]]
+            Lower = -4
+            Upper = 4
+    [[UxUz]]
+        [[[RangeCheck]]]
+            Lower = -10
+            Upper = 10
+    [[UyUz]]
+        [[[RangeCheck]]]
+            Lower = -10
+            Upper = 10
+    [[UxUy]]
+        [[[RangeCheck]]]
+            Lower = -1
+            Upper = 1
+    [[UxUx]]
+        [[[RangeCheck]]]
+            Lower = -10
+            Upper = 10
+    [[UyUy]]
+        [[[RangeCheck]]]
+            Lower = -10
+            Upper = 10
+    [[CO2_IRGA_Av]]
+        [[[RangeCheck]]]
+            Lower = 500
+            Upper = 2000
+    [[CO2_IRGA_Sd]]
+        [[[RangeCheck]]]
+            Lower = 0
+            Upper = 50
+    [[CO2_IRGA_Vr]]
+        [[[RangeCheck]]]
+            Lower = 0
+            Upper = 2500
+    [[Ah_IRGA_Av]]
+        [[[RangeCheck]]]
+            Lower = 0
+            Upper = 35
+    [[Ah_IRGA_Sd]]
+        [[[RangeCheck]]]
+            Lower = 0
+            Upper = 10
+    [[Ah_IRGA_Vr]]
+        [[[RangeCheck]]]
+            Lower = 0
+            Upper = 100
+    [[Tv_SONIC_Av]]
+        [[[RangeCheck]]]
+            Lower = 0
+            Upper = 50
+    [[Ta_HMP_<height>m]]
+        [[[RangeCheck]]]
+            Lower = 0
+            Upper = 50
+    [[Ah_HMP_<height>m]]
+        [[[RangeCheck]]]
+            Lower = 0
+            Upper = 30
+    [[Precip]]
+        [[[RangeCheck]]]
+            Lower = 0
+            Upper = 50
+    [[Wd_WS4]]
+        [[[RangeCheck]]]
+            Lower = 0
+            Upper = 360
+    [[Ws_WS4]]
+        [[[RangeCheck]]]
+            Lower = 0
+            Upper = 20
+    [[Wd_SONIC_Av]]
+        [[[RangeCheck]]]
+            Lower = 0
+            Upper = 360
+    [[Ws_SONIC_Av]]
+        [[[RangeCheck]]]
+            Lower = 0
+            Upper = 20
+    [[Ux]]
+        [[[RangeCheck]]]
+            Lower = -20
+            Upper = 20
+    [[Uy]]
+        [[[RangeCheck]]]
+            Lower = -20
+            Upper = 20
+    [[Uz]]
+        [[[RangeCheck]]]
+            Lower = -1
+            Upper = 1
+    [[ps]]
+        [[[RangeCheck]]]
+            Lower = 95
+            Upper = 105
+    [[Fg_<depth>cm<letter>]]
+        [[[RangeCheck]]]
+            Lower = -100
+            Upper = 150
+    [[Sws_<depth>cm<letter>]]
+        [[[RangeCheck]]]
+            Lower = 0
+            Upper = 0.5
+    [[Ts_<depth>cm<letter>]]
+        [[[RangeCheck]]]
+            Lower = 0
+            Upper = 60
+        [[[20.5]]]
+    [[Diag_SONIC]]
+        [[[RangeCheck]]]
+            Lower = -0.5
+            Upper = 20.5
+    [[Diag_IRGA]]
+        [[[RangeCheck]]]
+            Lower = -0.5
+            Upper = 10.5
+        [[[70]]]
+    [[AGC_IRGA]]
+        [[[RangeCheck]]]
+            Lower = 0
+            Upper = 70
+
+[Plots]
+    [[Radiative fluxes]]
+        Title = Radiative fluxes
+        Variables = ['Fsd','Fsu','Fld','Flu','Fn']
+    [[Covariances (SONIC)]]
+        Title = Covariances (SONIC)
+        Variables = ['UzT','UxT','UyT','UxUz','UyUz','UxUx','UyUy']
+    [[Covariances (SONIC&IRGA)]]
+        Title = Covariances (SONIC&IRGA)
+        Variables = ['UzA','UxA','UyA','UzC','UxC','UyC']
+    [[Air temperature, humidity and CO2]]
+        Title = Air temperature, humidity and CO2
+        Variables = ['Ta_HMP_<height>m','Tv_SONIC_Av','Ah_HMP_<height>m','Ah_IRGA_Av','CO2_IRGA_Av']
+    [[Soil temperature, water content & rain]]
+        Title = Soil temperature, water content & rain
+        Variables = ['Ts_<depth>cm<letter>','Sws_<depth>cm<letter>','Precip']
+    [[Soil temperature, heat flux & rain]]
+        Title = Soil temperature, heat flux & rain
+        Variables = ['Ts_<depth>cm<letter>','Fg_<depth>cm<letter>','Precip']
+    [[Pressure, wind speed, wind direction & rainfall]]
+        Title = Pressure, wind speed, wind direction & rainfall
+        Variables = ['ps','Ws_SONIC_Av','Ux','Uy','Uz','Wd_SONIC_Av','Precip']

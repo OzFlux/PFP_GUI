@@ -76,8 +76,8 @@ controlfile_name = /home/peter/PFP_GUI/controlfiles/templates/L2/L2_eddypro.txt
             Source = ['Fm_EPFlag','U_CSAT_Vr','V_CSAT_Vr','W_CSAT_Vr']
     [[Tv_SONIC_Av]]
         [[[RangeCheck]]]
-            Lower = [-30]*12
-            Upper = [40]*12
+            Lower = [-10]*12
+            Upper = [50]*12
     [[Tv_SONIC_Vr]]
         [[[RangeCheck]]]
             Lower = [0]*12

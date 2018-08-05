@@ -384,7 +384,11 @@ def do_dependencycheck(cf, ds, section, series, code=23, mode="quiet"):
         msg = " Doing DependencyCheck for "+series
         logger.info(msg)
     # get the precursor source list from the control file
-    source_list = ast.literal_eval(cf[section][series]["DependencyCheck"]["Source"])
+    source_string = cf[section][series]["DependencyCheck"]["Source"]
+    if "," in source_string:
+        source_list = source_string.split(",")
+    else:
+        source_list = [source_string]
     # check to see if the "ignore_missing" flag is set
     opt = pfp_utils.get_keyvaluefromcf(cf, [section,series,"DependencyCheck"], "ignore_missing", default="no")
     ignore_missing = False
@@ -431,7 +435,7 @@ def do_diurnalcheck(cf,ds,section,series,code=5):
     nInts = int((1440.0/dt)+0.5)        #Number of timesteps per day
     Av = numpy.array([c.missing_value]*nInts,dtype=numpy.float64)
     Sd = numpy.array([c.missing_value]*nInts,dtype=numpy.float64)
-    NSd = numpy.array(eval(cf[section][series]['DiurnalCheck']['NumSd']),dtype=float)
+    NSd = numpy.array(parse_rangecheck_limit(cf[section][series]['DiurnalCheck']['NumSd']))
     for m in range(1,13):
         mindex = numpy.where(ds.series['Month']['Data']==m)[0]
         if len(mindex)!=0:
@@ -527,14 +531,15 @@ def do_excludedates(cf,ds,section,series,code=6):
     ExcludeList = cf[section][series]['ExcludeDates'].keys()
     NumExclude = len(ExcludeList)
     for i in range(NumExclude):
-        ExcludeDateList = ast.literal_eval(cf[section][series]['ExcludeDates'][str(i)])
+        exclude_dates_string = cf[section][series]['ExcludeDates'][str(i)]
+        exclude_dates_list = exclude_dates_string.split(",")
         try:
-            dt = datetime.datetime.strptime(ExcludeDateList[0],'%Y-%m-%d %H:%M')
+            dt = datetime.datetime.strptime(exclude_dates_list[0],'%Y-%m-%d %H:%M')
             si = pfp_utils.find_nearest_value(ldt, dt)
         except ValueError:
             si = 0
         try:
-            dt = datetime.datetime.strptime(ExcludeDateList[1],'%Y-%m-%d %H:%M')
+            dt = datetime.datetime.strptime(exclude_dates_list[1],'%Y-%m-%d %H:%M')
             ei = pfp_utils.find_nearest_value(ldt, dt)
         except ValueError:
             ei = -1
@@ -736,6 +741,35 @@ def do_linear(cf,ds):
     if 'do_linear' not in ds.globalattributes['Functions']:
         ds.globalattributes['Functions'] = ds.globalattributes['Functions']+',do_linear'
 
+def parse_rangecheck_limit(s):
+    """
+    Purpose:
+     Parse the RangeCheck Upper or Lower value string.
+     Valid string formats are;
+      '100'
+      '[100]*12'
+      '[1,2,3,4,5,6,7,8,9,10,11,12]'
+      '1,2,3,4,5,6,7,8,9,10,11,12'
+    Author: PRI
+    Date: August 2018
+    """
+    val_list = []
+    try:
+        val_list = [float(s)]*12
+    except ValueError as e:
+        if ("[" in s) and ("]" in s) and ("*" in s):
+            val = s[s.index("[")+1:s.index("]")]
+            val_list = [float(val)]*12
+        elif ("[" in s) and ("]" in s) and ("," in s) and ("*" not in s):
+            s = s.replace("[","").replace("]","")
+            val_list = [float(n) for n in s.split(",")]
+        elif ("[" not in s) and ("]" not in s) and ("," in s) and ("*" not in s):
+            val_list = [float(n) for n in s.split(",")]
+        else:
+            msg = " Unrecognised format for RangeCheck limit ("+s+")"
+            logger.error(msg)
+    return val_list
+
 def do_rangecheck(cf, ds, section, series, code=2):
     """
     Purpose:
@@ -756,10 +790,20 @@ def do_rangecheck(cf, ds, section, series, code=2):
         logger.warning(msg)
         return
     # get the upper and lower limits
-    upr = numpy.array(eval(cf[section][series]['RangeCheck']['Upper']))
+    upper = cf[section][series]['RangeCheck']['Upper']
+    upr = numpy.array(parse_rangecheck_limit(upper))
+    if len(upr) != 12:
+        msg = " Need 12 'Upper' values, got "+str(len(upr))+" for "+series
+        logger.error(msg)
+        return
     valid_upper = numpy.min(upr)
     upr = upr[ds.series['Month']['Data']-1]
-    lwr = numpy.array(eval(cf[section][series]['RangeCheck']['Lower']))
+    lower = cf[section][series]['RangeCheck']['Lower']
+    lwr = numpy.array(parse_rangecheck_limit(lower))
+    if len(lwr) != 12:
+        msg = " Need 12 'Lower' values, got "+str(len(lwr))+" for "+series
+        logger.error(msg)
+        return
     valid_lower = numpy.min(lwr)
     lwr = lwr[ds.series['Month']['Data']-1]
     # get the data, flag and attributes
