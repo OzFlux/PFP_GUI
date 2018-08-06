@@ -1063,14 +1063,19 @@ def plot_quickcheck(cf):
     # draw the plot on the screen
     plt.draw()
 
-def plot_setup(cf,nFig):
+def plot_setup(cf, title):
     p = {}
     if "plot_path" in cf["Files"]:
         p["plot_path"] = os.path.join(cf["Files"]["plot_path"], cf["level"])
     else:
         p["plot_path"] = os.path.join("plots", cf["level"])
-    p['PlotDescription'] = cf['Plots'][str(nFig)]['Title']
-    p['SeriesList'] = ast.literal_eval(cf['Plots'][str(nFig)]['Variables'])
+    p['PlotDescription'] = str(title)
+    #p['SeriesList'] = ast.literal_eval(cf['Plots'][str(nFig)]['Variables'])
+    if "," in cf['Plots'][str(title)]['Variables']:
+        var_string = cf['Plots'][str(title)]['Variables']
+        p['SeriesList'] = var_string.split(",")
+    else:
+        p['SeriesList'] = [var_string]
     p['nGraphs'] = len(p['SeriesList'])
     p['PlotWidth'] = 13
     p['PlotHeight'] = 8
@@ -1185,15 +1190,23 @@ def plot_onetimeseries_right(fig,n,ThisOne,xarray,yarray,p):
     plt.figtext(txtXLoc,txtYLoc,TextStr,color='r',horizontalalignment='right')
     if n > 0: plt.setp(ts_ax_right.get_xticklabels(),visible=False)
 
-def plotxy(cf,nFig,plt_cf,dsa,dsb):
+def plotxy(cf, title, plt_cf, dsa, dsb):
     SiteName = dsa.globalattributes['site_name']
-    PlotDescription = cf['Plots'][str(nFig)]['Title']
+    PlotDescription = str(title)
     fig = plt.figure()
     fig.clf()
     fig.canvas.set_window_title(PlotDescription)
     plt.figtext(0.5,0.95,SiteName+': '+PlotDescription,ha='center',size=16)
-    XSeries = ast.literal_eval(plt_cf['XSeries'])
-    YSeries = ast.literal_eval(plt_cf['YSeries'])
+    #XSeries = ast.literal_eval(plt_cf['XSeries'])
+    #YSeries = ast.literal_eval(plt_cf['YSeries'])
+    if "," in plt_cf['XSeries']:
+        XSeries = plt_cf['XSeries'].split(",")
+    else:
+        XSeries = [plt_cf['XSeries']]
+    if "," in plt_cf['YSeries']:
+        YSeries = plt_cf['YSeries'].split(",")
+    else:
+        YSeries = [plt_cf['YSeries']]
     logger.info(' Plotting xy: '+str(XSeries)+' v '+str(YSeries))
     if dsa == dsb:
         for xname,yname in zip(XSeries,YSeries):

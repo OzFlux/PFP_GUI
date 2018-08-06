@@ -346,8 +346,13 @@ def gfMergeSeries_createdict(cf,ds,series):
     ds.merge[merge_order][series] = {}
     # output series name
     ds.merge[merge_order][series]["output"] = series
-    # site name
-    ds.merge[merge_order][series]["source"] = ast.literal_eval(cf[section][series]["MergeSeries"]["Source"])
+    # merge source list
+    src_string = cf[section][series]["MergeSeries"]["Source"]
+    if "," in src_string:
+        src_list = src_string.split(",")
+    else:
+        src_list = [src_string]
+    ds.merge[merge_order][series]["source"] = src_list
     # create an empty series in ds if the output series doesn't exist yet
     if ds.merge[merge_order][series]["output"] not in ds.series.keys():
         data,flag,attr = pfp_utils.MakeEmptySeries(ds,ds.merge[merge_order][series]["output"])
@@ -379,15 +384,24 @@ def gfSOLO_createdict(cf,ds,series):
         ds.solo[output]["site_name"] = ds.globalattributes["site_name"]
         # list of SOLO settings
         if "solo_settings" in cf[section][series]["GapFillUsingSOLO"][output]:
-            ss_list = ast.literal_eval(cf[section][series]["GapFillUsingSOLO"][output]["solo_settings"])
+            src_string = cf[section][series]["GapFillUsingSOLO"][output]["solo_settings"]
+            if "," in src_string:
+                src_list = src_string.split(",")
+            else:
+                src_list = [src_string]
             ds.solo[output]["solo_settings"] = {}
-            ds.solo[output]["solo_settings"]["nodes_target"] = int(ss_list[0])
-            ds.solo[output]["solo_settings"]["training"] = int(ss_list[1])
-            ds.solo[output]["solo_settings"]["factor"] = int(ss_list[2])
-            ds.solo[output]["solo_settings"]["learningrate"] = float(ss_list[3])
-            ds.solo[output]["solo_settings"]["iterations"] = int(ss_list[4])
+            ds.solo[output]["solo_settings"]["nodes_target"] = int(src_list[0])
+            ds.solo[output]["solo_settings"]["training"] = int(src_list[1])
+            ds.solo[output]["solo_settings"]["factor"] = int(src_list[2])
+            ds.solo[output]["solo_settings"]["learningrate"] = float(src_list[3])
+            ds.solo[output]["solo_settings"]["iterations"] = int(src_list[4])
         # list of drivers
-        ds.solo[output]["drivers"] = ast.literal_eval(cf[section][series]["GapFillUsingSOLO"][output]["drivers"])
+        src_string = cf[section][series]["GapFillUsingSOLO"][output]["drivers"]
+        if "," in src_string:
+            src_list = src_string.split(",")
+        else:
+            src_list = [src_string]
+        ds.solo[output]["drivers"] = src_list
         # apply ustar filter
         opt = pfp_utils.get_keyvaluefromcf(cf,[section,series,"GapFillUsingSOLO",output],
                                          "turbulence_filter",default="")

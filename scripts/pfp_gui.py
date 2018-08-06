@@ -18,6 +18,8 @@ class edit_cfg_L1(QtGui.QWidget):
         super(edit_cfg_L1, self).__init__()
 
         self.cfg_mod = copy.deepcopy(main_gui.cfg)
+        self.cfg_changed = False
+
         self.tabs = main_gui.tabs
 
         self.edit_L1_gui()
@@ -36,16 +38,16 @@ class edit_cfg_L1(QtGui.QWidget):
         self.setGeometry(300, 300, 600, 400)
         # Tree view
         self.tree.setAlternatingRowColors(True)
-        self.tree.setSortingEnabled(True)
+        #self.tree.setSortingEnabled(True)
         self.tree.setHeaderHidden(False)
         self.tree.setSelectionBehavior(QtGui.QAbstractItemView.SelectItems)
+        self.tree.setModel(QtGui.QStandardItemModel())
+        self.tree.setDragDropMode(QtGui.QAbstractItemView.InternalMove)
         # build the model
         self.get_model_from_data()
 
     def get_model_from_data(self):
         """ Build the data model."""
-        self.tree.setModel(QtGui.QStandardItemModel())
-        self.tree.setDragDropMode(QtGui.QAbstractItemView.InternalMove)
         self.tree.model().setHorizontalHeaderLabels(['Parameter', 'Value'])
         self.tree.model().itemChanged.connect(self.handleItemChanged)
         # there must be some way to do this recursively
@@ -53,12 +55,13 @@ class edit_cfg_L1(QtGui.QWidget):
         for key1 in self.cfg_mod:
             if not self.cfg_mod[key1]:
                 continue
-            if key1 in ["Files", "Global", "Output", "General", "Options", "Soil", "Massman"]:
+            if key1 in ["Files", "Global", "Output"]:
                 self.tree.sections[key1] = QtGui.QStandardItem(key1)
-                for key in self.cfg_mod[key1]:
-                    val = self.cfg_mod[key1][key]
-                    child0 = QtGui.QStandardItem(key)
-                    child1 = QtGui.QStandardItem(val.replace('"',''))
+                for key2 in self.cfg_mod[key1]:
+                    val = self.cfg_mod[key1][key2]
+                    val = self.parse_cfg_values(key2, val, ['"', "'"])
+                    child0 = QtGui.QStandardItem(key2)
+                    child1 = QtGui.QStandardItem(val)
                     self.tree.sections[key1].appendRow([child0, child1])
                 self.tree.model().appendRow(self.tree.sections[key1])
             elif key1 in ["Variables"]:
@@ -67,10 +70,11 @@ class edit_cfg_L1(QtGui.QWidget):
                     parent2 = QtGui.QStandardItem(key2)
                     for key3 in self.cfg_mod[key1][key2]:
                         parent3 = QtGui.QStandardItem(key3)
-                        for key in self.cfg_mod[key1][key2][key3]:
-                            val = self.cfg_mod[key1][key2][key3][key]
-                            child0 = QtGui.QStandardItem(key)
-                            child1 = QtGui.QStandardItem(val.replace('"',''))
+                        for key4 in self.cfg_mod[key1][key2][key3]:
+                            val = self.cfg_mod[key1][key2][key3][key4]
+                            val = self.parse_cfg_values(key4, val, ['"', "'"])
+                            child0 = QtGui.QStandardItem(key4)
+                            child1 = QtGui.QStandardItem(val)
                             parent3.appendRow([child0, child1])
                         parent2.appendRow(parent3)
                     self.tree.sections[key1].appendRow(parent2)
@@ -461,6 +465,14 @@ class edit_cfg_L1(QtGui.QWidget):
             new_file_parts = os.path.split(str(new_file_path))
             section.child(k, 1).setText(new_file_parts[1])
 
+    def parse_cfg_values(self, k, v, strip_list):
+        """ Parse key values to remove unnecessary characters."""
+        for c in strip_list:
+            if c in v:
+                v = v.replace(c, "")
+                self.cfg_changed = True
+        return v
+
     def remove_attribute(self):
         """ Remove a variable attribute from a variable."""
         model = self.tree.model()
@@ -601,6 +613,8 @@ class edit_cfg_L2(QtGui.QWidget):
         super(edit_cfg_L2, self).__init__()
 
         self.cfg_mod = copy.deepcopy(main_gui.cfg)
+        self.cfg_changed = False
+
         self.tabs = main_gui.tabs
 
         self.edit_L2_gui()
@@ -619,16 +633,16 @@ class edit_cfg_L2(QtGui.QWidget):
         self.setGeometry(300, 300, 600, 400)
         # Tree view
         self.tree.setAlternatingRowColors(True)
-        self.tree.setSortingEnabled(True)
+        #self.tree.setSortingEnabled(True)
         self.tree.setHeaderHidden(False)
         self.tree.setSelectionBehavior(QtGui.QAbstractItemView.SelectItems)
+        self.tree.setModel(QtGui.QStandardItemModel())
+        self.tree.setDragDropMode(QtGui.QAbstractItemView.InternalMove)
         # build the model
         self.get_model_from_data()
 
     def get_model_from_data(self):
         """ Build the data model."""
-        self.tree.setModel(QtGui.QStandardItemModel())
-        self.tree.setDragDropMode(QtGui.QAbstractItemView.InternalMove)
         self.tree.model().setHorizontalHeaderLabels(['Parameter', 'Value'])
         self.tree.model().itemChanged.connect(self.handleItemChanged)
         # there must be some way to do this recursively
@@ -641,22 +655,22 @@ class edit_cfg_L2(QtGui.QWidget):
                 self.tree.sections[key1] = QtGui.QStandardItem(key1)
                 for val in self.cfg_mod[key1]:
                     value = self.cfg_mod[key1][val]
+                    value = self.parse_cfg_files_value(val, value)
                     child0 = QtGui.QStandardItem(val)
-                    child1 = QtGui.QStandardItem(value.replace('"',''))
+                    child1 = QtGui.QStandardItem(value)
                     self.tree.sections[key1].appendRow([child0, child1])
                 self.tree.model().appendRow(self.tree.sections[key1])
             elif  key1 in ["Plots"]:
                 self.tree.sections[key1] = QtGui.QStandardItem(key1)
                 for key2 in self.cfg_mod[key1]:
-                    if "Title" in self.cfg_mod[key1][key2]:
-                        title = self.cfg_mod[key1][key2]["Title"]
-                        parent2 = QtGui.QStandardItem(title)
-                    else:
-                        parent2 = QtGui.QStandardItem(key2)
+                    # handle old-style control files with separate Title key
+                    title = self.parse_cfg_plots_title(key1, key2)
+                    parent2 = QtGui.QStandardItem(title)
                     for val in self.cfg_mod[key1][key2]:
                         value = self.cfg_mod[key1][key2][val]
+                        value = self.parse_cfg_plots_value(val, value)
                         child0 = QtGui.QStandardItem(val)
-                        child1 = QtGui.QStandardItem(value.replace('"',''))
+                        child1 = QtGui.QStandardItem(value)
                         parent2.appendRow([child0, child1])
                     self.tree.sections[key1].appendRow(parent2)
                 self.tree.model().appendRow(self.tree.sections[key1])
@@ -669,7 +683,7 @@ class edit_cfg_L2(QtGui.QWidget):
                         parent3 = QtGui.QStandardItem(key3)
                         for val in self.cfg_mod[key1][key2][key3]:
                             value = self.cfg_mod[key1][key2][key3][val]
-                            value = self.parse_cfg_value(key3, value)
+                            value = self.parse_cfg_variables_value(key3, value)
                             child0 = QtGui.QStandardItem(val)
                             child1 = QtGui.QStandardItem(value)
                             parent3.appendRow([child0, child1])
@@ -758,22 +772,35 @@ class edit_cfg_L2(QtGui.QWidget):
         elif level == 1:
             parent = str(indexes[0].parent().data().toString())
             if parent == "Variables":
-                self.context_menu.actionAddRangeCheck = QtGui.QAction(self)
-                self.context_menu.actionAddRangeCheck.setText("Add RangeCheck")
-                self.context_menu.addAction(self.context_menu.actionAddRangeCheck)
-                self.context_menu.actionAddRangeCheck.triggered.connect(self.add_rangecheck)
-                self.context_menu.actionAddDependencyCheck = QtGui.QAction(self)
-                self.context_menu.actionAddDependencyCheck.setText("Add DependencyCheck")
-                self.context_menu.addAction(self.context_menu.actionAddDependencyCheck)
-                self.context_menu.actionAddDependencyCheck.triggered.connect(self.add_dependencycheck)
-                self.context_menu.actionAddDiurnalCheck = QtGui.QAction(self)
-                self.context_menu.actionAddDiurnalCheck.setText("Add DiurnalCheck")
-                self.context_menu.addAction(self.context_menu.actionAddDiurnalCheck)
-                self.context_menu.actionAddDiurnalCheck.triggered.connect(self.add_diurnalcheck)
-                self.context_menu.actionAddExcludeDates = QtGui.QAction(self)
-                self.context_menu.actionAddExcludeDates.setText("Add ExcludeDates")
-                self.context_menu.addAction(self.context_menu.actionAddExcludeDates)
-                self.context_menu.actionAddExcludeDates.triggered.connect(self.add_excludedates)
+                idx = indexes[0]
+                # get the selected item from its index
+                selected_item = idx.model().itemFromIndex(idx)
+                # build a list of existing QC checks
+                if selected_item.hasChildren():
+                    existing_entries = []
+                    for i in range(selected_item.rowCount()):
+                        existing_entries.append(str(selected_item.child(i, 0).text()))
+                # only put a QC check in the context menu if it is not already present
+                if "RangeCheck" not in existing_entries:
+                    self.context_menu.actionAddRangeCheck = QtGui.QAction(self)
+                    self.context_menu.actionAddRangeCheck.setText("Add RangeCheck")
+                    self.context_menu.addAction(self.context_menu.actionAddRangeCheck)
+                    self.context_menu.actionAddRangeCheck.triggered.connect(self.add_rangecheck)
+                if "DependencyCheck" not in existing_entries:
+                    self.context_menu.actionAddDependencyCheck = QtGui.QAction(self)
+                    self.context_menu.actionAddDependencyCheck.setText("Add DependencyCheck")
+                    self.context_menu.addAction(self.context_menu.actionAddDependencyCheck)
+                    self.context_menu.actionAddDependencyCheck.triggered.connect(self.add_dependencycheck)
+                if "DiurnalCheck" not in existing_entries:
+                    self.context_menu.actionAddDiurnalCheck = QtGui.QAction(self)
+                    self.context_menu.actionAddDiurnalCheck.setText("Add DiurnalCheck")
+                    self.context_menu.addAction(self.context_menu.actionAddDiurnalCheck)
+                    self.context_menu.actionAddDiurnalCheck.triggered.connect(self.add_diurnalcheck)
+                if "ExcludeDates" not in existing_entries:
+                    self.context_menu.actionAddExcludeDates = QtGui.QAction(self)
+                    self.context_menu.actionAddExcludeDates.setText("Add ExcludeDates")
+                    self.context_menu.addAction(self.context_menu.actionAddExcludeDates)
+                    self.context_menu.actionAddExcludeDates.triggered.connect(self.add_excludedates)
                 #self.context_menu.actionAddExcludeHours = QtGui.QAction(self)
                 #self.context_menu.actionAddExcludeHours.setText("Add ExcludeHours")
                 #self.context_menu.addAction(self.context_menu.actionAddExcludeHours)
@@ -876,14 +903,14 @@ class edit_cfg_L2(QtGui.QWidget):
 
     def add_timeseries(self):
         """ Add a new time series to the 'Plots' section."""
-        new_plot = {"Title":"", "Variables":"[]"}
+        new_plot = {"Variables":""}
         parent = QtGui.QStandardItem("New time series")
         for key in new_plot:
             value = new_plot[key]
             child0 = QtGui.QStandardItem(key)
             child1 = QtGui.QStandardItem(str(value))
             parent.appendRow([child0, child1])
-        self.tree.plots.appendRow(parent)
+        self.tree.sections["Plots"].appendRow(parent)
         # add an asterisk to the tab text to indicate the tab contents have changed
         tab_text = str(self.tabs.tabText(self.tabs.tab_index_current))
         if "*" not in tab_text:
@@ -891,14 +918,14 @@ class edit_cfg_L2(QtGui.QWidget):
 
     def add_scatterplot(self):
         """ Add a new scatter plot to the 'Plots' section."""
-        new_plot = {"Type":"xy","Title":"", "XSeries":"[]", "YSeries":"[]"}
+        new_plot = {"Type":"xy", "XSeries":"", "YSeries":""}
         parent = QtGui.QStandardItem("New scatter plot")
         for key in new_plot:
             value = new_plot[key]
             child0 = QtGui.QStandardItem(key)
             child1 = QtGui.QStandardItem(str(value))
             parent.appendRow([child0, child1])
-        self.tree.plots.appendRow(parent)
+        self.tree.sections["Plots"].appendRow(parent)
         # add an asterisk to the tab text to indicate the tab contents have changed
         tab_text = str(self.tabs.tabText(self.tabs.tab_index_current))
         if "*" not in tab_text:
@@ -937,7 +964,7 @@ class edit_cfg_L2(QtGui.QWidget):
         """ Add a dependency check to a variable."""
         model = self.tree.model()
         indexes = self.tree.selectedIndexes()
-        new_qc = {"DependencyCheck":{"Source":"[]"}}
+        new_qc = {"DependencyCheck":{"Source":""}}
         # get the parent section
         for i in range(model.rowCount()):
             section = model.item(i)
@@ -995,7 +1022,7 @@ class edit_cfg_L2(QtGui.QWidget):
         """ Add an exclude dates check to a variable."""
         model = self.tree.model()
         indexes = self.tree.selectedIndexes()
-        new_qc = {"ExcludeDates":{"0":"[YYYY-mm-dd HH:MM, YYYY-mm-dd HH:MM]"}}
+        new_qc = {"ExcludeDates":{"0":"YYYY-mm-dd HH:MM, YYYY-mm-dd HH:MM"}}
         # get the parent section
         for i in range(model.rowCount()):
             section = model.item(i)
@@ -1041,7 +1068,7 @@ class edit_cfg_L2(QtGui.QWidget):
                 if str(subsubsection.text()) == str(idx.data().toString()):
                     break
             child0 = QtGui.QStandardItem(str(subsubsection.rowCount()))
-            child1 = QtGui.QStandardItem("[YYYY-mm-dd HH:MM, YYYY-mm-dd HH:MM]")
+            child1 = QtGui.QStandardItem("YYYY-mm-dd HH:MM, YYYY-mm-dd HH:MM")
             subsubsection.appendRow([child0, child1])
 
     def add_excludehours(self):
@@ -1211,7 +1238,44 @@ class edit_cfg_L2(QtGui.QWidget):
                                 self.tabs.setTabText(self.tabs.tab_index_current, tab_text+"*")
                             break
 
-    def parse_cfg_value(self, k, v):
+    def parse_cfg_files_value(self, k, v):
+        """ Parse the [Files] section keys to remove unnecessary characters."""
+        strip_list = ['"', "'"]
+        for c in strip_list:
+            if c in v:
+                v = v.replace(c, "")
+                self.cfg_changed = True
+        return v
+
+    def parse_cfg_plots_title(self, key1, key2):
+        """ Parse the [Plots] section for a title."""
+        if "Title" in self.cfg_mod[key1][key2]:
+            title = self.cfg_mod[key1][key2]["Title"]
+            del self.cfg_mod[key1][key2]["Title"]
+            self.cfg_changed = True
+        else:
+            title = key2
+        strip_list = ['"', "'"]
+        for c in strip_list:
+            if c in title:
+                title = title.replace(c, "")
+                self.cfg_changed = True
+        return title
+
+    def parse_cfg_plots_value(self, k, v):
+        """ Parse the [Plots] section keys to remove unnecessary characters."""
+        if k == "Variables":
+            if ("[" in v) and ("]" in v):
+                v = v.replace("[", "").replace("]", "")
+                self.cfg_changed = True
+        strip_list = [" ", '"', "'"]
+        for c in strip_list:
+            if c in v:
+                v = v.replace(c, "")
+                self.cfg_changed = True
+        return v
+
+    def parse_cfg_variables_value(self, k, v):
         """ Parse value from control file to remove unnecessary characters."""
         try:
             # check to see if it is a number
@@ -1220,19 +1284,21 @@ class edit_cfg_L2(QtGui.QWidget):
             if ("[" in v) and ("]" in v) and ("*" in v):
                 # old style of [value]*12
                 v = v[v.index("[")+1:v.index("]")]
-            elif ("[" in v) and ("]" in v) and ("," in v) and ("*" not in v):
+                self.cfg_changed = True
+            elif ("[" in v) and ("]" in v) and ("*" not in v):
                 # old style of [1,2,3,4,5,6,7,8,9,10,11,12]
                 v = v.replace("[", "").replace("]", "")
-            elif ("[" not in v) and ("]" not in v) and ("," in v) and ("*" not in v):
-                # new style 1,2,3,4,5,6,7,8,9,10,11,12
-                pass
-            else:
-                msg = " Unrecognised format in " + k + " (" + v + ")"
-                logger.error(msg)
+                self.cfg_changed = True
         # remove white space and quotes
-        for c in [" ", '"', "'"]:
+        if k in ["RangeCheck", "DiurnalCheck", "DependencyCheck"]:
+            strip_list = [" ", '"', "'"]
+        elif k in ["ExcludeDates", "ExcludeHours"]:
+            # don't remove white space between date and time
+            strip_list = ['"', "'"]
+        for c in strip_list:
             if c in v:
                 v = v.replace(c, "")
+                self.cfg_changed = True
         return v
 
     def remove_excludedaterange(self):
@@ -1268,12 +1334,21 @@ class edit_cfg_L2(QtGui.QWidget):
                         self.tabs.setTabText(self.tabs.tab_index_current, tab_text+"*")
                     break
 
+    def update_tab_text(self):
+        """ Add an asterisk to the tab title text to indicate tab contents have changed."""
+        # add an asterisk to the tab text to indicate the tab contents have changed
+        tab_text = str(self.tabs.tabText(self.tabs.tab_index_current))
+        if "*" not in tab_text:
+            self.tabs.setTabText(self.tabs.tab_index_current, tab_text+"*")
+
 class edit_cfg_L3(QtGui.QWidget):
     def __init__(self, main_gui):
 
         super(edit_cfg_L3, self).__init__()
 
         self.cfg_mod = copy.deepcopy(main_gui.cfg)
+        self.cfg_changed = False
+
         self.tabs = main_gui.tabs
 
         self.edit_L3_gui()
@@ -1292,18 +1367,20 @@ class edit_cfg_L3(QtGui.QWidget):
         self.setGeometry(300, 300, 600, 400)
         # Tree view
         self.tree.setAlternatingRowColors(True)
-        self.tree.setSortingEnabled(True)
+        #self.tree.setSortingEnabled(True)
         self.tree.setHeaderHidden(False)
         self.tree.setSelectionBehavior(QtGui.QAbstractItemView.SelectItems)
+        self.tree.setModel(QtGui.QStandardItemModel())
+        self.tree.setDragDropMode(QtGui.QAbstractItemView.InternalMove)
         # build the model
         self.get_model_from_data()
 
     def get_model_from_data(self):
         """ Build the data model."""
-        self.tree.setModel(QtGui.QStandardItemModel())
-        self.tree.setDragDropMode(QtGui.QAbstractItemView.InternalMove)
         self.tree.model().setHorizontalHeaderLabels(['Parameter', 'Value'])
         self.tree.model().itemChanged.connect(self.handleItemChanged)
+        # correct legacy variable names in the control file
+        self.correct_legacy_variable_names()
         # there must be some way to do this recursively
         self.tree.sections = {}
         for key1 in self.cfg_mod:
@@ -1312,25 +1389,25 @@ class edit_cfg_L3(QtGui.QWidget):
             if key1 in ["Files", "Global", "Output", "General", "Options", "Soil", "Massman"]:
                 # sections with only 1 level
                 self.tree.sections[key1] = QtGui.QStandardItem(key1)
-                for val in self.cfg_mod[key1]:
-                    value = self.cfg_mod[key1][val]
-                    child0 = QtGui.QStandardItem(val)
-                    child1 = QtGui.QStandardItem(value.replace('"',''))
+                for key2 in self.cfg_mod[key1]:
+                    val = self.cfg_mod[key1][key2]
+                    val = self.parse_cfg_values(key2, val, ['"', "'"])
+                    child0 = QtGui.QStandardItem(key2)
+                    child1 = QtGui.QStandardItem(val)
                     self.tree.sections[key1].appendRow([child0, child1])
                 self.tree.model().appendRow(self.tree.sections[key1])
             elif key1 in ["Plots"]:
                 # sections with 2 levels
                 self.tree.sections[key1] = QtGui.QStandardItem(key1)
                 for key2 in self.cfg_mod[key1]:
-                    if "Title" in self.cfg_mod[key1][key2]:
-                        title = self.cfg_mod[key1][key2]["Title"]
-                        parent2 = QtGui.QStandardItem(title.replace('"',''))
-                    else:
-                        parent2 = QtGui.QStandardItem(key2)
-                    for val in self.cfg_mod[key1][key2]:
-                        value = self.cfg_mod[key1][key2][val]
-                        child0 = QtGui.QStandardItem(val)
-                        child1 = QtGui.QStandardItem(value.replace('"',''))
+                    # handle old-style control files with separate Title key
+                    title = self.parse_cfg_plots_title(key1, key2)
+                    parent2 = QtGui.QStandardItem(title)
+                    for key3 in self.cfg_mod[key1][key2]:
+                        val = self.cfg_mod[key1][key2][key3]
+                        val = self.parse_cfg_plots_value(key3, val)
+                        child0 = QtGui.QStandardItem(key3)
+                        child1 = QtGui.QStandardItem(val)
                         parent2.appendRow([child0, child1])
                     self.tree.sections[key1].appendRow(parent2)
                 self.tree.model().appendRow(self.tree.sections[key1])
@@ -1341,10 +1418,11 @@ class edit_cfg_L3(QtGui.QWidget):
                     parent2 = QtGui.QStandardItem(key2)
                     for key3 in self.cfg_mod[key1][key2]:
                         parent3 = QtGui.QStandardItem(key3)
-                        for val in self.cfg_mod[key1][key2][key3]:
-                            value = self.cfg_mod[key1][key2][key3][val]
-                            child0 = QtGui.QStandardItem(val)
-                            child1 = QtGui.QStandardItem(value.replace('"',''))
+                        for key4 in self.cfg_mod[key1][key2][key3]:
+                            val = self.cfg_mod[key1][key2][key3][key4]
+                            val = self.parse_cfg_variables_value(key3, val)
+                            child0 = QtGui.QStandardItem(key4)
+                            child1 = QtGui.QStandardItem(val)
                             parent3.appendRow([child0, child1])
                         parent2.appendRow(parent3)
                     self.tree.sections[key1].appendRow(parent2)
@@ -1504,36 +1582,51 @@ class edit_cfg_L3(QtGui.QWidget):
                 self.context_menu.addAction(self.context_menu.actionRemoveOption)
                 self.context_menu.actionRemoveOption.triggered.connect(self.remove_option)
             elif parent == "Variables":
+                idx = indexes[0]
+                # get the selected item from its index
+                selected_item = idx.model().itemFromIndex(idx)
+                # build a list of existing QC checks
+                if selected_item.hasChildren():
+                    existing_entries = []
+                    for i in range(selected_item.rowCount()):
+                        existing_entries.append(str(selected_item.child(i, 0).text()))
+                # only put a QC check in the context menu if it is not already present
+                if "RangeCheck" not in existing_entries:
                     self.context_menu.actionAddRangeCheck = QtGui.QAction(self)
                     self.context_menu.actionAddRangeCheck.setText("Add RangeCheck")
                     self.context_menu.addAction(self.context_menu.actionAddRangeCheck)
                     self.context_menu.actionAddRangeCheck.triggered.connect(self.add_rangecheck)
+                if "DependencyCheck" not in existing_entries:
                     self.context_menu.actionAddDependencyCheck = QtGui.QAction(self)
                     self.context_menu.actionAddDependencyCheck.setText("Add DependencyCheck")
                     self.context_menu.addAction(self.context_menu.actionAddDependencyCheck)
                     self.context_menu.actionAddDependencyCheck.triggered.connect(self.add_dependencycheck)
+                if "DiurnalCheck" not in existing_entries:
                     self.context_menu.actionAddDiurnalCheck = QtGui.QAction(self)
                     self.context_menu.actionAddDiurnalCheck.setText("Add DiurnalCheck")
                     self.context_menu.addAction(self.context_menu.actionAddDiurnalCheck)
                     self.context_menu.actionAddDiurnalCheck.triggered.connect(self.add_diurnalcheck)
+                if "ExcludeDates" not in existing_entries:
                     self.context_menu.actionAddExcludeDates = QtGui.QAction(self)
                     self.context_menu.actionAddExcludeDates.setText("Add ExcludeDates")
                     self.context_menu.addAction(self.context_menu.actionAddExcludeDates)
                     self.context_menu.actionAddExcludeDates.triggered.connect(self.add_excludedates)
-                    self.context_menu.addSeparator()
+                self.context_menu.addSeparator()
+                if "MergeSeries" not in existing_entries:
                     self.context_menu.actionAddMergeSeries = QtGui.QAction(self)
                     self.context_menu.actionAddMergeSeries.setText("Add MergeSeries")
                     self.context_menu.addAction(self.context_menu.actionAddMergeSeries)
                     self.context_menu.actionAddMergeSeries.triggered.connect(self.add_mergeseries)
+                if "AverageSeries" not in existing_entries:
                     self.context_menu.actionAddAverageSeries = QtGui.QAction(self)
                     self.context_menu.actionAddAverageSeries.setText("Add AverageSeries")
                     self.context_menu.addAction(self.context_menu.actionAddAverageSeries)
                     self.context_menu.actionAddAverageSeries.triggered.connect(self.add_averageseries)
-                    self.context_menu.addSeparator()
-                    self.context_menu.actionRemoveVariable = QtGui.QAction(self)
-                    self.context_menu.actionRemoveVariable.setText("Remove variable")
-                    self.context_menu.addAction(self.context_menu.actionRemoveVariable)
-                    self.context_menu.actionRemoveVariable.triggered.connect(self.remove_variable)
+                self.context_menu.addSeparator()
+                self.context_menu.actionRemoveVariable = QtGui.QAction(self)
+                self.context_menu.actionRemoveVariable.setText("Remove variable")
+                self.context_menu.addAction(self.context_menu.actionRemoveVariable)
+                self.context_menu.actionRemoveVariable.triggered.connect(self.remove_variable)
             elif parent == "Plots":
                 self.context_menu.actionRemovePlot = QtGui.QAction(self)
                 self.context_menu.actionRemovePlot.setText("Remove plot")
@@ -1650,7 +1743,7 @@ class edit_cfg_L3(QtGui.QWidget):
 
     def add_timeseries(self):
         """ Add a new time series to the 'Plots' section."""
-        new_plot = {"Title":"", "Variables":"[]"}
+        new_plot = {"Variables":""}
         parent = QtGui.QStandardItem("New time series")
         for key in new_plot:
             value = new_plot[key]
@@ -1946,6 +2039,81 @@ class edit_cfg_L3(QtGui.QWidget):
         # update the model
         if len(str(new_file)) > 0:
             section.child(i,1).setText(new_file)
+
+    def correct_legacy_variable_names(self):
+        """ Correct some legacy variable names."""
+        # change Fn_KZ to Fn_4cmpt
+        opt = pfp_utils.get_keyvaluefromcf(self.cfg_mod, ["Variables", "Fn", "MergeSeries"],
+                                           "Source", default="", mode="quiet")
+        if len(opt) != 0:
+            if "Fn_KZ" in opt:
+                opt = opt.replace("Fn_KZ", "Fn_4cmpt")
+                self.cfg_mod["Variables"]["Fn"]["MergeSeries"]["Source"] = opt
+                self.cfg_changed = True
+        return
+
+    def parse_cfg_plots_title(self, key1, key2):
+        """ Parse the [Plots] section for a title."""
+        if "Title" in self.cfg_mod[key1][key2]:
+            title = self.cfg_mod[key1][key2]["Title"]
+            del self.cfg_mod[key1][key2]["Title"]
+            self.cfg_changed = True
+        else:
+            title = key2
+        strip_list = ['"', "'"]
+        for c in strip_list:
+            if c in title:
+                title = title.replace(c, "")
+                self.cfg_changed = True
+        return title
+
+    def parse_cfg_plots_value(self, k, v):
+        """ Parse the [Plots] section keys to remove unnecessary characters."""
+        if k == "Variables":
+            if ("[" in v) and ("]" in v):
+                v = v.replace("[", "").replace("]", "")
+                self.cfg_changed = True
+        strip_list = [" ", '"', "'"]
+        for c in strip_list:
+            if c in v:
+                v = v.replace(c, "")
+                self.cfg_changed = True
+        return v
+
+    def parse_cfg_values(self, k, v, strip_list):
+        """ Parse key values to remove unnecessary characters."""
+        for c in strip_list:
+            if c in v:
+                v = v.replace(c, "")
+                self.cfg_changed = True
+        return v
+
+    def parse_cfg_variables_value(self, k, v):
+        """ Parse value from control file to remove unnecessary characters."""
+        try:
+            # check to see if it is a number
+            r = float(v)
+        except ValueError as e:
+            if ("[" in v) and ("]" in v) and ("*" in v):
+                # old style of [value]*12
+                v = v[v.index("[")+1:v.index("]")]
+                self.cfg_changed = True
+            elif ("[" in v) and ("]" in v) and ("*" not in v):
+                # old style of [1,2,3,4,5,6,7,8,9,10,11,12]
+                v = v.replace("[", "").replace("]", "")
+                self.cfg_changed = True
+        # remove white space and quotes
+        if k in ["RangeCheck", "DiurnalCheck", "DependencyCheck",
+                 "MergeSeries", "AverageSeries"]:
+            strip_list = [" ", '"', "'"]
+        elif k in ["ExcludeDates", "ExcludeHours"]:
+            # don't remove white space between date and time
+            strip_list = ['"', "'"]
+        for c in strip_list:
+            if c in v:
+                v = v.replace(c, "")
+                self.cfg_changed = True
+        return v
 
     def remove_variable(self):
         """ Remove a variable."""
@@ -2493,6 +2661,8 @@ class edit_cfg_L4(QtGui.QWidget):
         super(edit_cfg_L4, self).__init__()
 
         self.cfg_mod = copy.deepcopy(main_gui.cfg)
+        self.cfg_changed = False
+
         self.tabs = main_gui.tabs
 
         self.edit_l4_gui()
@@ -2511,15 +2681,16 @@ class edit_cfg_L4(QtGui.QWidget):
         self.setGeometry(300, 300, 600, 400)
         # Tree view
         self.tree.setAlternatingRowColors(True)
-        self.tree.setSortingEnabled(True)
+        #self.tree.setSortingEnabled(True)
         self.tree.setHeaderHidden(False)
         self.tree.setSelectionBehavior(QtGui.QAbstractItemView.SelectItems)
+        self.tree.setModel(QtGui.QStandardItemModel())
+        self.tree.setDragDropMode(QtGui.QAbstractItemView.InternalMove)
         # build the model
         self.get_model_from_data()
 
     def get_model_from_data(self):
         """ Build the data model."""
-        self.tree.setModel(QtGui.QStandardItemModel())
         self.tree.model().setHorizontalHeaderLabels(['Parameter', 'Value'])
         self.tree.model().itemChanged.connect(self.handleItemChanged)
         # there must be someway outa here, said the Joker to the Thief ...
@@ -2530,33 +2701,40 @@ class edit_cfg_L4(QtGui.QWidget):
             if key1 in ["Files", "Global", "Options"]:
                 # sections with only 1 level
                 self.tree.sections[key1] = QtGui.QStandardItem(key1)
-                for val in self.cfg_mod[key1]:
-                    value = self.cfg_mod[key1][val]
-                    child0 = QtGui.QStandardItem(val)
-                    child1 = QtGui.QStandardItem(str(value))
+                for key2 in self.cfg_mod[key1]:
+                    val = self.cfg_mod[key1][key2]
+                    val = self.parse_cfg_values(key2, val, ['"', "'"])
+                    child0 = QtGui.QStandardItem(key2)
+                    child1 = QtGui.QStandardItem(str(val))
                     self.tree.sections[key1].appendRow([child0, child1])
                 self.tree.model().appendRow(self.tree.sections[key1])
             elif key1 in ["Drivers"]:
                 # sections with 4 levels
                 self.tree.sections[key1] = QtGui.QStandardItem(key1)
+                # key2 is the variable name
                 for key2 in self.cfg_mod[key1]:
                     parent2 = QtGui.QStandardItem(key2)
+                    # key3 is the gap filling method
                     for key3 in self.cfg_mod[key1][key2]:
                         parent3 = QtGui.QStandardItem(key3)
                         if key3 in ["GapFillFromAlternate", "GapFillFromClimatology"]:
+                            # key4 is the altyernate variable name
                             for key4 in self.cfg_mod[key1][key2][key3]:
                                 parent4 = QtGui.QStandardItem(key4)
-                                for val in self.cfg_mod[key1][key2][key3][key4]:
-                                    value = self.cfg_mod[key1][key2][key3][key4][val]
-                                    child0 = QtGui.QStandardItem(val)
-                                    child1 = QtGui.QStandardItem(str(value))
+                                # key5 is the source of the alternate data
+                                for key5 in self.cfg_mod[key1][key2][key3][key4]:
+                                    val = self.cfg_mod[key1][key2][key3][key4][key5]
+                                    val = self.parse_cfg_values(key5, val, ['"', "'"])
+                                    child0 = QtGui.QStandardItem(key5)
+                                    child1 = QtGui.QStandardItem(val)
                                     parent4.appendRow([child0, child1])
                                 parent3.appendRow(parent4)
                         elif key3 in ["MergeSeries", "RangeCheck", "ExcludeDates"]:
-                            for val in self.cfg_mod[key1][key2][key3]:
-                                value = self.cfg_mod[key1][key2][key3][val]
-                                child0 = QtGui.QStandardItem(val)
-                                child1 = QtGui.QStandardItem(str(value))
+                            for key4 in self.cfg_mod[key1][key2][key3]:
+                                val = self.cfg_mod[key1][key2][key3][key4]
+                                val = self.parse_cfg_variables_value(key3, val)
+                                child0 = QtGui.QStandardItem(key4)
+                                child1 = QtGui.QStandardItem(val)
                                 parent3.appendRow([child0, child1])
                         parent2.appendRow(parent3)
                     self.tree.sections[key1].appendRow(parent2)
@@ -2698,35 +2876,51 @@ class edit_cfg_L4(QtGui.QWidget):
                     self.context_menu.addAction(self.context_menu.actionRemoveOption)
                     self.context_menu.actionRemoveOption.triggered.connect(self.remove_item_options)
             elif (section_name in ["Drivers"]):
-                self.context_menu.actionAddAlternate = QtGui.QAction(self)
-                self.context_menu.actionAddAlternate.setText("Add Alternate")
-                self.context_menu.addAction(self.context_menu.actionAddAlternate)
-                self.context_menu.actionAddAlternate.triggered.connect(self.add_alternate)
-                self.context_menu.actionAddMDS = QtGui.QAction(self)
-                self.context_menu.actionAddMDS.setText("Add MDS")
-                self.context_menu.addAction(self.context_menu.actionAddMDS)
-                self.context_menu.actionAddMDS.triggered.connect(self.add_MDS)
-                self.context_menu.actionAddClimatology = QtGui.QAction(self)
-                self.context_menu.actionAddClimatology.setText("Add Climatology")
-                self.context_menu.addAction(self.context_menu.actionAddClimatology)
-                self.context_menu.actionAddClimatology.triggered.connect(self.add_climatology)
+                idx = indexes[0]
+                # get the selected item from its index
+                selected_item = idx.model().itemFromIndex(idx)
+                # build a list of existing QC checks
+                if selected_item.hasChildren():
+                    existing_entries = []
+                    for i in range(selected_item.rowCount()):
+                        existing_entries.append(str(selected_item.child(i, 0).text()))
+                # only put a QC check in the context menu if it is not already present
+                if "GapFillFromAlternate" not in existing_entries:
+                    self.context_menu.actionAddAlternate = QtGui.QAction(self)
+                    self.context_menu.actionAddAlternate.setText("Add Alternate")
+                    self.context_menu.addAction(self.context_menu.actionAddAlternate)
+                    self.context_menu.actionAddAlternate.triggered.connect(self.add_alternate)
+                if "GapFillUsingMDS" not in existing_entries:
+                    self.context_menu.actionAddMDS = QtGui.QAction(self)
+                    self.context_menu.actionAddMDS.setText("Add MDS")
+                    self.context_menu.addAction(self.context_menu.actionAddMDS)
+                    self.context_menu.actionAddMDS.triggered.connect(self.add_MDS)
+                if "GapFillFromClimatology" not in existing_entries:
+                    self.context_menu.actionAddClimatology = QtGui.QAction(self)
+                    self.context_menu.actionAddClimatology.setText("Add Climatology")
+                    self.context_menu.addAction(self.context_menu.actionAddClimatology)
+                    self.context_menu.actionAddClimatology.triggered.connect(self.add_climatology)
                 self.context_menu.addSeparator()
-                self.context_menu.actionAddRangeCheck = QtGui.QAction(self)
-                self.context_menu.actionAddRangeCheck.setText("Add RangeCheck")
-                self.context_menu.addAction(self.context_menu.actionAddRangeCheck)
-                self.context_menu.actionAddRangeCheck.triggered.connect(self.add_rangecheck)
-                self.context_menu.actionAddDependencyCheck = QtGui.QAction(self)
-                self.context_menu.actionAddDependencyCheck.setText("Add DependencyCheck")
-                self.context_menu.addAction(self.context_menu.actionAddDependencyCheck)
-                self.context_menu.actionAddDependencyCheck.triggered.connect(self.add_dependencycheck)
-                self.context_menu.actionAddDiurnalCheck = QtGui.QAction(self)
-                self.context_menu.actionAddDiurnalCheck.setText("Add DiurnalCheck")
-                self.context_menu.addAction(self.context_menu.actionAddDiurnalCheck)
-                self.context_menu.actionAddDiurnalCheck.triggered.connect(self.add_diurnalcheck)
-                self.context_menu.actionAddExcludeDates = QtGui.QAction(self)
-                self.context_menu.actionAddExcludeDates.setText("Add ExcludeDates")
-                self.context_menu.addAction(self.context_menu.actionAddExcludeDates)
-                self.context_menu.actionAddExcludeDates.triggered.connect(self.add_excludedates)
+                if "RangeCheck" not in existing_entries:
+                    self.context_menu.actionAddRangeCheck = QtGui.QAction(self)
+                    self.context_menu.actionAddRangeCheck.setText("Add RangeCheck")
+                    self.context_menu.addAction(self.context_menu.actionAddRangeCheck)
+                    self.context_menu.actionAddRangeCheck.triggered.connect(self.add_rangecheck)
+                if "DependencyCheck" not in existing_entries:
+                    self.context_menu.actionAddDependencyCheck = QtGui.QAction(self)
+                    self.context_menu.actionAddDependencyCheck.setText("Add DependencyCheck")
+                    self.context_menu.addAction(self.context_menu.actionAddDependencyCheck)
+                    self.context_menu.actionAddDependencyCheck.triggered.connect(self.add_dependencycheck)
+                if "DiurnalCheck" not in existing_entries:
+                    self.context_menu.actionAddDiurnalCheck = QtGui.QAction(self)
+                    self.context_menu.actionAddDiurnalCheck.setText("Add DiurnalCheck")
+                    self.context_menu.addAction(self.context_menu.actionAddDiurnalCheck)
+                    self.context_menu.actionAddDiurnalCheck.triggered.connect(self.add_diurnalcheck)
+                if "ExcludeDates" not in existing_entries:
+                    self.context_menu.actionAddExcludeDates = QtGui.QAction(self)
+                    self.context_menu.actionAddExcludeDates.setText("Add ExcludeDates")
+                    self.context_menu.addAction(self.context_menu.actionAddExcludeDates)
+                    self.context_menu.actionAddExcludeDates.triggered.connect(self.add_excludedates)
                 self.context_menu.addSeparator()
                 self.context_menu.actionRemoveOption = QtGui.QAction(self)
                 self.context_menu.actionRemoveOption.setText("Remove variable")
@@ -3104,6 +3298,41 @@ class edit_cfg_L4(QtGui.QWidget):
                 break
         return subsection, i
 
+    def parse_cfg_values(self, k, v, strip_list):
+        """ Parse key values to remove unnecessary characters."""
+        for c in strip_list:
+            if c in v:
+                v = v.replace(c, "")
+                self.cfg_changed = True
+        return v
+
+    def parse_cfg_variables_value(self, k, v):
+        """ Parse value from control file to remove unnecessary characters."""
+        try:
+            # check to see if it is a number
+            r = float(v)
+        except ValueError as e:
+            if ("[" in v) and ("]" in v) and ("*" in v):
+                # old style of [value]*12
+                v = v[v.index("[")+1:v.index("]")]
+                self.cfg_changed = True
+            elif ("[" in v) and ("]" in v) and ("*" not in v):
+                # old style of [1,2,3,4,5,6,7,8,9,10,11,12]
+                v = v.replace("[", "").replace("]", "")
+                self.cfg_changed = True
+        # remove white space and quotes
+        if k in ["RangeCheck", "DiurnalCheck", "DependencyCheck",
+                 "MergeSeries", "AverageSeries"]:
+            strip_list = [" ", '"', "'"]
+        elif k in ["ExcludeDates", "ExcludeHours"]:
+            # don't remove white space between date and time
+            strip_list = ['"', "'"]
+        for c in strip_list:
+            if c in v:
+                v = v.replace(c, "")
+                self.cfg_changed = True
+        return v
+
     def remove_item_files(self):
         """ Remove an item from the Files section."""
         # loop over selected items in the tree
@@ -3253,15 +3482,16 @@ class edit_cfg_L5(QtGui.QWidget):
         self.setGeometry(300, 300, 600, 400)
         # Tree view
         self.tree.setAlternatingRowColors(True)
-        self.tree.setSortingEnabled(True)
+        #self.tree.setSortingEnabled(True)
         self.tree.setHeaderHidden(False)
         self.tree.setSelectionBehavior(QtGui.QAbstractItemView.SelectItems)
+        self.tree.setModel(QtGui.QStandardItemModel())
+        self.tree.setDragDropMode(QtGui.QAbstractItemView.InternalMove)
         # build the model
         self.get_model_from_data()
 
     def get_model_from_data(self):
         """ Build the data model."""
-        self.tree.setModel(QtGui.QStandardItemModel())
         self.tree.model().setHorizontalHeaderLabels(['Parameter', 'Value'])
         self.tree.model().itemChanged.connect(self.handleItemChanged)
         # there must be someway outa here, said the Joker to the Thief ...
@@ -3272,10 +3502,11 @@ class edit_cfg_L5(QtGui.QWidget):
             if key1 in ["Files", "Global", "Options"]:
                 # sections with only 1 level
                 self.tree.sections[key1] = QtGui.QStandardItem(key1)
-                for val in self.cfg_mod[key1]:
-                    value = self.cfg_mod[key1][val]
-                    child0 = QtGui.QStandardItem(val)
-                    child1 = QtGui.QStandardItem(str(value))
+                for key2 in self.cfg_mod[key1]:
+                    val = self.cfg_mod[key1][key2]
+                    val = self.parse_cfg_values(key2, val, ["[", "]", "'", '"'])
+                    child0 = QtGui.QStandardItem(key2)
+                    child1 = QtGui.QStandardItem(val)
                     self.tree.sections[key1].appendRow([child0, child1])
                 self.tree.model().appendRow(self.tree.sections[key1])
             elif key1 in ["Fluxes", "Variables"]:
@@ -3288,17 +3519,19 @@ class edit_cfg_L5(QtGui.QWidget):
                         if key3 in ["GapFillUsingSOLO", "GapFillUsingMDS"]:
                             for key4 in self.cfg_mod[key1][key2][key3]:
                                 parent4 = QtGui.QStandardItem(key4)
-                                for val in self.cfg_mod[key1][key2][key3][key4]:
-                                    value = self.cfg_mod[key1][key2][key3][key4][val]
-                                    child0 = QtGui.QStandardItem(val)
-                                    child1 = QtGui.QStandardItem(str(value))
+                                for key5 in self.cfg_mod[key1][key2][key3][key4]:
+                                    val = self.cfg_mod[key1][key2][key3][key4][key5]
+                                    val = self.parse_cfg_values(key5, val, ["[", "]", "'", '"'])
+                                    child0 = QtGui.QStandardItem(key5)
+                                    child1 = QtGui.QStandardItem(val)
                                     parent4.appendRow([child0, child1])
                                 parent3.appendRow(parent4)
                         elif key3 in ["MergeSeries", "RangeCheck", "ExcludeDates"]:
-                            for val in self.cfg_mod[key1][key2][key3]:
-                                value = self.cfg_mod[key1][key2][key3][val]
-                                child0 = QtGui.QStandardItem(val)
-                                child1 = QtGui.QStandardItem(str(value))
+                            for key4 in self.cfg_mod[key1][key2][key3]:
+                                val = self.cfg_mod[key1][key2][key3][key4]
+                                val = self.parse_cfg_variables_value(key3, val)
+                                child0 = QtGui.QStandardItem(key4)
+                                child1 = QtGui.QStandardItem(val)
                                 parent3.appendRow([child0, child1])
                         parent2.appendRow(parent3)
                     self.tree.sections[key1].appendRow(parent2)
@@ -3963,6 +4196,41 @@ class edit_cfg_L5(QtGui.QWidget):
                 break
         return subsection, i
 
+    def parse_cfg_values(self, k, v, strip_list):
+        """ Parse key values to remove unnecessary characters."""
+        for c in strip_list:
+            if c in v:
+                v = v.replace(c, "")
+                self.cfg_changed = True
+        return v
+
+    def parse_cfg_variables_value(self, k, v):
+        """ Parse value from control file to remove unnecessary characters."""
+        try:
+            # check to see if it is a number
+            r = float(v)
+        except ValueError as e:
+            if ("[" in v) and ("]" in v) and ("*" in v):
+                # old style of [value]*12
+                v = v[v.index("[")+1:v.index("]")]
+                self.cfg_changed = True
+            elif ("[" in v) and ("]" in v) and ("*" not in v):
+                # old style of [1,2,3,4,5,6,7,8,9,10,11,12]
+                v = v.replace("[", "").replace("]", "")
+                self.cfg_changed = True
+        # remove white space and quotes
+        if k in ["RangeCheck", "DiurnalCheck", "DependencyCheck",
+                 "MergeSeries", "AverageSeries"]:
+            strip_list = [" ", '"', "'"]
+        elif k in ["ExcludeDates", "ExcludeHours"]:
+            # don't remove white space between date and time
+            strip_list = ['"', "'"]
+        for c in strip_list:
+            if c in v:
+                v = v.replace(c, "")
+                self.cfg_changed = True
+        return v
+
     def remove_item_files(self):
         """ Remove an item from the Files section."""
         # loop over selected items in the tree
@@ -4335,4 +4603,3 @@ class pfp_l5_ui(QtGui.QDialog):
         self.RunButton.clicked.connect(lambda:pfp_gfSOLO.gfSOLO_run_gui(self))
         self.DoneButton.clicked.connect(lambda:pfp_gfSOLO.gfSOLO_done(self))
         self.QuitButton.clicked.connect(lambda:pfp_gfSOLO.gfSOLO_quit(self))
-

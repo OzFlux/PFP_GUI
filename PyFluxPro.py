@@ -311,6 +311,8 @@ class pfp_main_ui(QtGui.QWidget, QPlainTextEditLogger):
         # add a tab for the control file
         self.tabs.addTab(self.tabs.tab_dict[self.tabs.tab_index_all], os.path.basename(str(cfgpath)))
         self.tabs.setCurrentIndex(self.tabs.tab_index_all)
+        if self.tabs.tab_dict[self.tabs.tab_index_all].cfg_changed:
+            self.update_tab_text()
         self.tabs.tab_index_all = self.tabs.tab_index_all + 1
 
     def get_cf_level(self):
@@ -470,6 +472,8 @@ class pfp_main_ui(QtGui.QWidget, QPlainTextEditLogger):
         # remove the asterisk in the tab text
         tab_text = str(self.tabs.tabText(tab_index_current))
         self.tabs.setTabText(self.tabs.tab_index_current, tab_text.replace("*",""))
+        # reset the cfg changed logical to false
+        self.tabs.tab_dict[tab_index_current].cfg_changed = False
 
     def saveas_controlfile(self):
         """ Save the current tab with a different name."""
@@ -487,6 +491,8 @@ class pfp_main_ui(QtGui.QWidget, QPlainTextEditLogger):
         cfg.write()
         # update the tab text
         self.tabs.setTabText(tab_index_current, os.path.basename(str(cfgpath)))
+        # reset the cfg changed logical to false
+        self.tabs.tab_dict[tab_index_current].cfg_changed = False
 
     def edit_preferences(self):
         print "Edit/Preferences goes here"
@@ -531,6 +537,13 @@ class pfp_main_ui(QtGui.QWidget, QPlainTextEditLogger):
         self.tabs.tab_dict.pop(currentIndex)
         # decrement the tab index
         self.tabs.tab_index_all = self.tabs.tab_index_all - 1
+
+    def update_tab_text(self):
+        """ Add an asterisk to the tab title text to indicate tab contents have changed."""
+        # add an asterisk to the tab text to indicate the tab contents have changed
+        tab_text = str(self.tabs.tabText(self.tabs.tab_index_current))
+        if "*" not in tab_text:
+            self.tabs.setTabText(self.tabs.tab_index_current, tab_text+"*")
 
 if (__name__ == '__main__'):
     app = QtGui.QApplication(["PyFluxPro"])

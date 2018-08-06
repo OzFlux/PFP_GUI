@@ -11,7 +11,7 @@ controlfile_name = /home/peter/PFP_GUI/controlfiles/L5.txt
     nc = "['Ah','Cc','e','Fa','Fc','Fc_storage','Fe','Fg','Fh','Fld','Flu','Fm','Fn','Fsd','Fsu','Precip','ps','q','RH','Sws','SHD','Ta','Ts','ustar','VPD','Ws','Wd']"
 
 [Options]
-    FilterList = ['Fc']
+    FilterList = Fc
     TurbulenceFilter = ustar
     DayNightFilter = Fsd
     UseFsdsyn_threshold = No
@@ -34,28 +34,28 @@ controlfile_name = /home/peter/PFP_GUI/controlfiles/L5.txt
     [[ustar]]
         [[[GapFillUsingSOLO]]]
             [[[[ustar_SOLO]]]]
-                drivers = "['Ws','Fn','Ta','q']"
+                drivers = Ws,Fn,Ta,q
         [[[MergeSeries]]]
-            Source = "['ustar','ustar_SOLO']"
+            Source = ustar,ustar_SOLO
     [[Fe]]
         [[[GapFillUsingSOLO]]]
             [[[[Fe_SOLO]]]]
-                drivers = "['Fa','SHD','Ta','Ws']"
+                drivers = Fa,SHD,Ta,Ws
         [[[MergeSeries]]]
-            Source = "['Fe','Fe_SOLO']"
+            Source = Fe,Fe_SOLO
     [[Fh]]
         [[[GapFillUsingSOLO]]]
             [[[[Fh_SOLO]]]]
-                drivers = "['Fa','Ta','Ws']"
+                drivers = Fa,Ta,Ws
         [[[MergeSeries]]]
-            Source = "['Fh','Fh_SOLO']"
+            Source = Fh,Fh_SOLO
     [[Fc]]
         [[[GapFillUsingSOLO]]]
             [[[[Fc_SOLO]]]]
-                drivers = "['Fn','Fg','q','VPD','Ta','Ts']"
-                solo_settings = "[10,500,5,0.001,500]"
+                drivers = Fn,Fg,q,VPD,Ta,Ts
+                solo_settings = 10,500,5,0.001,500
         [[[MergeSeries]]]
-            Source = "['Fc','Fc_SOLO']"
+            Source = Fc,Fc_SOLO
 
 [Plots]
     [[1]]

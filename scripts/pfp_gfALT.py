@@ -1051,8 +1051,10 @@ def gfalternate_plotcoveragelines(ds_tower):
     if plt.fignum_exists(0):
         fig=plt.figure(0)
         plt.clf()
+        ax1 = plt.subplot(111)
     else:
         fig=plt.figure(0,figsize=(xsize,ysize))
+        ax1 = plt.subplot(111)
     title = "Coverage: "+site_name+" "+start_date+" to "+end_date
     fig.canvas.set_window_title(title)
     plt.ylim([0,len(series_list)+1])
@@ -1072,6 +1074,7 @@ def gfalternate_plotcoveragelines(ds_tower):
     ylabel_posn = range(0,len(series_list)+2)
     pylab.yticks(ylabel_posn,ylabel_list)
     ylabel_right_list.append("")
+    ax2 = ax1.twinx()
     pylab.yticks(ylabel_posn,ylabel_right_list)
     fig.tight_layout()
     #fig.canvas.manager.window.attributes('-topmost', 1)

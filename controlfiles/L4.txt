@@ -39,13 +39,13 @@ controlfile_name = /home/peter/PFP_GUI/controlfiles/L4.txt
             [[[[Ah_cli]]]]
                 method = interpolated daily
         [[[MergeSeries]]]
-            Source = "['Ah','Ah_aws','Ah_access','Ah_erai','Ah_cli']"
+            Source = Ah,Ah_aws,Ah_access,Ah_erai,Ah_cli
     [[Cc]]
         [[[GapFillFromClimatology]]]
             [[[[Cc_cli]]]]
                 method = interpolated daily
         [[[MergeSeries]]]
-            Source = "['Cc','Cc_cli']"
+            Source = Cc,Cc_cli
     [[Fa]]
         [[[GapFillFromAlternate]]]
             [[[[Fa_access]]]]
@@ -56,7 +56,7 @@ controlfile_name = /home/peter/PFP_GUI/controlfiles/L4.txt
             [[[[Fa_cli]]]]
                 method = interpolated daily
         [[[MergeSeries]]]
-            Source = "['Fa','Fa_access','Fa_erai','Fa_cli']"
+            Source = Fa,Fa_access,Fa_erai,Fa_cli
     [[Fg]]
         [[[GapFillFromAlternate]]]
             [[[[Fg_access]]]]
@@ -67,7 +67,7 @@ controlfile_name = /home/peter/PFP_GUI/controlfiles/L4.txt
             [[[[Fg_cli]]]]
                 method = interpolated daily
         [[[MergeSeries]]]
-            Source = "['Fg','Fg_access','Fg_erai','Fg_cli']"
+            Source = Fg,Fg_access,Fg_erai,Fg_cli
     [[Fld]]
         [[[GapFillFromAlternate]]]
             [[[[Fld_access]]]]
@@ -78,7 +78,7 @@ controlfile_name = /home/peter/PFP_GUI/controlfiles/L4.txt
             [[[[Fld_cli]]]]
                 method = interpolated daily
         [[[MergeSeries]]]
-            Source = "['Fld','Fld_access','Fld_erai','Fld_cli']"
+            Source = Fld,Fld_access,Fld_erai,Fld_cli
     [[Flu]]
         [[[GapFillFromAlternate]]]
             [[[[Flu_access]]]]
@@ -89,7 +89,7 @@ controlfile_name = /home/peter/PFP_GUI/controlfiles/L4.txt
             [[[[Flu_cli]]]]
                 method = interpolated daily
         [[[MergeSeries]]]
-            Source = "['Flu','Flu_access','Flu_erai','Flu_cli']"
+            Source = Flu,Flu_access,Flu_erai,Flu_cli
     [[Fn]]
         [[[GapFillFromAlternate]]]
             [[[[Fn_access]]]]
@@ -100,7 +100,7 @@ controlfile_name = /home/peter/PFP_GUI/controlfiles/L4.txt
             [[[[Fn_cli]]]]
                 method = interpolated daily
         [[[MergeSeries]]]
-            Source = "['Fn','Fn_access','Fn_erai','Fn_cli']"
+            Source = Fn,Fn_access,Fn_erai,Fn_cli
     [[Fsd]]
         [[[GapFillFromAlternate]]]
             [[[[Fsd_access]]]]
@@ -111,7 +111,7 @@ controlfile_name = /home/peter/PFP_GUI/controlfiles/L4.txt
             [[[[Fsd_cli]]]]
                 method = interpolated daily
         [[[MergeSeries]]]
-            Source = "['Fsd','Fsd_access','Fsd_erai','Fsd_cli']"
+            Source = Fsd,Fsd_access,Fsd_erai,Fsd_cli
     [[Fsu]]
         [[[GapFillFromAlternate]]]
             [[[[Fsu_access]]]]
@@ -122,7 +122,7 @@ controlfile_name = /home/peter/PFP_GUI/controlfiles/L4.txt
             [[[[Fsu_cli]]]]
                 method = interpolated daily
         [[[MergeSeries]]]
-            Source = "['Fsu','Fsu_access','Fsu_erai','Fsu_cli']"
+            Source = Fsu,Fsu_access,Fsu_erai,Fsu_cli
     [[ps]]
         [[[GapFillFromAlternate]]]
             [[[[ps_aws]]]]
@@ -135,7 +135,7 @@ controlfile_name = /home/peter/PFP_GUI/controlfiles/L4.txt
             [[[[ps_cli]]]]
                 method = interpolated daily
         [[[MergeSeries]]]
-            Source = "['ps','ps_aws','ps_access','ps_erai','ps_cli']"
+            Source = ps,ps_aws,ps_access,ps_erai,ps_cli
     [[Sws]]
         [[[GapFillFromAlternate]]]
             [[[[Sws_access]]]]
@@ -145,7 +145,7 @@ controlfile_name = /home/peter/PFP_GUI/controlfiles/L4.txt
                 source = ERAI
                 lag = no
         [[[MergeSeries]]]
-            Source = "['Sws','Sws_access','Sws_erai']"
+            Source = Sws,Sws_access,Sws_erai
     [[Ta]]
         [[[GapFillFromAlternate]]]
             [[[[Ta_aws]]]]
@@ -158,7 +158,7 @@ controlfile_name = /home/peter/PFP_GUI/controlfiles/L4.txt
             [[[[Ta_cli]]]]
                 method = interpolated daily
         [[[MergeSeries]]]
-            Source = "['Ta','Ta_aws','Ta_access','Ta_erai','Ta_cli']"
+            Source = Ta,Ta_aws,Ta_access,Ta_erai,Ta_cli
     [[Ts]]
         [[[GapFillFromAlternate]]]
             [[[[Ts_access]]]]
@@ -169,7 +169,7 @@ controlfile_name = /home/peter/PFP_GUI/controlfiles/L4.txt
             [[[[Ts_cli]]]]
                 method = interpolated daily
         [[[MergeSeries]]]
-            Source = "['Ts','Ts_access','Ts_erai','Ts_cli']"
+            Source = Ts,Ts_access,Ts_erai,Ts_cli
     [[Ws]]
         [[[GapFillFromAlternate]]]
             [[[[Ws_aws]]]]
@@ -188,7 +188,7 @@ controlfile_name = /home/peter/PFP_GUI/controlfiles/L4.txt
             [[[[Ws_cli]]]]
                 method = interpolated daily
         [[[MergeSeries]]]
-            Source = "['Ws','Ws_aws','Ws_access','Ws_erai','Ws_cli']"
+            Source = Ws,Ws_aws,Ws_access,Ws_erai,Ws_cli
     [[Wd]]
         [[[GapFillFromAlternate]]]
             [[[[Wd_aws]]]]
@@ -207,7 +207,7 @@ controlfile_name = /home/peter/PFP_GUI/controlfiles/L4.txt
             [[[[Wd_cli]]]]
                 method = interpolated daily
         [[[MergeSeries]]]
-            Source = "['Wd','Wd_aws','Wd_access','Wd_erai','Wd_cli']"
+            Source = Wd,Wd_aws,Wd_access,Wd_erai,Wd_cli
     [[Precip]]
         [[[GapFillFromAlternate]]]
             [[[[Precip_aws]]]]
@@ -223,10 +223,10 @@ controlfile_name = /home/peter/PFP_GUI/controlfiles/L4.txt
                 fit = replace
                 lag = no
         [[[MergeSeries]]]
-            Source = "['Precip','Precip_aws','Precip_access','Precip_erai']"
+            Source = Precip,Precip_aws,Precip_access,Precip_erai
         [[[RangeCheck]]]
-            Lower = [0]*12
-            Upper = [50]*12
+            Lower = 0
+            Upper = 50
 
 [Plots]
     [[1]]

@@ -223,7 +223,11 @@ def ApplyTurbulenceFilter_checks(cf,ds):
         return opt
     # get the list of series to be filtered
     if "FilterList" in cf["Options"]:
-        opt["filter_list"] = ast.literal_eval(cf["Options"]["FilterList"])
+        filter_string = cf["Options"]["FilterList"]
+        if "," in filter_string:
+            opt["filter_list"] = filter_string.split(",")
+        else:
+            opt["filter_list"] = [filter_string]
     # check to see if the series are in the data structure
     for item in opt["filter_list"]:
         if item not in ds.series.keys():

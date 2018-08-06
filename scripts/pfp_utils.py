@@ -1152,22 +1152,27 @@ def FixTimeStep(ds,fixtimestepmethod="round"):
         dtmax = numpy.max(dt)
         #log.info("After FixTimeGaps: "+str(dtmin)+" "+str(dtmax))
 
-def GetAverageSeriesKeys(cf,ThisOne):
-    if incf(cf,ThisOne) and haskey(cf,ThisOne,'AverageSeries'):
-        if 'Source' in cf['Variables'][ThisOne]['AverageSeries'].keys():
-            alist = ast.literal_eval(cf['Variables'][ThisOne]['AverageSeries']['Source'])
+def GetAverageSeriesKeys(cf, label, section=""):
+    """
+    Purpose:
+     Get the AverageSeries Source key from the control file.
+    Usage:
+    Author: PRI
+    Date: Back in the day
+    """
+    if len(section)==0:
+        section = "Variables"
+    if "Source" in cf[section][label]["AverageSeries"].keys():
+        src_string = cf[section][label]["AverageSeries"]["Source"]
+        if "," in src_string:
+            src_list = src_string.split(",")
         else:
-            logger.error('  GetAverageSeriesKeys: key "Source" not in control file AverageSeries section for '+ThisOne)
-            alist = []
-        if 'standard_name' in cf['Variables'][ThisOne]['AverageSeries'].keys():
-            standardname = str(cf['Variables'][ThisOne]['AverageSeries']['standard_name'])
-        else:
-            standardname = "not defined"
+            src_list = [src_string]
     else:
-        standardname = "not defined"
-        logger.info('  GetAverageSeriesKeys: '+ThisOne+ ' not in control file or it does not have the "AverageSeries" key')
-        alist = []
-    return alist, standardname
+        msg = "  GetAverageSeriesKeys: Source not in AverageSeries section for " + label
+        logger.error(msg)
+        src_list = []
+    return src_list
 
 def GetAltName(cf,ds,ThisOne):
     '''
@@ -1364,26 +1369,26 @@ def GetGlobalAttributeValue(cf,ds,ThisOne):
             ds.globalattributes[ThisOne] = None
     return ds.globalattributes[ThisOne]
 
-def GetMergeSeriesKeys(cf,ThisOne,section=''):
-    if len(section)==0: section = 'Variables'
+def GetMergeSeriesKeys(cf, ThisOne, section=''):
+    """
+    Purpose:
+     Get the MergeSeries Source key from the contro file.
+    Usage:
+    Author: PRI
+    Date: Back in the day
+    """
+    if len(section)==0:
+        section = 'Variables'
     if 'Source' in cf[section][ThisOne]['MergeSeries'].keys():
-        #mlist = ast.literal_eval(cf[section][ThisOne]['MergeSeries']['Source'])
         src_string = cf[section][ThisOne]['MergeSeries']['Source']
-        for c in ["[", "]", "'", '"', " "]:
-            if c in src_string:
-                src_string.replace(c,"")
         if "," in src_string:
             src_list = src_string.split(",")
         else:
             src_list = [src_string]
     else:
         logger.error('  GetMergeSeriesKeys: key "Source" not in control file MergeSeries section for '+ThisOne)
-        mlist = []
-    if 'standard_name' in cf[section][ThisOne]['MergeSeries'].keys():
-        standardname = str(cf[section][ThisOne]['MergeSeries']['standard_name'])
-    else:
-        standardname = 'not defined'
-    return mlist, standardname
+        src_list = []
+    return src_list
 
 def GetPlotTitleFromCF(cf, nFig):
     if 'Plots' in cf:

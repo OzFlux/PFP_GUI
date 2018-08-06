@@ -214,8 +214,7 @@ def AverageSeriesByElements(cf,ds,Av_out):
         """
     if Av_out not in cf['Variables'].keys(): return
     if Av_out in ds.averageserieslist: return
-    srclist, standardname = pfp_utils.GetAverageSeriesKeys(cf,Av_out)
-#    logger.info(' Averaging series in '+str(srclist)+' into '+Av_out)
+    srclist = pfp_utils.GetAverageSeriesKeys(cf,Av_out)
     logger.info(' Averaging '+str(srclist)+'==>'+Av_out)
 
     nSeries = len(srclist)
@@ -793,7 +792,7 @@ def CalculateMoninObukhovLength(ds):
     pfp_utils.CreateVariable(ds, L)
     return
 
-def CalculateNetRadiation(cf,ds,Fn_out='Fn',Fsd_in='Fsd',Fsu_in='Fsu',Fld_in='Fld',Flu_in='Flu'):
+def CalculateNetRadiation(cf,ds,Fn_out='Fn_4cmpt',Fsd_in='Fsd',Fsu_in='Fsu',Fld_in='Fld',Flu_in='Flu'):
     """
     Purpose:
      Calculate the net radiation from the 4 components of the surface
@@ -1082,40 +1081,46 @@ def CalculateFcStorageSinglePoint(cf,ds,Fc_out='Fc_single',CO2_in='CO2'):
     Parameters loaded from control file:
         zms: measurement height from surface, m
     """
-    if 'Fc_single' not in ds.series.keys():
-        if pfp_utils.cfkeycheck(cf,Base='General',ThisOne='zms'):
-            logger.info(' Calculating Fc storage (single height)')
-            nRecs = int(ds.globalattributes['nc_nrecs'])
-            zeros = numpy.zeros(nRecs,dtype=numpy.int32)
-            ones = numpy.ones(nRecs,dtype=numpy.int32)
-            ts = int(ds.globalattributes['time_step'])
-            zms = float(cf['General']['zms'])
-            # get the input data
-            Cc,Cc_flag,Cc_attr = pfp_utils.GetSeriesasMA(ds,CO2_in,si=0,ei=-1)
-            Ta,f,a = pfp_utils.GetSeriesasMA(ds,'Ta',si=0,ei=-1)
-            ps,f,a = pfp_utils.GetSeriesasMA(ds,'ps',si=0,ei=-1)
-            # check the CO2 concentration units
-            # if the units are mg/m3, convert CO2 concentration to umol/mol before taking the difference
-            if Cc_attr['units']=='mg/m3': Cc = mf.co2_ppmfrommgpm3(Cc,Ta,ps)
-            # calculate the change in CO2 concentration between time steps, CO2 concentration in umol/mol.
-            dc = numpy.ma.ediff1d(Cc,to_begin=0)
-            # convert the CO2 concentration difference from umol/mol to mg/m3
-            dc = mf.co2_mgpm3fromppm(dc,Ta,ps)
-            # calculate the time step in seconds
-            dt=86400*numpy.ediff1d(ds.series['xlDateTime']['Data'],to_begin=float(ts)/1440)    # time step in seconds from the Excel datetime values
-            # calculate the CO2 flux based on storage below the measurement height
-            Fc_single = zms*dc/dt
-            Fc_single_units = 'mg/m2/s'
-            descr = 'Fc storage component calcuated using single point CO2 measurement'
-            # make the output series attribute dictionary
-            attr_out = pfp_utils.MakeAttributeDictionary(long_name=descr,units=Fc_single_units)
-            # put the storage flux in the data structure
-            flag = numpy.where(numpy.ma.getmaskarray(Fc_single)==True,ones,zeros)
-            pfp_utils.CreateSeries(ds,Fc_out,Fc_single,flag,attr_out)
+    if "Fc_single" not in ds.series.keys():
+        if pfp_utils.cfkeycheck(cf, Base="General", ThisOne="zms"):
+            zms = float(cf["General"]["zms"])
+        elif pfp_utils.cfkeycheck(cf, Base="Options", ThisOne="zms"):
+            zms = float(cf["Options"]["zms"])
         else:
-            logger.error('CalculateFcStorage: zms expected in General section of control file but not found')
+            msg = "CalculateFcStorageSinglePoint: zms not found in control file"
+            logger.error(msg)
+            return
+        # seems safe to continue
+        logger.info(" Calculating Fc storage (single height)")
+        nRecs = int(ds.globalattributes["nc_nrecs"])
+        zeros = numpy.zeros(nRecs, dtype=numpy.int32)
+        ones = numpy.ones(nRecs, dtype=numpy.int32)
+        ts = int(ds.globalattributes["time_step"])
+        # get the input data
+        Cc, Cc_flag, Cc_attr = pfp_utils.GetSeriesasMA(ds, CO2_in, si=0, ei=-1)
+        Ta, f, a = pfp_utils.GetSeriesasMA(ds, "Ta", si=0, ei=-1)
+        ps, f, a = pfp_utils.GetSeriesasMA(ds, "ps", si=0, ei=-1)
+        # check the CO2 concentration units
+        # if the units are mg/m3, convert CO2 concentration to umol/mol before taking the difference
+        if Cc_attr["units"]=="mg/m3":
+            Cc = mf.co2_ppmfrommgpm3(Cc, Ta, ps)
+        # calculate the change in CO2 concentration between time steps, CO2 concentration in umol/mol.
+        dc = numpy.ma.ediff1d(Cc, to_begin=0)
+        # convert the CO2 concentration difference from umol/mol to mg/m3
+        dc = mf.co2_mgpm3fromppm(dc, Ta, ps)
+        # calculate the time step in seconds
+        dt=86400*numpy.ediff1d(ds.series["xlDateTime"]["Data"], to_begin=float(ts)/1440)
+        # calculate the CO2 flux based on storage below the measurement height
+        Fc_single = zms*dc/dt
+        Fc_single_units = "mg/m2/s"
+        descr = "Fc storage component calcuated using single point CO2 measurement"
+        # make the output series attribute dictionary
+        attr_out = pfp_utils.MakeAttributeDictionary(long_name=descr, units=Fc_single_units)
+        # put the storage flux in the data structure
+        flag = numpy.where(numpy.ma.getmaskarray(Fc_single) == True, ones, zeros)
+        pfp_utils.CreateSeries(ds, Fc_out, Fc_single, flag, attr_out)
     else:
-        logger.info('CalculateFcStorage: Fc_storage found in data structure, not calculated')
+        logger.info('CalculateFcStorage: Fc_single found in data structure, not calculated')
 
 def CorrectFcForStorage(cf,ds,Fc_out='Fc',Fc_in='Fc',Fc_storage_in='Fc_storage'):
     """
@@ -2540,7 +2545,7 @@ def MergeSeries(cf,ds,series,okflags=[0,10,20,30,40,50,60],convert_units=False,s
     # check to see if the series has already been merged
     if series in ds.mergeserieslist: return
     # now get the source list and the standard name
-    srclist, standardname = pfp_utils.GetMergeSeriesKeys(cf,series,section=section)
+    srclist = pfp_utils.GetMergeSeriesKeys(cf,series,section=section)
     nSeries = len(srclist)
     if nSeries==0:
         logger.warning(' MergeSeries: no input series specified for '+str(series))
