@@ -3,6 +3,7 @@ import copy
 import inspect
 import logging
 import os
+import pdb
 # 3rd party modules
 from PyQt4 import QtCore, QtGui
 # PFP modules
@@ -11,6 +12,28 @@ import pfp_utils
 import pfp_gfSOLO
 
 logger = logging.getLogger("pfp_log")
+
+#class custom_treeview(QtGui.QTreeView):
+    #def __init__(self, parent=None):
+        #super(custom_treeview, self).__init__()
+        ##QtGui.QTreeView.__init__(self, parent)
+        #self.setItemsExpandable(True)
+        #self.setAnimated(True)
+        #self.setDragEnabled(True)
+        #self.setDropIndicatorShown(True)
+        #self.setDragDropMode(QtGui.QAbstractItemView.InternalMove)
+
+    #def dragMoveEvent(self, event):
+        #print "moving"
+        #super(custom_treeview, self).dragMoveEvent(event)
+
+    #def dropEvent(self, event):
+        #print "dropping"
+        ##super(custom_treeview, self).dropEvent(event)
+
+    #def dragEnterEvent(self, event):
+        #print "entering"
+        #event.accept()
 
 class edit_cfg_L1(QtGui.QWidget):
     def __init__(self, main_gui):
@@ -28,6 +51,7 @@ class edit_cfg_L1(QtGui.QWidget):
         """ Edit L1 control file GUI."""
         # get a QTreeView
         self.tree = QtGui.QTreeView()
+        #self.tree = custom_treeview()
         # set the context menu policy
         self.tree.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
         # connect the context menu requested signal to appropriate slot
@@ -42,7 +66,7 @@ class edit_cfg_L1(QtGui.QWidget):
         self.tree.setHeaderHidden(False)
         self.tree.setSelectionBehavior(QtGui.QAbstractItemView.SelectItems)
         self.tree.setModel(QtGui.QStandardItemModel())
-        self.tree.setDragDropMode(QtGui.QAbstractItemView.InternalMove)
+        #self.tree.setDragDropMode(QtGui.QAbstractItemView.InternalMove)
         # build the model
         self.get_model_from_data()
 
@@ -637,7 +661,7 @@ class edit_cfg_L2(QtGui.QWidget):
         self.tree.setHeaderHidden(False)
         self.tree.setSelectionBehavior(QtGui.QAbstractItemView.SelectItems)
         self.tree.setModel(QtGui.QStandardItemModel())
-        self.tree.setDragDropMode(QtGui.QAbstractItemView.InternalMove)
+        #self.tree.setDragDropMode(QtGui.QAbstractItemView.InternalMove)
         # build the model
         self.get_model_from_data()
 
@@ -1371,7 +1395,7 @@ class edit_cfg_L3(QtGui.QWidget):
         self.tree.setHeaderHidden(False)
         self.tree.setSelectionBehavior(QtGui.QAbstractItemView.SelectItems)
         self.tree.setModel(QtGui.QStandardItemModel())
-        self.tree.setDragDropMode(QtGui.QAbstractItemView.InternalMove)
+        #self.tree.setDragDropMode(QtGui.QAbstractItemView.InternalMove)
         # build the model
         self.get_model_from_data()
 
@@ -1980,6 +2004,7 @@ class edit_cfg_L3(QtGui.QWidget):
                 break
         # dialog for new directory
         new_dir = QtGui.QFileDialog.getExistingDirectory(self, "Open a folder", val, QtGui.QFileDialog.ShowDirsOnly)
+        new_dir = os.path.join(str(new_dir), "")
         # update the model
         if len(str(new_dir)) > 0:
             section.child(i,1).setText(new_dir)
@@ -2685,7 +2710,7 @@ class edit_cfg_L4(QtGui.QWidget):
         self.tree.setHeaderHidden(False)
         self.tree.setSelectionBehavior(QtGui.QAbstractItemView.SelectItems)
         self.tree.setModel(QtGui.QStandardItemModel())
-        self.tree.setDragDropMode(QtGui.QAbstractItemView.InternalMove)
+        #self.tree.setDragDropMode(QtGui.QAbstractItemView.InternalMove)
         # build the model
         self.get_model_from_data()
 
@@ -3464,6 +3489,8 @@ class edit_cfg_L5(QtGui.QWidget):
         super(edit_cfg_L5, self).__init__()
 
         self.cfg_mod = copy.deepcopy(main_gui.cfg)
+        self.cfg_changed = False
+
         self.tabs = main_gui.tabs
 
         self.edit_l5_gui()
@@ -3485,13 +3512,13 @@ class edit_cfg_L5(QtGui.QWidget):
         #self.tree.setSortingEnabled(True)
         self.tree.setHeaderHidden(False)
         self.tree.setSelectionBehavior(QtGui.QAbstractItemView.SelectItems)
-        self.tree.setModel(QtGui.QStandardItemModel())
-        self.tree.setDragDropMode(QtGui.QAbstractItemView.InternalMove)
         # build the model
         self.get_model_from_data()
 
     def get_model_from_data(self):
         """ Build the data model."""
+        self.tree.setModel(QtGui.QStandardItemModel())
+        #self.tree.setDragDropMode(QtGui.QAbstractItemView.InternalMove)
         self.tree.model().setHorizontalHeaderLabels(['Parameter', 'Value'])
         self.tree.model().itemChanged.connect(self.handleItemChanged)
         # there must be someway outa here, said the Joker to the Thief ...
@@ -3619,46 +3646,65 @@ class edit_cfg_L5(QtGui.QWidget):
             elif str(indexes[0].data().toString()) == "Output":
                 pass
             elif str(indexes[0].data().toString()) == "Options":
-                self.context_menu.actionAddMaxGapInterpolate = QtGui.QAction(self)
-                self.context_menu.actionAddMaxGapInterpolate.setText("MaxGapInterpolate")
-                self.context_menu.addAction(self.context_menu.actionAddMaxGapInterpolate)
-                self.context_menu.actionAddMaxGapInterpolate.triggered.connect(self.add_maxgapinterpolate)
-                self.context_menu.actionAddFilterList = QtGui.QAction(self)
-                self.context_menu.actionAddFilterList.setText("FilterList")
-                self.context_menu.addAction(self.context_menu.actionAddFilterList)
-                self.context_menu.actionAddFilterList.triggered.connect(self.add_filterlist)
-                self.context_menu.actionAddTurbulenceFilter = QtGui.QAction(self)
-                self.context_menu.actionAddTurbulenceFilter.setText("TurbulenceFilter")
-                self.context_menu.addAction(self.context_menu.actionAddTurbulenceFilter)
-                self.context_menu.actionAddTurbulenceFilter.triggered.connect(self.add_turbulencefilter)
-                self.context_menu.actionAddDayNightFilter = QtGui.QAction(self)
-                self.context_menu.actionAddDayNightFilter.setText("DayNightFilter")
-                self.context_menu.addAction(self.context_menu.actionAddDayNightFilter)
-                self.context_menu.actionAddDayNightFilter.triggered.connect(self.add_daynightfilter)
-                self.context_menu.actionAddUseFsdsyn_threshold = QtGui.QAction(self)
-                self.context_menu.actionAddUseFsdsyn_threshold.setText("UseFsdsyn_threshold")
-                self.context_menu.addAction(self.context_menu.actionAddUseFsdsyn_threshold)
-                self.context_menu.actionAddUseFsdsyn_threshold.triggered.connect(self.add_usefsdsynthreshold)
-                self.context_menu.actionAddAcceptDayTimes = QtGui.QAction(self)
-                self.context_menu.actionAddAcceptDayTimes.setText("AcceptDayTimes")
-                self.context_menu.addAction(self.context_menu.actionAddAcceptDayTimes)
-                self.context_menu.actionAddAcceptDayTimes.triggered.connect(self.add_acceptdaytimes)
-                self.context_menu.actionAddUseEveningFilter = QtGui.QAction(self)
-                self.context_menu.actionAddUseEveningFilter.setText("UseEveningFilter")
-                self.context_menu.addAction(self.context_menu.actionAddUseEveningFilter)
-                self.context_menu.actionAddUseEveningFilter.triggered.connect(self.add_useeveningfilter)
-                self.context_menu.actionAddEveningFilterLength = QtGui.QAction(self)
-                self.context_menu.actionAddEveningFilterLength.setText("EveningFilterLength")
-                self.context_menu.addAction(self.context_menu.actionAddEveningFilterLength)
-                self.context_menu.actionAddEveningFilterLength.triggered.connect(self.add_eveningfilterlength)
-                self.context_menu.actionAddFsd_threshold = QtGui.QAction(self)
-                self.context_menu.actionAddFsd_threshold.setText("Fsd_threshold")
-                self.context_menu.addAction(self.context_menu.actionAddFsd_threshold)
-                self.context_menu.actionAddFsd_threshold.triggered.connect(self.add_fsdthreshold)
-                self.context_menu.actionAddsa_threshold = QtGui.QAction(self)
-                self.context_menu.actionAddsa_threshold.setText("sa_threshold")
-                self.context_menu.addAction(self.context_menu.actionAddsa_threshold)
-                self.context_menu.actionAddsa_threshold.triggered.connect(self.add_sathreshold)
+                idx = indexes[0]
+                # get the selected item from its index
+                selected_item = idx.model().itemFromIndex(idx)
+                # build a list of existing QC checks
+                if selected_item.hasChildren():
+                    existing_entries = []
+                    for i in range(selected_item.rowCount()):
+                        existing_entries.append(str(selected_item.child(i, 0).text()))
+                # only put a QC check in the context menu if it is not already present
+                if "MaxGapInterpolate" not in existing_entries:
+                    self.context_menu.actionAddMaxGapInterpolate = QtGui.QAction(self)
+                    self.context_menu.actionAddMaxGapInterpolate.setText("MaxGapInterpolate")
+                    self.context_menu.addAction(self.context_menu.actionAddMaxGapInterpolate)
+                    self.context_menu.actionAddMaxGapInterpolate.triggered.connect(self.add_maxgapinterpolate)
+                if "FilterList" not in existing_entries:
+                    self.context_menu.actionAddFilterList = QtGui.QAction(self)
+                    self.context_menu.actionAddFilterList.setText("FilterList")
+                    self.context_menu.addAction(self.context_menu.actionAddFilterList)
+                    self.context_menu.actionAddFilterList.triggered.connect(self.add_filterlist)
+                if "TurbulenceFilter" not in existing_entries:
+                    self.context_menu.actionAddTurbulenceFilter = QtGui.QAction(self)
+                    self.context_menu.actionAddTurbulenceFilter.setText("TurbulenceFilter")
+                    self.context_menu.addAction(self.context_menu.actionAddTurbulenceFilter)
+                    self.context_menu.actionAddTurbulenceFilter.triggered.connect(self.add_turbulencefilter)
+                if "DayNightFilter" not in existing_entries:
+                    self.context_menu.actionAddDayNightFilter = QtGui.QAction(self)
+                    self.context_menu.actionAddDayNightFilter.setText("DayNightFilter")
+                    self.context_menu.addAction(self.context_menu.actionAddDayNightFilter)
+                    self.context_menu.actionAddDayNightFilter.triggered.connect(self.add_daynightfilter)
+                if "UseFsdsyn_threshold" not in existing_entries:
+                    self.context_menu.actionAddUseFsdsyn_threshold = QtGui.QAction(self)
+                    self.context_menu.actionAddUseFsdsyn_threshold.setText("UseFsdsyn_threshold")
+                    self.context_menu.addAction(self.context_menu.actionAddUseFsdsyn_threshold)
+                    self.context_menu.actionAddUseFsdsyn_threshold.triggered.connect(self.add_usefsdsynthreshold)
+                if "AcceptDayTimes" not in existing_entries:
+                    self.context_menu.actionAddAcceptDayTimes = QtGui.QAction(self)
+                    self.context_menu.actionAddAcceptDayTimes.setText("AcceptDayTimes")
+                    self.context_menu.addAction(self.context_menu.actionAddAcceptDayTimes)
+                    self.context_menu.actionAddAcceptDayTimes.triggered.connect(self.add_acceptdaytimes)
+                if "UseEveningFilter" not in existing_entries:
+                    self.context_menu.actionAddUseEveningFilter = QtGui.QAction(self)
+                    self.context_menu.actionAddUseEveningFilter.setText("UseEveningFilter")
+                    self.context_menu.addAction(self.context_menu.actionAddUseEveningFilter)
+                    self.context_menu.actionAddUseEveningFilter.triggered.connect(self.add_useeveningfilter)
+                if "EveningFilterLength" not in existing_entries:
+                    self.context_menu.actionAddEveningFilterLength = QtGui.QAction(self)
+                    self.context_menu.actionAddEveningFilterLength.setText("EveningFilterLength")
+                    self.context_menu.addAction(self.context_menu.actionAddEveningFilterLength)
+                    self.context_menu.actionAddEveningFilterLength.triggered.connect(self.add_eveningfilterlength)
+                if "Fsd_threshold" not in existing_entries:
+                    self.context_menu.actionAddFsd_threshold = QtGui.QAction(self)
+                    self.context_menu.actionAddFsd_threshold.setText("Fsd_threshold")
+                    self.context_menu.addAction(self.context_menu.actionAddFsd_threshold)
+                    self.context_menu.actionAddFsd_threshold.triggered.connect(self.add_fsdthreshold)
+                if "sa_threshold" not in existing_entries:
+                    self.context_menu.actionAddsa_threshold = QtGui.QAction(self)
+                    self.context_menu.actionAddsa_threshold.setText("sa_threshold")
+                    self.context_menu.addAction(self.context_menu.actionAddsa_threshold)
+                    self.context_menu.actionAddsa_threshold.triggered.connect(self.add_sathreshold)
             elif str(indexes[0].data().toString()) in ["Fluxes", "Variables"]:
                 self.context_menu.actionAddVariable = QtGui.QAction(self)
                 self.context_menu.actionAddVariable.setText("Add variable")
@@ -3708,35 +3754,51 @@ class edit_cfg_L5(QtGui.QWidget):
                     self.context_menu.addAction(self.context_menu.actionRemoveOption)
                     self.context_menu.actionRemoveOption.triggered.connect(self.remove_item_options)
             elif (section_name in ["Fluxes", "Variables"]):
-                self.context_menu.actionAddSOLO = QtGui.QAction(self)
-                self.context_menu.actionAddSOLO.setText("Add SOLO")
-                self.context_menu.addAction(self.context_menu.actionAddSOLO)
-                self.context_menu.actionAddSOLO.triggered.connect(self.add_solo)
-                self.context_menu.actionAddMDS = QtGui.QAction(self)
-                self.context_menu.actionAddMDS.setText("Add MDS")
-                self.context_menu.addAction(self.context_menu.actionAddMDS)
-                self.context_menu.actionAddMDS.triggered.connect(self.add_MDS)
-                self.context_menu.actionAddClimatology = QtGui.QAction(self)
-                self.context_menu.actionAddClimatology.setText("Add Climatology")
-                self.context_menu.addAction(self.context_menu.actionAddClimatology)
-                self.context_menu.actionAddClimatology.triggered.connect(self.add_climatology)
+                idx = indexes[0]
+                # get the selected item from its index
+                selected_item = idx.model().itemFromIndex(idx)
+                # build a list of existing QC checks
+                if selected_item.hasChildren():
+                    existing_entries = []
+                    for i in range(selected_item.rowCount()):
+                        existing_entries.append(str(selected_item.child(i, 0).text()))
+                # only put a QC check in the context menu if it is not already present
+                if "GapFillUsingSOLO" not in existing_entries:
+                    self.context_menu.actionAddSOLO = QtGui.QAction(self)
+                    self.context_menu.actionAddSOLO.setText("Add SOLO")
+                    self.context_menu.addAction(self.context_menu.actionAddSOLO)
+                    self.context_menu.actionAddSOLO.triggered.connect(self.add_solo)
+                if "GapFillUsingMDS" not in existing_entries:
+                    self.context_menu.actionAddMDS = QtGui.QAction(self)
+                    self.context_menu.actionAddMDS.setText("Add MDS")
+                    self.context_menu.addAction(self.context_menu.actionAddMDS)
+                    self.context_menu.actionAddMDS.triggered.connect(self.add_MDS)
+                if "GapFillUsingClimatology" not in existing_entries:
+                    self.context_menu.actionAddClimatology = QtGui.QAction(self)
+                    self.context_menu.actionAddClimatology.setText("Add Climatology")
+                    self.context_menu.addAction(self.context_menu.actionAddClimatology)
+                    self.context_menu.actionAddClimatology.triggered.connect(self.add_climatology)
                 self.context_menu.addSeparator()
-                self.context_menu.actionAddRangeCheck = QtGui.QAction(self)
-                self.context_menu.actionAddRangeCheck.setText("Add RangeCheck")
-                self.context_menu.addAction(self.context_menu.actionAddRangeCheck)
-                self.context_menu.actionAddRangeCheck.triggered.connect(self.add_rangecheck)
-                self.context_menu.actionAddDependencyCheck = QtGui.QAction(self)
-                self.context_menu.actionAddDependencyCheck.setText("Add DependencyCheck")
-                self.context_menu.addAction(self.context_menu.actionAddDependencyCheck)
-                self.context_menu.actionAddDependencyCheck.triggered.connect(self.add_dependencycheck)
-                self.context_menu.actionAddDiurnalCheck = QtGui.QAction(self)
-                self.context_menu.actionAddDiurnalCheck.setText("Add DiurnalCheck")
-                self.context_menu.addAction(self.context_menu.actionAddDiurnalCheck)
-                self.context_menu.actionAddDiurnalCheck.triggered.connect(self.add_diurnalcheck)
-                self.context_menu.actionAddExcludeDates = QtGui.QAction(self)
-                self.context_menu.actionAddExcludeDates.setText("Add ExcludeDates")
-                self.context_menu.addAction(self.context_menu.actionAddExcludeDates)
-                self.context_menu.actionAddExcludeDates.triggered.connect(self.add_excludedates)
+                if "RangeCheck" not in existing_entries:
+                    self.context_menu.actionAddRangeCheck = QtGui.QAction(self)
+                    self.context_menu.actionAddRangeCheck.setText("Add RangeCheck")
+                    self.context_menu.addAction(self.context_menu.actionAddRangeCheck)
+                    self.context_menu.actionAddRangeCheck.triggered.connect(self.add_rangecheck)
+                if "DependencyCheck" not in existing_entries:
+                    self.context_menu.actionAddDependencyCheck = QtGui.QAction(self)
+                    self.context_menu.actionAddDependencyCheck.setText("Add DependencyCheck")
+                    self.context_menu.addAction(self.context_menu.actionAddDependencyCheck)
+                    self.context_menu.actionAddDependencyCheck.triggered.connect(self.add_dependencycheck)
+                if "DiurnalCheck" not in existing_entries:
+                    self.context_menu.actionAddDiurnalCheck = QtGui.QAction(self)
+                    self.context_menu.actionAddDiurnalCheck.setText("Add DiurnalCheck")
+                    self.context_menu.addAction(self.context_menu.actionAddDiurnalCheck)
+                    self.context_menu.actionAddDiurnalCheck.triggered.connect(self.add_diurnalcheck)
+                if "ExcludeDates" not in existing_entries:
+                    self.context_menu.actionAddExcludeDates = QtGui.QAction(self)
+                    self.context_menu.actionAddExcludeDates.setText("Add ExcludeDates")
+                    self.context_menu.addAction(self.context_menu.actionAddExcludeDates)
+                    self.context_menu.actionAddExcludeDates.triggered.connect(self.add_excludedates)
                 self.context_menu.addSeparator()
                 self.context_menu.actionRemoveOption = QtGui.QAction(self)
                 self.context_menu.actionRemoveOption.setText("Remove variable")
@@ -3910,7 +3972,7 @@ class edit_cfg_L5(QtGui.QWidget):
     def add_filterlist(self):
         """ Add FilterList to the [Options] section."""
         child0 = QtGui.QStandardItem("FilterList")
-        child1 = QtGui.QStandardItem("['Fc']")
+        child1 = QtGui.QStandardItem("Fc")
         self.tree.sections["Options"].appendRow([child0, child1])
         self.update_tab_text()
 
