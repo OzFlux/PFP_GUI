@@ -44,7 +44,25 @@ def do_file_convert_biomet():
     logger.warning("File/Convert/nc to biomet not implemented yet")
     return
 def do_file_convert_nc2xls():
-    logger.warning("File/Convert/nc to Excel not implemented yet")
+    """
+    Purpose:
+     Convert a PFP-style netCDF file to an Excel workbook.
+    Usage:
+    Side effects:
+     Creates an Excel workbook in the same directory as the netCDF file.
+    Author: PRI
+    Date: Back in the day
+    Mods:
+     August 2018: rewrite for use with new GUI
+    """
+    logger.info(" Starting conversion to Excel file")
+    ncfilename = pfp_io.get_filename_dialog(file_path="../Sites",title="Choose a netCDF file", ext="*.nc")
+    if len(ncfilename)==0:
+        return
+    logger.info(" Converting netCDF file to Excel file")
+    pfp_io.nc_2xls(ncfilename, outputlist=None)
+    logger.info(" Finished converting netCDF file")
+    logger.info("")
     return
 def do_file_convert_nc2fluxnet():
     logger.warning("File/Convert/nc to Fluxnet not implemented yet")

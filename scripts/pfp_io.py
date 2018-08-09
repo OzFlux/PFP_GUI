@@ -20,7 +20,8 @@ import Tkinter, tkFileDialog
 import xlrd
 import xlwt
 import xlsxwriter
-# OzFluxQC modules
+from PyQt4 import QtGui
+# PFP modules
 import cfg
 import constants as c
 import meteorologicalfunctions as mf
@@ -1014,7 +1015,7 @@ def get_ncdtype(Series):
     if sd=='int64': dt = 'l'
     return dt
 
-def get_filename_dialog(path='.',title='Choose a file'):
+def get_filename_dialog(file_path='.', title='Choose a file', ext="*.*"):
     """
     Purpose:
      Put up a file open dialog and let the user browse to open a file
@@ -1027,10 +1028,11 @@ def get_filename_dialog(path='.',title='Choose a file'):
     Author: PRI
     Date: Back in the day
     """
-    root = Tkinter.Tk(); root.withdraw()
-    FileName = tkFileDialog.askopenfilename(parent=root,initialdir=path,title=title)
-    root.destroy()
-    return str(FileName)
+    #root = Tkinter.Tk(); root.withdraw()
+    #FileName = tkFileDialog.askopenfilename(parent=root,initialdir=path,title=title)
+    #root.destroy()
+    file_name = QtGui.QFileDialog.getOpenFileName(caption=title, directory=file_path, filter=ext)
+    return str(file_name)
 
 def get_infilenamefromcf(cf):
     path = pfp_utils.get_keyvaluefromcf(cf,["Files"],"file_path",default="")
@@ -2480,39 +2482,41 @@ def xl_write_series(ds, xlfullname, outputlist=None):
         variablelist = ds.series.keys()
         nRecs = len(ds.series[variablelist[0]]["Data"])
     # open the Excel file
-    logger.info(' Opening and writing Excel file '+xlfullname)
+    msg = " Opening and writing Excel file " + os.path.basename(xlfullname)
+    logger.info(msg)
     xlfile = xlwt.Workbook(encoding="latin-1")
     # set the datemode
     if "xl_datemode" not in ds.globalattributes:
-        if platform.system()=="darwin":
+        if platform.system() == "darwin":
             ds.globalattributes["xl_datemode"] = 0
         else:
             ds.globalattributes["xl_datemode"] = 1
     xlfile.dates_1904 = int(ds.globalattributes["xl_datemode"])
     # add sheets to the Excel file
-    xlAttrSheet = xlfile.add_sheet('Attr')
-    xlDataSheet = xlfile.add_sheet('Data')
-    xlFlagSheet = xlfile.add_sheet('Flag')
+    xlAttrSheet = xlfile.add_sheet("Attr")
+    xlDataSheet = xlfile.add_sheet("Data")
+    xlFlagSheet = xlfile.add_sheet("Flag")
     # write the global attributes
-    logger.info(' Writing the global attributes to Excel file '+xlfullname)
+    msg = " Writing the global attributes to the Excel file"
+    logger.info(msg)
     xlcol = 0
     xlrow = 0
-    xlAttrSheet.write(xlrow,xlcol,'Global attributes')
+    xlAttrSheet.write(xlrow, xlcol, "Global attributes")
     xlrow = xlrow + 1
     globalattrlist = ds.globalattributes.keys()
     globalattrlist.sort()
-    for ThisOne in sorted([x for x in globalattrlist if 'Flag' not in x]):
-        xlAttrSheet.write(xlrow,xlcol,ThisOne)
-        xlAttrSheet.write(xlrow,xlcol+1,str(ds.globalattributes[ThisOne].encode('ascii','ignore')))
+    for ThisOne in sorted([x for x in globalattrlist if "Flag" not in x]):
+        xlAttrSheet.write(xlrow, xlcol, ThisOne)
+        xlAttrSheet.write(xlrow, xlcol+1, str(ds.globalattributes[ThisOne].encode("ascii", "ignore")))
         xlrow = xlrow + 1
-    for ThisOne in sorted([x for x in globalattrlist if 'Flag' in x]):
-        xlAttrSheet.write(xlrow,xlcol,ThisOne)
-        xlAttrSheet.write(xlrow,xlcol+1,str(ds.globalattributes[ThisOne].encode('ascii','ignore')))
+    for ThisOne in sorted([x for x in globalattrlist if "Flag" in x]):
+        xlAttrSheet.write(xlrow, xlcol, ThisOne)
+        xlAttrSheet.write(xlrow, xlcol+1, str(ds.globalattributes[ThisOne].encode("ascii", "ignore")))
         xlrow = xlrow + 1
     # write the variable attributes
-    logger.info(' Writing the variable attributes to Excel file '+xlfullname)
+    logger.info(" Writing the variable attributes to the Excel file")
     xlrow = xlrow + 1
-    xlAttrSheet.write(xlrow,xlcol,'Variable attributes')
+    xlAttrSheet.write(xlrow, xlcol, "Variable attributes")
     xlrow = xlrow + 1
     xlcol_varname = 0
     xlcol_attrname = 1
@@ -2523,26 +2527,26 @@ def xl_write_series(ds, xlfullname, outputlist=None):
     else:
         for ThisOne in outputlist:
             if ThisOne not in variablelist:
-                logger.warning(" Requested series "+ThisOne+" not found in data structure")
+                logger.warning(" Requested series " + ThisOne + " not found in data structure")
                 outputlist.remove(ThisOne)
-        if len(outputlist)==0:
+        if len(outputlist) == 0:
             outputlist = variablelist
     outputlist.sort()
-    for ThisOne in ["DateTime","DateTime_UTC"]:
+    for ThisOne in ["DateTime", "DateTime_UTC"]:
         if ThisOne in outputlist: outputlist.remove(ThisOne)
     for ThisOne in outputlist:
-        xlAttrSheet.write(xlrow,xlcol_varname,ThisOne)
-        attributelist = ds.series[ThisOne]['Attr'].keys()
+        xlAttrSheet.write(xlrow, xlcol_varname, ThisOne)
+        attributelist = ds.series[ThisOne]["Attr"].keys()
         attributelist.sort()
         for Attr in attributelist:
-            xlAttrSheet.write(xlrow,xlcol_attrname,Attr)
-            xlAttrSheet.write(xlrow,xlcol_attrvalue,str(ds.series[ThisOne]['Attr'][Attr]))
+            xlAttrSheet.write(xlrow, xlcol_attrname, Attr)
+            xlAttrSheet.write(xlrow, xlcol_attrvalue, str(ds.series[ThisOne]["Attr"][Attr]))
             xlrow = xlrow + 1
     # write the Excel date/time to the data and the QC flags as the first column
     if "xlDateTime" not in ds.series:
         pfp_utils.get_xldatefromdatetime(ds)
-    xlDateTime,f,a = pfp_utils.GetSeries(ds,"xlDateTime")
-    logger.info(' Writing the datetime to Excel file '+xlfullname)
+    xlDateTime, f, a = pfp_utils.GetSeries(ds, "xlDateTime")
+    logger.info(" Writing the datetime to the Excel file")
     d_xf = xlwt.easyxf(num_format_str='dd/mm/yyyy hh:mm')
     xlDataSheet.write(2,xlcol,'xlDateTime')
     for j in range(nRecs):
@@ -2555,36 +2559,37 @@ def xl_write_series(ds, xlfullname, outputlist=None):
     # loop over variables to be output to xl file
     for ThisOne in outputlist:
         # put up a progress message
-        logger.info(' Writing '+ThisOne+' into column '+str(xlcol)+' of the Excel file')
+        msg = " Writing " + ThisOne + " into column " + str(xlcol) + " of the Excel file"
+        logger.info(msg)
         # write the units and the variable name to the header rows in the xl file
-        attrlist = ds.series[ThisOne]['Attr'].keys()
-        if 'long_name' in attrlist:
-            longname = ds.series[ThisOne]['Attr']['long_name']
-        elif 'Description' in attrlist:
-            longname = ds.series[ThisOne]['Attr']['Description']
+        attrlist = ds.series[ThisOne]["Attr"].keys()
+        if "long_name" in attrlist:
+            longname = ds.series[ThisOne]["Attr"]["long_name"]
+        elif "Description" in attrlist:
+            longname = ds.series[ThisOne]["Attr"]["Description"]
         else:
             longname = None
-        if 'units' in attrlist:
-            units = ds.series[ThisOne]['Attr']['units']
-        elif 'Units' in attrlist:
-            units = ds.series[ThisOne]['Attr']['Units']
+        if "units" in attrlist:
+            units = ds.series[ThisOne]["Attr"]["units"]
+        elif "Units" in attrlist:
+            units = ds.series[ThisOne]["Attr"]["Units"]
         else:
             units = None
-        xlDataSheet.write(0,xlcol,longname)
-        xlDataSheet.write(1,xlcol,units)
-        xlDataSheet.write(2,xlcol,ThisOne)
+        xlDataSheet.write(0, xlcol, longname)
+        xlDataSheet.write(1, xlcol, units)
+        xlDataSheet.write(2, xlcol, ThisOne)
         # loop over the values in the variable series (array writes don't seem to work)
         for j in range(nRecs):
-            xlDataSheet.write(j+3,xlcol,float(ds.series[ThisOne]['Data'][j]))
+            xlDataSheet.write(j+3, xlcol, float(ds.series[ThisOne]["Data"][j]))
         # check to see if this variable has a quality control flag
-        if 'Flag' in ds.series[ThisOne].keys():
+        if "Flag" in ds.series[ThisOne].keys():
             # write the QC flag name to the xls file
-            xlFlagSheet.write(2,xlcol,ThisOne)
+            xlFlagSheet.write(2, xlcol, ThisOne)
             # specify the format of the QC flag (integer)
-            d_xf = xlwt.easyxf(num_format_str='0')
+            d_xf = xlwt.easyxf(num_format_str="0")
             # loop over QC flag values and write to xls file
             for j in range(nRecs):
-                xlFlagSheet.write(j+3,xlcol,int(ds.series[ThisOne]['Flag'][j]),d_xf)
+                xlFlagSheet.write(j+3, xlcol, int(ds.series[ThisOne]['Flag'][j]), d_xf)
         # increment the column pointer
         xlcol = xlcol + 1
     xlfile.save(xlfullname)
@@ -2596,40 +2601,41 @@ def xlsx_write_series(ds, xlsxfullname, outputlist=None):
         variablelist = ds.series.keys()
         nRecs = len(ds.series[variablelist[0]]["Data"])
     # open the Excel file
-    logger.info(' Opening and writing Excel file '+xlsxfullname)
+    msg = " Opening and writing Excel file " + os.path.basename(xlfullname)
+    logger.info(msg)
     if "xl_datemode" not in ds.globalattributes:
-        if platform.system()=="darwin":
+        if platform.system() == "darwin":
             ds.globalattributes["xl_datemode"] = 0
         else:
             ds.globalattributes["xl_datemode"] = 1
-    if int(ds.globalattributes["xl_datemode"])==1:
-        xlfile = xlsxwriter.Workbook(xlsxfullname, {'date_1904': True, 'nan_inf_to_errors': True})
+    if int(ds.globalattributes["xl_datemode"]) == 1:
+        xlfile = xlsxwriter.Workbook(xlsxfullname, {"date_1904": True, "nan_inf_to_errors": True})
     else:
-        xlfile = xlsxwriter.Workbook(xlsxfullname, {'date_1904': False, 'nan_inf_to_errors': True})
+        xlfile = xlsxwriter.Workbook(xlsxfullname, {"date_1904": False, "nan_inf_to_errors": True})
     # add sheets to the Excel file
-    xlAttrSheet = xlfile.add_worksheet('Attr')
-    xlDataSheet = xlfile.add_worksheet('Data')
-    xlFlagSheet = xlfile.add_worksheet('Flag')
+    xlAttrSheet = xlfile.add_worksheet("Attr")
+    xlDataSheet = xlfile.add_worksheet("Data")
+    xlFlagSheet = xlfile.add_worksheet("Flag")
     # write the global attributes
-    logger.info(' Writing the global attributes to Excel file '+xlsxfullname)
+    logger.info(" Writing the global attributes to the Excel file")
     xlcol = 0
     xlrow = 0
-    xlAttrSheet.write(xlrow,xlcol,'Global attributes')
+    xlAttrSheet.write(xlrow, xlcol, "Global attributes")
     xlrow = xlrow + 1
     globalattrlist = ds.globalattributes.keys()
     globalattrlist.sort()
-    for ThisOne in sorted([x for x in globalattrlist if 'Flag' not in x]):
-        xlAttrSheet.write(xlrow,xlcol,ThisOne)
-        xlAttrSheet.write(xlrow,xlcol+1,str(ds.globalattributes[ThisOne]))
+    for ThisOne in sorted([x for x in globalattrlist if "Flag" not in x]):
+        xlAttrSheet.write(xlrow, xlcol, ThisOne)
+        xlAttrSheet.write(xlrow, xlcol+1, str(ds.globalattributes[ThisOne]))
         xlrow = xlrow + 1
-    for ThisOne in sorted([x for x in globalattrlist if 'Flag' in x]):
-        xlAttrSheet.write(xlrow,xlcol,ThisOne)
-        xlAttrSheet.write(xlrow,xlcol+1,str(ds.globalattributes[ThisOne]))
+    for ThisOne in sorted([x for x in globalattrlist if "Flag" in x]):
+        xlAttrSheet.write(xlrow, xlcol, ThisOne)
+        xlAttrSheet.write(xlrow, xlcol+1, str(ds.globalattributes[ThisOne]))
         xlrow = xlrow + 1
     # write the variable attributes
-    logger.info(' Writing the variable attributes to Excel file '+xlsxfullname)
+    logger.info(" Writing the variable attributes to the Excel file")
     xlrow = xlrow + 1
-    xlAttrSheet.write(xlrow,xlcol,'Variable attributes')
+    xlAttrSheet.write(xlrow, xlcol, "Variable attributes")
     xlrow = xlrow + 1
     xlcol_varname = 0
     xlcol_attrname = 1
@@ -2640,30 +2646,30 @@ def xlsx_write_series(ds, xlsxfullname, outputlist=None):
     else:
         for ThisOne in outputlist:
             if ThisOne not in variablelist:
-                logger.warning(" Requested series "+ThisOne+" not found in data structure")
+                logger.warning(" Requested series " + ThisOne + " not found in data structure")
                 outputlist.remove(ThisOne)
-        if len(outputlist)==0:
+        if len(outputlist) == 0:
             outputlist = variablelist
     outputlist.sort()
-    for ThisOne in ["DateTime","DateTime_UTC"]:
+    for ThisOne in ["DateTime", "DateTime_UTC"]:
         if ThisOne in outputlist: outputlist.remove(ThisOne)
     for ThisOne in outputlist:
-        xlAttrSheet.write(xlrow,xlcol_varname,ThisOne)
-        attributelist = ds.series[ThisOne]['Attr'].keys()
+        xlAttrSheet.write(xlrow, xlcol_varname, ThisOne)
+        attributelist = ds.series[ThisOne]["Attr"].keys()
         attributelist.sort()
         for Attr in attributelist:
-            xlAttrSheet.write(xlrow,xlcol_attrname,Attr)
-            xlAttrSheet.write(xlrow,xlcol_attrvalue,str(ds.series[ThisOne]['Attr'][Attr]))
+            xlAttrSheet.write(xlrow, xlcol_attrname, Attr)
+            xlAttrSheet.write(xlrow, xlcol_attrvalue, str(ds.series[ThisOne]["Attr"][Attr]))
             xlrow = xlrow + 1
     # write the Excel date/time to the data and the QC flags as the first column
     ldt = ds.series["DateTime"]["Data"]
-    logger.info(' Writing the datetime to Excel file '+xlsxfullname)
-    dt_format = xlfile.add_format({'num_format': 'dd/mm/yyyy hh:mm'})
-    xlDataSheet.write(2,xlcol,'xlDateTime')
-    xlFlagSheet.write(2,xlcol,'xlDateTime')
+    logger.info(" Writing the datetime to the Excel file")
+    dt_format = xlfile.add_format({"num_format": "dd/mm/yyyy hh:mm"})
+    xlDataSheet.write(2, xlcol, "xlDateTime")
+    xlFlagSheet.write(2, xlcol, "xlDateTime")
     for j in range(nRecs):
-        xlDataSheet.write_datetime(j+3,xlcol,ldt[j],dt_format)
-        xlFlagSheet.write_datetime(j+3,xlcol,ldt[j],dt_format)
+        xlDataSheet.write_datetime(j+3, xlcol, ldt[j], dt_format)
+        xlFlagSheet.write_datetime(j+3, xlcol, ldt[j], dt_format)
     # remove xlDateTime from the list of variables to be written to the Excel file
     if "xlDateTime" in outputlist: outputlist.remove("xlDateTime")
     # now start looping over the other variables in the xl file
@@ -2671,36 +2677,36 @@ def xlsx_write_series(ds, xlsxfullname, outputlist=None):
     # loop over variables to be output to xl file
     for ThisOne in outputlist:
         # put up a progress message
-        logger.info(' Writing '+ThisOne+' into column '+str(xlcol)+' of the Excel file')
+        logger.info(" Writing " + ThisOne + " into column " + str(xlcol) + " of the Excel file")
         # write the units and the variable name to the header rows in the xl file
-        attrlist = ds.series[ThisOne]['Attr'].keys()
-        if 'long_name' in attrlist:
-            longname = ds.series[ThisOne]['Attr']['long_name']
-        elif 'Description' in attrlist:
-            longname = ds.series[ThisOne]['Attr']['Description']
+        attrlist = ds.series[ThisOne]["Attr"].keys()
+        if "long_name" in attrlist:
+            longname = ds.series[ThisOne]["Attr"]["long_name"]
+        elif "Description" in attrlist:
+            longname = ds.series[ThisOne]["Attr"]["Description"]
         else:
             longname = None
-        if 'units' in attrlist:
-            units = ds.series[ThisOne]['Attr']['units']
-        elif 'Units' in attrlist:
-            units = ds.series[ThisOne]['Attr']['Units']
+        if "units" in attrlist:
+            units = ds.series[ThisOne]["Attr"]["units"]
+        elif "Units" in attrlist:
+            units = ds.series[ThisOne]["Attr"]["Units"]
         else:
             units = None
-        xlDataSheet.write(0,xlcol,longname)
-        xlDataSheet.write(1,xlcol,units)
-        xlDataSheet.write(2,xlcol,ThisOne)
+        xlDataSheet.write(0, xlcol, longname)
+        xlDataSheet.write(1, xlcol, units)
+        xlDataSheet.write(2, xlcol, ThisOne)
         # loop over the values in the variable series (array writes don't seem to work)
         for j in range(nRecs):
-            xlDataSheet.write(j+3,xlcol,float(ds.series[ThisOne]['Data'][j]))
+            xlDataSheet.write(j+3, xlcol, float(ds.series[ThisOne]["Data"][j]))
         # check to see if this variable has a quality control flag
-        if 'Flag' in ds.series[ThisOne].keys():
+        if "Flag" in ds.series[ThisOne].keys():
             # write the QC flag name to the Excel file
-            xlFlagSheet.write(2,xlcol,ThisOne)
+            xlFlagSheet.write(2, xlcol, ThisOne)
             # specify the format of the QC flag (integer)
-            flag_format = xlfile.add_format({'num_format': '0'})
+            flag_format = xlfile.add_format({"num_format": "0"})
             # loop over QC flag values and write to xl file
             for j in range(nRecs):
-                xlFlagSheet.write(j+3,xlcol,int(ds.series[ThisOne]['Flag'][j]),flag_format)
+                xlFlagSheet.write(j+3, xlcol, int(ds.series[ThisOne]["Flag"][j]), flag_format)
         # increment the column pointer
         xlcol = xlcol + 1
 
