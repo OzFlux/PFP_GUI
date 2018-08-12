@@ -15,7 +15,6 @@ import pandas as pd
 from scipy import stats
 import statsmodels.formula.api as sm
 import sys
-import Tkinter, tkFileDialog
 import xlrd
 import pdb
 import pfp_io
@@ -120,10 +119,7 @@ def fit(temp_df):
 def get_data():
 
     # Prompt user for configuration file and get it
-    root = Tkinter.Tk(); root.withdraw()
-    cfName = tkFileDialog.askopenfilename(initialdir = '')
-    root.destroy()
-    cf=ConfigObj(cfName)
+    cf = pfp_io.load_controlfile(path=".", title="Choose a control file")
 
     # Set input file and output path and create directories for plots and results
     file_in = os.path.join(cf['files']['input_path'], cf['files']['input_file'])

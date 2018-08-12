@@ -32,7 +32,7 @@ def do_file_concatenate(cfg=None):
     """
     logger.info(" Starting concatenation of netCDF files")
     if not cfg:
-        cfg = pfp_io.load_controlfile(path='controlfiles')
+        cfg = pfp_io.load_controlfile(path="controlfiles")
         if len(cfg) == 0:
             logger.info("Quitting concatenation (no control file)")
             return
@@ -44,7 +44,25 @@ def do_file_convert_biomet():
     logger.warning("File/Convert/nc to biomet not implemented yet")
     return
 def do_file_convert_nc2xls():
-    logger.warning("File/Convert/nc to Excel not implemented yet")
+    """
+    Purpose:
+     Convert a PFP-style netCDF file to an Excel workbook.
+    Usage:
+    Side effects:
+     Creates an Excel workbook in the same directory as the netCDF file.
+    Author: PRI
+    Date: Back in the day
+    Mods:
+     August 2018: rewrite for use with new GUI
+    """
+    logger.info(" Starting conversion to Excel file")
+    ncfilename = pfp_io.get_filename_dialog(file_path="../Sites",title="Choose a netCDF file", ext="*.nc")
+    if len(ncfilename)==0:
+        return
+    logger.info(" Converting netCDF file to Excel file")
+    pfp_io.nc_2xls(ncfilename, outputlist=None)
+    logger.info(" Finished converting netCDF file")
+    logger.info("")
     return
 def do_file_convert_nc2fluxnet():
     logger.warning("File/Convert/nc to Fluxnet not implemented yet")
@@ -370,7 +388,7 @@ def do_utilities_ustar_cpd(mode="standard"):
         stdname = "controlfiles/standard/cpd.txt"
         if os.path.exists(stdname):
             cf = pfp_io.get_controlfilecontents(stdname)
-            filename = pfp_io.get_filename_dialog(path="../Sites", title='Choose a netCDF file')
+            filename = pfp_io.get_filename_dialog(file_path="../Sites", title="Choose a netCDF file")
             if not os.path.exists(filename):
                 logger.info( " CPD: no input file chosen")
                 return
