@@ -1000,13 +1000,6 @@ def get_controlfilecontents(ControlFileName,mode="verbose"):
             cf["Files"]["plot_path"] = "plots/"
     return cf
 
-def get_controlfilename(path='.',title='Choose a control file'):
-    logger.info(' Choosing the control file ')
-    root = Tkinter.Tk(); root.withdraw()
-    name = tkFileDialog.askopenfilename(parent=root,initialdir=path,title=title)
-    root.destroy()
-    return name
-
 def get_ncdtype(Series):
     sd = Series.dtype.name
     dt = 'f'
@@ -1028,9 +1021,6 @@ def get_filename_dialog(file_path='.', title='Choose a file', ext="*.*"):
     Author: PRI
     Date: Back in the day
     """
-    #root = Tkinter.Tk(); root.withdraw()
-    #FileName = tkFileDialog.askopenfilename(parent=root,initialdir=path,title=title)
-    #root.destroy()
     file_name = QtGui.QFileDialog.getOpenFileName(caption=title, directory=file_path, filter=ext)
     return str(file_name)
 
@@ -1144,7 +1134,7 @@ def get_seriesstats(cf,ds):
         xlRow = xlRow + 1
     xlFile.save(xl_filename)
 
-def load_controlfile(path='.',title='Choose a control file'):
+def load_controlfile(path='.', title='Choose a control file'):
     """
     Purpose:
      Returns a control file object.
@@ -1156,7 +1146,7 @@ def load_controlfile(path='.',title='Choose a control file'):
     Author: PRI
     Date: Back in the day
     """
-    name = get_controlfilename(path=path,title=title)
+    name = get_filename_dialog(file_path=path, title=title, ext="*.*")
     cf = get_controlfilecontents(name)
     return cf
 

@@ -6,7 +6,6 @@ import logging
 import os
 import platform
 import subprocess
-import Tkinter
 # 3rd party modules
 import dateutil
 import matplotlib.dates as mdt
@@ -239,9 +238,6 @@ def gfSOLO_main(dsa,dsb,solo_info,output_list=[]):
             solo_info["nodes_target"] = len(drivers)+1
         else:
             solo_info["nodes_target"] = int(solo_info["nodes"])
-        #output = dsb.solo[series]["output"]
-        # set the number of nodes for the inf files
-        #nodesAuto = gfSOLO_setnodesEntry(solo_gui,drivers)
         # overwrite the GUI settings if required
         if "solo_settings" in dsb.solo[output]:
             solo_info["nodes_target"] = dsb.solo[output]["solo_settings"]["nodes_target"]
@@ -973,14 +969,6 @@ def gfSOLO_runsolo(dsa,dsb,driverlist,targetlabel,nRecs,si=0,ei=-1):
     else:
         logger.error(' gfSOLO_runsolo: SOLO did not run correctly, check the SOLO GUI and the log files')
         return 0
-
-def gfSOLO_setnodesEntry(solo_gui,drivers):
-    nodesAuto = False
-    if str(solo_gui.nodesEntry.get()).lower()=="auto":
-        nodesAuto = True
-        solo_gui.nodesEntry.delete(0,Tkinter.END)
-        solo_gui.nodesEntry.insert(0,str(len(drivers)+1))
-    return nodesAuto
 
 def gfSOLO_writeinffiles(solo_info):
     # sofm inf file

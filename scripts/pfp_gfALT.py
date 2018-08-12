@@ -4,7 +4,6 @@ import datetime
 import logging
 import os
 import sys
-import Tkinter
 import warnings
 # 3rd party modules
 import dateutil
@@ -1172,13 +1171,6 @@ def gfalternate_plotsummary_getdata(dt_start,dt_end,result):
         dt.append(e)
         data.append(r)
     return dt,data
-
-def gfalternate_progress(alt_gui,text):
-    """ Update progress message in alternate GUI."""
-    alt_gui.progress.destroy()
-    alt_gui.progress = Tkinter.Label(alt_gui, text=text)
-    alt_gui.progress.grid(row=9,column=0,columnspan=6,sticky="W")
-    alt_gui.update()
 
 def gfalternate_quit(ds,alt_gui):
     """ Quit the GapFillFromAlternate GUI."""

@@ -32,7 +32,7 @@ def do_file_concatenate(cfg=None):
     """
     logger.info(" Starting concatenation of netCDF files")
     if not cfg:
-        cfg = pfp_io.load_controlfile(path='controlfiles')
+        cfg = pfp_io.load_controlfile(path="controlfiles")
         if len(cfg) == 0:
             logger.info("Quitting concatenation (no control file)")
             return
@@ -388,7 +388,7 @@ def do_utilities_ustar_cpd(mode="standard"):
         stdname = "controlfiles/standard/cpd.txt"
         if os.path.exists(stdname):
             cf = pfp_io.get_controlfilecontents(stdname)
-            filename = pfp_io.get_filename_dialog(path="../Sites", title='Choose a netCDF file')
+            filename = pfp_io.get_filename_dialog(file_path="../Sites", title="Choose a netCDF file")
             if not os.path.exists(filename):
                 logger.info( " CPD: no input file chosen")
                 return
