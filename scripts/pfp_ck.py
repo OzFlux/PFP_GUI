@@ -684,14 +684,11 @@ def do_li7500check(cf, ds, code=4):
     percent = float(100)*numpy.size(idx)/numpy.size(flag)
     msg = msg + " (" + str(int(percent+0.5)) + "%)"
     logger.info(msg)
-    for label in irga_dependents:
+    for label in irga_list:
         ds.series[label]['Data'][idx] = numpy.float64(c.missing_value)
         ds.series[label]['Flag'][idx] = numpy.int32(code)
 
 def do_li7500acheck(cf,ds):
-    #msg = " Li-7500A check not implemented yet, contact the developer ..."
-    #logger.warning(msg)
-    #return
     '''Rejects data values for series specified in LI75List for times when the Diag_7500
        flag is non-zero.  If the Diag_IRGA flag is not present in the data structure passed
        to this routine, it is constructed from the QC flags of the series specified in

@@ -113,6 +113,7 @@ class pfp_main_ui(QtGui.QWidget, QPlainTextEditLogger):
         # Run menu items
         self.actionRunCurrent = QtGui.QAction(self)
         self.actionRunCurrent.setText("Current...")
+        self.actionRunCurrent.setShortcut('Ctrl+R')
         self.actionRunL1 = QtGui.QAction(self)
         self.actionRunL1.setText("L1 (import)")
         self.actionRunL2 = QtGui.QAction(self)
