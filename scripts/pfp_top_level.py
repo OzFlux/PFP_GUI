@@ -320,7 +320,7 @@ def do_plot_fingerprints():
     stdname = "controlfiles/standard/fingerprint.txt"
     if os.path.exists(stdname):
         cf = pfp_io.get_controlfilecontents(stdname)
-        filename = pfp_io.get_filename_dialog(path="../Sites",title="Choose a netCDF file")
+        filename = pfp_io.get_filename_dialog(file_path="../Sites",title="Choose a netCDF file")
         if len(filename)==0:
             return
         if "Files" not in dir(cf): cf["Files"] = {}

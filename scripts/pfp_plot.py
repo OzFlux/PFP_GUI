@@ -346,9 +346,29 @@ def plottimeseries(cf, nFig, dsa, dsb):
     p['XAxMax'] = max(L2XArray)
     p['loc'],p['fmt'] = get_ticks(p['XAxMin'],p['XAxMax'])
     plt.ion()
-    #plt.ioff()
-    fig = plt.figure(figsize=(p['PlotWidth'],p['PlotHeight']))
-    fig.clf()
+    # check to see if a figure with the same title already exists
+    fig_titles = []
+    # get a list of figure titles
+    for i in plt.get_fignums():
+        # get the figure
+        figa = plt.figure(i)
+        # get the figure title
+        fig_title = figa.texts[0].get_text()
+        # strip out the site name
+        idx = fig_title.index(":")
+        # and append to the figure title list
+        fig_titles.append(fig_title[idx+2:])
+    # check to see if a figure with the same title already exists
+    if p['PlotDescription'] in fig_titles:
+        # if it does, get the figure number (figure numbers start from 1)
+        fig_num = fig_titles.index(p['PlotDescription']) + 1
+        # get the figure
+        fig = plt.figure(fig_num)
+        # clear the figure (we should only update axes, not the whole figure)
+        fig.clf()
+    else:
+        # create the figure if it doesn't already exist
+        fig = plt.figure(figsize=(p['PlotWidth'],p['PlotHeight']))
     fig.canvas.set_window_title(p['PlotDescription'])
     plt.figtext(0.5,0.95,SiteName+': '+p['PlotDescription'],ha='center',size=16)
     for ThisOne, n in zip(p['SeriesList'],range(p['nGraphs'])):
