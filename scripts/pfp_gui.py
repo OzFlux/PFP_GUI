@@ -1441,6 +1441,8 @@ class edit_cfg_L3(QtGui.QWidget):
                 for key2 in self.cfg_mod[key1]:
                     parent2 = QtGui.QStandardItem(key2)
                     for key3 in self.cfg_mod[key1][key2]:
+                        if key3 in ["ustar_threshold"]:
+                            continue
                         parent3 = QtGui.QStandardItem(key3)
                         for key4 in self.cfg_mod[key1][key2][key3]:
                             val = self.cfg_mod[key1][key2][key3][key4]
@@ -2012,30 +2014,24 @@ class edit_cfg_L3(QtGui.QWidget):
     def browse_input_file(self):
         """ Browse for the input data file path."""
         model = self.tree.model()
-        indexes = self.tree.selectedIndexes()
+        idx = self.tree.selectedIndexes()[0]
         # get the section containing the selected item
-        for i in range(model.rowCount()):
-            section = model.item(i)
-            if str(section.text()) == "Files":
-                break
-        # get the key and value of the file path
-        for i in range(section.rowCount()):
-            key = str(section.child(i, 0).text())
-            val = str(section.child(i, 1).text())
-            if key == "file_path":
-                file_path = val
-                break
-        # get the key and value of the selected item
-        for i in range(section.rowCount()):
-            key = str(section.child(i, 0).text())
-            val = str(section.child(i, 1).text())
-            if str(indexes[0].data().toString()) == val:
-                break
+        section_text = str(idx.parent().data().toString())
+        subsection_text = str(idx.data().toString())
+        # get the top level and sub sections
+        model = self.tree.model()
+        section, i = self.get_section_from_text(model, section_text)
+        # get the file_path so it can be used as a default directory
+        key, file_path, found, j = self.get_keyval_by_key_name(section, "file_path")
+        # get the row number for the selected item
+        key, val, found, k = self.get_keyval_by_val_name(section, subsection_text)
         # dialog for open file
-        new_file = QtGui.QFileDialog.getOpenFileName(caption="Choose an input file ...", directory=file_path, filter="*.nc")
+        new_file_path = QtGui.QFileDialog.getOpenFileName(caption="Choose an input file ...",
+                                                          directory=file_path, filter="*.nc")
         # update the model
-        if len(str(new_file)) > 0:
-            section.child(i,1).setText(new_file)
+        if len(str(new_file_path)) > 0:
+            new_file_parts = os.path.split(str(new_file_path))
+            section.child(k, 1).setText(new_file_parts[1])
 
     def browse_output_file(self):
         """ Browse for the output data file path."""
@@ -2077,6 +2073,40 @@ class edit_cfg_L3(QtGui.QWidget):
                 self.cfg_changed = True
         return
 
+    def get_keyval_by_key_name(self, section, key):
+        """ Get the value from a section based on the key name."""
+        found = False
+        val_child = ""
+        key_child = ""
+        for i in range(section.rowCount()):
+            if str(section.child(i, 0).text()) == str(key):
+                found = True
+                key_child = str(section.child(i, 0).text())
+                val_child = str(section.child(i, 1).text())
+                break
+        return key_child, val_child, found, i
+
+    def get_keyval_by_val_name(self, section, val):
+        """ Get the value from a section based on the value name."""
+        found = False
+        key_child = ""
+        val_child = ""
+        for i in range(section.rowCount()):
+            if str(section.child(i, 1).text()) == str(val):
+                found = True
+                key_child = str(section.child(i, 0).text())
+                val_child = str(section.child(i, 1).text())
+                break
+        return key_child, val_child, found, i
+
+    def get_section_from_text(self, model, section_name):
+        """ Gets a section from a model by matching the section name."""
+        for i in range(model.rowCount()):
+            section = model.item(i)
+            if str(section.text()) == str(section_name):
+                break
+        return section, i
+
     def parse_cfg_plots_title(self, key1, key2):
         """ Parse the [Plots] section for a title."""
         if "Title" in self.cfg_mod[key1][key2]:
@@ -2115,6 +2145,7 @@ class edit_cfg_L3(QtGui.QWidget):
 
     def parse_cfg_variables_value(self, k, v):
         """ Parse value from control file to remove unnecessary characters."""
+        strip_list = []
         try:
             # check to see if it is a number
             r = float(v)
@@ -2131,7 +2162,7 @@ class edit_cfg_L3(QtGui.QWidget):
         if k in ["RangeCheck", "DiurnalCheck", "DependencyCheck",
                  "MergeSeries", "AverageSeries"]:
             strip_list = [" ", '"', "'"]
-        elif k in ["ExcludeDates", "ExcludeHours"]:
+        elif k in ["ExcludeDates", "ExcludeHours", "Linear"]:
             # don't remove white space between date and time
             strip_list = ['"', "'"]
         for c in strip_list:

@@ -89,19 +89,20 @@ def ApplyLinear(cf,ds,ThisOne):
         ldt = ds.series['DateTime']['Data']
         LinearList = cf['Variables'][ThisOne]['Linear'].keys()
         for i in range(len(LinearList)):
-            LinearItemList = ast.literal_eval(cf['Variables'][ThisOne]['Linear'][str(i)])
+            linear_dates_string = cf['Variables'][ThisOne]['Linear'][str(i)]
+            linear_dates_list = linear_dates_string.split(",")
             try:
-                dt = datetime.datetime.strptime(LinearItemList[0],'%Y-%m-%d %H:%M')
+                dt = datetime.datetime.strptime(linear_dates_list[0],'%Y-%m-%d %H:%M')
                 si = pfp_utils.find_nearest_value(ldt, dt)
             except ValueError:
                 si = 0
             try:
-                dt = datetime.datetime.strptime(LinearItemList[1],'%Y-%m-%d %H:%M')
+                dt = datetime.datetime.strptime(linear_dates_list[1],'%Y-%m-%d %H:%M')
                 ei = pfp_utils.find_nearest_value(ldt, dt)
             except ValueError:
                 ei = -1
-            Slope = float(LinearItemList[2])
-            Offset = float(LinearItemList[3])
+            Slope = float(linear_dates_list[2])
+            Offset = float(linear_dates_list[3])
             data[si:ei] = Slope * data[si:ei] + Offset
             index = numpy.where(flag[si:ei]==0)[0]
             flag[si:ei][index] = numpy.int32(10)

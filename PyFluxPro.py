@@ -404,9 +404,10 @@ class pfp_main_ui(QtGui.QWidget, QPlainTextEditLogger):
         result = False
         try:
             cfg_sections = self.cfg.keys()
-            if (("General" in cfg_sections) or
+            if ((("General" in cfg_sections) or
                 ("Soil" in cfg_sections) or
-                ("Massman" in cfg_sections)):
+                ("Massman" in cfg_sections)) and
+                ("Options" in cfg_sections)):
                 result = True
         except:
             result = False
