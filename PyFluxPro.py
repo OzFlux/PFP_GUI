@@ -305,7 +305,9 @@ class pfp_main_ui(QtGui.QWidget, QPlainTextEditLogger):
             self.tabs.cfg_dict[self.tabs.tab_index_all] = self.tabs.tab_dict[self.tabs.tab_index_all].get_data_from_model()
             self.tabs.cfg_dict[self.tabs.tab_index_all]["controlfile_name"] = cfgpath
         elif self.cfg["level"] in ["L6"]:
-            logger.error(" Level "+self.cfg["level"]+" not implemented yet")
+            self.tabs.tab_dict[self.tabs.tab_index_all] = pfp_gui.edit_cfg_L6(self)
+            self.tabs.cfg_dict[self.tabs.tab_index_all] = self.tabs.tab_dict[self.tabs.tab_index_all].get_data_from_model()
+            self.tabs.cfg_dict[self.tabs.tab_index_all]["controlfile_name"] = cfgpath
         else:
             logger.error(" Unrecognised control file type: "+self.cfg["level"])
         # add a tab for the control file
@@ -343,6 +345,10 @@ class pfp_main_ui(QtGui.QWidget, QPlainTextEditLogger):
         elif self.check_cfg_L5():
             logger.info(" L5 control file detected")
             self.cfg["level"] = "L5"
+        # check for L6
+        elif self.check_cfg_L6():
+            logger.info(" L6 control file detected")
+            self.cfg["level"] = "L6"
         return self.cfg["level"]
 
     def check_cfg_L1(self):
@@ -455,6 +461,17 @@ class pfp_main_ui(QtGui.QWidget, QPlainTextEditLogger):
                             ("GapFillUsingMDS" in self.cfg[section][subsection].keys())):
                             result = True
                             break
+        except:
+            result = False
+        return result
+
+    def check_cfg_L6(self):
+        """ Return true if control file is L6."""
+        result = False
+        try:
+            cfg_sections = self.cfg.keys()
+            if ("ER" in cfg_sections) or ("NEE" in cfg_sections) or ("GPP" in cfg_sections):
+                result = True
         except:
             result = False
         return result

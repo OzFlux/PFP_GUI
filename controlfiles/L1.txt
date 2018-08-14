@@ -1,6 +1,6 @@
 #level = L1
 level = L1
-controlfile_name = E:/PFP_GUI/controlfiles/L1.txt
+controlfile_name = /home/peter/PFP_GUI/controlfiles/L1.txt
 [Files]
     file_path = ../OzFlux/Sites/Calperum/Data/Tower/2016/
     in_filename = Calperum_2016_L1.xls
