@@ -2628,24 +2628,30 @@ class edit_cfg_concatenate(QtGui.QWidget):
 
     def browse_input_file(self):
         """ Browse for the input data file path."""
-        model = self.tree.model()
-        indexes = self.tree.selectedIndexes()
-        # get the section containing the selected item
-        section, i = self.get_section("Files")
-        subsection, i = self.get_subsection(section, indexes[0].parent())
-        subsubsection, i = self.get_subsection(subsection, indexes[0])
-        file_path = os.path.expanduser("~")
-        if subsection.rowCount() > 1:
-            # get the existing value of the ncFileName key
-            key, val, found = self.get_keyval_by_key_name(subsection, str(subsection.rowCount()-2))
-            if found:
-                file_path = os.path.split(val)[0]
+        #model = self.tree.model()
+        #indexes = self.tree.selectedIndexes()
+        ## get the section containing the selected item
+        #section, i = self.get_section("Files")
+        #subsection, j = self.get_subsection(section, indexes[0].parent())
+        #subsubsection, k = self.get_subsection(subsection, indexes[0])
+        #file_path = os.path.expanduser("~")
+        #if subsection.rowCount() > 1:
+            ## get the existing value of the ncFileName key
+            #key, val, found = self.get_keyval_by_key_name(subsection, str(subsection.rowCount()-2))
+            #if found:
+                #file_path = os.path.split(val)[0]
+
+        idx = self.tree.selectedIndexes()[0]
+        item = idx.model().itemFromIndex(idx)
+        parent = item.parent()
+        val = str(parent.child(item.row(), 1).text())
+        file_path = os.path.split(val)[0]
         # dialog for open file
         file_path = os.path.join(file_path, "")
         new_file = QtGui.QFileDialog.getOpenFileName(caption="Choose an input file ...", directory=file_path, filter="*.nc")
         # update the model
         if len(str(new_file)) > 0:
-            subsection.child(i, 1).setText(new_file)
+            parent.child(item.row(), 1).setText(new_file)
 
     def browse_output_file(self):
         """ Browse for the output data file path."""

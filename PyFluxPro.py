@@ -245,12 +245,12 @@ class pfp_main_ui(QtGui.QWidget, QPlainTextEditLogger):
         self.actionEditPreferences.triggered.connect(self.edit_preferences)
         # Run menu actions
         self.actionRunCurrent.triggered.connect(self.run_current)
-        self.actionRunL1.triggered.connect(pfp_top_level.do_run_l1)
-        self.actionRunL2.triggered.connect(pfp_top_level.do_run_l2)
-        self.actionRunL3.triggered.connect(pfp_top_level.do_run_l3)
-        self.actionRunL4.triggered.connect(lambda:pfp_top_level.do_run_l4(self))
-        self.actionRunL5.triggered.connect(pfp_top_level.do_run_l5)
-        self.actionRunL6.triggered.connect(pfp_top_level.do_run_l6)
+        self.actionRunL1.triggered.connect(self.direct_run)
+        self.actionRunL2.triggered.connect(self.direct_run)
+        self.actionRunL3.triggered.connect(self.direct_run)
+        self.actionRunL4.triggered.connect(self.direct_run)
+        self.actionRunL5.triggered.connect(self.direct_run)
+        self.actionRunL6.triggered.connect(self.direct_run)
         # Plot menu actions
         self.actionPlotL1.triggered.connect(pfp_top_level.do_plot_l1)
         self.actionPlotL2.triggered.connect(pfp_top_level.do_plot_l2)
@@ -478,6 +478,12 @@ class pfp_main_ui(QtGui.QWidget, QPlainTextEditLogger):
             result = False
         return result
 
+    def direct_run(self):
+        """ Placeholder until full implementation done."""
+        msg = " Open control file and use 'Run/Current ...'"
+        logger.warning(msg)
+        return
+
     def save_controlfile(self):
         """ Save the current tab as a control file."""
         # get the current tab index
@@ -523,6 +529,10 @@ class pfp_main_ui(QtGui.QWidget, QPlainTextEditLogger):
     def run_current(self):
         # save the current tab index
         tab_index_current = self.tabs.tab_index_current
+        if tab_index_current == 0:
+            msg = " No control file selected ..."
+            logger.warning(msg)
+            return
         # get the updated control file data
         cfg = self.tabs.tab_dict[tab_index_current].get_data_from_model()
         # set the focus back to the log tab

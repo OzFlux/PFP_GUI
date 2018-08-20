@@ -7,7 +7,7 @@ dependencies:
   - matplotlib
   - netcdf4
   - numpy
-  - pandas
+  - pandas=0.21
   - pyqt=4
   - pytz
   - scipy
@@ -15,4 +15,3 @@ dependencies:
   - xlwt
   - xlrd
   - xlsxwriter
-
