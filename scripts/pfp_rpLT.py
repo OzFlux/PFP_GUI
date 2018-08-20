@@ -60,8 +60,14 @@ def get_configs_dict(cf,ds):
                                      "target",default="ER")
     configs_dict["target"] = str(opt)
     opt = pfp_utils.get_keyvaluefromcf(cf,["ER","ER_LT","ERUsingLloydTaylor"],
-                                     "drivers",default="['Ta']")
-    configs_dict["drivers"] = ast.literal_eval(opt)[0]
+                                     "drivers",default="Ta")
+    #configs_dict["drivers"] = ast.literal_eval(opt)[0]
+    driver_string = opt
+    if "," in driver_string:
+        driver_list = driver_string(",")
+    else:
+        driver_list = [driver_string]
+    configs_dict["drivers"] = driver_list[0]
     opt = pfp_utils.get_keyvaluefromcf(cf,["ER","ER_LT","ERUsingLloydTaylor"],
                                      "output",default="ER_LT_all")
     configs_dict["output_label"] = opt
@@ -365,7 +371,12 @@ def rpLT_createdict(cf,ds,series):
         logger.error("ERUsingLloydTaylor: Series "+series+" not found in control file, skipping ...")
         return
     # check that none of the drivers have missing data
-    driver_list = ast.literal_eval(cf[section][series]["ERUsingLloydTaylor"]["drivers"])
+    #driver_list = ast.literal_eval(cf[section][series]["ERUsingLloydTaylor"]["drivers"])
+    driver_string = cf[section][series]["ERUsingLloydTaylor"]["drivers"]
+    if "," in driver_string:
+        driver_list = driver_string.split(",")
+    else:
+        driver_list = [driver_string]
     target = cf[section][series]["ERUsingLloydTaylor"]["target"]
     for label in driver_list:
         data,flag,attr = pfp_utils.GetSeriesasMA(ds,label)
@@ -382,7 +393,8 @@ def rpLT_createdict(cf,ds,series):
     # target series name
     rpLT_info["target"] = cf[section][series]["ERUsingLloydTaylor"]["target"]
     # list of drivers
-    rpLT_info["drivers"] = ast.literal_eval(cf[section][series]["ERUsingLloydTaylor"]["drivers"])
+    #rpLT_info["drivers"] = ast.literal_eval(cf[section][series]["ERUsingLloydTaylor"]["drivers"])
+    rpLT_info["drivers"] = driver_list
     # name of SOLO output series in ds
     rpLT_info["output"] = cf[section][series]["ERUsingLloydTaylor"]["output"]
     # results of best fit for plotting later on
@@ -405,7 +417,13 @@ def rpLT_createdict(cf,ds,series):
     # output series name
     ds.merge["standard"][series]["output"] = series
     # source
-    ds.merge["standard"][series]["source"] = ast.literal_eval(cf[section][series]["MergeSeries"]["Source"])
+    #ds.merge["standard"][series]["source"] = ast.literal_eval(cf[section][series]["MergeSeries"]["Source"])
+    source_string = cf[section][series]["MergeSeries"]["Source"]
+    if "," in source_string:
+        source_list = source_string.split(",")
+    else:
+        source_list = [source_string]
+    ds.merge["standard"][series]["source"] = source_list
     # create an empty series in ds if the output series doesn't exist yet
     if ds.merge["standard"][series]["output"] not in ds.series.keys():
         data,flag,attr = pfp_utils.MakeEmptySeries(ds,ds.merge["standard"][series]["output"])

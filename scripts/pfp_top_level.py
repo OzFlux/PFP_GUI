@@ -280,8 +280,46 @@ def do_run_l5(main_gui, cfg=None):
         logger.info("Finished saving L5 gap filled data")
     logger.info("")
     return
-def do_run_l6():
-    logger.warning("L6 processing not implemented yet")
+def do_run_l6(main_gui, cfg=None):
+    """
+    Purpose:
+     Top level routine for running the L6 gap filling.
+    Usage:
+     pfp_top_level.do_run_l6()
+    Side effects:
+     Creates an L6 netCDF file with NEE partitioned into GPP and ER.
+    Author: PRI
+    Date: Back in the day
+    Mods:
+     December 2017: rewrite for use with new GUI
+    """
+    logger.info("Starting L6 processing")
+    if not cfg:
+        cfg = pfp_io.load_controlfile(path='controlfiles')
+        if len(cfg) == 0:
+            logger.info("Quiting L6 processing (no control file)")
+            return
+    in_filepath = pfp_io.get_infilenamefromcf(cfg)
+    if not pfp_utils.file_exists(in_filepath):
+        in_filename = os.path.split(in_filepath)
+        logger.error("File "+in_filename[1]+" not found")
+        return
+    ds5 = pfp_io.nc_read_series(in_filepath)
+    ds5.globalattributes['controlfile_name'] = cfg['controlfile_name']
+    sitename = ds5.globalattributes['site_name']
+    if "Options" not in cfg:
+        cfg["Options"] = {}
+    cfg["Options"]["call_mode"] = "interactive"
+    ds6 = pfp_levels.l6qc(main_gui, cfg, ds5)
+    if ds6.returncodes["solo"] == "quit":
+        logger.info("Quitting L6: "+sitename)
+    else:
+        logger.info("Finished L6: "+sitename)
+        out_filepath = pfp_io.get_outfilenamefromcf(cfg)
+        nc_file = pfp_io.nc_open_write(out_filepath)
+        pfp_io.nc_write_series(nc_file, ds6)
+        logger.info("Finished saving L6 gap filled data")
+    logger.info("")
     return
 # top level routines for the Plot menu
 def do_plot_l1():
@@ -320,7 +358,7 @@ def do_plot_fingerprints():
     stdname = "controlfiles/standard/fingerprint.txt"
     if os.path.exists(stdname):
         cf = pfp_io.get_controlfilecontents(stdname)
-        filename = pfp_io.get_filename_dialog(path="../Sites",title="Choose a netCDF file")
+        filename = pfp_io.get_filename_dialog(file_path="../Sites",title="Choose a netCDF file")
         if len(filename)==0:
             return
         if "Files" not in dir(cf): cf["Files"] = {}
@@ -358,7 +396,7 @@ def do_utilities_climatology(mode="standard"):
         stdname = "controlfiles/standard/climatology.txt"
         if os.path.exists(stdname):
             cf = pfp_io.get_controlfilecontents(stdname)
-            filename = pfp_io.get_filename_dialog(path="../Sites", title='Choose a netCDF file')
+            filename = pfp_io.get_filename_dialog(file_path="../Sites", title='Choose a netCDF file')
             if not os.path.exists(filename):
                 logger.info( " Climatology: no input file chosen")
                 return

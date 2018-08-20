@@ -74,14 +74,13 @@ def GapFillFromAlternate(main_gui, cf, ds4, ds_alt):
 
 def gfalternate_gui(main_gui, ds4, ds_alt, alternate_info):
     # put up the start and end dates
+    main_gui.l4_ui.ds4 = ds4
+    main_gui.l4_ui.ds_alt = ds_alt
+    main_gui.l4_ui.alternate_info = alternate_info
     start_date = ds4.series["DateTime"]["Data"][0].strftime("%Y-%m-%d %H:%M")
     end_date = ds4.series["DateTime"]["Data"][-1].strftime("%Y-%m-%d %H:%M")
     main_gui.l4_ui.label_DataStartDate_value.setText(start_date)
     main_gui.l4_ui.label_DataEndDate_value.setText(end_date)
-
-    main_gui.l4_ui.RunButton.clicked.connect(lambda:gfalternate_run_gui(ds4, ds_alt, main_gui.l4_ui, alternate_info))
-    main_gui.l4_ui.DoneButton.clicked.connect(lambda:gfalternate_done(ds4, main_gui.l4_ui))
-    main_gui.l4_ui.QuitButton.clicked.connect(lambda:gfalternate_quit(ds4, main_gui.l4_ui))
     main_gui.l4_ui.show()
     main_gui.l4_ui.exec_()
 
@@ -244,7 +243,7 @@ def gfalternate_createdataandstatsdict(ldt_tower,data_tower,attr_tower,alternate
     stat_dict[label_composite] = {"startdate":alternate_info["startdate"],"enddate":alternate_info["enddate"]}
     return data_dict,stat_dict
 
-def gfalternate_done(ds, alt_gui):
+def gfalternate_done(alt_gui):
     """
     Purpose:
      Finishes up after gap filling from alternate data:
@@ -256,6 +255,7 @@ def gfalternate_done(ds, alt_gui):
     Author: PRI
     Date: August 2014
     """
+    ds = alt_gui.ds4
     # plot the summary statistics
     #gfalternate_plotsummary(ds,alternate_info)
     # destroy the alternate GUI
@@ -1029,7 +1029,7 @@ def gfalternate_plotcomposite(nfig,data_dict,stat_dict,diel_avg,alternate_info,p
     # draw the plot on the screen
     if alternate_info["show_plots"]:
         plt.draw()
-        plt.pause(0.1)
+        plt.pause(1)
         plt.ioff()
     else:
         plt.ion()
@@ -1175,19 +1175,19 @@ def gfalternate_plotsummary_getdata(dt_start,dt_end,result):
         data.append(r)
     return dt,data
 
-def gfalternate_quit(ds,alt_gui):
+def gfalternate_quit(alt_gui):
     """ Quit the GapFillFromAlternate GUI."""
+    ds = alt_gui.ds4
     # destroy the alternate GUI
     alt_gui.close()
     # put the return code into ds.alternate
     ds.returncodes["alternate"] = "quit"
 
-def gfalternate_run_gui(ds_tower,ds_alt,alt_gui,alternate_info):
-    # As of 2018/07/25, two calls to QApplication.processEvents() seem to
-    # be necessary to prevent this function (gfalternate_run_gui) from being
-    # fired twice.
-    QtGui.QApplication.processEvents()
-    QtGui.QApplication.processEvents()
+def gfalternate_run_gui(alt_gui):
+    """ Run the GapFillFromAlternate GUI."""
+    ds_tower = alt_gui.ds4
+    ds_alt = alt_gui.ds_alt
+    alternate_info = alt_gui.alternate_info
     # populate the alternate_info dictionary with things that will be useful
     if str(alt_gui.radioButtons.checkedButton().text()) == "Manual":
         alternate_info["peropt"] = 1

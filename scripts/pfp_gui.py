@@ -9,7 +9,9 @@ from PyQt4 import QtCore, QtGui
 # PFP modules
 import pfp_func
 import pfp_utils
+import pfp_gfALT
 import pfp_gfSOLO
+import pfp_rpNN
 
 logger = logging.getLogger("pfp_log")
 
@@ -1416,6 +1418,9 @@ class edit_cfg_L3(QtGui.QWidget):
                 for key2 in self.cfg_mod[key1]:
                     val = self.cfg_mod[key1][key2]
                     val = self.parse_cfg_values(key2, val, ['"', "'"])
+                    if key2 in ["file_path", "plot_path"]:
+                        val = os.path.join(str(val), "")
+                        self.cfg_changed = True
                     child0 = QtGui.QStandardItem(key2)
                     child1 = QtGui.QStandardItem(val)
                     self.tree.sections[key1].appendRow([child0, child1])
@@ -2286,6 +2291,7 @@ class edit_cfg_concatenate(QtGui.QWidget):
         super(edit_cfg_concatenate, self).__init__()
 
         self.cfg_mod = copy.deepcopy(main_gui.cfg)
+        self.cfg_changed = False
         self.tabs = main_gui.tabs
 
         self.edit_concatenate_gui()
@@ -2323,10 +2329,11 @@ class edit_cfg_concatenate(QtGui.QWidget):
             if key1 in ["Options"]:
                 # sections with only 1 level
                 self.tree.sections[key1] = QtGui.QStandardItem(key1)
-                for val in self.cfg_mod[key1]:
-                    value = self.cfg_mod[key1][val]
-                    child0 = QtGui.QStandardItem(val)
-                    child1 = QtGui.QStandardItem(str(value))
+                for key2 in self.cfg_mod[key1]:
+                    val = self.cfg_mod[key1][key2]
+                    val = self.parse_cfg_values(key2, val, ["[","]",'"', "'"])
+                    child0 = QtGui.QStandardItem(key2)
+                    child1 = QtGui.QStandardItem(str(val))
                     self.tree.sections[key1].appendRow([child0, child1])
                 self.tree.model().appendRow(self.tree.sections[key1])
             elif key1 in ["Files"]:
@@ -2626,6 +2633,14 @@ class edit_cfg_concatenate(QtGui.QWidget):
         # update the model
         if len(str(new_file)) > 0:
             subsection.child(i, 1).setText(new_file)
+
+    def parse_cfg_values(self, k, v, strip_list):
+        """ Parse key values to remove unnecessary characters."""
+        for c in strip_list:
+            if c in v:
+                v = v.replace(c, "")
+                self.cfg_changed = True
+        return v
 
     def remove_option(self):
         """ Remove an option."""
@@ -4485,7 +4500,7 @@ class edit_cfg_L6(QtGui.QWidget):
         for key1 in self.cfg_mod:
             if not self.cfg_mod[key1]:
                 continue
-            if key1 in ["Files", "Global", "Options"]:
+            if key1 in ["Files", "Global"]:
                 # sections with only 1 level
                 self.tree.sections[key1] = QtGui.QStandardItem(key1)
                 for key2 in self.cfg_mod[key1]:
@@ -4602,22 +4617,23 @@ class edit_cfg_L6(QtGui.QWidget):
                 self.context_menu.addAction(self.context_menu.actionAddGlobalAttribute)
                 self.context_menu.actionAddGlobalAttribute.triggered.connect(self.add_global_attribute)
             elif str(idx.data().toString()) in ["ER"]:
-                self.context_menu.actionAddVariable = QtGui.QAction(self)
-                self.context_menu.actionAddVariable.setText("Add variable")
-                self.context_menu.addAction(self.context_menu.actionAddVariable)
-                self.context_menu.actionAddVariable.triggered.connect(self.add_er_variable)
+                pass
+                #self.context_menu.actionAddVariable = QtGui.QAction(self)
+                #self.context_menu.actionAddVariable.setText("Add variable")
+                #self.context_menu.addAction(self.context_menu.actionAddVariable)
+                #self.context_menu.actionAddVariable.triggered.connect(self.add_er_variable)
         elif level == 1:
             # sections with 2 levels
-            section_name = str(indexes[0].parent().data().toString())
+            section_name = str(idx.parent().data().toString())
             section, i = self.get_section_from_text(model, section_name)
             if (section_name == "Files"):
-                if (self.selection_is_key(section, indexes[0])):
+                if (self.selection_is_key(section, idx)):
                     self.context_menu.actionRemoveInputFile = QtGui.QAction(self)
                     self.context_menu.actionRemoveInputFile.setText("Remove item")
                     self.context_menu.addAction(self.context_menu.actionRemoveInputFile)
                     self.context_menu.actionRemoveInputFile.triggered.connect(self.remove_item_files)
-                elif (self.selection_is_value(section, indexes[0])):
-                    key, val, found, i = self.get_keyval_by_val_name(section, indexes[0].data().toString())
+                elif (self.selection_is_value(section, idx)):
+                    key, val, found, i = self.get_keyval_by_val_name(section, idx.data().toString())
                     if key in ["file_path", "plot_path"]:
                         self.context_menu.actionBrowseFilePath = QtGui.QAction(self)
                         self.context_menu.actionBrowseFilePath.setText("Browse...")
@@ -4633,6 +4649,12 @@ class edit_cfg_L6(QtGui.QWidget):
                         self.context_menu.actionBrowseOutputFile.setText("Browse...")
                         self.context_menu.addAction(self.context_menu.actionBrowseOutputFile)
                         self.context_menu.actionBrowseOutputFile.triggered.connect(self.browse_output_file)
+            elif (section_name == "Global"):
+                if (self.selection_is_key(section, idx)):
+                    self.context_menu.actionRemoveGlobalAttribute = QtGui.QAction(self)
+                    self.context_menu.actionRemoveGlobalAttribute.setText("Remove attribute")
+                    self.context_menu.addAction(self.context_menu.actionRemoveGlobalAttribute)
+                    self.context_menu.actionRemoveGlobalAttribute.triggered.connect(self.remove_global_attribute)
 
         self.context_menu.exec_(self.tree.viewport().mapToGlobal(position))
 
@@ -4644,6 +4666,19 @@ class edit_cfg_L6(QtGui.QWidget):
             self.tabs.setTabText(self.tabs.tab_index_current, tab_text+"*")
         # update the control file contents
         self.cfg_mod = self.get_data_from_model()
+
+    def add_er_variable(self):
+        """ Add a variable to the [ER] section."""
+        dict_to_add = {"ERUsingSOLO":{"ER_SOLO_all": {"drivers": "[]",
+                                                      "target": "ER",
+                                                      "output": "ER_SOLO_all"}}}
+        subsection = QtGui.QStandardItem("ER_SOLO")
+        self.add_subsubsubsection(subsection, dict_to_add)
+        dict_to_add = {"MergeSeries":{"Source":"ER,ER_SOLO_all"}}
+        self.add_subsubsection(subsection, dict_to_add)
+        self.tree.sections["ER"].appendRow(subsection)
+        # update the tab text with an asterix if required
+        self.update_tab_text()
 
     def add_fileentry(self):
         """ Add a new entry to the [Files] section."""
@@ -4839,6 +4874,21 @@ class edit_cfg_L6(QtGui.QWidget):
             section.removeRow(j)
             self.update_tab_text()
 
+    def remove_global_attribute(self):
+        """ Remove an attribute from the Global section."""
+        # loop over selected items in the tree
+        for idx in self.tree.selectedIndexes():
+            section_text = str(idx.parent().data().toString())
+            subsection_text = str(idx.data().toString())
+            # get the top level section
+            model = self.tree.model()
+            section, i = self.get_section_from_text(model, section_text)
+            # get the subsection within the top level section
+            subsection, j = self.get_subsection_from_text(section, subsection_text)
+            # remove it
+            section.removeRow(j)
+            self.update_tab_text()
+
     def selection_is_key(self, section, idx):
         """ Return True if the selected item is a key."""
         result = False
@@ -4946,6 +4996,10 @@ class pfp_l4_ui(QtGui.QDialog):
         self.label_DataEndDate.setText("Data end date")
         self.label_DataStartDate_value.setText("YYYY-MM-DD HH:mm")
         self.label_DataEndDate_value.setText("YYYY-MM-DD HH:mm")
+        # connect signals to slots
+        self.RunButton.clicked.connect(lambda:pfp_gfALT.gfalternate_run_gui(self))
+        self.DoneButton.clicked.connect(lambda:pfp_gfALT.gfalternate_done(self))
+        self.QuitButton.clicked.connect(lambda:pfp_gfALT.gfalternate_quit(self))
 
 class pfp_l5_ui(QtGui.QDialog):
     def __init__(self, parent=None):
@@ -5088,6 +5142,24 @@ class pfp_l5_ui(QtGui.QDialog):
         self.QuitButton.setGeometry(QtCore.QRect(270, row10_y, button_width, button_height))
         self.QuitButton.setText("Quit")
         # connect the "Run", "Done" and "Quit" buttons to their slots
-        self.RunButton.clicked.connect(lambda:pfp_gfSOLO.gfSOLO_run_gui(self))
-        self.DoneButton.clicked.connect(lambda:pfp_gfSOLO.gfSOLO_done(self))
-        self.QuitButton.clicked.connect(lambda:pfp_gfSOLO.gfSOLO_quit(self))
+        self.RunButton.clicked.connect(self.call_gui_run)
+        self.DoneButton.clicked.connect(self.call_gui_done)
+        self.QuitButton.clicked.connect(self.call_gui_quit)
+
+    def call_gui_run(self):
+        if self.solo_info["called_by"] == "GapFillingUsingSOLO":
+            pfp_gfSOLO.gfSOLO_run_gui(self)
+        elif self.solo_info["called_by"] == "ERUsingSOLO":
+            pfp_rpNN.rpSOLO_run_gui(self)
+
+    def call_gui_quit(self):
+        if self.solo_info["called_by"] == "GapFillingUsingSOLO":
+            pfp_gfSOLO.gfSOLO_quit(self)
+        elif self.solo_info["called_by"] == "ERUsingSOLO":
+            pfp_rpNN.rpSOLO_quit(self)
+
+    def call_gui_done(self):
+        if self.solo_info["called_by"] == "GapFillingUsingSOLO":
+            pfp_gfSOLO.gfSOLO_done(self)
+        elif self.solo_info["called_by"] == "ERUsingSOLO":
+            pfp_rpNN.rpSOLO_done(self)

@@ -10,6 +10,7 @@ import matplotlib.dates as mdt
 import xlrd
 # PFP modules
 import constants as c
+import pfp_cfg
 import pfp_io
 import pfp_ts
 import pfp_utils
@@ -396,12 +397,8 @@ def gfSOLO_createdict(cf,ds,series):
             ds.solo[output]["solo_settings"]["learningrate"] = float(src_list[3])
             ds.solo[output]["solo_settings"]["iterations"] = int(src_list[4])
         # list of drivers
-        src_string = cf[section][series]["GapFillUsingSOLO"][output]["drivers"]
-        if "," in src_string:
-            src_list = src_string.split(",")
-        else:
-            src_list = [src_string]
-        ds.solo[output]["drivers"] = src_list
+        drivers_string = cf[section][series]["GapFillUsingSOLO"][output]["drivers"]
+        ds.solo[output]["drivers"] = pfp_cfg.cfg_string_to_list(drivers_string)
         # apply ustar filter
         opt = pfp_utils.get_keyvaluefromcf(cf,[section,series,"GapFillUsingSOLO",output],
                                          "turbulence_filter",default="")

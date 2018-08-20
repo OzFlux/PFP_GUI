@@ -46,7 +46,7 @@ def ApplyRangeCheckToVariable(variable):
     # Check to see if a lower limit has been specified
     if "rangecheck_lower" in variable["Attr"]:
         attr = variable["Attr"]["rangecheck_lower"]
-        lower = numpy.array(eval(attr))
+        lower = numpy.array(parse_rangecheck_limit(attr))
         valid_lower = str(numpy.min(lower))
         month = numpy.array([dt[i].month for i in range(0,len(dt))])
         lower_series = lower[month-1]
@@ -59,7 +59,7 @@ def ApplyRangeCheckToVariable(variable):
         variable["Attr"]["valid_range"] = valid_range
     if "rangecheck_upper" in variable["Attr"]:
         attr = variable["Attr"]["rangecheck_upper"]
-        upper = numpy.array(eval(attr))
+        upper = numpy.array(parse_rangecheck_limit(attr))
         valid_upper = str(numpy.min(upper))
         month = numpy.array([dt[i].month for i in range(0,len(dt))])
         upper_series = upper[month-1]

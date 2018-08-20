@@ -53,7 +53,6 @@ controlfile_name = /home/peter/PFP_GUI/controlfiles/L5.txt
         [[[GapFillUsingSOLO]]]
             [[[[Fc_SOLO]]]]
                 drivers = Fn,Fg,q,VPD,Ta,Ts
-                solo_settings = 10,500,5,0.001,500
         [[[MergeSeries]]]
             Source = Fc,Fc_SOLO
 

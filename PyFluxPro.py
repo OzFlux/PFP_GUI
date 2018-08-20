@@ -113,6 +113,7 @@ class pfp_main_ui(QtGui.QWidget, QPlainTextEditLogger):
         # Run menu items
         self.actionRunCurrent = QtGui.QAction(self)
         self.actionRunCurrent.setText("Current...")
+        self.actionRunCurrent.setShortcut('Ctrl+R')
         self.actionRunL1 = QtGui.QAction(self)
         self.actionRunL1.setText("L1 (import)")
         self.actionRunL2 = QtGui.QAction(self)
@@ -538,6 +539,8 @@ class pfp_main_ui(QtGui.QWidget, QPlainTextEditLogger):
             pfp_top_level.do_run_l4(self, cfg=cfg)
         elif self.tabs.cfg_dict[tab_index_current]["level"] == "L5":
             pfp_top_level.do_run_l5(self, cfg=cfg)
+        elif self.tabs.cfg_dict[tab_index_current]["level"] == "L6":
+            pfp_top_level.do_run_l6(self, cfg=cfg)
         else:
             logger.error("Level not implemented yet ...")
 

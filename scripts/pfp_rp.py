@@ -369,6 +369,7 @@ def ERUsingLloydTaylor(cf, ds, info):
     """
     if "rpLT" not in info["er"]: return
     logger.info("Estimating ER using Lloyd-Taylor")
+    ds.returncodes["solo"] = "normal"
     long_name = "Ecosystem respiration modelled by Lloyd-Taylor"
     ER_attr = pfp_utils.MakeAttributeDictionary(long_name=long_name,units="umol/m2/s")
     ts = int(ds.globalattributes["time_step"])
@@ -563,40 +564,6 @@ def ERUsingLloydTaylor(cf, ds, info):
         pfp_rpLT.rpLT_plot(pd, ds, series, drivers, target, output, LT_info)
     # close the Excel workbook
     xl_file.save(xl_name)
-
-def ERUsingSOLO(cf, ds, info):
-    """
-    Purpose:
-     Estimate ER using SOLO.
-    Usage:
-    Side effects:
-    Author: PRI
-    Date: Back in the day
-    Mods:
-     21/8/2017 - moved GetERFromFc from pfp_ls.l6qc() to individual
-                 ER estimation routines to allow for multiple sources
-                 of ER.
-    """
-    if "solo" not in info["er"]: return
-    # local pointer to the datetime series
-    ldt = ds.series["DateTime"]["Data"]
-    startdate = ldt[0]
-    enddate = ldt[-1]
-    solo_info = {"file_startdate":startdate.strftime("%Y-%m-%d %H:%M"),
-                 "file_enddate":enddate.strftime("%Y-%m-%d %H:%M"),
-                 "plot_path":cf["Files"]["plot_path"],
-                 "er":info["er"]["solo"]}
-    # check to see if this is a batch or an interactive run
-    call_mode = pfp_utils.get_keyvaluefromcf(cf,["Options"],"call_mode",default="interactive")
-    solo_info["call_mode"]= call_mode
-    #if call_mode.lower()=="interactive": solo_info["show_plots"] = True
-    if call_mode.lower()=="interactive":
-        # call the ERUsingSOLO GUI
-        pfp_rpNN.rpSOLO_gui(cf,ds,solo_info)
-    else:
-        if "GUI" in cf:
-            if "SOLO" in cf["GUI"]:
-                pfp_rpNN.rpSOLO_run_nogui(cf,ds,solo_info)
 
 def GetERFromFc(cf, ds, info):
     """
