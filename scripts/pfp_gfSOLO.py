@@ -6,6 +6,7 @@ import logging
 import os
 import platform
 import subprocess
+import warnings
 # 3rd party modules
 import dateutil
 import matplotlib.dates as mdt
@@ -20,6 +21,7 @@ import pfp_io
 import pfp_ts
 import pfp_utils
 
+warnings.filterwarnings("ignore",".*GUI is implemented.*")
 logger = logging.getLogger("pfp_log")
 
 # functions for GapFillUsingSOLO
@@ -44,7 +46,8 @@ def GapFillUsingSOLO(main_gui, cf, dsa, dsb):
     solo_info = {"file_startdate":startdate.strftime("%Y-%m-%d %H:%M"),
                  "file_enddate":enddate.strftime("%Y-%m-%d %H:%M"),
                  "startdate":startdate.strftime("%Y-%m-%d %H:%M"),
-                 "enddate":enddate.strftime("%Y-%m-%d %H:%M")}
+                 "enddate":enddate.strftime("%Y-%m-%d %H:%M"),
+                 "called_by": "GapFillingUsingSOLO"}
     # check to see if this is a batch or an interactive run
     call_mode = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "call_mode", default="interactive")
     solo_info["call_mode"]= call_mode
@@ -408,7 +411,7 @@ def gfSOLO_plot(pd,dsa,dsb,driverlist,targetlabel,outputlabel,solo_info,si=0,ei=
     fig.savefig(figname,format='png')
     if solo_info["show_plots"]:
         plt.draw()
-        plt.pause(0.1)
+        plt.pause(1)
         plt.ioff()
     else:
         plt.ion()

@@ -18,6 +18,7 @@ import pfp_gfMDS
 import pfp_gfSOLO
 import pfp_io
 import pfp_rp
+import pfp_rpNN
 import pfp_ts
 import pfp_utils
 
@@ -378,8 +379,8 @@ def l5qc(main_gui, cf, ds4):
 
     return ds5
 
-def l6qc(cf,ds5):
-    ds6 = pfp_io.copy_datastructure(cf,ds5)
+def l6qc(main_gui, cf, ds5):
+    ds6 = pfp_io.copy_datastructure(cf, ds5)
     # ds6 will be empty (logical false) if an error occurs in copy_datastructure
     # return from this routine if this is the case
     if not ds6: return ds6
@@ -393,19 +394,19 @@ def l6qc(cf,ds5):
     Fc_list = [label for label in ds6.series.keys() if label[0:2] == "Fc"]
     pfp_utils.CheckUnits(ds6, Fc_list, "umol/m2/s", convert_units=True)
     ## apply the turbulence filter (if requested)
-    pfp_ck.ApplyTurbulenceFilter(cf,ds6)
+    pfp_ck.ApplyTurbulenceFilter(cf, ds6)
     # get ER from the observed Fc
     pfp_rp.GetERFromFc(cf, ds6, l6_info)
     # estimate ER using SOLO
-    pfp_rp.ERUsingSOLO(cf, ds6, l6_info)
+    pfp_rpNN.ERUsingSOLO(main_gui, cf, ds6, l6_info)
     # estimate ER using FFNET
-    pfp_rp.ERUsingFFNET(cf, ds6, l6_info)
+    #pfp_rp.ERUsingFFNET(cf, ds6, l6_info)
     # estimate ER using Lloyd-Taylor
     pfp_rp.ERUsingLloydTaylor(cf, ds6, l6_info)
     # estimate ER using Lasslop et al
     pfp_rp.ERUsingLasslop(cf, ds6, l6_info)
     # merge the estimates of ER with the observations
-    pfp_ts.MergeSeriesUsingDict(ds6,merge_order="standard")
+    pfp_ts.MergeSeriesUsingDict(ds6, merge_order="standard")
     # calculate NEE from Fc and ER
     pfp_rp.CalculateNEE(cf, ds6, l6_info)
     # calculate NEP from NEE

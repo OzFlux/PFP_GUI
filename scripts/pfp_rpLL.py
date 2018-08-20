@@ -1,12 +1,19 @@
+""" Routines for the Lasslop et al partitioning scheme."""
+# standard modules
 import ast
-import constants as c
 import datetime
 import logging
+#import warnings
+# 3rd party modules
 import matplotlib.pyplot as plt
 import numpy
+from scipy.optimize import curve_fit, OptimizeWarning
+# PFP modules
+import constants as c
+import pfp_cfg
 import pfp_utils
-from scipy.optimize import curve_fit
 
+#warnings.simplefilter("ignore", OptimizeWarning)
 logger = logging.getLogger("pfp_log")
 
 def ER_LloydTaylor(T,rb,E0):
@@ -313,7 +320,8 @@ def rpLL_createdict(cf,ds,series):
         logger.error("ERUsingLasslop: Series "+series+" not found in control file, skipping ...")
         return
     # check that none of the drivers have missing data
-    driver_list = ast.literal_eval(cf[section][series]["ERUsingLasslop"]["drivers"])
+    #driver_list = ast.literal_eval(cf[section][series]["ERUsingLasslop"]["drivers"])
+    driver_list = pfp_cfg.cfg_string_to_list(cf[section][series]["ERUsingLasslop"]["drivers"])
     target = cf[section][series]["ERUsingLasslop"]["target"]
     for label in driver_list:
         data,flag,attr = pfp_utils.GetSeriesasMA(ds,label)
@@ -330,7 +338,8 @@ def rpLL_createdict(cf,ds,series):
     # target series name
     rpLL_info["target"] = cf[section][series]["ERUsingLasslop"]["target"]
     # list of drivers
-    rpLL_info["drivers"] = ast.literal_eval(cf[section][series]["ERUsingLasslop"]["drivers"])
+    #rpLL_info["drivers"] = ast.literal_eval(cf[section][series]["ERUsingLasslop"]["drivers"])
+    rpLL_info["drivers"] = pfp_cfg.cfg_string_to_list(cf[section][series]["ERUsingLasslop"]["drivers"])
     # name of output series in ds
     rpLL_info["output"] = cf[section][series]["ERUsingLasslop"]["output"]
     # results of best fit for plotting later on
@@ -355,7 +364,8 @@ def rpLL_createdict(cf,ds,series):
     # output series name
     ds.merge["standard"][series]["output"] = series
     # source
-    ds.merge["standard"][series]["source"] = ast.literal_eval(cf[section][series]["MergeSeries"]["Source"])
+    #ds.merge["standard"][series]["source"] = ast.literal_eval(cf[section][series]["MergeSeries"]["Source"])
+    ds.merge["standard"][series]["source"] = pfp_cfg.cfg_string_to_list(cf[section][series]["MergeSeries"]["Source"])
     # create an empty series in ds if the output series doesn't exist yet
     if ds.merge["standard"][series]["output"] not in ds.series.keys():
         data,flag,attr = pfp_utils.MakeEmptySeries(ds,ds.merge["standard"][series]["output"])

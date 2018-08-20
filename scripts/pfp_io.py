@@ -25,6 +25,7 @@ from PyQt4 import QtGui
 import cfg
 import constants as c
 import meteorologicalfunctions as mf
+import pfp_cfg
 import pfp_ck
 import pfp_func
 import pfp_ts
@@ -1026,11 +1027,13 @@ def get_filename_dialog(file_path='.', title='Choose a file', ext="*.*"):
 
 def get_infilenamefromcf(cf):
     path = pfp_utils.get_keyvaluefromcf(cf,["Files"],"file_path",default="")
+    path = os.path.join(str(path), "")
     name = pfp_utils.get_keyvaluefromcf(cf,["Files"],"in_filename",default="")
     return str(path)+str(name)
 
 def get_outfilenamefromcf(cf):
     path = pfp_utils.get_keyvaluefromcf(cf,["Files"],"file_path",default="")
+    path = os.path.join(str(path), "")
     name = pfp_utils.get_keyvaluefromcf(cf,["Files"],"out_filename",default="")
     return str(path)+str(name)
 
@@ -1181,10 +1184,9 @@ def nc_concatenate(cf):
     # loop over the data series and calculate fraction of data present
     opt = pfp_utils.get_keyvaluefromcf(cf,["Options"],"Truncate",default="Yes")
     if opt.lower() == "yes":
-        default_list = ["Ah","Cc","Fa","Fg","Fld","Flu","Fn","Fsd","Fsu","ps","Sws","Ta","Ts","Ws","Wd","Precip"]
-        series_list = pfp_utils.get_keyvaluefromcf(cf,["Options"],"SeriesToCheck",default=default_list)
-        if isinstance(series_list, basestring):
-            series_list = ast.literal_eval(series_list)
+        default_string = "Ah,Cc,Fa,Fg,Fld,Flu,Fn,Fsd,Fsu,ps,Sws,Ta,Ts,Ws,Wd,Precip"
+        series_string = pfp_utils.get_keyvaluefromcf(cf,["Options"],"SeriesToCheck",default=default_string)
+        series_list = pfp_cfg.cfg_string_to_list(series_string)
         for item in series_list:
             data,flag,attr = pfp_utils.GetSeriesasMA(ds_n,item)
             idx = numpy.ma.where(data.mask==False)
@@ -1320,8 +1322,9 @@ def nc_concatenate(cf):
     # loop over the data series and calculate fraction of data present
     opt = pfp_utils.get_keyvaluefromcf(cf,["Options"],"Truncate",default="Yes")
     if opt.lower() == "yes":
-        default_list = ["Ah","Cc","Fa","Fg","Fld","Flu","Fn","Fsd","Fsu","ps","Sws","Ta","Ts","Ws","Wd","Precip"]
-        series_list = pfp_utils.get_keyvaluefromcf(cf,["Options"],"SeriesToCheck",default=default_list)
+        default_string = "Ah,Cc,Fa,Fg,Fld,Flu,Fn,Fsd,Fsu,ps,Sws,Ta,Ts,Ws,Wd,Precip"
+        series_string = pfp_utils.get_keyvaluefromcf(cf,["Options"],"SeriesToCheck",default=default_string)
+        series_list = pfp_cfg.cfg_string_to_list(series_string)
         if isinstance(series_list, basestring):
             series_list = ast.literal_eval(series_list)
         for item in series_list:
