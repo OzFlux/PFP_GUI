@@ -80,6 +80,12 @@ def  gfSOLO_gui(main_gui, dsa, dsb, solo_info):
     # put up the start and end dates
     main_gui.l5_ui.label_DataStartDate_value.setText(solo_info["startdate"])
     main_gui.l5_ui.label_DataEndDate_value.setText(solo_info["enddate"])
+    # set the default period to manual
+    main_gui.l5_ui.radioButton_NumberMonths.setChecked(True)
+    # set the default number of nodes
+    main_gui.l5_ui.lineEdit_Nodes.setText("Auto")
+    # set the default minimum percentage of good data
+    main_gui.l5_ui.lineEdit_MinPercent.setText("25")
     # display the SOLO GUI
     main_gui.l5_ui.show()
     main_gui.l5_ui.exec_()
