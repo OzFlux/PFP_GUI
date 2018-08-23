@@ -43,7 +43,7 @@ controlfile_name = /home/peter/PFP_GUI/controlfiles/templates/L1/L1_eddypro.txt
             standard_name = not defined
             cf_role = timeseries_id
         [[[Function]]]
-            func = DateTimeFromDateAndTime(Date,Time)
+            func = DateTimeFromExcelDateAndTime(Date,Time)
     [[Date]]
         [[[xl]]]
             sheet = full_output
@@ -226,7 +226,7 @@ controlfile_name = /home/peter/PFP_GUI/controlfiles/templates/L1/L1_eddypro.txt
             standard_name = virtual_temperature
             units = K
         [[[Function]]]
-            func = ConvertK2C(Tv_SONIC_Av,Tv_SONIC_Av)
+            func = ConvertK2C(Tv_SONIC_Av)
     [[Tv_SONIC_Vr]]
         [[[xl]]]
             sheet = full_output
@@ -393,7 +393,7 @@ controlfile_name = /home/peter/PFP_GUI/controlfiles/templates/L1/L1_eddypro.txt
             standard_name = air_temperature
             units = K
         [[[Function]]]
-            func = ConvertK2C(Ta_HMP_<height>m,Ta_HMP_<height>m)
+            func = ConvertK2C(Ta_HMP_<height>m)
     [[Ah_<inst>_<height>m]]
         [[[Attr]]]
             height = <height>m
@@ -460,7 +460,7 @@ controlfile_name = /home/peter/PFP_GUI/controlfiles/templates/L1/L1_eddypro.txt
             standard_name = surface_air_pressure
             units = Pa
         [[[Function]]]
-            func = ConvertPa2kPa(ps,ps)
+            func = ConvertPa2kPa(ps)
     [[Fg_<depth>cma]]
         [[[xl]]]
             sheet = biomet
@@ -517,7 +517,7 @@ controlfile_name = /home/peter/PFP_GUI/controlfiles/templates/L1/L1_eddypro.txt
             standard_name = soil_temperature
             units = K
         [[[Function]]]
-            func = ConvertK2C(Ts_<depth>cma,Ts_<depth>cma)
+            func = ConvertK2C(Ts_<depth>cma)
     [[Ts_<depth>cmb]]
         [[[xl]]]
             sheet = biomet
@@ -530,4 +530,4 @@ controlfile_name = /home/peter/PFP_GUI/controlfiles/templates/L1/L1_eddypro.txt
             standard_name = soil_temperature
             units = K
         [[[Function]]]
-            func = ConvertK2C(Ts_<depth>cmb,Ts_<depth>cmb)
+            func = ConvertK2C(Ts_<depth>cmb)
