@@ -1139,11 +1139,11 @@ def L6_summary_plotdaily(cf, ds, daily_dict):
         plt.tight_layout()
         sdt = ddv["DateTime"]["data"][0].strftime("%Y%m%d")
         edt = ddv["DateTime"]["data"][-1].strftime("%Y%m%d")
-        plot_path = cf["Files"]["plot_path"]+"L6/"
+        plot_path = os.path.join(cf["Files"]["plot_path"], "L6", "")
         if not os.path.exists(plot_path): os.makedirs(plot_path)
-        figname = plot_path+site_name.replace(" ","")+"_CarbonBudget"+item
-        figname = figname+"_"+sdt+"_"+edt+'.png'
-        fig.savefig(figname,format='png')
+        figure_name = site_name.replace(" ","")+"_CarbonBudget"+item+"_"+sdt+"_"+edt+'.png'
+        figure_path = os.path.join(plot_path, figure_name)
+        fig.savefig(figure_path, format='png')
         if cf["Options"]["call_mode"].lower()=="interactive":
             plt.draw()
             plt.ioff()
@@ -1251,11 +1251,11 @@ def L6_summary_plotcumulative(cf, ds, cumulative_dict):
         # save a hard copy of the plot
         sdt = year_list[0]
         edt = year_list[-1]
-        plot_path = cf["Files"]["plot_path"]+"L6/"
+        plot_path = os.path.join(cf["Files"]["plot_path"], "L6", "")
         if not os.path.exists(plot_path): os.makedirs(plot_path)
-        figname = plot_path+site_name.replace(" ","")+"_Cumulative_"+item.replace("_","")
-        figname = figname+"_"+sdt+"_"+edt+'.png'
-        fig.savefig(figname,format='png')
+        figure_name = site_name.replace(" ", "")+"_Cumulative"+item+"_"+sdt+"_"+edt+'.png'
+        figure_path = os.path.join(plot_path, figure_name)
+        fig.savefig(figure_path, format='png')
         if cf["Options"]["call_mode"].lower()=="interactive":
             plt.draw()
             plt.ioff()

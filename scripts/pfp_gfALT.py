@@ -1021,7 +1021,7 @@ def gfalternate_plotcomposite(nfig,data_dict,stat_dict,diel_avg,alternate_info,p
     # save a hard copy of the plot
     sdt = data_dict["DateTime"]["data"][0].strftime("%Y%m%d")
     edt = data_dict["DateTime"]["data"][-1].strftime("%Y%m%d")
-    plot_path = alternate_info["plot_path"]+"L4/"
+    plot_path = os.path.join(alternate_info["plot_path"], "L4", "")
     if not os.path.exists(plot_path): os.makedirs(plot_path)
     figname = plot_path+alternate_info["site_name"].replace(" ","")+"_Alternate_"+label_tower
     figname = figname+"_"+sdt+"_"+edt+'.png'
@@ -1159,7 +1159,7 @@ def gfalternate_plotsummary(ds,alternate_info):
         # make the hard-copy file name and save the plot as a PNG file
         sdt = startdate.strftime("%Y%m%d")
         edt = enddate.strftime("%Y%m%d")
-        plot_path = alternate_info["plot_path"]+"L4/"
+        plot_path = os.path.join(alternate_info["plot_path"], "L4", "")
         if not os.path.exists(plot_path): os.makedirs(plot_path)
         figname = plot_path+site_name.replace(" ","")+"_Alternate_FitStatistics_"+figlab
         figname = figname+"_"+sdt+"_"+edt+".png"

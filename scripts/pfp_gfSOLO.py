@@ -410,7 +410,7 @@ def gfSOLO_plot(pd,dsa,dsb,driverlist,targetlabel,outputlabel,solo_info,si=0,ei=
     # save a hard copy of the plot
     sdt = xdt[0].strftime("%Y%m%d")
     edt = xdt[-1].strftime("%Y%m%d")
-    plot_path = solo_info["plot_path"]+"L5/"
+    plot_path = os.path.join(solo_info["plot_path"],"L5","")
     if not os.path.exists(plot_path): os.makedirs(plot_path)
     figname = plot_path+pd["site_name"].replace(" ","")+"_SOLO_"+pd["label"]
     figname = figname+"_"+sdt+"_"+edt+'.png'
@@ -545,7 +545,7 @@ def gfSOLO_plotsummary(ds,solo_info):
         # make the hard-copy file name and save the plot as a PNG file
         sdt = startdate.strftime("%Y%m%d")
         edt = enddate.strftime("%Y%m%d")
-        plot_path = solo_info["plot_path"]+"L5/"
+        plot_path = os.path.join(solo_info["plot_path"], "L5", "")
         if not os.path.exists(plot_path): os.makedirs(plot_path)
         figname = plot_path+site_name.replace(" ","")+"_SOLO_FitStatistics_"
         figname = figname+"_"+sdt+"_"+edt+".png"

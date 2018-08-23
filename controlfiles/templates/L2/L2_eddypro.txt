@@ -33,7 +33,7 @@ controlfile_name = /home/peter/PFP_GUI/controlfiles/templates/L2/L2_eddypro.txt
             Lower = [-1]*12
             Upper = [1]*12
         [[[DependencyCheck]]]
-            Source = ['Fm_EPFlag','U_CSAT_Vr','V_CSAT_Vr','W_CSAT_Vr']
+            Source = ['Fm_EPFlag','U_SONIC_Vr','V_SONIC_Vr','W_SONIC_Vr']
     [[Fm_EPFlag]]
         [[[RangeCheck]]]
             Lower = [-0.5]*12
@@ -43,7 +43,7 @@ controlfile_name = /home/peter/PFP_GUI/controlfiles/templates/L2/L2_eddypro.txt
             Lower = [-200]*12
             Upper = [600]*12
         [[[DependencyCheck]]]
-            Source = ['Fh_EPFlag','W_CSAT_Vr','Tv_CSAT_Vr']
+            Source = ['Fh_EPFlag','W_SONIC_Vr','Tv_SONIC_Vr']
     [[Fh_EPFlag]]
         [[[RangeCheck]]]
             Lower = [-0.5]*12
@@ -53,7 +53,7 @@ controlfile_name = /home/peter/PFP_GUI/controlfiles/templates/L2/L2_eddypro.txt
             Lower = [-200]*12
             Upper = [1000]*12
         [[[DependencyCheck]]]
-            Source = ['Fe_EPFlag','W_CSAT_Vr','H2O_7500_Vr','CO2_7500_Vr']
+            Source = ['Fe_EPFlag','W_SONIC_Vr','H2O_IRGA_Vr','CO2_IRGA_Vr']
     [[Fe_EPFlag]]
         [[[RangeCheck]]]
             Lower = [-0.5]*12
@@ -63,7 +63,7 @@ controlfile_name = /home/peter/PFP_GUI/controlfiles/templates/L2/L2_eddypro.txt
             Lower = [-50]*12
             Upper = [50]*12
         [[[DependencyCheck]]]
-            Source = ['Fc_EPFlag','W_CSAT_Vr','H2O_7500_Vr','CO2_7500_Vr']
+            Source = ['Fc_EPFlag','W_SONIC_Vr','H2O_IRGA_Vr','CO2_IRGA_Vr']
     [[Fc_EPFlag]]
         [[[RangeCheck]]]
             Lower = [-0.5]*12
@@ -73,7 +73,7 @@ controlfile_name = /home/peter/PFP_GUI/controlfiles/templates/L2/L2_eddypro.txt
             Lower = [0]*12
             Upper = [3]*12
         [[[DependencyCheck]]]
-            Source = ['Fm_EPFlag','U_CSAT_Vr','V_CSAT_Vr','W_CSAT_Vr']
+            Source = ['Fm_EPFlag','U_SONIC_Vr','V_SONIC_Vr','W_SONIC_Vr']
     [[Tv_SONIC_Av]]
         [[[RangeCheck]]]
             Lower = [-10]*12
