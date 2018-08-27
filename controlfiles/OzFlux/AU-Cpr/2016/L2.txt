@@ -1,6 +1,6 @@
 #level = L2
 level = L2
-controlfile_name = /home/peter/PFP_GUI/controlfiles/L2.txt
+controlfile_name = /home/peter/PFP_GUI/controlfiles/OzFlux/AU-Cpr/2016/L2.txt
 [Files]
     file_path = ../OzFlux/Sites/Calperum/Data/Tower/2016/
     in_filename = Calperum_2016_L1.nc
@@ -57,7 +57,7 @@ controlfile_name = /home/peter/PFP_GUI/controlfiles/L2.txt
     [[UzC]]
         [[[RangeCheck]]]
             Lower = -2
-            Upper = 2
+            Upper = 0.5
     [[UxC]]
         [[[RangeCheck]]]
             Lower = -4

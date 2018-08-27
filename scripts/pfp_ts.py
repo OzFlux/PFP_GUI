@@ -1082,6 +1082,8 @@ def CalculateFcStorageSinglePoint(cf,ds,Fc_out='Fc_single',CO2_in='CO2'):
     Parameters loaded from control file:
         zms: measurement height from surface, m
     """
+    if CO2_in == None:
+        return
     if "Fc_single" not in ds.series.keys():
         if pfp_utils.cfkeycheck(cf, Base="General", ThisOne="zms"):
             zms = float(cf["General"]["zms"])
@@ -2538,6 +2540,9 @@ def MergeSeries(cf,ds,series,okflags=[0,10,20,30,40,50,60],convert_units=False,s
     History:
      16/7/2017 - made okflags optional, implemented save_originals
     """
+    # check to see if we have to do anything
+    if series == None:
+        return
     # check to see if the series is specified in the control file
     section = pfp_utils.get_cfsection(cf,series=series)
     if len(section)==0: return

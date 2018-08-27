@@ -26,7 +26,7 @@
 # <end_datetime> is of the form YYYY-MM-DD hh:mm
 # <ustar_threshold> is a number
 # eg     0 = "['2011-01-01 00:30','2012-01-01 00:00',0.27]"
-    0 = "['<start_datetime>','<end_datetime>',<ustar_threshold>]"
+    0 = "['YYYY-MM-DD hh:mm','YYYY-MM-DD hh:mm',<ustar_threshold>]"
 
 [Fluxes]
     [[ustar]]

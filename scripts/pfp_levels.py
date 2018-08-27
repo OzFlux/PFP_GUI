@@ -165,8 +165,8 @@ def l3qc(cf,ds2):
         CO2 = "Cc"
     else:
         msg = "Label for CO2 ('CO2','Cc') not found in control file"
-        logger.error(msg)
-        return
+        logger.warning(msg)
+        CO2 = None
     pfp_ts.MergeSeries(cf, ds3, CO2, convert_units=True)
     # ******************************************
     # *** Calculate meteorological variables ***

@@ -217,6 +217,8 @@ def contiguous_regions(condition):
     return idx
 
 def ConvertCO2Units(cf, ds, CO2='CO2'):
+    if CO2 == None:
+        return
     CO2_units_out = "mg/m3"            # default value
     CO2_units_in = ds.series[CO2]['Attr']['units']
     if 'Options' in cf:

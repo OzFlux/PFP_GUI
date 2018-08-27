@@ -114,6 +114,21 @@ def ConvertPa2kPa(ds, ps_in, ps_out):
     pfp_utils.CreateVariable(ds, var_out)
     return 1
 
+def ConverthPa2kPa(ds, ps_in, ps_out):
+    """
+    Purpose:
+     Function to convert pressure from hPa (mb) to kPa.
+    Usage:
+     pfp_func.ConverthPa2kPa(ds, ps_in, ps_out)
+    Author: PRI
+    Date: February 2018
+    """
+    var_in = pfp_utils.GetVariable(ds, ps_in)
+    var_out = pfp_utils.convert_units_func(ds, var_in, "kPa", mode="quiet")
+    var_out["Label"] = ps_out
+    pfp_utils.CreateVariable(ds, var_out)
+    return 1
+
 def DateTimeFromDoY(ds,Year_in,DoY_in,Hdh_in):
     year,f,a = pfp_utils.GetSeriesasMA(ds,Year_in)
     doy,f,a = pfp_utils.GetSeriesasMA(ds,DoY_in)

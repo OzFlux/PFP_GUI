@@ -3578,7 +3578,7 @@ class edit_cfg_L5(QtGui.QWidget):
         for key1 in self.cfg_mod:
             if not self.cfg_mod[key1]:
                 continue
-            if key1 in ["Files", "Global", "Options"]:
+            if key1 in ["Files", "Global", "Options", "ustar_threshold"]:
                 # sections with only 1 level
                 self.tree.sections[key1] = QtGui.QStandardItem(key1)
                 for key2 in self.cfg_mod[key1]:
@@ -3625,7 +3625,7 @@ class edit_cfg_L5(QtGui.QWidget):
             section = model.item(i)
             key1 = str(section.text())
             cfg[key1] = {}
-            if key1 in ["Files", "Global", "Output", "Options"]:
+            if key1 in ["Files", "Global", "Output", "Options", "ustar_threshold"]:
                 # sections with only 1 level
                 for j in range(section.rowCount()):
                     key2 = str(section.child(j, 0).text())
@@ -3762,6 +3762,11 @@ class edit_cfg_L5(QtGui.QWidget):
                 self.context_menu.actionAddVariable.setText("Add variable")
                 self.context_menu.addAction(self.context_menu.actionAddVariable)
                 self.context_menu.actionAddVariable.triggered.connect(self.add_variable)
+            elif str(indexes[0].data().toString()) in ["ustar_threshold"]:
+                self.context_menu.actionAddUstarThreshold = QtGui.QAction(self)
+                self.context_menu.actionAddUstarThreshold.setText("Add year")
+                self.context_menu.addAction(self.context_menu.actionAddUstarThreshold)
+                self.context_menu.actionAddUstarThreshold.triggered.connect(self.add_ustar_threshold)
         elif level == 1:
             # sections with 2 levels
             section_name = str(indexes[0].parent().data().toString())
@@ -4083,6 +4088,22 @@ class edit_cfg_L5(QtGui.QWidget):
         child1 = QtGui.QStandardItem("-5")
         self.tree.sections["Options"].appendRow([child0, child1])
         self.update_tab_text()
+
+    def add_ustar_threshold(self):
+        """ Add a year to the [ustar_threshold] section."""
+        model = self.tree.model()
+        # loop over selected items in the tree
+        for idx in self.tree.selectedIndexes():
+            # get the name of the parent of the selected item
+            parent = str(idx.parent().data().toString())
+            # get the parent section
+            for i in range(model.rowCount()):
+                section = model.item(i)
+                if str(section.text()) == "ustar_threshold":
+                    break
+            child0 = QtGui.QStandardItem(str(section.rowCount()))
+            child1 = QtGui.QStandardItem("YYYY-mm-dd HH:MM, YYYY-mm-dd HH:MM, <ustar_threshold>")
+            section.appendRow([child0, child1])
 
     def add_MDS(self):
         """ Add GapFillUsingMDS to a variable."""
