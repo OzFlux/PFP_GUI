@@ -51,47 +51,52 @@ class edit_cfg_L1(QtGui.QWidget):
 
     def edit_L1_gui(self):
         """ Edit L1 control file GUI."""
-        # get a QTreeView
-        self.tree = QtGui.QTreeView()
+        # get a QTreeView and a standard model
+        self.view = QtGui.QTreeView()
+        self.model = QtGui.QStandardItemModel()
         #self.tree = custom_treeview()
         # set the context menu policy
-        self.tree.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
+        self.view.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
         # connect the context menu requested signal to appropriate slot
-        self.tree.customContextMenuRequested.connect(self.context_menu)
+        self.view.customContextMenuRequested.connect(self.context_menu)
+        # do the QTreeView layout
         vbox = QtGui.QVBoxLayout()
-        vbox.addWidget(self.tree)
+        vbox.addWidget(self.view)
         self.setLayout(vbox)
         self.setGeometry(300, 300, 600, 400)
-        # Tree view
-        self.tree.setAlternatingRowColors(True)
+        # set some features of the QTreeView
+        self.view.setAlternatingRowColors(True)
         #self.tree.setSortingEnabled(True)
-        self.tree.setHeaderHidden(False)
-        self.tree.setSelectionBehavior(QtGui.QAbstractItemView.SelectItems)
-        self.tree.setModel(QtGui.QStandardItemModel())
+        self.view.setHeaderHidden(False)
+        self.view.setSelectionBehavior(QtGui.QAbstractItemView.SelectItems)
+        # set the QTreeView model
+        self.view.setModel(self.model)
         #self.tree.setDragDropMode(QtGui.QAbstractItemView.InternalMove)
         # build the model
         self.get_model_from_data()
+        # set the default width for the first column
+        self.view.setColumnWidth(0, 200)
 
     def get_model_from_data(self):
         """ Build the data model."""
-        self.tree.model().setHorizontalHeaderLabels(['Parameter', 'Value'])
-        self.tree.model().itemChanged.connect(self.handleItemChanged)
+        self.model.setHorizontalHeaderLabels(['Parameter', 'Value'])
+        self.model.itemChanged.connect(self.handleItemChanged)
         # there must be some way to do this recursively
-        self.tree.sections = {}
+        self.sections = {}
         for key1 in self.cfg_mod:
             if not self.cfg_mod[key1]:
                 continue
             if key1 in ["Files", "Global", "Output"]:
-                self.tree.sections[key1] = QtGui.QStandardItem(key1)
+                self.sections[key1] = QtGui.QStandardItem(key1)
                 for key2 in self.cfg_mod[key1]:
                     val = self.cfg_mod[key1][key2]
                     val = self.parse_cfg_values(key2, val, ['"', "'"])
                     child0 = QtGui.QStandardItem(key2)
                     child1 = QtGui.QStandardItem(val)
-                    self.tree.sections[key1].appendRow([child0, child1])
-                self.tree.model().appendRow(self.tree.sections[key1])
+                    self.sections[key1].appendRow([child0, child1])
+                self.model.appendRow(self.sections[key1])
             elif key1 in ["Variables"]:
-                self.tree.sections[key1] = QtGui.QStandardItem(key1)
+                self.sections[key1] = QtGui.QStandardItem(key1)
                 for key2 in self.cfg_mod[key1]:
                     parent2 = QtGui.QStandardItem(key2)
                     for key3 in self.cfg_mod[key1][key2]:
@@ -103,13 +108,13 @@ class edit_cfg_L1(QtGui.QWidget):
                             child1 = QtGui.QStandardItem(val)
                             parent3.appendRow([child0, child1])
                         parent2.appendRow(parent3)
-                    self.tree.sections[key1].appendRow(parent2)
-                self.tree.model().appendRow(self.tree.sections[key1])
+                    self.sections[key1].appendRow(parent2)
+                self.model.appendRow(self.sections[key1])
 
     def get_data_from_model(self):
         """ Iterate over the model and get the data."""
         cfg = self.cfg_mod
-        model = self.tree.model()
+        model = self.model
         # there must be a way to do this recursively
         for i in range(model.rowCount()):
             section = model.item(i)
@@ -148,34 +153,17 @@ class edit_cfg_L1(QtGui.QWidget):
                 break
         return key_child, val_child, found, i
 
-    def get_keyval_by_val_name(self, section, val):
-        """ Get the value from a section based on the value name."""
-        found = False
-        key_child = ""
-        val_child = ""
-        for i in range(section.rowCount()):
-            if str(section.child(i, 1).text()) == str(val):
-                found = True
-                key_child = str(section.child(i, 0).text())
-                val_child = str(section.child(i, 1).text())
-                break
-        return key_child, val_child, found, i
-
-    def get_section_from_text(self, model, section_name):
-        """ Gets a section from a model by matching the section name."""
-        for i in range(model.rowCount()):
-            section = model.item(i)
-            if str(section.text()) == str(section_name):
-                break
-        return section, i
-
-    def get_subsection_from_text(self, section, text):
-        """ Gets a subsection from a model by matching the subsection name"""
-        for i in range(section.rowCount()):
-            subsection = section.child(i)
-            if str(subsection.text()) == text:
-                break
-        return subsection, i
+    def get_level_selected_item(self):
+        """ Get the level of the selected item in the model."""
+        indexes = self.view.selectedIndexes()
+        level = -1
+        if len(indexes) > 0:
+            level = 0
+            idx = indexes[0]
+            while idx.parent().isValid():
+                idx = idx.parent()
+                level += 1
+        return level
 
     def handleItemChanged(self, item):
         """ Handler for when view items are edited."""
@@ -188,70 +176,53 @@ class edit_cfg_L1(QtGui.QWidget):
 
     def context_menu(self, position):
         """ Right click context menu."""
-        model = self.tree.model()
-        indexes = self.tree.selectedIndexes()
-        if len(indexes) > 0:
-            level = 0
-            index = indexes[0]
-            while index.parent().isValid():
-                index = index.parent()
-                level += 1
+        # get a menu
         self.context_menu = QtGui.QMenu()
+        # get the index of the selected item
+        idx = self.view.selectedIndexes()[0]
+        # get the level of the selected item
+        level = self.get_level_selected_item()
         if level == 0:
-            if str(indexes[0].data().toString()) == "Files":
-                self.context_menu.actionAddFileEntry = QtGui.QAction(self)
-                self.context_menu.actionAddFileEntry.setText("Add item")
-                self.context_menu.addAction(self.context_menu.actionAddFileEntry)
-                self.context_menu.actionAddFileEntry.triggered.connect(self.add_fileentry)
-            elif str(indexes[0].data().toString()) == "Global":
+            selected_text = str(idx.data().toString())
+            if selected_text == "Global":
                 self.context_menu.actionAddGlobal = QtGui.QAction(self)
                 self.context_menu.actionAddGlobal.setText("Add attribute")
                 self.context_menu.addAction(self.context_menu.actionAddGlobal)
                 self.context_menu.actionAddGlobal.triggered.connect(self.add_global)
-            elif str(indexes[0].data().toString()) == "Variables":
+            elif selected_text == "Variables":
                 self.context_menu.actionAddVariable = QtGui.QAction(self)
                 self.context_menu.actionAddVariable.setText("Add variable")
                 self.context_menu.addAction(self.context_menu.actionAddVariable)
                 self.context_menu.actionAddVariable.triggered.connect(self.add_variable)
         elif level == 1:
-            if str(indexes[0].parent().data().toString()) == "Files":
-                # get the parent section
-                for i in range(model.rowCount()):
-                    section = model.item(i)
-                    if str(section.text()) == str(indexes[0].parent().data().toString()):
-                        break
-                # get the key and value for the selected item
-                for i in range(section.rowCount()):
-                    key = str(section.child(i, 0).text())
-                    val = str(section.child(i, 1).text())
-                    if key == str(indexes[0].data().toString()):
-                        return
-                    if str(indexes[0].data().toString()) == val:
-                        break
+            selected_item = idx.model().itemFromIndex(idx)
+            parent = selected_item.parent()
+            if (str(parent.text()) == "Files") and (selected_item.column() == 1):
+                key = str(parent.child(selected_item.row(),0).text())
                 # check to see if we have the selected subsection
-                if key == "file_path" and key != str(indexes[0].data().toString()):
+                if key == "file_path":
                     self.context_menu.actionBrowseFilePath = QtGui.QAction(self)
                     self.context_menu.actionBrowseFilePath.setText("Browse...")
                     self.context_menu.addAction(self.context_menu.actionBrowseFilePath)
                     self.context_menu.actionBrowseFilePath.triggered.connect(self.browse_file_path)
-                elif key == "in_filename" and key != str(indexes[0].data().toString()):
+                elif key == "in_filename":
                     self.context_menu.actionBrowseInputFile = QtGui.QAction(self)
                     self.context_menu.actionBrowseInputFile.setText("Browse...")
                     self.context_menu.addAction(self.context_menu.actionBrowseInputFile)
                     self.context_menu.actionBrowseInputFile.triggered.connect(self.browse_input_file)
-                elif key == "out_filename" and key != str(indexes[0].data().toString()):
+                elif key == "out_filename":
                     self.context_menu.actionBrowseOutputFile = QtGui.QAction(self)
                     self.context_menu.actionBrowseOutputFile.setText("Browse...")
                     self.context_menu.addAction(self.context_menu.actionBrowseOutputFile)
                     self.context_menu.actionBrowseOutputFile.triggered.connect(self.browse_output_file)
                 else:
                     pass
-            elif str(indexes[0].parent().data().toString()) == "Global":
+            elif str(parent.text()) == "Global":
                 self.context_menu.actionRemoveGlobal = QtGui.QAction(self)
                 self.context_menu.actionRemoveGlobal.setText("Remove attribute")
                 self.context_menu.addAction(self.context_menu.actionRemoveGlobal)
-                self.context_menu.actionRemoveGlobal.triggered.connect(self.remove_global)
-            elif str(indexes[0].parent().data().toString()) == "Variables":
+                self.context_menu.actionRemoveGlobal.triggered.connect(self.remove_item)
+            elif str(parent.text()) == "Variables":
                 self.context_menu.actionAddFunction = QtGui.QAction(self)
                 self.context_menu.actionAddFunction.setText("Add Function")
                 self.context_menu.addAction(self.context_menu.actionAddFunction)
@@ -260,30 +231,30 @@ class edit_cfg_L1(QtGui.QWidget):
                 self.context_menu.actionRemoveVariable = QtGui.QAction(self)
                 self.context_menu.actionRemoveVariable.setText("Remove variable")
                 self.context_menu.addAction(self.context_menu.actionRemoveVariable)
-                self.context_menu.actionRemoveVariable.triggered.connect(self.remove_variable)
+                self.context_menu.actionRemoveVariable.triggered.connect(self.remove_item)
         elif level == 2:
-            section_text = str(indexes[0].parent().parent().data().toString())
-            subsection_text = str(indexes[0].parent().data().toString())
-            subsubsection_text = str(indexes[0].data().toString())
+            section_text = str(idx.parent().parent().data().toString())
+            subsection_text = str(idx.parent().data().toString())
+            subsubsection_text = str(idx.data().toString())
             if section_text == "Variables":
                 if subsubsection_text == "Attr":
                     self.context_menu.actionAddAttribute = QtGui.QAction(self)
                     self.context_menu.actionAddAttribute.setText("Add attribute")
                     self.context_menu.addAction(self.context_menu.actionAddAttribute)
                     self.context_menu.actionAddAttribute.triggered.connect(self.add_attribute)
-                elif subsubsection_text in ["xl", "Function"]:
+                elif subsubsection_text in ["Function"]:
                     self.context_menu.actionRemoveSubSubSection = QtGui.QAction(self)
                     self.context_menu.actionRemoveSubSubSection.setText("Remove item")
                     self.context_menu.addAction(self.context_menu.actionRemoveSubSubSection)
-                    self.context_menu.actionRemoveSubSubSection.triggered.connect(self.remove_subsubsection)
+                    self.context_menu.actionRemoveSubSubSection.triggered.connect(self.remove_item)
         elif level == 3:
-            if str(indexes[0].parent().data().toString()) == "Attr":
+            if str(idx.parent().data().toString()) == "Attr":
                 self.context_menu.actionRemoveAttribute = QtGui.QAction(self)
                 self.context_menu.actionRemoveAttribute.setText("Remove attribute")
                 self.context_menu.addAction(self.context_menu.actionRemoveAttribute)
-                self.context_menu.actionRemoveAttribute.triggered.connect(self.remove_attribute)
-            elif (str(indexes[0].parent().data().toString()) == "Function" and
-                  str(indexes[0].data().toString()) == "Right click to browse"):
+                self.context_menu.actionRemoveAttribute.triggered.connect(self.remove_item)
+            elif (str(idx.parent().data().toString()) == "Function" and
+                  str(idx.data().toString()) == "Right click to browse"):
                 implemented_functions_name = [name for name,data in inspect.getmembers(pfp_func,inspect.isfunction)]
                 self.context_menu.actionAddFunction = {}
                 for item in implemented_functions_name:
@@ -292,56 +263,36 @@ class edit_cfg_L1(QtGui.QWidget):
                     self.context_menu.addAction(self.context_menu.actionAddFunction[item])
                     self.context_menu.actionAddFunction[item].triggered.connect(self.add_function_entry)
 
-        self.context_menu.exec_(self.tree.viewport().mapToGlobal(position))
+        self.context_menu.exec_(self.view.viewport().mapToGlobal(position))
 
     def add_attribute(self):
         """ Add a variable attribute to a variable in the [Variables] section."""
-        model = self.tree.model()
-        # loop over selected items in the tree
-        indexes = self.tree.selectedIndexes()
-        # get the name of the parent of the selected item
-        parent = str(indexes[0].parent().data().toString())
-        # get the parent section
-        for i in range(model.rowCount()):
-            section = model.item(i)
-            if str(section.text()) == "Variables":
-                break
-        for i in range(section.rowCount()):
-            subsection = section.child(i)
-            if str(subsection.text()) == str(indexes[0].parent().data().toString()):
-                break
-        for i in range(subsection.rowCount()):
-            subsubsection = subsection.child(i)
-            if str(subsubsection.text()) == str(indexes[0].data().toString()):
-                break
+        # get the index of the selected item
+        idx = self.view.selectedIndexes()[0]
+        # get the selected item from the index
+        selected_item = idx.model().itemFromIndex(idx)
+        # get the new children
         child0 = QtGui.QStandardItem("New attribute")
         child1 = QtGui.QStandardItem("")
-        subsubsection.appendRow([child0, child1])
+        # add them to the parent
+        selected_item.appendRow([child0, child1])
         # add an asterisk to the tab text to indicate the tab contents have changed
-        tab_text = str(self.tabs.tabText(self.tabs.tab_index_current))
-        if "*" not in tab_text:
-            self.tabs.setTabText(self.tabs.tab_index_current, tab_text+"*")
+        self.update_tab_text()
 
     def add_function(self):
         """ Add a function to a variable."""
-        idx = self.tree.selectedIndexes()[0]
+        idx = self.view.selectedIndexes()[0]
+        selected_item = idx.model().itemFromIndex(idx)
         dict_to_add = {"Function":{"func": "Right click to browse"}}
-        # get the parent and sub section text
-        subsection_text = str(idx.data().toString())
-        section_text = str(idx.parent().data().toString())
-        # get the top level and sub sections
-        model = self.tree.model()
-        section, i = self.get_section_from_text(model, section_text)
-        subsection, j = self.get_subsection_from_text(section, subsection_text)
         # add the subsubsection
-        self.add_subsubsection(subsection, dict_to_add)
+        self.add_subsubsection(selected_item, dict_to_add)
         # update the tab text with an asterix if required
         self.update_tab_text()
 
     def add_function_entry(self):
         """ Add the selected function to the variables [Function] subsection."""
         # get the index of the selected item
-        idx = self.tree.selectedIndexes()[0]
+        idx = self.view.selectedIndexes()[0]
         # get a list of function names in pfp_func
         implemented_functions_name = [name for name,data in inspect.getmembers(pfp_func,inspect.isfunction)]
         # get the arguments for the functions in pfp_func
@@ -360,271 +311,124 @@ class edit_cfg_L1(QtGui.QWidget):
         # change the text of the selected item
         item.setText(function_string)
 
-    def add_fileentry(self):
-        """ Add a new entry to the 'Files' section."""
-        child0 = QtGui.QStandardItem("New item")
-        child1 = QtGui.QStandardItem("")
-        self.tree.sections["Files"].appendRow([child0, child1])
-        # add an asterisk to the tab text to indicate the tab contents have changed
-        tab_text = str(self.tabs.tabText(self.tabs.tab_index_current))
-        if "*" not in tab_text:
-            self.tabs.setTabText(self.tabs.tab_index_current, tab_text+"*")
-
     def add_global(self):
-        """ Add a new entry to the 'Global' section."""
+        """ Add a new entry to the [Global] section."""
+        # get the index of the selected item
+        idx = self.view.selectedIndexes()[0]
+        # get the selected item from the index
+        selected_item = idx.model().itemFromIndex(idx)
+        # get the new children
         child0 = QtGui.QStandardItem("New item")
         child1 = QtGui.QStandardItem("")
-        self.tree.sections["Global"].appendRow([child0, child1])
-        # add an asterisk to the tab text to indicate the tab contents have changed
-        tab_text = str(self.tabs.tabText(self.tabs.tab_index_current))
-        if "*" not in tab_text:
-            self.tabs.setTabText(self.tabs.tab_index_current, tab_text+"*")
+        selected_item.appendRow([child0, child1])
+        # update the tab text with an asterix if required
+        self.update_tab_text()
+
+    def add_subsection(self, section, dict_to_add):
+        for key in dict_to_add:
+            val = str(dict_to_add[key])
+            child0 = QtGui.QStandardItem(key)
+            child1 = QtGui.QStandardItem(val)
+            section.appendRow([child0, child1])
 
     def add_subsubsection(self, subsection, dict_to_add):
         """ Add a subsubsection to the model."""
-        for key1 in dict_to_add:
-            subsubsection = QtGui.QStandardItem(key1)
-            for key2 in dict_to_add[key1]:
-                child0 = QtGui.QStandardItem(key2)
-                child1 = QtGui.QStandardItem(str(dict_to_add[key1][key2]))
-                subsubsection.appendRow([child0, child1])
-            subsection.appendRow(subsubsection)
-
-    def add_subsubsubsection(self, subsection, dict_to_add):
-        """ Add a subsubsubsection to the model."""
-        for key3 in dict_to_add:
-            subsubsection = QtGui.QStandardItem(key3)
-            for key4 in dict_to_add[key3]:
-                subsubsubsection = QtGui.QStandardItem(key4)
-                for val in dict_to_add[key3][key4]:
-                    value = dict_to_add[key3][key4][val]
-                    child0 = QtGui.QStandardItem(val)
-                    child1 = QtGui.QStandardItem(str(value))
-                    subsubsubsection.appendRow([child0, child1])
-                subsubsection.appendRow(subsubsubsection)
+        for key in dict_to_add:
+            subsubsection = QtGui.QStandardItem(key)
+            self.add_subsection(subsubsection, dict_to_add[key])
             subsection.appendRow(subsubsection)
 
     def add_variable(self):
         """ Add a new variable."""
+        # get the index of the selected item
+        idx = self.view.selectedIndexes()[0]
+        # get the selected item from the index
+        parent = idx.model().itemFromIndex(idx)
         new_var = {"xl":{"sheet":"", "name":""},
                    "Attr":{"height":"<height>m", "instrument":"", "long_name":"",
                            "serial_number":"", "standard_name":"", "units":""}}
-        parent2 = QtGui.QStandardItem("New variable")
-        for key3 in new_var:
-            parent3 = QtGui.QStandardItem(key3)
-            for key4 in new_var[key3]:
-                value = new_var[key3][key4]
-                child0 = QtGui.QStandardItem(key4)
-                child1 = QtGui.QStandardItem(str(value))
-                parent3.appendRow([child0, child1])
-            parent2.appendRow(parent3)
-        self.tree.sections["Variables"].appendRow(parent2)
+        subsection = QtGui.QStandardItem("New variable")
+        self.add_subsubsection(subsection, new_var)
+        parent.appendRow(subsection)
         # add an asterisk to the tab text to indicate the tab contents have changed
-        tab_text = str(self.tabs.tabText(self.tabs.tab_index_current))
-        if "*" not in tab_text:
-            self.tabs.setTabText(self.tabs.tab_index_current, tab_text+"*")
+        self.update_tab_text()
 
     def browse_file_path(self):
         """ Browse for the data file path."""
-        model = self.tree.model()
-        indexes = self.tree.selectedIndexes()
-        # get the section containing the selected item
-        for i in range(model.rowCount()):
-            section = model.item(i)
-            if str(section.text()) == "Files":
-                break
-        # get the key and value of the selected item
-        for i in range(section.rowCount()):
-            key = str(section.child(i, 0).text())
-            val = str(section.child(i, 1).text())
-            if str(indexes[0].data().toString()) == val:
-                break
+        # get the index of the selected item
+        idx = self.view.selectedIndexes()[0]
+        # get the selected item from the index
+        selected_item = idx.model().itemFromIndex(idx)
+        # get the parent of the selected item
+        parent = selected_item.parent()
+        # get the selected entry text
+        file_path = str(idx.data().toString())
         # dialog for new directory
-        new_dir = QtGui.QFileDialog.getExistingDirectory(self, "Open a folder", val, QtGui.QFileDialog.ShowDirsOnly)
-        new_dir = os.path.join(str(new_dir), "")
-        # update the model
+        new_dir = QtGui.QFileDialog.getExistingDirectory(self, "Choose a folder ...", file_path, QtGui.QFileDialog.ShowDirsOnly)
+        # quit if cancel button pressed
         if len(str(new_dir)) > 0:
-            section.child(i,1).setText(new_dir)
+            # make sure the string ends with a path delimiter
+            new_dir = os.path.join(str(new_dir), "")
+            # update the model
+            parent.child(selected_item.row(), 1).setText(new_dir)
 
     def browse_input_file(self):
         """ Browse for the input data file path."""
-        """ Browse for the input data file path."""
-        model = self.tree.model()
-        idx = self.tree.selectedIndexes()[0]
-        # get the section containing the selected item
-        section_text = str(idx.parent().data().toString())
-        subsection_text = str(idx.data().toString())
-        # get the top level and sub sections
-        model = self.tree.model()
-        section, i = self.get_section_from_text(model, section_text)
+        # get the index of the selected item
+        idx = self.view.selectedIndexes()[0]
+        # get the selected item from the index
+        selected_item = idx.model().itemFromIndex(idx)
+        # get the parent of the selected item
+        parent = selected_item.parent()
         # get the file_path so it can be used as a default directory
-        key, file_path, found, j = self.get_keyval_by_key_name(section, "file_path")
-        # get the row number for the selected item
-        key, val, found, k = self.get_keyval_by_val_name(section, subsection_text)
+        key, file_path, found, j = self.get_keyval_by_key_name(parent, "file_path")
         # dialog for open file
         new_file_path = QtGui.QFileDialog.getOpenFileName(caption="Choose an input file ...",
                                                               directory=file_path)
         # update the model
         if len(str(new_file_path)) > 0:
             new_file_parts = os.path.split(str(new_file_path))
-            section.child(k, 1).setText(new_file_parts[1])
+            parent.child(selected_item.row(), 1).setText(new_file_parts[1])
 
     def browse_output_file(self):
         """ Browse for the output data file path."""
-        model = self.tree.model()
-        idx = self.tree.selectedIndexes()[0]
-        # get the section containing the selected item
-        section_text = str(idx.parent().data().toString())
-        subsection_text = str(idx.data().toString())
+        # get the index of the selected item
+        idx = self.view.selectedIndexes()[0]
+        # get the selected item from the index
+        selected_item = idx.model().itemFromIndex(idx)
+        # get the parent of the selected item
+        parent = selected_item.parent()
         # get the top level and sub sections
-        model = self.tree.model()
-        section, i = self.get_section_from_text(model, section_text)
         # get the file_path so it can be used as a default directory
-        key, file_path, found, j = self.get_keyval_by_key_name(section, "file_path")
-        # get the row number for the selected item
-        key, val, found, k = self.get_keyval_by_val_name(section, subsection_text)
+        key, file_path, found, j = self.get_keyval_by_key_name(parent, "file_path")
         # dialog for open file
         new_file_path = QtGui.QFileDialog.getSaveFileName(caption="Choose an output file ...",
                                                               directory=file_path, filter="*.nc")
         # update the model
         if len(str(new_file_path)) > 0:
             new_file_parts = os.path.split(str(new_file_path))
-            section.child(k, 1).setText(new_file_parts[1])
+            parent.child(selected_item.row(), 1).setText(new_file_parts[1])
 
     def parse_cfg_values(self, k, v, strip_list):
         """ Parse key values to remove unnecessary characters."""
         for c in strip_list:
-            if c in v:
+            if (c in v):
+                if (v != '""') and (v != "''"):
+                    self.cfg_changed = True
                 v = v.replace(c, "")
-                self.cfg_changed = True
         return v
 
-    def remove_attribute(self):
-        """ Remove a variable attribute from a variable."""
-        model = self.tree.model()
+    def remove_item(self):
+        """ Remove an item from the view."""
         # loop over selected items in the tree
-        indexes = self.tree.selectedIndexes()
-        # get the top level section
-        for i in range(model.rowCount()):
-            section = model.item(i)
-            if str(section.text()) == "Variables":
-                break
-        # loop over all children in the "Variables" section
-        for i in range(section.rowCount()):
-            # get the child subsection
-            subsection = section.child(i)
-            # check to see if we have the selected subsection
-            if str(subsection.text()) == str(indexes[0].parent().parent().data().toString()):
-                break
-        # loop over all QC checks in this variable
-        for i in range(subsection.rowCount()):
-            subsubsection = subsection.child(i)
-            if str(subsubsection.text()) == str(indexes[0].parent().data().toString()):
-                break
-        # loop over all date ranges in the ExcludeDates QC check
-        for i in range(subsubsection.rowCount()):
-            subsubsubsection = subsubsection.child(i)
-            if str(subsubsubsection.text()) == str(indexes[0].data().toString()):
-                subsubsection.removeRow(i)
-                # add an asterisk to the tab text to indicate the tab contents have changed
-                tab_text = str(self.tabs.tabText(self.tabs.tab_index_current))
-                if "*" not in tab_text:
-                    self.tabs.setTabText(self.tabs.tab_index_current, tab_text+"*")
-                break
-
-    #def remove_fileentry(self):
-        #""" Remove an entry from the [Files] section."""
-        #model = self.tree.model()
-        ## loop over selected items in the tree
-        #for idx in self.tree.selectedIndexes():
-            ## get the name of the parent of the selected item
-            #parent = str(idx.parent().data().toString())
-            ## get the parent section
-            #for i in range(model.rowCount()):
-                #section = model.item(i)
-                #if str(section.text()) == "Files":
-                    #break
-            ## loop over all children in the [Files] section
-            #for i in range(section.rowCount()):
-                ## get the child subsection
-                #subsection = section.child(i)
-                ## check to see if we have the selected subsection
-                #if str(subsection.text()) == str(idx.data().toString()):
-                    ## if so, remove the row
-                    #section.removeRow(i)
-                    ## add an asterisk to the tab text to indicate the tab contents have changed
-                    #tab_text = str(self.tabs.tabText(self.tabs.tab_index_current))
-                    #if "*" not in tab_text:
-                        #self.tabs.setTabText(self.tabs.tab_index_current, tab_text+"*")
-                    #break
-
-    def remove_global(self):
-        """ Remove an entry from the [Global] section."""
-        model = self.tree.model()
-        # loop over selected items in the tree
-        for idx in self.tree.selectedIndexes():
-            # get the name of the parent of the selected item
-            parent = str(idx.parent().data().toString())
-            # get the parent section
-            for i in range(model.rowCount()):
-                section = model.item(i)
-                if str(section.text()) == "Global":
-                    break
-            # loop over all children in the [Global] section
-            for i in range(section.rowCount()):
-                # get the child subsection
-                subsection = section.child(i)
-                # check to see if we have the selected subsection
-                if str(subsection.text()) == str(idx.data().toString()):
-                    # if so, remove the row
-                    section.removeRow(i)
-                    # add an asterisk to the tab text to indicate the tab contents have changed
-                    tab_text = str(self.tabs.tabText(self.tabs.tab_index_current))
-                    if "*" not in tab_text:
-                        self.tabs.setTabText(self.tabs.tab_index_current, tab_text+"*")
-                    break
-
-    def remove_subsubsection(self):
-        """ Remove a subsubsection."""
-        idx = self.tree.selectedIndexes()[0]
-        subsubsection_text = str(idx.data().toString())
-        subsection_text = str(idx.parent().data().toString())
-        section_text = str(idx.parent().parent().data().toString())
-        # get the [Variables] section
-        model = self.tree.model()
-        section, i = self.get_section_from_text(model, section_text)
-        # get the variable section
-        subsection, j = self.get_subsection_from_text(section, subsection_text)
-        # get the gap filling method section
-        subsubsection, k = self.get_subsection_from_text(subsection, subsubsection_text)
-        subsection.removeRow(k)
+        for idx in self.view.selectedIndexes():
+            # get the selected item from the index
+            selected_item = idx.model().itemFromIndex(idx)
+            # get the parent of the selected item
+            parent = selected_item.parent()
+            # remove the row
+            parent.removeRow(selected_item.row())
         self.update_tab_text()
-
-    def remove_variable(self):
-        """ Remove a variable."""
-        model = self.tree.model()
-        # loop over selected items in the tree
-        for idx in self.tree.selectedIndexes():
-            # get the name of the parent of the selected item
-            parent = str(idx.parent().data().toString())
-            # get the parent section
-            for i in range(model.rowCount()):
-                section = model.item(i)
-                if str(section.text()) == "Variables":
-                    break
-            # loop over all children in the "Variables" section
-            for i in range(section.rowCount()):
-                # get the child subsection
-                subsection = section.child(i)
-                # check to see if we have the selected subsection
-                if str(subsection.text()) == str(idx.data().toString()):
-                    # if so, remove the row
-                    section.removeRow(i)
-                    # add an asterisk to the tab text to indicate the tab contents have changed
-                    tab_text = str(self.tabs.tabText(self.tabs.tab_index_current))
-                    if "*" not in tab_text:
-                        self.tabs.setTabText(self.tabs.tab_index_current, tab_text+"*")
-                    break
 
     def update_tab_text(self):
         """ Add an asterisk to the tab title text to indicate tab contents have changed."""
