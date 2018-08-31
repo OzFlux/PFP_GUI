@@ -1,7 +1,7 @@
 level = L3
-controlfile_name = /home/peter/PFP_GUI/controlfiles/L3.txt
+controlfile_name = /home/peter/PFP_GUI/controlfiles/OzFlux/AU-Cpr/2016/L3.txt
 [Files]
-    file_path = ../OzFlux/Sites/Calperum/Data/Tower/2016/
+    file_path = /home/peter/OzFlux/Sites/Calperum/Data/Tower/2016/
     in_filename = Calperum_2016_L2.nc
     out_filename = Calperum_2016_L3.nc
     plot_path = /home/peter/OzFlux/Sites/Calperum/Plots
@@ -19,7 +19,7 @@ controlfile_name = /home/peter/PFP_GUI/controlfiles/L3.txt
     BulkDensity = 1600
     OrganicContent = 0.01
     SwsDefault = 0.1
-    SwsSeries = [Sws_10cma]
+    SwsSeries = Sws_10cma
 
 [Massman]
     zmd = 18
@@ -51,8 +51,10 @@ controlfile_name = /home/peter/PFP_GUI/controlfiles/L3.txt
             Upper = 600
     [[Fc]]
         [[[RangeCheck]]]
-            Lower = -50
-            Upper = 50
+            Lower = -10
+            Upper = 10
+        [[[DependencyCheck]]]
+            Source = Ah_7500_Sd,Cc_7500_Sd
     [[Fm]]
         [[[RangeCheck]]]
             Lower = -1
@@ -118,6 +120,14 @@ controlfile_name = /home/peter/PFP_GUI/controlfiles/L3.txt
     [[Sws_180cm]]
         [[[AverageSeries]]]
             Source = Sws_180cma,Sws_180cmb,Sws_180cmc
+    [[Ah_7500_Sd]]
+        [[[RangeCheck]]]
+            Upper = 1.5
+            Lower = 0
+    [[Cc_7500_Sd]]
+        [[[RangeCheck]]]
+            Upper = 15
+            Lower = 0
 
 [Plots]
     [[Radiative fluxes]]
