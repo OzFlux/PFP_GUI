@@ -1554,8 +1554,7 @@ class edit_cfg_L3(QtGui.QWidget):
         strip_list = ['"', "'"]
         for c in strip_list:
             if c in title:
-                if (v != '""') and (v != "''"):
-                    self.cfg_changed = True
+                self.cfg_changed = True
                 title = title.replace(c, "")
         return title
 
