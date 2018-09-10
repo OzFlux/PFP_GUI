@@ -514,6 +514,9 @@ class pfp_main_ui(QtGui.QWidget, QPlainTextEditLogger):
         cfg = self.tabs.tab_dict[tab_index_current].get_data_from_model()
         # put up a "Save as ..." dialog
         cfgpath = QtGui.QFileDialog.getSaveFileName(self, "Save as ...")
+        # return without doing anything if cancel used
+        if len(str(cfgpath)) == 0:
+            return
         # set the control file name
         cfg.filename = str(cfgpath)
         # strip out the redundant control file name
