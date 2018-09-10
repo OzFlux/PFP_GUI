@@ -1,5 +1,3 @@
-level = L1
-controlfile_name = /home/peter/PFP_GUI/controlfiles/templates/L1/L1_eddypro.txt
 [Files]
     file_path = ../Sites/<site_name>/Data/Tower/<year>/
     in_filename = <site_name>_<year>_L1.xls
@@ -238,6 +236,85 @@ controlfile_name = /home/peter/PFP_GUI/controlfiles/templates/L1/L1_eddypro.txt
             serial_number = ""
             standard_name = ""
             units = C2
+    [[CO2_IRGA_Av]]
+        [[[xl]]]
+            sheet = full_output
+            name = co2_mixing_ratio
+        [[[Attr]]]
+            height = <height>m
+            instrument = Li-7500A
+            long_name = CO2 concentration, average
+            serial_number = ""
+            standard_name = ""
+            units = umol/mol
+    [[CO2_IRGA_Vr]]
+        [[[xl]]]
+            sheet = full_output
+            name = co2_var
+        [[[Attr]]]
+            height = <height>m
+            instrument = Li-7500A
+            long_name = CO2 concentration, variance
+            serial_number = ""
+            standard_name = not defined
+            units = (mmol/m3)2
+    [[H2O_IRGA_Av]]
+        [[[xl]]]
+            sheet = full_output
+            name = h2o_mixing_ratio
+        [[[Attr]]]
+            height = <height>m
+            instrument = Li-7500A
+            long_name = h2o mixing ratio, average
+            serial_number = ""
+            standard_name = ""
+            units = mmol/mol
+    [[H2O_IRGA_Vr]]
+        [[[xl]]]
+            sheet = full_output
+            name = h2o_var
+        [[[Attr]]]
+            height = <height>m
+            instrument = Li-7500A
+            long_name = H2O concentration, variance
+            serial_number = ""
+            standard_name = not defined
+            units = (mmol/m3)2
+    [[RH_IRGA_Av]]
+        [[[xl]]]
+            sheet = full_output
+            name = RH
+        [[[Attr]]]
+            height = <height>m
+            instrument = Li-7500A
+            long_name = Relative humidity, average
+            serial_number = ""
+            standard_name = ""
+            units = %
+    [[RH_<inst>_<height>m]]
+        [[[xl]]]
+            sheet = biomet
+            name = RH_1_1_1
+        [[[Attr]]]
+            height = <height>m
+            instrument = <inst>
+            long_name = Relative humidity, average
+            serial_number = ""
+            standard_name = ""
+            units = %
+    [[Ta_<inst>_<height>m]]
+        [[[xl]]]
+            sheet = biomet
+            name = TA_1_1_1
+        [[[Attr]]]
+            height = <height>m
+            instrument = <inst>
+            long_name = Air temperature, average
+            serial_number = ""
+            standard_name = air_temperature
+            units = K
+        [[[Function]]]
+            func = ConvertK2C(Ta_<inst>_<height>m)
     [[U_SONIC_Av]]
         [[[xl]]]
             sheet = full_output
@@ -304,17 +381,6 @@ controlfile_name = /home/peter/PFP_GUI/controlfiles/templates/L1/L1_eddypro.txt
             serial_number = ""
             standard_name = ""
             units = (m/s)2
-    [[Wd_SONIC_Av]]
-        [[[xl]]]
-            sheet = full_output
-            name = wind_dir
-        [[[Attr]]]
-            height = <height>m
-            instrument = SONIC
-            long_name = Wind direction, true, degrees from North
-            serial_number = ""
-            standard_name = wind_from_direction
-            units = deg
     [[Ws_SONIC_Av]]
         [[[xl]]]
             sheet = full_output
@@ -326,102 +392,24 @@ controlfile_name = /home/peter/PFP_GUI/controlfiles/templates/L1/L1_eddypro.txt
             serial_number = ""
             standard_name = wind_speed
             units = m/s
-    [[CO2_IRGA_Av]]
+    [[Wd_SONIC_Av]]
         [[[xl]]]
             sheet = full_output
-            name = co2_mixing_ratio
+            name = wind_dir
         [[[Attr]]]
             height = <height>m
-            instrument = Li-7500A
-            long_name = CO2 concentration, average
+            instrument = SONIC
+            long_name = Wind direction, true, degrees from North
             serial_number = ""
-            standard_name = ""
-            units = umol/mol
-    [[CO2_IRGA_Vr]]
-        [[[xl]]]
-            sheet = full_output
-            name = co2_var
-        [[[Attr]]]
-            height = <height>m
-            instrument = Li-7500A
-            long_name = CO2 concentration, variance
-            serial_number = ""
-            standard_name = not defined
-            units = (mmol/m3)2
-    [[H2O_IRGA_Av]]
-        [[[xl]]]
-            sheet = full_output
-            name = h2o_mixing_ratio
-        [[[Attr]]]
-            height = <height>m
-            instrument = Li-7500A
-            long_name = h2o mixing ratio, average
-            serial_number = ""
-            standard_name = ""
-            units = mmol/mol
-    [[H2O_IRGA_Vr]]
-        [[[xl]]]
-            sheet = full_output
-            name = h2o_var
-        [[[Attr]]]
-            height = <height>m
-            instrument = Li-7500A
-            long_name = H2O concentration, variance
-            serial_number = ""
-            standard_name = not defined
-            units = (mmol/m3)2
-    [[RH_IRGA_Av]]
-        [[[xl]]]
-            sheet = full_output
-            name = RH
-        [[[Attr]]]
-            height = <height>m
-            instrument = Li-7500A
-            long_name = Relative humidity, average
-            serial_number = ""
-            standard_name = ""
-            units = %
-    [[Ta_<inst>_<height>m]]
-        [[[xl]]]
-            sheet = biomet
-            name = TA_1_1_1
-        [[[Attr]]]
-            height = <height>m
-            instrument = HMP45C
-            long_name = Air temperature, average
-            serial_number = ""
-            standard_name = air_temperature
-            units = K
-        [[[Function]]]
-            func = ConvertK2C(Ta_HMP_<height>m)
-    [[Ah_<inst>_<height>m]]
-        [[[Attr]]]
-            height = <height>m
-            instrument = HMP45C
-            long_name = Absolute humidity, average
-            serial_number = ""
-            standard_name = mass_concentration_of_water_vapor_in_air
-            units = g/m3
-        [[[Function]]]
-            func = AhfromRH(Ah_HMP_<height>m,RH_HMP_<height>m,Ta_HMP_<height>m)
-    [[RH_<inst>_<height>m]]
-        [[[xl]]]
-            sheet = biomet
-            name = RH_1_1_1
-        [[[Attr]]]
-            height = <height>m
-            instrument = HMP45C
-            long_name = Relative humidity, average
-            serial_number = ""
-            standard_name = ""
-            units = %
+            standard_name = wind_from_direction
+            units = deg
     [[Ws_<inst>_Av]]
         [[[xl]]]
             sheet = biomet
             name = WS_1_1_1
         [[[Attr]]]
             height = <height>m
-            instrument = RM Yound 2D anemometer
+            instrument = <inst>
             long_name = Wind speed
             serial_number = ""
             standard_name = wind_speed
@@ -432,7 +420,7 @@ controlfile_name = /home/peter/PFP_GUI/controlfiles/templates/L1/L1_eddypro.txt
             name = WD_1_1_1
         [[[Attr]]]
             height = <height>m
-            instrument = RM Yound 2D anemometer
+            instrument = <inst>
             long_name = Wind direction, true, in degrees from North
             serial_number = ""
             standard_name = wind_from_direction

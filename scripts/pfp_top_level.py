@@ -223,7 +223,7 @@ def do_run_l4(main_gui, cfg=None):
         logger.error("File "+in_filename[1]+" not found")
         return
     ds3 = pfp_io.nc_read_series(in_filepath)
-    ds3.globalattributes['controlfile_name'] = cfg['controlfile_name']
+    #ds3.globalattributes['controlfile_name'] = cfg['controlfile_name']
     sitename = ds3.globalattributes['site_name']
     if "Options" not in cfg:
         cfg["Options"]={}
@@ -264,7 +264,7 @@ def do_run_l5(main_gui, cfg=None):
         logger.error("File "+in_filename[1]+" not found")
         return
     ds4 = pfp_io.nc_read_series(in_filepath)
-    ds4.globalattributes['controlfile_name'] = cfg['controlfile_name']
+    #ds4.globalattributes['controlfile_name'] = cfg['controlfile_name']
     sitename = ds4.globalattributes['site_name']
     if "Options" not in cfg:
         cfg["Options"] = {}
@@ -305,7 +305,7 @@ def do_run_l6(main_gui, cfg=None):
         logger.error("File "+in_filename[1]+" not found")
         return
     ds5 = pfp_io.nc_read_series(in_filepath)
-    ds5.globalattributes['controlfile_name'] = cfg['controlfile_name']
+    #ds5.globalattributes['controlfile_name'] = cfg['controlfile_name']
     sitename = ds5.globalattributes['site_name']
     if "Options" not in cfg:
         cfg["Options"] = {}

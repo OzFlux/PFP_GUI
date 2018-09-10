@@ -1,14 +1,13 @@
 level = L4
-controlfile_name = /home/peter/PFP_GUI/controlfiles/L4.txt
 [Files]
-    plot_path = ../OzFlux/Sites/Calperum/Plots/
-    file_path = ../OzFlux/Sites/Calperum/Data/Portal/
+    plot_path = /home/peter/OzFlux/Sites/Calperum/Plots/
+    file_path = /home/peter/OzFlux/Sites/Calperum/Data/Portal/
     in_filename = Calperum_L3.nc
     out_filename = Calperum_L4.nc
-    aws = ../OzFlux/Sites/Calperum/Data/AWS/Calperum_AWS.nc
-    access = ../OzFlux/Sites/Calperum/Data/ACCESS/Calperum_ACCESS.nc
-    erai = ../OzFlux/Sites/Calperum/Data/ERAI/Calperum_ERAI.nc
-    climatology = ../OzFlux/Sites/Calperum/Data/Portal/Calperum_L3_Climatology.xls
+    aws = /home/peter/OzFlux/Sites/Calperum/Data/AWS/Calperum_AWS.nc
+    access = /home/peter/OzFlux/Sites/Calperum/Data/ACCESS/Calperum_ACCESS.nc
+    erai = /home/peter/OzFlux/Sites/Calperum/Data/ERAI/Calperum_ERAI.nc
+    climatology = /home/peter/OzFlux/Sites/Calperum/Data/Portal/Calperum_L3_Climatology.xls
 
 [Output]
 

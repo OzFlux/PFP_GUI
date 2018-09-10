@@ -99,7 +99,7 @@ def l2qc(cf,ds1):
     pfp_utils.UpdateGlobalAttributes(cf,ds2,"L2")
     ds2.globalattributes['Functions'] = ''
     # put the control file name into the global attributes
-    ds2.globalattributes['controlfile_name'] = cf['controlfile_name']
+    #ds2.globalattributes['controlfile_name'] = cf['controlfile_name']
     # apply the quality control checks (range, diurnal, exclude dates and exclude hours
     pfp_ck.do_qcchecks(cf,ds2)
     # do the CSAT diagnostic check
@@ -128,7 +128,7 @@ def l3qc(cf,ds2):
     # set some attributes for this level
     pfp_utils.UpdateGlobalAttributes(cf,ds3,"L3")
     # put the control file name into the global attributes
-    ds3.globalattributes['controlfile_name'] = cf['controlfile_name']
+    #ds3.globalattributes['controlfile_name'] = cf['controlfile_name']
     # check to see if we have any imports
     pfp_gf.ImportSeries(cf,ds3)
     # apply linear corrections to the data

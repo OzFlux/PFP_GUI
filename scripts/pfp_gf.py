@@ -539,7 +539,7 @@ def gfClimatology_monthly(ds,series,output,xlbook):
     ds.series[output]['Flag'][index] = numpy.int32(40)
 
 # functions for GapFillUsingInterpolation
-def GapFillUsingInterpolation(cf,ds):
+def GapFillUsingInterpolation(cf, ds):
     """
     Purpose:
      Gap fill variables in the data structure using interpolation.
@@ -552,21 +552,34 @@ def GapFillUsingInterpolation(cf,ds):
     Author: PRI
     Date: September 2016
     """
+    ts = int(ds.globalattributes["time_step"])
+    # get list of variables from control file
     label_list = pfp_utils.get_label_list_from_cf(cf)
-    maxlen = int(pfp_utils.get_keyvaluefromcf(cf,["Options"],"MaxGapInterpolate",default=2))
-    if maxlen==0:
+    # get the maximum gap length to be filled by interpolation
+    maxlen = int(pfp_utils.get_keyvaluefromcf(cf, ["Options"], "MaxGapInterpolate", default=3))
+    # bug out if interpolation disabled in control file
+    if maxlen == 0:
         msg = " Gap fill by interpolation disabled in control file"
         logger.info(msg)
         return
+    # get the interpolation type
+    int_type = str(pfp_utils.get_keyvaluefromcf(cf, ["Options"], "InterpolateType", default="Akima"))
+    # tell the user what we are doing
+    msg = " Using " + int_type +" interpolation (max. gap = " + str(maxlen) +" hours)"
+    logger.info(msg)
+    # do the business
     for label in label_list:
         section = pfp_utils.get_cfsection(cf, series=label)
+        # check to see if interpolation has been disabled for this variable
         if "MaxGapInterpolate" in cf[section][label]:
-            maxlen = int(pfp_utils.get_keyvaluefromcf(cf,[section,label],"MaxGapInterpolate",default=2))
-            if maxlen==0:
-                msg = " Gap fill by interpolation disabled for "+label
+            maxlen = int(pfp_utils.get_keyvaluefromcf(cf, [section, label], "MaxGapInterpolate", default=maxlen))
+            if maxlen == 0:
+                msg = " Gap fill by interpolation disabled for " + label
                 logger.info(msg)
                 continue
-            pfp_ts.InterpolateOverMissing(ds,series=label,maxlen=2)
+        # convert from max. gap length in hours to number of time steps
+        maxlen = maxlen*float(60)/float(ts)
+        pfp_ts.InterpolateOverMissing(ds, series=label, maxlen=maxlen, int_type="Akima")
 
 # miscellaneous L4 routines
 def gf_getdiurnalstats(DecHour,Data,ts):

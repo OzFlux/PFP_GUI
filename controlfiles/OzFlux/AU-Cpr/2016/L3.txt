@@ -1,16 +1,15 @@
 level = L3
-controlfile_name = /home/peter/PFP_GUI/controlfiles/OzFlux/AU-Cpr/2016/L3.txt
 [Files]
     file_path = /home/peter/OzFlux/Sites/Calperum/Data/Tower/2016/
     in_filename = Calperum_2016_L2.nc
     out_filename = Calperum_2016_L3.nc
-    plot_path = /home/peter/OzFlux/Sites/Calperum/Plots
+    plot_path = /home/peter/OzFlux/Sites/Calperum/Plots/
 
 [Options]
-    zms = 20
     MassmanCorrection = Yes
     CO2Units = umol/mol
     FcUnits = umol/m2/s
+    zms = 20
 
 [Output]
 

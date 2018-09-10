@@ -987,17 +987,17 @@ def CoordRotation2D(cf,ds):
     attr = pfp_utils.MakeAttributeDictionary(long_name='Longitudinal component of wind-speed in natural wind coordinates',
                                            units='m/s',height=fm_height)
     flag = numpy.where(numpy.ma.getmaskarray(u)==True,ones,zeros)
-    pfp_utils.CreateSeries(ds,'u',u,flag,attr)
+    pfp_utils.CreateSeries(ds,'U_SONIC_Av',u,flag,attr)
 
     attr = pfp_utils.MakeAttributeDictionary(long_name='Lateral component of wind-speed in natural wind coordinates',
                                            units='m/s',height=fm_height)
     flag = numpy.where(numpy.ma.getmaskarray(v)==True,ones,zeros)
-    pfp_utils.CreateSeries(ds,'v',v,flag,attr)
+    pfp_utils.CreateSeries(ds,'V_SONIC_Av',v,flag,attr)
 
     attr = pfp_utils.MakeAttributeDictionary(long_name='Vertical component of wind-speed in natural wind coordinates',
                                            units='m/s',height=fm_height)
     flag = numpy.where(numpy.ma.getmaskarray(w)==True,ones,zeros)
-    pfp_utils.CreateSeries(ds,'w',w,flag,attr)
+    pfp_utils.CreateSeries(ds,'W_SONIC_Av',w,flag,attr)
 
     attr = pfp_utils.MakeAttributeDictionary(long_name='Kinematic heat flux, rotated to natural wind coordinates',
                                            units='mC/s',height=fh_height)
@@ -1032,17 +1032,17 @@ def CoordRotation2D(cf,ds):
     attr = pfp_utils.MakeAttributeDictionary(long_name='Variance of streamwise windspeed, rotated to natural wind coordinates',
                                            units='m2/s2',height=fm_height)
     flag = numpy.where(numpy.ma.getmaskarray(uu)==True,ones,zeros)
-    pfp_utils.CreateSeries(ds,'uu',uu,flag,attr)
+    pfp_utils.CreateSeries(ds,'U_SONIC_Vr',uu,flag,attr)
 
     attr = pfp_utils.MakeAttributeDictionary(long_name='Variance of crossstream windspeed, rotated to natural wind coordinates',
                                            units='m2/s2',height=fm_height)
     flag = numpy.where(numpy.ma.getmaskarray(vv)==True,ones,zeros)
-    pfp_utils.CreateSeries(ds,'vv',vv,flag,attr)
+    pfp_utils.CreateSeries(ds,'V_SONIC_Vr',vv,flag,attr)
 
     attr = pfp_utils.MakeAttributeDictionary(long_name='Variance of vertical windspeed, rotated to natural wind coordinates',
                                            units='m2/s2',height=fm_height)
     flag = numpy.where(numpy.ma.getmaskarray(ww)==True,ones,zeros)
-    pfp_utils.CreateSeries(ds,'ww',ww,flag,attr)
+    pfp_utils.CreateSeries(ds,'W_SONIC_Vr',ww,flag,attr)
 
     if pfp_utils.cfoptionskeylogical(cf,Key='RelaxRotation'):
         RotatedSeriesList = ['wT','wA','wC','uw','vw']
@@ -2220,7 +2220,7 @@ def InvertSign(ds,ThisOne):
     index = numpy.where(abs(ds.series[ThisOne]['Data']-float(c.missing_value))>c.eps)[0]
     ds.series[ThisOne]['Data'][index] = float(-1)*ds.series[ThisOne]['Data'][index]
 
-def InterpolateOverMissing(ds,series='',maxlen=0):
+def InterpolateOverMissing(ds, series='', maxlen=0, int_type="linear"):
     """
     Purpose:
      Interpolate over periods of missing data.  Uses linear interpolation.
@@ -2254,10 +2254,20 @@ def InterpolateOverMissing(ds,series='',maxlen=0):
     if len(iog)<2:
         logger.info(' InterpolateOverMissing: Less than 2 good points available for series '+str(series))
         return
-    # linear interpolation function
-    f = interpolate.interp1d(DateNum[iog],data_org[iog],bounds_error=False,fill_value=float(c.missing_value))
-    # interpolate over the whole time series
-    data_int = f(DateNum).astype(numpy.float64)
+    if int_type == "linear":
+        # linear interpolation function
+        f = interpolate.interp1d(DateNum[iog],data_org[iog],bounds_error=False,fill_value=float(c.missing_value))
+        # interpolate over the whole time series
+        data_int = f(DateNum).astype(numpy.float64)
+    elif int_type == "Akima":
+        int_fn = interpolate.Akima1DInterpolator(DateNum[iog], data_org[iog])
+        data_int = int_fn(DateNum)
+        # trap non-finite values from the Akima 1D interpolator
+        data_int = numpy.where(numpy.isfinite(data_int) == True, data_int, numpy.float(c.missing_value))
+    else:
+        msg = " Unrecognised interpolator option (" + int_type + "), skipping ..."
+        logger.error(msg)
+        return
     # copy the original flag
     flag_int = numpy.copy(flag_org)
     # index of interpolates that are not equal to the missing value
@@ -2285,8 +2295,6 @@ def InterpolateOverMissing(ds,series='',maxlen=0):
     # put data_int back into the data structure
     attr_int = dict(attr_org)
     pfp_utils.CreateSeries(ds,series,data_int,flag_int,attr_int)
-    if 'InterpolateOverMissing2' not in ds.globalattributes['Functions']:
-        ds.globalattributes['Functions'] = ds.globalattributes['Functions']+', InterpolateOverMissing2'
 
 def MassmanStandard(cf,ds,Ta_in='Ta',Ah_in='Ah',ps_in='ps',ustar_in='ustar',ustar_out='ustar',L_in='L',L_out ='L',uw_out='uw',vw_out='vw',wT_out='wT',wA_out='wA',wC_out='wC'):
     """
@@ -2564,10 +2572,11 @@ def MergeSeries(cf,ds,series,okflags=[0,10,20,30,40,50,60],convert_units=False,s
             msg = msg+" not found for "+str(series)
             logger.warning(msg)
             return
-        mdata,mflag,mattr = pfp_utils.GetSeriesasMA(ds,primary_series)
-        if (primary_series==series) and save_originals:
-            tmp_label = primary_series+"_b4merge"
-            pfp_utils.CreateSeries(ds,tmp_label,mdata,mflag,mattr)
+        primary = pfp_utils.GetVariable(ds, primary_series)
+        if (primary_series == series) and save_originals:
+            tmp = copy.deepcopy(primary)
+            tmp["Label"] = primary_series+"_b4merge"
+            pfp_utils.CreateVariable(ds, tmp)
         SeriesNameString = primary_series
     else:
         logger.info(' Merging '+str(srclist)+'==>'+series)
@@ -2575,45 +2584,48 @@ def MergeSeries(cf,ds,series,okflags=[0,10,20,30,40,50,60],convert_units=False,s
             logger.warning('  MergeSeries: primary input series '+srclist[0]+' not found for '+str(series))
             return
         primary_series = srclist[0]
-        mdata,mflag,mattr = pfp_utils.GetSeriesasMA(ds,primary_series)
-        if (primary_series==series) and save_originals:
-            tmp_label = primary_series+"_b4merge"
-            pfp_utils.CreateSeries(ds,tmp_label,mdata,mflag,mattr)
+        primary = pfp_utils.GetVariable(ds, primary_series)
+        if (primary_series == series) and save_originals:
+            tmp = copy.deepcopy(primary)
+            tmp["Label"] = primary_series+"_b4merge"
+            pfp_utils.CreateVariable(ds, tmp)
         SeriesNameString = primary_series
         srclist.remove(primary_series)
         for secondary_series in srclist:
             if secondary_series in ds.series.keys():
-                ndata,nflag,nattr = pfp_utils.GetSeriesasMA(ds,secondary_series)
-                if (secondary_series==series) and save_originals:
-                    tmp_label = secondary_series+"_b4merge"
-                    pfp_utils.CreateSeries(ds,tmp_label,ndata,nflag,nattr)
-                if nattr["units"]!=mattr["units"]:
+                secondary = pfp_utils.GetVariable(ds, secondary_series)
+                if (secondary_series == series) and save_originals:
+                    tmp = copy.deepcopy(secondary)
+                    tmp["Label"] = primary_series + "_b4merge"
+                    pfp_utils.CreateVariable(ds, tmp)
+                if secondary["Attr"]["units"] != primary["Attr"]["units"]:
                     msg = " "+secondary_series+" units don't match "+primary_series+" units"
                     logger.warning(msg)
                     if convert_units:
-                        msg = " "+secondary_series+" units converted from "+nattr["units"]+" to "+mattr["units"]
+                        msg = " "+secondary_series+" units converted from "+secondary["Attr"]["units"]+" to "+primary["Attr"]["units"]
                         logger.info(msg)
-                        ndata = pfp_utils.convert_units_func(ds,ndata,nattr["units"],mattr["units"])
+                        secondary = pfp_utils.convert_units_func(ds, secondary, primary["Attr"]["units"])
                     else:
                         msg = " MergeSeries: "+secondary_series+" ignored"
                         logger.error(msg)
                         continue
                 SeriesNameString = SeriesNameString+', '+secondary_series
-                indx1 = numpy.zeros(numpy.size(mdata),dtype=numpy.int)
-                indx2 = numpy.zeros(numpy.size(ndata),dtype=numpy.int)
+                indx1 = numpy.zeros(numpy.size(primary["Data"]), dtype=numpy.int)
+                indx2 = numpy.zeros(numpy.size(secondary["Data"]),dtype=numpy.int)
                 for okflag in okflags:
-                    index = numpy.where(mflag==okflag)[0]   # index of acceptable primary values
-                    indx1[index] = 1                        # set primary index to 1 when primary good
-                    index = numpy.where(nflag==okflag)[0]   # same process for secondary
+                    index = numpy.where(primary["Flag"] == okflag)[0]   # index of acceptable primary values
+                    indx1[index] = 1                                    # set primary index to 1 when primary good
+                    index = numpy.where(secondary["Flag"] == okflag)[0] # same process for secondary
                     indx2[index] = 1
-                index = numpy.where((indx1!=1)&(indx2==1))[0]           # index where primary bad but secondary good
-                mdata[index] = ndata[index]       # replace bad primary with good secondary
-                mflag[index] = nflag[index]
+                index = numpy.where((indx1 != 1) & (indx2 == 1))[0]     # index where primary bad but secondary good
+                # replace bad primary with good secondary
+                primary["Data"][index] = secondary["Data"][index]
+                primary["Flag"][index] = secondary["Flag"][index]
             else:
                 logger.warning("  MergeSeries: secondary input series "+secondary_series+" not found")
     ds.mergeserieslist.append(series)
-    mattr["long_name"] = mattr["long_name"]+", merged from " + SeriesNameString
-    pfp_utils.CreateSeries(ds,series,mdata,mflag,mattr)
+    primary["Attr"]["long_name"] = primary["Attr"]["long_name"] + ", merged from " + SeriesNameString
+    pfp_utils.CreateVariable(ds, primary)
 
 def PT100(ds,T_out,R_in,m):
     logger.info(' Calculating temperature from PT100 resistance')

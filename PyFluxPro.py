@@ -279,6 +279,7 @@ class pfp_main_ui(QtGui.QWidget, QPlainTextEditLogger):
             return
         # read the contents of the control file
         self.cfg = ConfigObj(cfgpath, indent_type="    ", list_values=False)
+        self.cfg["controlfile_name"] = cfgpath
         self.cfg["level"] = self.get_cf_level()
         # create a QtTreeView to edit the control file
         if self.cfg["level"] in ["L1"]:
@@ -358,7 +359,8 @@ class pfp_main_ui(QtGui.QWidget, QPlainTextEditLogger):
         try:
             cfg_sections = self.cfg.keys()
             # remove the common sections
-            common_sections = ["Files", "Global", "Output", "Plots", "General", "Options", "Soil", "Massman", "GUI"]
+            common_sections = ["controlfile_name", "Files", "Global", "Output", "Plots",
+                               "General", "Options", "Soil", "Massman", "GUI"]
             for section in list(self.cfg.keys()):
                 if section in common_sections:
                     cfg_sections.remove(section)
@@ -383,8 +385,8 @@ class pfp_main_ui(QtGui.QWidget, QPlainTextEditLogger):
                 ("Variables" in cfg_sections)):
                 got_sections = True
             # remove the common sections
-            common_sections = ["Files", "Global", "Output", "Plots", "General", "Options", "Soil",
-                               "Massman", "GUI"]
+            common_sections = ["controlfile_name", "Files", "Global", "Output", "Plots",
+                                "General", "Options", "Soil", "Massman", "GUI"]
             for section in list(self.cfg.keys()):
                 if section in common_sections:
                     cfg_sections.remove(section)
@@ -491,9 +493,13 @@ class pfp_main_ui(QtGui.QWidget, QPlainTextEditLogger):
         # get the updated control file data
         cfg = self.tabs.tab_dict[tab_index_current].get_data_from_model()
         # strip out the redundant control file name
-        #cfg.pop("controlfile_name", None)
-        # write the control file
-        cfg.write()
+        if "controlfile_name" in cfg:
+            cfg_name = cfg["controlfile_name"]
+            cfg.pop("controlfile_name", None)
+            cfg.write()
+            cfg["controlfile_name"] = cfg_name
+        else:
+            cfg.write()
         # remove the asterisk in the tab text
         tab_text = str(self.tabs.tabText(tab_index_current))
         self.tabs.setTabText(self.tabs.tab_index_current, tab_text.replace("*",""))
@@ -506,14 +512,18 @@ class pfp_main_ui(QtGui.QWidget, QPlainTextEditLogger):
         tab_index_current = self.tabs.tab_index_current
         # get the updated control file data
         cfg = self.tabs.tab_dict[tab_index_current].get_data_from_model()
-        # strip out the redundant control file name
-        #cfg.pop("controlfile_name", None)
         # put up a "Save as ..." dialog
         cfgpath = QtGui.QFileDialog.getSaveFileName(self, "Save as ...")
         # set the control file name
         cfg.filename = str(cfgpath)
-        # write the control file
-        cfg.write()
+        # strip out the redundant control file name
+        if "controlfile_name" in cfg:
+            cfg_name = cfg["controlfile_name"]
+            cfg.pop("controlfile_name", None)
+            cfg.write()
+            cfg["controlfile_name"] = cfg_name
+        else:
+            cfg.write()
         # update the tab text
         self.tabs.setTabText(tab_index_current, os.path.basename(str(cfgpath)))
         # reset the cfg changed logical to false
