@@ -49,6 +49,9 @@ def GapFillFromAlternate(main_gui, cf, ds4, ds_alt):
                       "overlap_enddate":enddate.strftime("%Y-%m-%d %H:%M"),
                       "startdate":startdate.strftime("%Y-%m-%d %H:%M"),
                       "enddate":enddate.strftime("%Y-%m-%d %H:%M")}
+    # put the control file name into alternate_info
+    alternate_info["controlfile_name"] = cf["controlfile_name"]
+    alternate_info["plot_path"] = cf["Files"]["plot_path"]
     # check to see if this is a batch or an interactive run
     call_mode = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "call_mode", default="interactive")
     alternate_info["call_mode"]= call_mode
@@ -853,9 +856,8 @@ def gfalternate_main(ds_tower, ds_alt, alternate_info, label_tower_list=[]):
         for i in plt.get_fignums():
             if i!=0: plt.close(i)
     # read the control file again
-    cfname = ds_tower.globalattributes["controlfile_name"]
-    cf = pfp_io.get_controlfilecontents(cfname,mode="quiet")
-    alternate_info["plot_path"] = cf["Files"]["plot_path"]
+    cfname = alternate_info["controlfile_name"]
+    cf = pfp_io.get_controlfilecontents(cfname, mode="quiet")
     # do any QC checks
     pfp_ck.do_qcchecks(cf, ds_tower, mode="quiet")
     # update the ds.alternate dictionary

@@ -1,0 +1,119 @@
+level = L3
+[Files]
+    file_path = ../Sites/<site_name>/Data/Processed/<year>/
+    in_filename = <site_name>_<year>_L2.nc
+    out_filename = <site_name>_<year>_L3.nc
+
+[Options]
+    zms = <height>
+    CO2Units = umol/mol
+    FcUnits = umol/m2/s
+
+[Output]
+
+[Soil]
+    FgDepth = <depth>
+    BulkDensity = <bulk_density>
+    OrganicContent = <organic_content>
+    SwsDefault = <default_soil_moisture>
+    SwsSeries = Sws
+
+[Massman]
+    zmd = <height_above_displacement_plane>
+    z0 = <roughness_length>
+    north_separation = <north_separation>
+    east_separation = <east_separation>
+
+[Variables]
+    [[Fn]]
+        [[[MergeSeries]]]
+            Source = Fn_4cmpt,Fn_NR
+        [[[RangeCheck]]]
+            Lower = -150
+            Upper = 1100
+    [[Fh]]
+        [[[RangeCheck]]]
+            Lower = -100
+            Upper = 600
+    [[Fe]]
+        [[[RangeCheck]]]
+            Lower = -100
+            Upper = 600
+    [[Fc]]
+        [[[RangeCheck]]]
+            Lower = -50
+            Upper = 50
+    [[Fm]]
+        [[[RangeCheck]]]
+            Lower = -1
+            Upper = 1
+    [[ustar]]
+        [[[RangeCheck]]]
+            Lower = 0
+            Upper = 2
+    [[Ta]]
+        [[[MergeSeries]]]
+            Source = Ta_HMP_<height>m,Ta_SONIC_Av
+        [[[RangeCheck]]]
+            Lower = 0
+            Upper = 50
+    [[Ah]]
+        [[[MergeSeries]]]
+            Source = Ah_HMP_<height>m,Ah_IRGA_Av
+        [[[RangeCheck]]]
+            Lower = 0
+            Upper = 35
+    [[CO2]]
+        [[[MergeSeries]]]
+            Source = CO2_IRGA_Av
+        [[[RangeCheck]]]
+            Lower = 250
+            Upper = 900
+    [[Ws]]
+        [[[MergeSeries]]]
+            Source = Ws_WS4_Av,Ws_SONIC_Av
+        [[[RangeCheck]]]
+            Lower = 0
+            Upper = 30
+    [[Wd]]
+        [[[MergeSeries]]]
+            Source = Wd_WS4_Av,Wd_SONIC_Av
+        [[[RangeCheck]]]
+            Lower = 0
+            Upper = 360
+    [[Fg]]
+        [[[AverageSeries]]]
+            Source = Fg_<depth><letter>,Fg_<depth><letter>,Fg_<depth><letter>
+        [[[RangeCheck]]]
+            Lower = -300
+            Upper = 300
+    [[Sws]]
+        [[[AverageSeries]]]
+            Source = Sws_<depth><letter>,Sws_<depth><letter>,Sws_<depth><letter>
+        [[[RangeCheck]]]
+            Lower = 0
+            Upper = 0.5
+    [[Ts]]
+        [[[AverageSeries]]]
+            Source = Ts_<depth><letter>,Ts_<depth><letter>,Ts_<depth><letter>
+        [[[RangeCheck]]]
+            Lower = 0
+            Upper = 60
+
+[Plots]
+    [[Radiative fluxes]]
+        Variables = Fsd,Fsu,Fld,Flu,Fn
+    [[Turbulent fluxes]]
+        Variables = Fh,Fe,Fc,ustar,Fm
+    [[Fh diagnostics]]
+        Variables = Fh,UzT,Diag_SONIC,Diag_IRGA,AGC_IRGA,Ah_IRGA_Sd,CO2_IRGA_Sd
+    [[Fe diagnostics]]
+        Variables = Fe,UzA,Diag_SONIC,Diag_IRGA,AGC_IRGA,Ah_IRGA_Sd,CO2_IRGA_Sd
+    [[Fc diagnostics]]
+        Variables = Fc,UzC,Diag_SONIC,Diag_IRGA,AGC_IRGA,Ah_IRGA_Sd,CO2_IRGA_Sd
+    [[Air temperature, humidity and CO2]]
+        Variables = Ta,Ta_HMP_<height>m,Ah,Ah_HMP_<height>m,CO2_IRGA_Av
+    [[Soil temperature, water content and heat flux]]
+        Variables = Precip,Ts,Sws,Sws_<depth><letter>,Fg
+    [[Pressure, wind speed and direction]]
+        Variables = ps,Ws,Ux,Uy,Uz,Wd

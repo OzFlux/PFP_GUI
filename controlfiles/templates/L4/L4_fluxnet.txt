@@ -1,0 +1,59 @@
+[Files]
+    file_path = 
+    in_filename = 
+    out_filename = 
+    plot_path = 
+    erai = 
+
+[Options]
+    MaxGapInterpolate = 3
+
+[Drivers]
+    [[Fld]]
+        [[[GapFillFromAlternate]]]
+            [[[[Fld_erai]]]]
+                source = erai
+        [[[MergeSeries]]]
+            Source = Fld,Fld_erai
+    [[Fsd]]
+        [[[GapFillFromAlternate]]]
+            [[[[Fsd_erai]]]]
+                source = erai
+                fit = ols_thru0
+                lag = no
+        [[[MergeSeries]]]
+            Source = Fsd,Fsd_erai
+    [[ps]]
+        [[[GapFillFromAlternate]]]
+            [[[[ps_erai]]]]
+                source = erai
+        [[[MergeSeries]]]
+            Source = ps,ps_erai
+    [[RH]]
+        [[[GapFillFromAlternate]]]
+            [[[[RH_erai]]]]
+                source = erai
+        [[[MergeSeries]]]
+            Source = RH,RH_erai
+    [[Ta]]
+        [[[GapFillFromAlternate]]]
+            [[[[Ta_erai]]]]
+                source = erai
+        [[[MergeSeries]]]
+            Source = Ta,Ta_erai
+    [[Ws]]
+        [[[GapFillFromAlternate]]]
+            [[[[Ws_erai]]]]
+                source = erai
+                fit = ols_thru0
+                lag = no
+        [[[MergeSeries]]]
+            Source = Ws,Ws_erai
+    [[Precip]]
+        [[[GapFillFromAlternate]]]
+            [[[[Precip_erai]]]]
+                source = erai
+                fit = replace
+                lag = no
+        [[[MergeSeries]]]
+            Source = Precip,Precip_erai

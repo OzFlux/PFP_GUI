@@ -93,6 +93,16 @@ def ConvertK2C(ds, T_in, T_out):
     Author: PRI
     Date: February 2018
     """
+    if T_in not in ds.series.keys():
+        msg = " ConvertK2C: variable " + T_in + " not found, skipping ..."
+        logger.warning(msg)
+        return 0
+    if "<" in T_out or ">" in T_out:
+        logger.warning(" ***")
+        msg = " *** " + T_in + ": illegal name (" + T_out + ") in function, skipping ..."
+        logger.warning(msg)
+        logger.warning(" ***")
+        return 0
     var_in = pfp_utils.GetVariable(ds, T_in)
     var_out = pfp_utils.convert_units_func(ds, var_in, "C", mode="quiet")
     var_out["Label"] = T_out
@@ -203,7 +213,7 @@ def DateTimeFromExcelDateAndTime(ds, xlDate, xlTime):
     xldatetime["Attr"]["units"] = "days since 1899-12-31 00:00:00"
     pfp_utils.CreateVariable(ds, xldatetime)
     pfp_utils.get_datetimefromxldate(ds)
-    return
+    return 1
 
 def DateTimeFromDateAndTimeString(ds, Date, Time):
     if Date not in ds.series.keys():

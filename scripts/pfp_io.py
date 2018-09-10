@@ -1741,6 +1741,12 @@ def nc_read_var(ncFile,ThisOne):
             # create an empty flag series if it does not exist
             nRecs = numpy.size(data)
             flag = numpy.zeros(nRecs,dtype=numpy.int32)
+        # trap non-finite values and set them to c.missing_value
+        if not numpy.isfinite(data).all():
+            idx = numpy.where(numpy.isfinite(data) == False)[0]
+            data[idx] = numpy.float64(c.missing_value)
+            idx = numpy.where((numpy.isfinite(data) == False) & (flag == 0))[0]
+            flag[idx] = numpy.int32(8)
     elif nDims==3:
         # 3 dimensions
         data = ncFile.variables[ThisOne][:,0,0]
@@ -1756,6 +1762,12 @@ def nc_read_var(ncFile,ThisOne):
             # create an empty flag series if it does not exist
             nRecs = numpy.size(data)
             flag = numpy.zeros(nRecs,dtype=numpy.int32)
+        # trap non-finite values and set them to c.missing_value
+        if not numpy.isfinite(data).all():
+            idx = numpy.where(numpy.isfinite(data) == False)[0]
+            data[idx] = numpy.float64(c.missing_value)
+            idx = numpy.where((numpy.isfinite(data) == False) & (flag == 0))[0]
+            flag[idx] = numpy.int32(8)
     # force float32 to float64
     if data.dtype=="float32": data = data.astype(numpy.float64)
     # check for Year, Month etc as int64, force to int32 if required

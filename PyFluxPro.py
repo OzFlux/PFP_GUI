@@ -114,31 +114,31 @@ class pfp_main_ui(QtGui.QWidget, QPlainTextEditLogger):
         self.actionRunCurrent = QtGui.QAction(self)
         self.actionRunCurrent.setText("Current...")
         self.actionRunCurrent.setShortcut('Ctrl+R')
-        self.actionRunL1 = QtGui.QAction(self)
-        self.actionRunL1.setText("L1 (import)")
-        self.actionRunL2 = QtGui.QAction(self)
-        self.actionRunL2.setText("L2 (QC)")
-        self.actionRunL3 = QtGui.QAction(self)
-        self.actionRunL3.setText("L3 (process)")
-        self.actionRunL4 = QtGui.QAction(self)
-        self.actionRunL4.setText("L4 (gap fill drivers)")
-        self.actionRunL5 = QtGui.QAction(self)
-        self.actionRunL5.setText("L5 (gap fill fluxes)")
-        self.actionRunL6 = QtGui.QAction(self)
-        self.actionRunL6.setText("L6 (partition)")
+        #self.actionRunL1 = QtGui.QAction(self)
+        #self.actionRunL1.setText("L1 (import)")
+        #self.actionRunL2 = QtGui.QAction(self)
+        #self.actionRunL2.setText("L2 (QC)")
+        #self.actionRunL3 = QtGui.QAction(self)
+        #self.actionRunL3.setText("L3 (process)")
+        #self.actionRunL4 = QtGui.QAction(self)
+        #self.actionRunL4.setText("L4 (gap fill drivers)")
+        #self.actionRunL5 = QtGui.QAction(self)
+        #self.actionRunL5.setText("L5 (gap fill fluxes)")
+        #self.actionRunL6 = QtGui.QAction(self)
+        #self.actionRunL6.setText("L6 (partition)")
         # Plot menu items
-        self.actionPlotL1 = QtGui.QAction(self)
-        self.actionPlotL1.setText("L1 (import)")
-        self.actionPlotL2 = QtGui.QAction(self)
-        self.actionPlotL2.setText("L2 (QC)")
-        self.actionPlotL3 = QtGui.QAction(self)
-        self.actionPlotL3.setText("L3 (process)")
-        self.actionPlotL4 = QtGui.QAction(self)
-        self.actionPlotL4.setText("L4 (gap fill driver)")
-        self.actionPlotL5 = QtGui.QAction(self)
-        self.actionPlotL5.setText("L5 (gap fill fluxes)")
-        self.actionPlotL6 = QtGui.QAction(self)
-        self.actionPlotL6.setText("L6 (summary)")
+        #self.actionPlotL1 = QtGui.QAction(self)
+        #self.actionPlotL1.setText("L1 (import)")
+        #self.actionPlotL2 = QtGui.QAction(self)
+        #self.actionPlotL2.setText("L2 (QC)")
+        #self.actionPlotL3 = QtGui.QAction(self)
+        #self.actionPlotL3.setText("L3 (process)")
+        #self.actionPlotL4 = QtGui.QAction(self)
+        #self.actionPlotL4.setText("L4 (gap fill driver)")
+        #self.actionPlotL5 = QtGui.QAction(self)
+        #self.actionPlotL5.setText("L5 (gap fill fluxes)")
+        #self.actionPlotL6 = QtGui.QAction(self)
+        #self.actionPlotL6.setText("L6 (summary)")
         self.actionPlotFingerprints = QtGui.QAction(self)
         self.actionPlotFingerprints.setText("Fingerprints")
         self.actionPlotQuickCheck = QtGui.QAction(self)
@@ -172,21 +172,21 @@ class pfp_main_ui(QtGui.QWidget, QPlainTextEditLogger):
         self.menuEdit.addAction(self.actionEditPreferences)
         # Run menu
         self.menuRun.addAction(self.actionRunCurrent)
-        self.menuRun.addSeparator()
-        self.menuRun.addAction(self.actionRunL1)
-        self.menuRun.addAction(self.actionRunL2)
-        self.menuRun.addAction(self.actionRunL3)
-        self.menuRun.addAction(self.actionRunL4)
-        self.menuRun.addAction(self.actionRunL5)
-        self.menuRun.addAction(self.actionRunL6)
+        #self.menuRun.addSeparator()
+        #self.menuRun.addAction(self.actionRunL1)
+        #self.menuRun.addAction(self.actionRunL2)
+        #self.menuRun.addAction(self.actionRunL3)
+        #self.menuRun.addAction(self.actionRunL4)
+        #self.menuRun.addAction(self.actionRunL5)
+        #self.menuRun.addAction(self.actionRunL6)
         # Plot menu
-        self.menuPlot.addAction(self.actionPlotL1)
-        self.menuPlot.addAction(self.actionPlotL2)
-        self.menuPlot.addAction(self.actionPlotL3)
-        self.menuPlot.addAction(self.actionPlotL4)
-        self.menuPlot.addAction(self.actionPlotL5)
-        self.menuPlot.addAction(self.actionPlotL6)
-        self.menuPlot.addSeparator()
+        #self.menuPlot.addAction(self.actionPlotL1)
+        #self.menuPlot.addAction(self.actionPlotL2)
+        #self.menuPlot.addAction(self.actionPlotL3)
+        #self.menuPlot.addAction(self.actionPlotL4)
+        #self.menuPlot.addAction(self.actionPlotL5)
+        #self.menuPlot.addAction(self.actionPlotL6)
+        #self.menuPlot.addSeparator()
         self.menuPlot.addAction(self.actionPlotFingerprints)
         self.menuPlot.addAction(self.actionPlotQuickCheck)
         self.menuPlot.addAction(self.actionPlotTimeSeries)
@@ -245,19 +245,19 @@ class pfp_main_ui(QtGui.QWidget, QPlainTextEditLogger):
         self.actionEditPreferences.triggered.connect(self.edit_preferences)
         # Run menu actions
         self.actionRunCurrent.triggered.connect(self.run_current)
-        self.actionRunL1.triggered.connect(self.direct_run)
-        self.actionRunL2.triggered.connect(self.direct_run)
-        self.actionRunL3.triggered.connect(self.direct_run)
-        self.actionRunL4.triggered.connect(self.direct_run)
-        self.actionRunL5.triggered.connect(self.direct_run)
-        self.actionRunL6.triggered.connect(self.direct_run)
+        #self.actionRunL1.triggered.connect(self.direct_run)
+        #self.actionRunL2.triggered.connect(self.direct_run)
+        #self.actionRunL3.triggered.connect(self.direct_run)
+        #self.actionRunL4.triggered.connect(self.direct_run)
+        #self.actionRunL5.triggered.connect(self.direct_run)
+        #self.actionRunL6.triggered.connect(self.direct_run)
         # Plot menu actions
-        self.actionPlotL1.triggered.connect(pfp_top_level.do_plot_l1)
-        self.actionPlotL2.triggered.connect(pfp_top_level.do_plot_l2)
-        self.actionPlotL3.triggered.connect(pfp_top_level.do_plot_l3)
-        self.actionPlotL4.triggered.connect(pfp_top_level.do_plot_l4)
-        self.actionPlotL5.triggered.connect(pfp_top_level.do_plot_l5)
-        self.actionPlotL6.triggered.connect(pfp_top_level.do_plot_l6)
+        #self.actionPlotL1.triggered.connect(pfp_top_level.do_plot_l1)
+        #self.actionPlotL2.triggered.connect(pfp_top_level.do_plot_l2)
+        #self.actionPlotL3.triggered.connect(pfp_top_level.do_plot_l3)
+        #self.actionPlotL4.triggered.connect(pfp_top_level.do_plot_l4)
+        #self.actionPlotL5.triggered.connect(pfp_top_level.do_plot_l5)
+        #self.actionPlotL6.triggered.connect(pfp_top_level.do_plot_l6)
         self.actionPlotFingerprints.triggered.connect(pfp_top_level.do_plot_fingerprints)
         self.actionPlotQuickCheck.triggered.connect(pfp_top_level.do_plot_quickcheck)
         self.actionPlotTimeSeries.triggered.connect(pfp_top_level.do_plot_timeseries)
@@ -279,6 +279,7 @@ class pfp_main_ui(QtGui.QWidget, QPlainTextEditLogger):
             return
         # read the contents of the control file
         self.cfg = ConfigObj(cfgpath, indent_type="    ", list_values=False)
+        self.cfg["controlfile_name"] = cfgpath
         self.cfg["level"] = self.get_cf_level()
         # create a QtTreeView to edit the control file
         if self.cfg["level"] in ["L1"]:
@@ -358,7 +359,8 @@ class pfp_main_ui(QtGui.QWidget, QPlainTextEditLogger):
         try:
             cfg_sections = self.cfg.keys()
             # remove the common sections
-            common_sections = ["Files", "Global", "Output", "Plots", "General", "Options", "Soil", "Massman", "GUI"]
+            common_sections = ["controlfile_name", "Files", "Global", "Output", "Plots",
+                               "General", "Options", "Soil", "Massman", "GUI"]
             for section in list(self.cfg.keys()):
                 if section in common_sections:
                     cfg_sections.remove(section)
@@ -383,8 +385,8 @@ class pfp_main_ui(QtGui.QWidget, QPlainTextEditLogger):
                 ("Variables" in cfg_sections)):
                 got_sections = True
             # remove the common sections
-            common_sections = ["Files", "Global", "Output", "Plots", "General", "Options", "Soil",
-                               "Massman", "GUI"]
+            common_sections = ["controlfile_name", "Files", "Global", "Output", "Plots",
+                                "General", "Options", "Soil", "Massman", "GUI"]
             for section in list(self.cfg.keys()):
                 if section in common_sections:
                     cfg_sections.remove(section)
@@ -491,9 +493,13 @@ class pfp_main_ui(QtGui.QWidget, QPlainTextEditLogger):
         # get the updated control file data
         cfg = self.tabs.tab_dict[tab_index_current].get_data_from_model()
         # strip out the redundant control file name
-        #cfg.pop("controlfile_name", None)
-        # write the control file
-        cfg.write()
+        if "controlfile_name" in cfg:
+            cfg_name = cfg["controlfile_name"]
+            cfg.pop("controlfile_name", None)
+            cfg.write()
+            cfg["controlfile_name"] = cfg_name
+        else:
+            cfg.write()
         # remove the asterisk in the tab text
         tab_text = str(self.tabs.tabText(tab_index_current))
         self.tabs.setTabText(self.tabs.tab_index_current, tab_text.replace("*",""))
@@ -506,14 +512,18 @@ class pfp_main_ui(QtGui.QWidget, QPlainTextEditLogger):
         tab_index_current = self.tabs.tab_index_current
         # get the updated control file data
         cfg = self.tabs.tab_dict[tab_index_current].get_data_from_model()
-        # strip out the redundant control file name
-        #cfg.pop("controlfile_name", None)
         # put up a "Save as ..." dialog
         cfgpath = QtGui.QFileDialog.getSaveFileName(self, "Save as ...")
         # set the control file name
         cfg.filename = str(cfgpath)
-        # write the control file
-        cfg.write()
+        # strip out the redundant control file name
+        if "controlfile_name" in cfg:
+            cfg_name = cfg["controlfile_name"]
+            cfg.pop("controlfile_name", None)
+            cfg.write()
+            cfg["controlfile_name"] = cfg_name
+        else:
+            cfg.write()
         # update the tab text
         self.tabs.setTabText(tab_index_current, os.path.basename(str(cfgpath)))
         # reset the cfg changed logical to false
