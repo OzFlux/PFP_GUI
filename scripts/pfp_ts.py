@@ -830,7 +830,6 @@ def CalculateNetRadiation(cf,ds,Fn_out='Fn_4cmpt',Fsd_in='Fsd',Fsu_in='Fsu',Fld_
         else:
             Fn_exist,flag,attr = pfp_utils.GetSeriesasMA(ds,Fn_out)
             idx = numpy.where((numpy.ma.getmaskarray(Fn_exist)==True)&(numpy.ma.getmaskarray(Fn_calc)==False))[0]
-            #idx = numpy.ma.where((numpy.ma.getmaskarray(Fn_exist)==True)&(numpy.ma.getmaskarray(Fn_calc)==False))[0]
             if len(idx)!=0:
                 Fn_exist[idx] = Fn_calc[idx]
                 flag[idx] = numpy.int32(20)
@@ -1584,13 +1583,15 @@ def DoFunctions(cf,ds):
             else:
                 function_vars.append(var)
     for var in convert_vars:
-        result = getattr(pfp_func,functions[var]["name"])(ds,var,*functions[var]["arguments"])
-        msg = " Completed function for "+var
-        logger.info(msg)
+        result = getattr(pfp_func, functions[var]["name"])(ds, var, *functions[var]["arguments"])
+        if result:
+            msg = " Completed units conversion for " + var
+            logger.info(msg)
     for var in function_vars:
-        result = getattr(pfp_func,functions[var]["name"])(ds,var,*functions[var]["arguments"])
-        msg = " Completed function for "+var
-        logger.info(msg)
+        result = getattr(pfp_func, functions[var]["name"])(ds, var, *functions[var]["arguments"])
+        if result:
+            msg = " Completed function for " + var
+            logger.info(msg)
 
 def CalculateStandardDeviations(cf,ds):
     logger.info(' Getting variances from standard deviations & vice versa')
@@ -2624,6 +2625,7 @@ def MergeSeries(cf,ds,series,okflags=[0,10,20,30,40,50,60],convert_units=False,s
             else:
                 logger.warning("  MergeSeries: secondary input series "+secondary_series+" not found")
     ds.mergeserieslist.append(series)
+    primary["Label"] = series
     primary["Attr"]["long_name"] = primary["Attr"]["long_name"] + ", merged from " + SeriesNameString
     pfp_utils.CreateVariable(ds, primary)
 

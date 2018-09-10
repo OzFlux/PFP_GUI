@@ -5,6 +5,7 @@ level = L3
     out_filename = Right click to browse
 
 [Options]
+    UseL2Fluxes = Yes
     zms = <height>
     CO2Units = umol/mol
     FcUnits = umol/m2/s
@@ -21,7 +22,7 @@ level = L3
 [Variables]
     [[Fn]]
         [[[MergeSeries]]]
-            Source = Fn_4Cmpt,Fn
+            Source = Fn_4cmpt,Fn
         [[[RangeCheck]]]
             Lower = -150
             Upper = 1100
@@ -32,17 +33,17 @@ level = L3
             Lower = -10
             Upper = 50
     [[RH]]
+        [[[MergeSeries]]]
+            Source = RH_<inst>_<height>m,RH_IRGA_Av
         [[[RangeCheck]]]
             Upper = 100
             Lower = 0
-        [[[MergeSeries]]]
-            Source = RH_<inst>_<height>m,RH_IRGA_Av
     [[H2O]]
+        [[[MergeSeries]]]
+            Source = H2O_IRGA_Av
         [[[RangeCheck]]]
             Upper = 3000
             Lower = 0
-        [[[MergeSeries]]]
-            Source = H2O_IRGA_Av
     [[CO2]]
         [[[MergeSeries]]]
             Source = CO2_IRGA_Av
@@ -93,7 +94,11 @@ level = L3
         Variables = Fc,Fc_EPFlag,W_SONIC_Vr,H2O_IRGA_Vr,CO2_IRGA_Vr
     [[Air temperature, humidity and CO2]]
         Variables = Ta,Ta_<inst>_<height>m,RH,RH_<inst>_<height>m,CO2_IRGA_Av
-    [[Soil temperature, water content and heat flux]]
-        Variables = Precip,Ts,Sws,Sws_<depth><letter>,Fg
+    [[Soil temperature]]
+        Variables = Precip,Ts,Ts_<depth>cma,Ts_<depth>cmb
+    [[Soil water content]]
+        Variables = Precip,Sws,Sws_<depth>cma,Sws_<depth>cmb
+    [[Soil heat flux]]
+        Variables = Precip,Fg,Fg_<depth>cma,Fg_<depth>cmb
     [[Pressure, wind speed and direction]]
-        Variables = ps,Ws,Ux,Uy,Uz,Wd
+        Variables = ps,Ws,Ws_<inst>_Av,Ws_SONIC_Av,Wd,Wd_<inst>_Av,Wd_SONIC_Av

@@ -1,0 +1,217 @@
+[Files]
+    file_path = 
+    in_filename = 
+    out_filename = 
+    plot_path = 
+    aws = 
+    access = 
+    erai = 
+    climatology = 
+
+[Options]
+    MaxGapInterpolate = 3
+
+[Drivers]
+    [[Ah]]
+        [[[GapFillFromAlternate]]]
+            [[[[Ah_aws]]]]
+                source = aws
+            [[[[Ah_access]]]]
+                source = access
+            [[[[Ah_erai]]]]
+                source = erai
+        [[[GapFillFromClimatology]]]
+            [[[[Ah_cli]]]]
+                method = interpolated daily
+        [[[MergeSeries]]]
+            Source = Ah,Ah_aws,Ah_access,Ah_erai,Ah_cli
+    [[CO2]]
+        [[[GapFillFromClimatology]]]
+            [[[[CO2_cli]]]]
+                method = interpolated daily
+        [[[MergeSeries]]]
+            Source = CO2,CO2_cli
+    [[Fa]]
+        [[[GapFillFromAlternate]]]
+            [[[[Fa_access]]]]
+                source = access
+            [[[[Fa_erai]]]]
+                source = erai
+        [[[GapFillFromClimatology]]]
+            [[[[Fa_cli]]]]
+                method = interpolated daily
+        [[[MergeSeries]]]
+            Source = Fa,Fa_access,Fa_erai,Fa_cli
+    [[Fg]]
+        [[[GapFillFromAlternate]]]
+            [[[[Fg_access]]]]
+                source = access
+            [[[[Fg_erai]]]]
+                source = erai
+        [[[GapFillFromClimatology]]]
+            [[[[Fg_cli]]]]
+                method = interpolated daily
+        [[[MergeSeries]]]
+            Source = Fg,Fg_access,Fg_erai,Fg_cli
+    [[Fld]]
+        [[[GapFillFromAlternate]]]
+            [[[[Fld_access]]]]
+                source = access
+            [[[[Fld_erai]]]]
+                source = erai
+        [[[GapFillFromClimatology]]]
+            [[[[Fld_cli]]]]
+                method = interpolated daily
+        [[[MergeSeries]]]
+            Source = Fld,Fld_access,Fld_erai,Fld_cli
+    [[Flu]]
+        [[[GapFillFromAlternate]]]
+            [[[[Flu_access]]]]
+                source = access
+            [[[[Flu_erai]]]]
+                source = erai
+        [[[GapFillFromClimatology]]]
+            [[[[Flu_cli]]]]
+                method = interpolated daily
+        [[[MergeSeries]]]
+            Source = Flu,Flu_access,Flu_erai,Flu_cli
+    [[Fn]]
+        [[[GapFillFromAlternate]]]
+            [[[[Fn_access]]]]
+                source = access
+            [[[[Fn_erai]]]]
+                source = erai
+        [[[GapFillFromClimatology]]]
+            [[[[Fn_cli]]]]
+                method = interpolated daily
+        [[[MergeSeries]]]
+            Source = Fn,Fn_access,Fn_erai,Fn_cli
+    [[Fsd]]
+        [[[GapFillFromAlternate]]]
+            [[[[Fsd_access]]]]
+                source = access
+            [[[[Fsd_erai]]]]
+                source = erai
+        [[[GapFillFromClimatology]]]
+            [[[[Fsd_cli]]]]
+                method = interpolated daily
+        [[[MergeSeries]]]
+            Source = Fsd,Fsd_access,Fsd_erai,Fsd_cli
+    [[Fsu]]
+        [[[GapFillFromAlternate]]]
+            [[[[Fsu_access]]]]
+                source = access
+            [[[[Fsu_erai]]]]
+                source = erai
+        [[[GapFillFromClimatology]]]
+            [[[[Fsu_cli]]]]
+                method = interpolated daily
+        [[[MergeSeries]]]
+            Source = Fsu,Fsu_access,Fsu_erai,Fsu_cli
+    [[ps]]
+        [[[GapFillFromAlternate]]]
+            [[[[ps_aws]]]]
+                source = aws
+            [[[[ps_access]]]]
+                source = access
+            [[[[ps_erai]]]]
+                source = erai
+        [[[GapFillFromClimatology]]]
+            [[[[ps_cli]]]]
+                method = interpolated daily
+        [[[MergeSeries]]]
+            Source = ps,ps_aws,ps_access,ps_erai,ps_cli
+    [[Sws]]
+        [[[GapFillFromAlternate]]]
+            [[[[Sws_access]]]]
+                source = access
+                lag = no
+            [[[[Sws_erai]]]]
+                source = erai
+                lag = no
+        [[[GapFillFromClimatology]]]
+            [[[[Sws_cli]]]]
+                method = interpolated daily
+        [[[MergeSeries]]]
+            Source = Sws,Sws_access,Sws_erai,Sws_cli
+    [[Ta]]
+        [[[GapFillFromAlternate]]]
+            [[[[Ta_aws]]]]
+                source = aws
+            [[[[Ta_access]]]]
+                source = access
+            [[[[Ta_erai]]]]
+                source = erai
+        [[[GapFillFromClimatology]]]
+            [[[[Ta_cli]]]]
+                method = interpolated daily
+        [[[MergeSeries]]]
+            Source = Ta,Ta_aws,Ta_access,Ta_erai,Ta_cli
+    [[Ts]]
+        [[[GapFillFromAlternate]]]
+            [[[[Ts_access]]]]
+                source = access
+            [[[[Ts_erai]]]]
+                source = erai
+        [[[GapFillFromClimatology]]]
+            [[[[Ts_cli]]]]
+                method = interpolated daily
+        [[[MergeSeries]]]
+            Source = Ts,Ts_access,Ts_erai,Ts_cli
+    [[Ws]]
+        [[[GapFillFromAlternate]]]
+            [[[[Ws_aws]]]]
+                source = aws
+                fit = ols_thru0
+                lag = no
+            [[[[Ws_access]]]]
+                source = access
+                fit = ols_thru0
+                lag = no
+            [[[[Ws_erai]]]]
+                source = erai
+                fit = ols_thru0
+                lag = no
+        [[[GapFillFromClimatology]]]
+            [[[[Ws_cli]]]]
+                method = interpolated daily
+        [[[MergeSeries]]]
+            Source = Ws,Ws_aws,Ws_access,Ws_erai,Ws_cli
+    [[Wd]]
+        [[[GapFillFromAlternate]]]
+            [[[[Wd_aws]]]]
+                source = aws
+                fit = replace
+                lag = no
+            [[[[Wd_access]]]]
+                source = access
+                fit = replace
+                lag = no
+            [[[[Wd_erai]]]]
+                source = erai
+                fit = replace
+                lag = no
+        [[[GapFillFromClimatology]]]
+            [[[[Wd_cli]]]]
+                method = interpolated daily
+        [[[MergeSeries]]]
+            Source = Wd,Wd_aws,Wd_access,Wd_erai,Wd_cli
+    [[Precip]]
+        [[[GapFillFromAlternate]]]
+            [[[[Precip_aws]]]]
+                source = aws
+                fit = replace
+                lag = no
+            [[[[Precip_access]]]]
+                source = access
+                fit = replace
+                lag = no
+            [[[[Precip_erai]]]]
+                source = erai
+                fit = replace
+                lag = no
+        [[[MergeSeries]]]
+            Source = Precip,Precip_aws,Precip_access,Precip_erai
+        [[[RangeCheck]]]
+            Lower = 0
+            Upper = 50
