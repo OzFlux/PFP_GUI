@@ -1,9 +1,10 @@
+level = L4
 [Files]
-    file_path = 
-    in_filename = 
-    out_filename = 
-    plot_path = 
-    erai = 
+    file_path = Right click to browse
+    in_filename = Right click to browse
+    out_filename = Right click to browse
+    plot_path = Right click to browse
+    erai = Right click to browse
 
 [Options]
     MaxGapInterpolate = 3

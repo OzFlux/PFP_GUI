@@ -152,6 +152,8 @@ class pfp_main_ui(QtGui.QWidget, QPlainTextEditLogger):
         self.actionUtilitiesClimatology.setText("Climatology")
         self.actionUtilitiesUstarCPD = QtGui.QAction(self)
         self.actionUtilitiesUstarCPD.setText("u* thtreshold (CPD)")
+        self.actionUtilitiesUstarMPT = QtGui.QAction(self)
+        self.actionUtilitiesUstarMPT.setText("u* thtreshold (MPT)")
         # add the actions to the menus
         # File/Convert submenu
         self.menuFileConvert.addAction(self.actionFileConvertnc2biomet)
@@ -195,6 +197,7 @@ class pfp_main_ui(QtGui.QWidget, QPlainTextEditLogger):
         # Utilities menu
         self.menuUtilities.addAction(self.actionUtilitiesClimatology)
         self.menuUtilities.addAction(self.actionUtilitiesUstarCPD)
+        self.menuUtilities.addAction(self.actionUtilitiesUstarMPT)
         # add individual menus to menu bar
         self.menubar.addAction(self.menuFile.menuAction())
         self.menubar.addAction(self.menuEdit.menuAction())
@@ -265,6 +268,7 @@ class pfp_main_ui(QtGui.QWidget, QPlainTextEditLogger):
         # Utilities menu actions
         self.actionUtilitiesClimatology.triggered.connect(lambda:pfp_top_level.do_utilities_climatology(mode="standard"))
         self.actionUtilitiesUstarCPD.triggered.connect(lambda:pfp_top_level.do_utilities_ustar_cpd(mode="standard"))
+        self.actionUtilitiesUstarMPT.triggered.connect(lambda:pfp_top_level.do_utilities_ustar_mpt(mode="standard"))
         # add the L4 GUI
         self.l4_ui = pfp_gui.pfp_l4_ui(self)
         # add the L5 GUI
@@ -570,6 +574,14 @@ class pfp_main_ui(QtGui.QWidget, QPlainTextEditLogger):
 
     def closeTab (self, currentIndex):
         """ Close the selected tab."""
+        # check to see if the tab contents have been saved
+        tab_text = str(self.tabs.tabText(self.tabs.tab_index_current))
+        if "*" in tab_text:
+            msg = "Save control file?"
+            reply = QtGui.QMessageBox.question(self, 'Message', msg,
+                                               QtGui.QMessageBox.Yes, QtGui.QMessageBox.No)
+            if reply == QtGui.QMessageBox.Yes:
+                self.save_controlfile()
         # get the current tab from its index
         currentQWidget = self.tabs.widget(currentIndex)
         # delete the tab
@@ -581,6 +593,7 @@ class pfp_main_ui(QtGui.QWidget, QPlainTextEditLogger):
         self.tabs.tab_dict.pop(currentIndex)
         # decrement the tab index
         self.tabs.tab_index_all = self.tabs.tab_index_all - 1
+        return
 
     def update_tab_text(self):
         """ Add an asterisk to the tab title text to indicate tab contents have changed."""

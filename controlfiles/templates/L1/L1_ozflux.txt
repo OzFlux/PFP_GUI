@@ -1,10 +1,10 @@
 level = L1
 [Files]
-    file_path = ../Sites/<site_name>/Data/Processed/<year>/
-    in_filename = <site_name>_<year>_L1.xls
+    file_path = Right click to browse
+    in_filename = Right click to browse (*.xls)
     in_headerrow = 2
     in_firstdatarow = 5
-    out_filename = <site_name>_<year>_L1.nc
+    out_filename = Right click to browse (*.nc)
 
 [Global]
     acknowledgement = '''This work used eddy covariance data collected by the TERN-OzFlux facility. OzFlux
@@ -12,18 +12,17 @@ would like to acknowledge the financial support of the Australian Federal Govern
 the National Collaborative Research Infrastructure Scheme and the Education Investment
 Fund.'''
     contact = ""
-    canopy_height = ""
+    canopy_height = <canopy_height>m
     comment = CF metadata, OzFlux standard variable names
-    elevation = ""
     conventions = CF-1.6
     conventions_names = CF convention standard names table version 27, 28 Nov 2013, audited 4 Jan 2015
     data_url = http://data.ozflux.org.au/
-    doi = DOI:????
+    doi = ""
     history = ""
     institution = ""
     latitude = <latitude>
-    license_type = TERN-BY-SA-NC
-    license_url = http://www.tern.org.au/datalicence/TERN-BY-SA-NC/1.0
+    license_type = CC BY 4.0
+    license_url = https://creativecommons.org/licenses/by/4.0/
     longitude = <longitude>
     metadata_url = http://http://www.ozflux.org.au/monitoringsites/<site_name>/index.html
     ozflux_url = http://ozflux.org.au/
@@ -34,9 +33,10 @@ Fund.'''
     source = ""
     title = Flux tower data set from the <site_name> site for the calendar year <year>
     time_step = 30
-    time_zone = ""
+    time_zone = <country>/<time_zone>
     tower_height = ""
     vegetation = ""
+    altitude = <altitude>m
 
 [Variables]
     [[xlDateTime]]

@@ -1230,34 +1230,43 @@ class edit_cfg_L3(QtGui.QWidget):
         if level == 0:
             selected_text = str(idx.data().toString())
             if selected_text == "Options":
-                self.context_menu.actionAddzms = QtGui.QAction(self)
-                self.context_menu.actionAddzms.setText("Add zms")
-                self.context_menu.addAction(self.context_menu.actionAddzms)
-                self.context_menu.actionAddzms.triggered.connect(self.add_zms)
-                self.context_menu.actionAddUseL2Fluxes = QtGui.QAction(self)
-                self.context_menu.actionAddUseL2Fluxes.setText("UseL2Fluxes")
-                self.context_menu.addAction(self.context_menu.actionAddUseL2Fluxes)
-                self.context_menu.actionAddUseL2Fluxes.triggered.connect(self.add_usel2fluxes)
-                self.context_menu.actionAdd2DCoordRotation = QtGui.QAction(self)
-                self.context_menu.actionAdd2DCoordRotation.setText("2DCoordRotation")
-                self.context_menu.addAction(self.context_menu.actionAdd2DCoordRotation)
-                self.context_menu.actionAdd2DCoordRotation.triggered.connect(self.add_2dcoordrotation)
-                self.context_menu.actionAddMassmanCorrection = QtGui.QAction(self)
-                self.context_menu.actionAddMassmanCorrection.setText("MassmanCorrection")
-                self.context_menu.addAction(self.context_menu.actionAddMassmanCorrection)
-                self.context_menu.actionAddMassmanCorrection.triggered.connect(self.add_massmancorrection)
-                self.context_menu.actionAddApplyFcStorage = QtGui.QAction(self)
-                self.context_menu.actionAddApplyFcStorage.setText("ApplyFcStorage")
-                self.context_menu.addAction(self.context_menu.actionAddApplyFcStorage)
-                self.context_menu.actionAddApplyFcStorage.triggered.connect(self.add_applyfcstorage)
-                self.context_menu.actionAddCorrectIndividualFg = QtGui.QAction(self)
-                self.context_menu.actionAddCorrectIndividualFg.setText("CorrectIndividualFg")
-                self.context_menu.addAction(self.context_menu.actionAddCorrectIndividualFg)
-                self.context_menu.actionAddCorrectIndividualFg.triggered.connect(self.add_correctindividualfg)
-                self.context_menu.actionAddCorrectFgForStorage = QtGui.QAction(self)
-                self.context_menu.actionAddCorrectFgForStorage.setText("CorrectFgForStorage")
-                self.context_menu.addAction(self.context_menu.actionAddCorrectFgForStorage)
-                self.context_menu.actionAddCorrectFgForStorage.triggered.connect(self.add_correctfgforstorage)
+                # get a list of existing entries
+                existing_entries = self.get_existing_entries()
+                if "zms" not in existing_entries:
+                    self.context_menu.actionAddzms = QtGui.QAction(self)
+                    self.context_menu.actionAddzms.setText("Add zms")
+                    self.context_menu.addAction(self.context_menu.actionAddzms)
+                    self.context_menu.actionAddzms.triggered.connect(self.add_zms)
+                if "UseL2Fluxes" not in existing_entries:
+                    self.context_menu.actionAddUseL2Fluxes = QtGui.QAction(self)
+                    self.context_menu.actionAddUseL2Fluxes.setText("UseL2Fluxes")
+                    self.context_menu.addAction(self.context_menu.actionAddUseL2Fluxes)
+                    self.context_menu.actionAddUseL2Fluxes.triggered.connect(self.add_usel2fluxes)
+                if "2DCoordRotation" not in existing_entries:
+                    self.context_menu.actionAdd2DCoordRotation = QtGui.QAction(self)
+                    self.context_menu.actionAdd2DCoordRotation.setText("2DCoordRotation")
+                    self.context_menu.addAction(self.context_menu.actionAdd2DCoordRotation)
+                    self.context_menu.actionAdd2DCoordRotation.triggered.connect(self.add_2dcoordrotation)
+                if "MassmanCorrection" not in existing_entries:
+                    self.context_menu.actionAddMassmanCorrection = QtGui.QAction(self)
+                    self.context_menu.actionAddMassmanCorrection.setText("MassmanCorrection")
+                    self.context_menu.addAction(self.context_menu.actionAddMassmanCorrection)
+                    self.context_menu.actionAddMassmanCorrection.triggered.connect(self.add_massmancorrection)
+                if "ApplyFcStorage" not in existing_entries:
+                    self.context_menu.actionAddApplyFcStorage = QtGui.QAction(self)
+                    self.context_menu.actionAddApplyFcStorage.setText("ApplyFcStorage")
+                    self.context_menu.addAction(self.context_menu.actionAddApplyFcStorage)
+                    self.context_menu.actionAddApplyFcStorage.triggered.connect(self.add_applyfcstorage)
+                if "CorrectIndividualFg" not in existing_entries:
+                    self.context_menu.actionAddCorrectIndividualFg = QtGui.QAction(self)
+                    self.context_menu.actionAddCorrectIndividualFg.setText("CorrectIndividualFg")
+                    self.context_menu.addAction(self.context_menu.actionAddCorrectIndividualFg)
+                    self.context_menu.actionAddCorrectIndividualFg.triggered.connect(self.add_correctindividualfg)
+                if "CorrectFgForStorage" not in existing_entries:
+                    self.context_menu.actionAddCorrectFgForStorage = QtGui.QAction(self)
+                    self.context_menu.actionAddCorrectFgForStorage.setText("CorrectFgForStorage")
+                    self.context_menu.addAction(self.context_menu.actionAddCorrectFgForStorage)
+                    self.context_menu.actionAddCorrectFgForStorage.triggered.connect(self.add_correctfgforstorage)
                 #self.context_menu.actionCoordinateFluxGaps = QtGui.QAction(self)
                 #self.context_menu.actionCoordinateFluxGaps.setText("CoordinateFluxGaps")
                 #self.context_menu.addAction(self.context_menu.actionAddCoordinateFluxGaps)
@@ -1467,6 +1476,19 @@ class edit_cfg_L3(QtGui.QWidget):
                             cfg[key1][key2][key3][key4] = val4
         return cfg
 
+    def get_existing_entries(self):
+        """ Get a list of existing entries in the current section."""
+        # index of the selected item
+        idx = self.view.selectedIndexes()[0]
+        # get the selected item from its index
+        selected_item = idx.model().itemFromIndex(idx)
+        # build a list of existing QC checks
+        existing_entries = []
+        if selected_item.hasChildren():
+            for i in range(selected_item.rowCount()):
+                existing_entries.append(str(selected_item.child(i, 0).text()))
+        return existing_entries
+
     def get_keyval_by_key_name(self, section, key):
         """ Get the value from a section based on the key name."""
         found = False
@@ -1650,6 +1672,7 @@ class edit_cfg_concatenate(QtGui.QWidget):
         super(edit_cfg_concatenate, self).__init__()
 
         self.cfg_mod = copy.deepcopy(main_gui.cfg)
+
         self.cfg_changed = False
         self.tabs = main_gui.tabs
 
@@ -1658,46 +1681,49 @@ class edit_cfg_concatenate(QtGui.QWidget):
     def edit_concatenate_gui(self):
         """ Edit a concatenate control file GUI."""
         # get a QTreeView
-        self.tree = QtGui.QTreeView()
+        self.view = QtGui.QTreeView()
+        self.model = QtGui.QStandardItemModel()
         # set the context menu policy
-        self.tree.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
+        self.view.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
         # connect the context menu requested signal to appropriate slot
-        self.tree.customContextMenuRequested.connect(self.context_menu)
+        self.view.customContextMenuRequested.connect(self.context_menu)
         vbox = QtGui.QVBoxLayout()
-        vbox.addWidget(self.tree)
+        vbox.addWidget(self.view)
         self.setLayout(vbox)
         self.setGeometry(300, 300, 600, 400)
         # Tree view
-        self.tree.setAlternatingRowColors(True)
-        self.tree.setSortingEnabled(True)
-        self.tree.setHeaderHidden(False)
-        self.tree.setSelectionBehavior(QtGui.QAbstractItemView.SelectItems)
+        self.view.setAlternatingRowColors(True)
+        #self.tree.setSortingEnabled(True)
+        self.view.setHeaderHidden(False)
+        self.view.setSelectionBehavior(QtGui.QAbstractItemView.SelectItems)
+        self.view.setModel(self.model)
         # build the model
         self.get_model_from_data()
+        # set the default width for the first column
+        self.view.setColumnWidth(0, 200)
 
     def get_model_from_data(self):
         """ Build the data model."""
-        self.tree.setModel(QtGui.QStandardItemModel())
-        self.tree.model().setHorizontalHeaderLabels(['Parameter', 'Value'])
-        self.tree.model().itemChanged.connect(self.handleItemChanged)
+        self.model.setHorizontalHeaderLabels(['Parameter', 'Value'])
+        self.model.itemChanged.connect(self.handleItemChanged)
         # there must be someway outa here, said the Joker to the Thief ...
-        self.tree.sections = {}
+        self.sections = {}
         for key1 in self.cfg_mod:
             if not self.cfg_mod[key1]:
                 continue
             if key1 in ["Options"]:
                 # sections with only 1 level
-                self.tree.sections[key1] = QtGui.QStandardItem(key1)
+                self.sections[key1] = QtGui.QStandardItem(key1)
                 for key2 in self.cfg_mod[key1]:
                     val = self.cfg_mod[key1][key2]
                     val = self.parse_cfg_values(key2, val, ["[","]",'"', "'"])
                     child0 = QtGui.QStandardItem(key2)
                     child1 = QtGui.QStandardItem(str(val))
-                    self.tree.sections[key1].appendRow([child0, child1])
-                self.tree.model().appendRow(self.tree.sections[key1])
+                    self.sections[key1].appendRow([child0, child1])
+                self.model.appendRow(self.sections[key1])
             elif key1 in ["Files"]:
                 # sections with 2 levels
-                self.tree.sections[key1] = QtGui.QStandardItem(key1)
+                self.sections[key1] = QtGui.QStandardItem(key1)
                 for key2 in self.cfg_mod[key1]:
                     parent2 = QtGui.QStandardItem(key2)
                     for val in self.cfg_mod[key1][key2]:
@@ -1705,13 +1731,13 @@ class edit_cfg_concatenate(QtGui.QWidget):
                         child0 = QtGui.QStandardItem(val)
                         child1 = QtGui.QStandardItem(str(value))
                         parent2.appendRow([child0, child1])
-                    self.tree.sections[key1].appendRow(parent2)
-                self.tree.model().appendRow(self.tree.sections[key1])
+                    self.sections[key1].appendRow(parent2)
+                self.model.appendRow(self.sections[key1])
 
     def get_data_from_model(self):
         """ Iterate over the model and get the data."""
         cfg = self.cfg_mod
-        model = self.tree.model()
+        model = self.model
         # there must be a way to do this recursively
         for i in range(model.rowCount()):
             section = model.item(i)
@@ -1738,93 +1764,86 @@ class edit_cfg_concatenate(QtGui.QWidget):
 
     def handleItemChanged(self, item):
         """ Handler for when view items are edited."""
-        # add an asterisk to the tab text to indicate the tab contents have changed
-        tab_text = str(self.tabs.tabText(self.tabs.tab_index_current))
-        if "*" not in tab_text:
-            self.tabs.setTabText(self.tabs.tab_index_current, tab_text+"*")
         # update the control file contents
         self.cfg_mod = self.get_data_from_model()
+        # add an asterisk to the tab text to indicate the tab contents have changed
+        self.update_tab_text()
 
     def context_menu(self, position):
         """ Right click context menu."""
-        model = self.tree.model()
-        indexes = self.tree.selectedIndexes()
-        if len(indexes) > 0:
-            level = 0
-            index = indexes[0]
-            while index.parent().isValid():
-                index = index.parent()
-                level += 1
+        # get a menu
         self.context_menu = QtGui.QMenu()
+        # get the index of the selected item
+        idx = self.view.selectedIndexes()[0]
+        # get the selected item text
+        selected_text = str(idx.data().toString())
+        # get the selected item
+        selected_item = idx.model().itemFromIndex(idx)
+        # get the level of the selected item
+        level = self.get_level_selected_item()
         if level == 0:
             # sections with only 1 level
-            if str(indexes[0].data().toString()) == "Options":
-                options = {"NumberOfDimensions":3, "MaxGapInterpolate": 3, "FixTimeStepMethod": "round",
-                           "Truncate": "Yes", "TruncateThreshold": 50,
-                           "SeriesToCheck":['Ah','Cc','Fa','Fg','Fld','Flu','Fn','Fsd','Fsu','ps','Sws',
-                                            'Ta','Ts','Ws','Wd','Precip']}
-                self.context_menu.actionAddNumberOfDimensions = QtGui.QAction(self)
-                self.context_menu.actionAddNumberOfDimensions.setText("NumberOfDimensions")
-                self.context_menu.addAction(self.context_menu.actionAddNumberOfDimensions)
-                self.context_menu.actionAddNumberOfDimensions.triggered.connect(self.add_numberofdimensions)
-                self.context_menu.actionAddMaxGapInterpolate = QtGui.QAction(self)
-                self.context_menu.actionAddMaxGapInterpolate.setText("MaxGapInterpolate")
-                self.context_menu.addAction(self.context_menu.actionAddMaxGapInterpolate)
-                self.context_menu.actionAddMaxGapInterpolate.triggered.connect(self.add_maxgapinterpolate)
-                self.context_menu.actionAddFixTimeStepMethod = QtGui.QAction(self)
-                self.context_menu.actionAddFixTimeStepMethod.setText("FixTimeStepMethod")
-                self.context_menu.addAction(self.context_menu.actionAddFixTimeStepMethod)
-                self.context_menu.actionAddFixTimeStepMethod.triggered.connect(self.add_fixtimestepmethod)
-                self.context_menu.actionAddTruncate = QtGui.QAction(self)
-                self.context_menu.actionAddTruncate.setText("Truncate")
-                self.context_menu.addAction(self.context_menu.actionAddTruncate)
-                self.context_menu.actionAddTruncate.triggered.connect(self.add_truncate)
-                self.context_menu.actionAddTruncateThreshold = QtGui.QAction(self)
-                self.context_menu.actionAddTruncateThreshold.setText("TruncateThreshold")
-                self.context_menu.addAction(self.context_menu.actionAddTruncateThreshold)
-                self.context_menu.actionAddTruncateThreshold.triggered.connect(self.add_truncatethreshold)
-                self.context_menu.actionAddSeriesToCheck = QtGui.QAction(self)
-                self.context_menu.actionAddSeriesToCheck.setText("SeriesToCheck")
-                self.context_menu.addAction(self.context_menu.actionAddSeriesToCheck)
-                self.context_menu.actionAddSeriesToCheck.triggered.connect(self.add_seriestocheck)
+            if selected_text == "Options":
+                existing_entries = self.get_existing_entries()
+                if "NumberOfDimensions" not in existing_entries:
+                    self.context_menu.actionAddNumberOfDimensions = QtGui.QAction(self)
+                    self.context_menu.actionAddNumberOfDimensions.setText("NumberOfDimensions")
+                    self.context_menu.addAction(self.context_menu.actionAddNumberOfDimensions)
+                    self.context_menu.actionAddNumberOfDimensions.triggered.connect(self.add_numberofdimensions)
+                if "MaxGapInterpolate" not in existing_entries:
+                    self.context_menu.actionAddMaxGapInterpolate = QtGui.QAction(self)
+                    self.context_menu.actionAddMaxGapInterpolate.setText("MaxGapInterpolate")
+                    self.context_menu.addAction(self.context_menu.actionAddMaxGapInterpolate)
+                    self.context_menu.actionAddMaxGapInterpolate.triggered.connect(self.add_maxgapinterpolate)
+                if "FixTimeStepMethod" not in existing_entries:
+                    self.context_menu.actionAddFixTimeStepMethod = QtGui.QAction(self)
+                    self.context_menu.actionAddFixTimeStepMethod.setText("FixTimeStepMethod")
+                    self.context_menu.addAction(self.context_menu.actionAddFixTimeStepMethod)
+                    self.context_menu.actionAddFixTimeStepMethod.triggered.connect(self.add_fixtimestepmethod)
+                if "Truncate" not in existing_entries:
+                    self.context_menu.actionAddTruncate = QtGui.QAction(self)
+                    self.context_menu.actionAddTruncate.setText("Truncate")
+                    self.context_menu.addAction(self.context_menu.actionAddTruncate)
+                    self.context_menu.actionAddTruncate.triggered.connect(self.add_truncate)
+                if "TruncateThreshold" not in existing_entries:
+                    self.context_menu.actionAddTruncateThreshold = QtGui.QAction(self)
+                    self.context_menu.actionAddTruncateThreshold.setText("TruncateThreshold")
+                    self.context_menu.addAction(self.context_menu.actionAddTruncateThreshold)
+                    self.context_menu.actionAddTruncateThreshold.triggered.connect(self.add_truncatethreshold)
+                if "SeriesToCheck" not in existing_entries:
+                    self.context_menu.actionAddSeriesToCheck = QtGui.QAction(self)
+                    self.context_menu.actionAddSeriesToCheck.setText("SeriesToCheck")
+                    self.context_menu.addAction(self.context_menu.actionAddSeriesToCheck)
+                    self.context_menu.actionAddSeriesToCheck.triggered.connect(self.add_seriestocheck)
         elif level == 1:
-            parent = str(indexes[0].parent().data().toString())
-            if parent == "Options":
+            parent = selected_item.parent()
+            if (str(parent.text()) == "Options") and (selected_item.column() == 0):
                 self.context_menu.actionRemoveOption = QtGui.QAction(self)
                 self.context_menu.actionRemoveOption.setText("Remove option")
                 self.context_menu.addAction(self.context_menu.actionRemoveOption)
-                self.context_menu.actionRemoveOption.triggered.connect(self.remove_option)
-            elif parent == "Files":
-                if str(indexes[0].data().toString()) == "In":
+                self.context_menu.actionRemoveOption.triggered.connect(self.remove_item)
+            elif str(parent.text()) == "Files":
+                if selected_text == "In":
                     self.context_menu.actionAddInputFile = QtGui.QAction(self)
                     self.context_menu.actionAddInputFile.setText("Add input file")
                     self.context_menu.addAction(self.context_menu.actionAddInputFile)
                     self.context_menu.actionAddInputFile.triggered.connect(self.add_inputfile)
         elif level == 2:
-            section_name = str(indexes[0].parent().parent().data().toString())
-            subsection_name = str(indexes[0].parent().data().toString())
-            section, i = self.get_section(section_name)
-            subsection, j = self.get_subsection(section, indexes[0])
-            if ((section_name == "Files") and (subsection_name == "In")):
-                if (self.selection_is_key(subsection, indexes[0])):
+            parent = selected_item.parent()
+            section = selected_item.parent().parent()
+            if ((str(section.text()) == "Files") and (str(parent.text()) == "In")):
+                if (selected_item.column() == 0):
                     self.context_menu.actionRemoveInputFile = QtGui.QAction(self)
                     self.context_menu.actionRemoveInputFile.setText("Remove file")
                     self.context_menu.addAction(self.context_menu.actionRemoveInputFile)
-                    self.context_menu.actionRemoveInputFile.triggered.connect(self.remove_inputfile)
-                elif (self.selection_is_value(subsection, indexes[0])):
+                    self.context_menu.actionRemoveInputFile.triggered.connect(self.remove_item)
+                elif (selected_item.column() == 1):
                     self.context_menu.actionBrowseInputFile = QtGui.QAction(self)
                     self.context_menu.actionBrowseInputFile.setText("Browse...")
                     self.context_menu.addAction(self.context_menu.actionBrowseInputFile)
                     self.context_menu.actionBrowseInputFile.triggered.connect(self.browse_input_file)
-            elif section_name == "Files" and subsection_name == "Out":
-                # get the section named "Files"
-                section, i = self.get_section(section_name)
-                # get the subsection named "Out"
-                subsection, i = self.get_subsection(section, indexes[0].parent())
-                # get the key, value and found logical for the selected item
-                key, val, found = self.get_keyval_by_key_name(subsection, "ncFileName")
-                # check to see if we have the selected subsection
-                if found:
+            elif ((str(section.text()) == "Files") and (str(parent.text()) == "Out")):
+                if str(parent.child(selected_item.row(), 0).text()) == "ncFileName":
                     self.context_menu.actionBrowseOutputFile = QtGui.QAction(self)
                     self.context_menu.actionBrowseOutputFile.setText("Browse...")
                     self.context_menu.addAction(self.context_menu.actionBrowseOutputFile)
@@ -1832,7 +1851,7 @@ class edit_cfg_concatenate(QtGui.QWidget):
         elif level == 3:
             pass
 
-        self.context_menu.exec_(self.tree.viewport().mapToGlobal(position))
+        self.context_menu.exec_(self.view.viewport().mapToGlobal(position))
 
     def get_section(self, section_name):
         """ Gets a section from a model by matching the section name."""
@@ -1853,6 +1872,19 @@ class edit_cfg_concatenate(QtGui.QWidget):
                 break
         return subsection, i
 
+    def get_existing_entries(self):
+        """ Get a list of existing entries in the current section."""
+        # index of the selected item
+        idx = self.view.selectedIndexes()[0]
+        # get the selected item from its index
+        selected_item = idx.model().itemFromIndex(idx)
+        # build a list of existing QC checks
+        existing_entries = []
+        if selected_item.hasChildren():
+            for i in range(selected_item.rowCount()):
+                existing_entries.append(str(selected_item.child(i, 0).text()))
+        return existing_entries
+
     def get_keyval_by_key_name(self, section, key):
         """ Get the value from a section based on the key name."""
         found = False
@@ -1864,7 +1896,7 @@ class edit_cfg_concatenate(QtGui.QWidget):
                 key_child = str(section.child(i, 0).text())
                 val_child = str(section.child(i, 1).text())
                 break
-        return key_child, val_child, found
+        return key_child, val_child, found, i
 
     def get_keyval_by_val_name(self, section, val):
         """ Get the value from a section based on the value name."""
@@ -1879,6 +1911,15 @@ class edit_cfg_concatenate(QtGui.QWidget):
                 break
         return key_child, val_child, found
 
+    def get_level_selected_item(self):
+        """ Get the level of the selected item."""
+        level = 0
+        idx = self.view.selectedIndexes()[0]
+        while idx.parent().isValid():
+            idx = idx.parent()
+            level += 1
+        return level
+
     def update_tab_text(self):
         """ Add an asterisk to the tab title text to indicate tab contents have changed."""
         # add an asterisk to the tab text to indicate the tab contents have changed
@@ -1888,116 +1929,120 @@ class edit_cfg_concatenate(QtGui.QWidget):
 
     def add_inputfile(self):
         """ Add an entry for a new input file."""
-        model = self.tree.model()
-        # loop over selected items in the tree
-        for idx in self.tree.selectedIndexes():
-            # get the parent section
-            section, i = self.get_section("Files")
-            subsection, j = self.get_subsection(section, idx)
-            child0 = QtGui.QStandardItem(str(subsection.rowCount()))
-            child1 = QtGui.QStandardItem("")
-            subsection.appendRow([child0, child1])
+        # get the index of the selected item
+        idx = self.view.selectedIndexes()[0]
+        # get the selected item from the index
+        subsection = idx.model().itemFromIndex(idx)
+        dict_to_add = {str(subsection.rowCount()): "Right click to browse"}
+        # add the subsubsection
+        self.add_subsection(dict_to_add)
 
-    def add_option(self, key, val):
-        """ Add an option to the context menu."""
-        # add the option to the [Options] section
-        child0 = QtGui.QStandardItem(key)
-        child1 = QtGui.QStandardItem(val)
-        self.tree.sections["Options"].appendRow([child0, child1])
-        self.update_tab_text()
+        ## loop over selected items in the tree
+        #for idx in self.tree.selectedIndexes():
+            ## get the parent section
+            #section, i = self.get_section("Files")
+            #subsection, j = self.get_subsection(section, idx)
+            #child0 = QtGui.QStandardItem(str(subsection.rowCount()))
+            #child1 = QtGui.QStandardItem("")
+            #subsection.appendRow([child0, child1])
+
+    #def add_option(self, key, val):
+        #""" Add an option to the context menu."""
+        ## add the option to the [Options] section
+        #child0 = QtGui.QStandardItem(key)
+        #child1 = QtGui.QStandardItem(val)
+        #self.tree.sections["Options"].appendRow([child0, child1])
+        #self.update_tab_text()
 
     def add_numberofdimensions(self):
         """ Add the NumberOfDimensions option to the context menu."""
-        # add the option to the [Options] section
-        child0 = QtGui.QStandardItem("NumberOfDimensions")
-        child1 = QtGui.QStandardItem("3")
-        self.tree.sections["Options"].appendRow([child0, child1])
-        self.update_tab_text()
+        dict_to_add = {"NumberOfDimensions": "3"}
+        # add the subsubsection (GapFillFromAlternate)
+        self.add_subsection(dict_to_add)
 
     def add_maxgapinterpolate(self):
         """ Add the MaxGapInterpolate option to the context menu."""
         # add the option to the [Options] section
-        child0 = QtGui.QStandardItem("MaxGapInterpolate")
-        child1 = QtGui.QStandardItem("3")
-        self.tree.sections["Options"].appendRow([child0, child1])
-        self.update_tab_text()
+        dict_to_add = {"MaxGapInterpolate": "3"}
+        # add the subsubsection (GapFillFromAlternate)
+        self.add_subsection(dict_to_add)
 
     def add_fixtimestepmethod(self):
         """ Add the FixTimeStepMethod option to the context menu."""
         # add the option to the [Options] section
-        child0 = QtGui.QStandardItem("FixTimeStepMethod")
-        child1 = QtGui.QStandardItem("round")
-        self.tree.sections["Options"].appendRow([child0, child1])
+        dict_to_add = {"FixTimeStepMethod": "round"}
+        # add the subsubsection (GapFillFromAlternate)
+        self.add_subsection(dict_to_add)
+
+    def add_subsection(self, dict_to_add):
+        """ Add a subsection to the model."""
+        # get the index of the selected item
+        idx = self.view.selectedIndexes()[0]
+        # get the selected item from the index
+        section = idx.model().itemFromIndex(idx)
+        for key in dict_to_add:
+            val = str(dict_to_add[key])
+            child0 = QtGui.QStandardItem(key)
+            child1 = QtGui.QStandardItem(val)
+            section.appendRow([child0, child1])
         self.update_tab_text()
 
     def add_truncate(self):
         """ Add the Truncate option to the context menu."""
         # add the option to the [Options] section
-        child0 = QtGui.QStandardItem("Truncate")
-        child1 = QtGui.QStandardItem("Yes")
-        self.tree.sections["Options"].appendRow([child0, child1])
-        self.update_tab_text()
+        dict_to_add = {"Truncate": "Yes"}
+        # add the subsubsection (GapFillFromAlternate)
+        self.add_subsection(dict_to_add)
 
     def add_truncatethreshold(self):
         """ Add the TruncateThreshold option to the context menu."""
         # add the option to the [Options] section
-        child0 = QtGui.QStandardItem("TruncateThreshold")
-        child1 = QtGui.QStandardItem("50")
-        self.tree.sections["Options"].appendRow([child0, child1])
-        self.update_tab_text()
+        dict_to_add = {"TruncateThreshold": "50"}
+        # add the subsubsection (GapFillFromAlternate)
+        self.add_subsection(dict_to_add)
 
     def add_seriestocheck(self):
         """ Add the SeriesToCheck option to the context menu."""
         # add the option to the [Options] section
-        child0 = QtGui.QStandardItem("SeriesToCheck")
-        child1 = QtGui.QStandardItem("['Ah','Cc','Fa','Fg','Fld','Flu','Fn','Fsd','Fsu','ps','Sws','Ta','Ts','Ws','Wd','Precip']")
-        self.tree.sections["Options"].appendRow([child0, child1])
-        self.update_tab_text()
+        series = "Ah,CO2,Fa,Fg,Fld,Flu,Fn,Fsd,Fsu,ps,Sws,Ta,Ts,Ws,Wd,Precip"
+        dict_to_add = {"SeriesToCheck": series}
+        # add the subsubsection (GapFillFromAlternate)
+        self.add_subsection(dict_to_add)
 
     def browse_input_file(self):
         """ Browse for the input data file path."""
-        #model = self.tree.model()
-        #indexes = self.tree.selectedIndexes()
-        ## get the section containing the selected item
-        #section, i = self.get_section("Files")
-        #subsection, j = self.get_subsection(section, indexes[0].parent())
-        #subsubsection, k = self.get_subsection(subsection, indexes[0])
-        #file_path = os.path.expanduser("~")
-        #if subsection.rowCount() > 1:
-            ## get the existing value of the ncFileName key
-            #key, val, found = self.get_keyval_by_key_name(subsection, str(subsection.rowCount()-2))
-            #if found:
-                #file_path = os.path.split(val)[0]
-
-        idx = self.tree.selectedIndexes()[0]
-        item = idx.model().itemFromIndex(idx)
-        parent = item.parent()
-        val = str(parent.child(item.row(), 1).text())
-        file_path = os.path.split(val)[0]
+        # get the index of the selected item
+        idx = self.view.selectedIndexes()[0]
+        # get the selected item from the index
+        selected_item = idx.model().itemFromIndex(idx)
+        # get the parent of the selected item
+        parent = selected_item.parent()
+        # get the file_path so it can be used as a default directory
+        key, file_path, found, j = self.get_keyval_by_key_name(parent, "file_path")
         # dialog for open file
-        file_path = os.path.join(file_path, "")
-        new_file = QtGui.QFileDialog.getOpenFileName(caption="Choose an input file ...", directory=file_path, filter="*.nc")
+        new_file_path = QtGui.QFileDialog.getOpenFileName(caption="Choose an input file ...",
+                                                              directory=file_path)
         # update the model
-        if len(str(new_file)) > 0:
-            parent.child(item.row(), 1).setText(new_file)
+        if len(str(new_file_path)) > 0:
+            parent.child(selected_item.row(), 1).setText(new_file_path)
 
     def browse_output_file(self):
         """ Browse for the output data file path."""
-        model = self.tree.model()
-        indexes = self.tree.selectedIndexes()
-        # get the section containing the selected item
-        section, i = self.get_section("Files")
-        subsection, i = self.get_subsection(section, indexes[0].parent())
-        # get the existing value of the ncFileName key
-        key, val, found = self.get_keyval_by_key_name(subsection, "ncFileName")
-        if not found: return
-        # get the path
-        file_path = os.path.split(val)
+        # get the index of the selected item
+        idx = self.view.selectedIndexes()[0]
+        # get the selected item from the index
+        selected_item = idx.model().itemFromIndex(idx)
+        # get the parent of the selected item
+        parent = selected_item.parent()
+        # get the top level and sub sections
+        # get the file_path so it can be used as a default directory
+        key, file_path, found, j = self.get_keyval_by_key_name(parent, "file_path")
         # dialog for open file
-        new_file = QtGui.QFileDialog.getOpenFileName(caption="Choose an output file ...", directory=file_path[0], filter="*.nc")
+        new_file_path = QtGui.QFileDialog.getSaveFileName(caption="Choose an output file ...",
+                                                          directory=file_path, filter="*.nc")
         # update the model
-        if len(str(new_file)) > 0:
-            subsection.child(i, 1).setText(new_file)
+        if len(str(new_file_path)) > 0:
+            parent.child(selected_item.row(), 1).setText(new_file_path)
 
     def parse_cfg_values(self, k, v, strip_list):
         """ Parse key values to remove unnecessary characters."""
@@ -2030,6 +2075,18 @@ class edit_cfg_concatenate(QtGui.QWidget):
             subsection.removeRow(i)
             self.renumber_subsection_keys(subsection)
             self.update_tab_text()
+
+    def remove_item(self):
+        """ Remove an item from the view."""
+        # loop over selected items in the tree
+        for idx in self.view.selectedIndexes():
+            # get the selected item from the index
+            selected_item = idx.model().itemFromIndex(idx)
+            # get the parent of the selected item
+            parent = selected_item.parent()
+            # remove the row
+            parent.removeRow(selected_item.row())
+        self.update_tab_text()
 
     def selection_is_key(self, section, idx):
         """ Return True if the selected item is a key."""
@@ -2066,8 +2123,8 @@ class edit_cfg_L4(QtGui.QWidget):
         super(edit_cfg_L4, self).__init__()
 
         self.cfg_mod = copy.deepcopy(main_gui.cfg)
-        self.cfg_changed = False
 
+        self.cfg_changed = False
         self.tabs = main_gui.tabs
 
         self.edit_l4_gui()
@@ -2875,7 +2932,7 @@ class edit_cfg_L5(QtGui.QWidget):
                 self.tree.sections[key1] = QtGui.QStandardItem(key1)
                 for key2 in self.cfg_mod[key1]:
                     val = self.cfg_mod[key1][key2]
-                    val = self.parse_cfg_values(key2, val, ["[", "]", "'", '"'])
+                    val = self.parse_cfg_values(key2, val, ["[", "]", "'", '"', " "])
                     child0 = QtGui.QStandardItem(key2)
                     child1 = QtGui.QStandardItem(val)
                     self.tree.sections[key1].appendRow([child0, child1])
@@ -2892,7 +2949,7 @@ class edit_cfg_L5(QtGui.QWidget):
                                 parent4 = QtGui.QStandardItem(key4)
                                 for key5 in self.cfg_mod[key1][key2][key3][key4]:
                                     val = self.cfg_mod[key1][key2][key3][key4][key5]
-                                    val = self.parse_cfg_values(key5, val, ["[", "]", "'", '"'])
+                                    val = self.parse_cfg_values(key5, val, ["[", "]", "'", '"', " "])
                                     child0 = QtGui.QStandardItem(key5)
                                     child1 = QtGui.QStandardItem(val)
                                     parent4.appendRow([child0, child1])

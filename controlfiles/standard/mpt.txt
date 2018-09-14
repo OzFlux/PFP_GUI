@@ -1,0 +1,36 @@
+# the contents of this file are not currently used
+[Options]
+    hourly = No
+    percentile = 90
+    percentile_check = No
+    ta_classes = 7
+    ustar_classes = 20
+    window_size_forward_mode = 10
+    window_size_forward_mode_2 = 10
+    window_size_forward_mode_3 = 10
+    window_size_back_mode = 6
+    window_size_back_mode_2 = 6
+    window_size_back_mode_3= 6
+    bootstrapping_times = 100
+    dump_dataset = No
+    no_bootstrapping = No
+    no_forward_mode_2 = No
+    forward_mode = No
+    forward_mode_3 = No
+    back_mode = No
+    back_mode_2 = No
+    back_mode_3 = No
+    groupby = 12,1,2;3,4,5;6,7,8;9,10,11
+    seasons_group_allow_duplicates = No
+    threshold_check = 1
+
+[Variables]
+    [[Fc]]
+        AltVarName = "Fc"
+    [[Ta]]
+        AltVarName = "Ta"
+    [[ustar]]
+        AltVarName = "ustar"
+    [[Fsd]]
+        AltVarName = "Fsd"
+    
