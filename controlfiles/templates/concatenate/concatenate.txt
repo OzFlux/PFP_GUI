@@ -4,7 +4,7 @@
     FixTimeStepMethod  = round         # interpolate/round
     Truncate = Yes                     # Yes/No, truncate beginning and end if data missing
     TruncateThreshold = 50             # %, truncate if less data than threshold
-    SeriesToCheck = "['Ah','Cc','Fa','Fg','Fld','Flu','Fn','Fsd','Fsu','ps','Sws','Ta','Ts','Ws','Wd','Precip']"
+    SeriesToCheck = "['Ah','CO2','Fa','Fg','Fld','Flu','Fn','Fsd','Fsu','ps','Sws','Ta','Ts','Ws','Wd','Precip']"
 
 [Files]
     [[Out]]

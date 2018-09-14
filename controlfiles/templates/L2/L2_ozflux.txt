@@ -1,8 +1,8 @@
 level = L2
 [Files]
-    file_path = ../Sites/<site_name>/Data/Processed/<year>/
-    in_filename = <site_name>_<year>_L1.nc
-    out_filename = <site_name>_<year>_L2.nc
+    file_path = Right click to browse
+    in_filename = Right click to browse (*.nc)
+    out_filename = Right click to browse (*.nc)
 
 [Output]
 

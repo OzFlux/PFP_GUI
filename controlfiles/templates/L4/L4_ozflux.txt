@@ -1,12 +1,13 @@
+level = L4
 [Files]
-    file_path = 
-    in_filename = 
-    out_filename = 
-    plot_path = 
-    aws = 
-    access = 
-    erai = 
-    climatology = 
+    file_path = Right click to browse
+    in_filename = Right click to browse
+    out_filename = Right click to browse
+    plot_path = Right click to browse
+    aws = Right click to browse
+    access = Right click to browse
+    erai = Right click to browse
+    climatology = Right click to browse
 
 [Options]
     MaxGapInterpolate = 3
@@ -212,6 +213,3 @@
                 lag = no
         [[[MergeSeries]]]
             Source = Precip,Precip_aws,Precip_access,Precip_erai
-        [[[RangeCheck]]]
-            Lower = 0
-            Upper = 50

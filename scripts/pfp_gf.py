@@ -289,12 +289,42 @@ def gfMDS_createdict(cf, ds, series):
         ds.mds[output]["site_name"] = ds.globalattributes["site_name"]
         # list of SOLO settings
         if "mds_settings" in cf[section][series]["GapFillUsingMDS"][output]:
-            mdss_list = ast.literal_eval(cf[section][series]["GapFillUsingMDS"][output]["mds_settings"])
-
+            mdss_string = cf[section][series]["GapFillUsingMDS"][output]["mds_settings"]
+            mdss_string = mdss_string.replace(" ","")
+            if "," in mdss_string:
+                ds.mds[output]["mds_settings"] = mdss_string.split(",")
+            else:
+                ds.mds[output]["mds_settings"] = [mdss_string]
         # list of drivers
-        ds.mds[output]["drivers"] = ast.literal_eval(cf[section][series]["GapFillUsingMDS"][output]["drivers"])
+        drivers_string = cf[section][series]["GapFillUsingMDS"][output]["drivers"]
+        drivers_string = drivers_string.replace(" ","")
+        if "," in drivers_string:
+            if len(drivers_string.split(",")) == 3:
+                ds.mds[output]["drivers"] = drivers_string.split(",")
+            else:
+                msg = " MDS: incorrect number of drivers for " + series + ", skipping ..."
+                logger.error(msg)
+                continue
+        else:
+            msg = " MDS: incorrect number of drivers for " + series + ", skipping ..."
+            logger.error(msg)
+            continue
         # list of tolerances
-        ds.mds[output]["tolerances"] = ast.literal_eval(cf[section][series]["GapFillUsingMDS"][output]["tolerances"])
+        tolerances_string = cf[section][series]["GapFillUsingMDS"][output]["tolerances"]
+        tolerances_string = tolerances_string.replace(" ","")
+        tolerances_string = tolerances_string.replace("(","").replace(")","")
+        if "," in tolerances_string:
+            if len(tolerances_string.split(",")) == 4:
+                parts = tolerances_string.split(",")
+                ds.mds[output]["tolerances"] = [(parts[0], parts[1]), parts[2], parts[3]]
+            else:
+                msg = " MDS: incorrect format for tolerances for " + series + ", skipping ..."
+                logger.error(msg)
+                continue
+        else:
+            msg = " MDS: incorrect format for tolerances for " + series + ", skipping ..."
+            logger.error(msg)
+            continue
         # get the ustar filter option
         opt = pfp_utils.get_keyvaluefromcf(cf, [section, series, "GapFillUsingMDS", output], "turbulence_filter", default="")
         ds.mds[output]["turbulence_filter"] = opt
