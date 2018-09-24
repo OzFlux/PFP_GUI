@@ -13,20 +13,20 @@ import pfp_utils
 logger = logging.getLogger("pfp_log")
 
 def make_data_array(ds, current_year):
-    ldt = qcutils.GetVariable(ds, "DateTime")
+    ldt = pfp_utils.GetVariable(ds, "DateTime")
     nrecs = ds.globalattributes["nc_nrecs"]
     ts = int(ds.globalattributes["time_step"])
     start = datetime.datetime(current_year,1,1,0,30,0)
     end = datetime.datetime(current_year+1,1,1,0,0,0)
-    cdt = numpy.array([dt for dt in qcutils.perdelta(start, end, datetime.timedelta(minutes=ts))])
+    cdt = numpy.array([dt for dt in pfp_utils.perdelta(start, end, datetime.timedelta(minutes=ts))])
     mt = numpy.ones(len(cdt))*float(-9999)
     data = numpy.stack([cdt, mt, mt, mt, mt, mt, mt, mt], axis=-1)
-    si = qcutils.GetDateIndex(ldt["Data"], start, default=0)
-    ei = qcutils.GetDateIndex(ldt["Data"], end, default=nrecs)
-    dt = qcutils.GetVariable(ds, "DateTime", start=si, end=ei)
-    idx1, idx2 = qcutils.FindMatchingIndices(cdt, dt["Data"])
+    si = pfp_utils.GetDateIndex(ldt["Data"], start, default=0)
+    ei = pfp_utils.GetDateIndex(ldt["Data"], end, default=nrecs)
+    dt = pfp_utils.GetVariable(ds, "DateTime", start=si, end=ei)
+    idx1, idx2 = pfp_utils.FindMatchingIndices(cdt, dt["Data"])
     for n, label in enumerate(["Fc", "VPD", "ustar", "Ta", "Fsd", "Fh", "Fe"]):
-        var = qcutils.GetVariable(ds, label, start=si, end=ei)
+        var = pfp_utils.GetVariable(ds, label, start=si, end=ei)
         data[idx1,n+1] = var["Data"]
     # convert datetime to ISO dates
     data[:,0] = numpy.array([int(xdt.strftime("%Y%m%d%H%M")) for xdt in cdt])
@@ -36,7 +36,7 @@ def mpt_main(cf):
     base_file_path = cf["Files"]["file_path"]
     nc_file_name = cf["Files"]["in_filename"]
     nc_file_path = os.path.join(base_file_path, nc_file_name)
-    ds = qcio.nc_read_series(nc_file_path)
+    ds = pfp_io.nc_read_series(nc_file_path)
     out_file_paths = run_mpt_code(ds, nc_file_name)
     ustar_results = read_mpt_output(out_file_paths)
     mpt_file_path = nc_file_path.replace(".nc", "_MPT.xls")
@@ -44,7 +44,7 @@ def mpt_main(cf):
     return
 
 def run_mpt_code(ds, nc_file_name):
-    ldt = qcutils.GetVariable(ds, "DateTime")
+    ldt = pfp_utils.GetVariable(ds, "DateTime")
     out_file_paths = {}
     header = "TIMESTAMP,NEE,VPD,USTAR,TA,SW_IN,H,LE"
     fmt = "%12i,%f,%f,%f,%f,%f,%f,%f"

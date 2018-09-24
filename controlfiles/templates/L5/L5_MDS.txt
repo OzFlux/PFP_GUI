@@ -1,0 +1,77 @@
+level = L5
+[Files]
+    file_path = Right click to browse
+    in_filename = Right click to browse
+    out_filename = Right click to browse
+    plot_path = Right click to browse
+    cpd_filename = Right click to browse
+
+[Output]
+    nc = "['Ah','Cc','e','Fa','Fc','Fc_storage','Fe','Fg','Fh','Fld','Flu','Fm','Fn','Fsd','Fsu','Precip','ps','q','RH','Sws','SHD','Ta','Ts','ustar','VPD','Ws','Wd']"
+
+[Options]
+    MaxGapInterpolate = 3
+    FilterList = Fc
+    TurbulenceFilter = ustar
+    DayNightFilter = Fsd
+    UseFsdsyn_threshold = No
+    AcceptDayTimes = Yes
+    UseEveningFilter = No
+    EveningFilterLength = 3
+    Fsd_threshold = 10
+    sa_threshold = -5
+
+[ustar_threshold]
+    0 = YYYY-MM-DD hh:mm,YYYY-MM-DD hh:mm,<ustar_threshold>
+
+[Fluxes]
+    [[Fe]]
+        [[[MergeSeries]]]
+            Source = Fe,Fe_MDS
+        [[[GapFillUsingMDS]]]
+            [[[[Fe_MDS]]]]
+                drivers = ['Fsd','Ta','VPD']
+                tolerances = [(20, 50), 2.5, 0.5]
+    [[Fh]]
+        [[[MergeSeries]]]
+            Source = Fh,Fh_MDS
+        [[[GapFillUsingMDS]]]
+            [[[[Fh_MDS]]]]
+                drivers = ['Fsd','Ta','VPD']
+                tolerances = [(20, 50), 2.5, 0.5]
+    [[Fc]]
+        [[[MergeSeries]]]
+            Source = Fc,Fc_MDS
+        [[[GapFillUsingMDS]]]
+            [[[[Fc_MDS]]]]
+                drivers = ['Fsd','Ta','VPD']
+                tolerances = [(20, 50), 2.5, 0.5]
+    [[ustar]]
+        [[[GapFillUsingMDS]]]
+            [[[[ustar_MDS]]]]
+                drivers = ['Fsd','Ta','VPD']
+                tolerances = [(20, 50), 2.5, 0.5]
+        [[[MergeSeries]]]
+            Source = ustar,ustar_MDS
+
+[Plots]
+    [[1]]
+        Title = "Turbulent fluxes"
+        Variables = "['ustar','Fh','Fe','Fc']"
+    [[2]]
+        Title = "ustar gap filling"
+        Variables = "['ustar','ustar_SOLO']"
+    [[3]]
+        Title = "Fe gap filling"
+        Variables = "['Fe','Fe_SOLO']"
+    [[4]]
+        Title = "Fh gap filling"
+        Variables = "['Fh','Fh_SOLO']"
+    [[5]]
+        Title = "Fc gap filling"
+        Variables = "['Fc','Fc_SOLO']"
+
+[SOLO_Summary]
+    [[1]]
+        Title = "Fluxes"
+        Variables = "['ustar_SOLO','Fh_SOLO','Fe_SOLO','Fc_SOLO']"

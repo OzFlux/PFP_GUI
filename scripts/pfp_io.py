@@ -1184,7 +1184,7 @@ def nc_concatenate(cf):
     # loop over the data series and calculate fraction of data present
     opt = pfp_utils.get_keyvaluefromcf(cf,["Options"],"Truncate",default="Yes")
     if opt.lower() == "yes":
-        default_string = "Ah,Cc,Fa,Fg,Fld,Flu,Fn,Fsd,Fsu,ps,Sws,Ta,Ts,Ws,Wd,Precip"
+        default_string = "Ah,CO2,Fa,Fg,Fld,Flu,Fn,Fsd,Fsu,ps,Sws,Ta,Ts,Ws,Wd,Precip"
         series_string = pfp_utils.get_keyvaluefromcf(cf,["Options"],"SeriesToCheck",default=default_string)
         series_list = pfp_cfg.cfg_string_to_list(series_string)
         for item in series_list:
@@ -1380,7 +1380,7 @@ def nc_concatenate(cf):
     # and make sure we have all of the meteorological variables
     pfp_ts.CalculateMeteorologicalVariables(ds)
     # check units of Fc and convert if necessary
-    Fc_list = [label for label in ds.series.keys() if label[0:2] == "Fc"]
+    Fc_list = [label for label in ds.series.keys() if label[0:2] == "Fc" and "Flag" not in label]
     pfp_utils.CheckUnits(ds, Fc_list, "umol/m2/s", convert_units=True)
     # re-calculate the synthetic Fsd
     #pfp_ts.get_synthetic_fsd(ds)

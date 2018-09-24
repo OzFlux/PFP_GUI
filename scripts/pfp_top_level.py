@@ -7,6 +7,7 @@ from PyQt4 import QtCore
 # PFP modules
 import pfp_clim
 import pfp_cpd
+import pfp_mpt
 import pfp_io
 import pfp_levels
 import pfp_plot
@@ -448,5 +449,42 @@ def do_utilities_ustar_cpd(mode="standard"):
     logger.info("Doing u* threshold detection (CPD)")
     pfp_cpd.cpd_main(cf)
     logger.info(" Finished u* threshold detection (CPD)")
+    logger.info("")
+    return
+def do_utilities_ustar_mpt(mode="standard"):
+    """
+    Calls pfp_mpt.mpt_main
+    Calculate the u* threshold using the Moving Point Threshold (MPT) method.
+    """
+    logger.info(" Starting u* threshold detection (MPT)")
+    if mode == "standard":
+        stdname = "controlfiles/standard/mpt.txt"
+        if os.path.exists(stdname):
+            cf = pfp_io.get_controlfilecontents(stdname)
+            filename = pfp_io.get_filename_dialog(file_path='../Sites', title="Choose a netCDF file")
+            if not os.path.exists(filename):
+                logger.info( " MPT: no input file chosen")
+                return
+            if "Files" not in dir(cf):
+                cf["Files"] = {}
+            cf["Files"]["file_path"] = os.path.join(os.path.split(filename)[0], "")
+            in_filename = os.path.split(filename)[1]
+            cf["Files"]["in_filename"] = in_filename
+            cf["Files"]["out_filename"] = in_filename.replace(".nc", "_MPT.xls")
+        else:
+            cf = pfp_io.load_controlfile(path="controlfiles")
+            if len(cf) == 0:
+                return
+    else:
+        logger.info("Loading control file ...")
+        cf = pfp_io.load_controlfile(path="controlfiles")
+        if len(cf) == 0:
+            return
+    logger.info(" Doing u* threshold detection (MPT)")
+    if "Options" not in cf:
+        cf["Options"] = {}
+    cf["Options"]["call_mode"] = "interactive"
+    pfp_mpt.mpt_main(cf)
+    logger.info(" Finished u* threshold detection (MPT)")
     logger.info("")
     return
