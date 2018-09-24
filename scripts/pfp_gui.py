@@ -181,7 +181,7 @@ class edit_cfg_L1(QtGui.QWidget):
         # get the level of the selected item
         level = self.get_level_selected_item()
         if level == 0:
-            selected_text = str(idx.data().toString())
+            selected_text = str(idx.data())
             if selected_text == "Global":
                 self.context_menu.actionAddGlobal = QtGui.QAction(self)
                 self.context_menu.actionAddGlobal.setText("Add attribute")
@@ -231,9 +231,9 @@ class edit_cfg_L1(QtGui.QWidget):
                 self.context_menu.addAction(self.context_menu.actionRemoveVariable)
                 self.context_menu.actionRemoveVariable.triggered.connect(self.remove_item)
         elif level == 2:
-            section_text = str(idx.parent().parent().data().toString())
-            subsection_text = str(idx.parent().data().toString())
-            subsubsection_text = str(idx.data().toString())
+            section_text = str(idx.parent().parent().data())
+            subsection_text = str(idx.parent().data())
+            subsubsection_text = str(idx.data())
             if section_text == "Variables":
                 if subsubsection_text == "Attr":
                     self.context_menu.actionAddAttribute = QtGui.QAction(self)
@@ -246,13 +246,13 @@ class edit_cfg_L1(QtGui.QWidget):
                     self.context_menu.addAction(self.context_menu.actionRemoveSubSubSection)
                     self.context_menu.actionRemoveSubSubSection.triggered.connect(self.remove_item)
         elif level == 3:
-            if str(idx.parent().data().toString()) == "Attr":
+            if str(idx.parent().data()) == "Attr":
                 self.context_menu.actionRemoveAttribute = QtGui.QAction(self)
                 self.context_menu.actionRemoveAttribute.setText("Remove attribute")
                 self.context_menu.addAction(self.context_menu.actionRemoveAttribute)
                 self.context_menu.actionRemoveAttribute.triggered.connect(self.remove_item)
-            elif (str(idx.parent().data().toString()) == "Function" and
-                  str(idx.data().toString()) == "Right click to browse"):
+            elif (str(idx.parent().data()) == "Function" and
+                  str(idx.data()) == "Right click to browse"):
                 implemented_functions_name = [name for name,data in inspect.getmembers(pfp_func,inspect.isfunction)]
                 self.context_menu.actionAddFunction = {}
                 for item in implemented_functions_name:
@@ -360,7 +360,7 @@ class edit_cfg_L1(QtGui.QWidget):
         # get the parent of the selected item
         parent = selected_item.parent()
         # get the selected entry text
-        file_path = str(idx.data().toString())
+        file_path = str(idx.data())
         # dialog for new directory
         new_dir = QtGui.QFileDialog.getExistingDirectory(self, "Choose a folder ...", file_path, QtGui.QFileDialog.ShowDirsOnly)
         # quit if cancel button pressed
@@ -582,7 +582,7 @@ class edit_cfg_L2(QtGui.QWidget):
         # get the parent of the selected item
         parent = selected_item.parent()
         # get the selected entry text
-        file_path = str(idx.data().toString())
+        file_path = str(idx.data())
         # dialog for new directory
         new_dir = QtGui.QFileDialog.getExistingDirectory(self, "Choose a folder ...",
                                                          file_path, QtGui.QFileDialog.ShowDirsOnly)
@@ -639,7 +639,7 @@ class edit_cfg_L2(QtGui.QWidget):
         # get the level of the selected item
         level = self.get_level_selected_item()
         if level == 0:
-            selected_text = str(idx.data().toString())
+            selected_text = str(idx.data())
             if selected_text == "Variables":
                 self.context_menu.actionAddVariable = QtGui.QAction(self)
                 self.context_menu.actionAddVariable.setText("Add variable")
@@ -725,7 +725,7 @@ class edit_cfg_L2(QtGui.QWidget):
                 self.context_menu.addAction(self.context_menu.actionRemovePlot)
                 self.context_menu.actionRemovePlot.triggered.connect(self.remove_item)
         elif level == 2:
-            if str(idx.data().toString()) in ["ExcludeDates"]:
+            if str(idx.data()) in ["ExcludeDates"]:
                 self.context_menu.actionAddExcludeDateRange = QtGui.QAction(self)
                 self.context_menu.actionAddExcludeDateRange.setText("Add date range")
                 self.context_menu.addAction(self.context_menu.actionAddExcludeDateRange)
@@ -736,7 +736,7 @@ class edit_cfg_L2(QtGui.QWidget):
             self.context_menu.addAction(self.context_menu.actionRemoveQCCheck)
             self.context_menu.actionRemoveQCCheck.triggered.connect(self.remove_item)
         elif level == 3:
-            if str(idx.parent().data().toString()) in ["ExcludeDates"]:
+            if str(idx.parent().data()) in ["ExcludeDates"]:
                 self.context_menu.actionRemoveExcludeDateRange = QtGui.QAction(self)
                 self.context_menu.actionRemoveExcludeDateRange.setText("Remove date range")
                 self.context_menu.addAction(self.context_menu.actionRemoveExcludeDateRange)
@@ -1171,7 +1171,7 @@ class edit_cfg_L3(QtGui.QWidget):
         # get the parent of the selected item
         parent = selected_item.parent()
         # get the selected entry text
-        file_path = str(idx.data().toString())
+        file_path = str(idx.data())
         # dialog for new directory
         new_dir = QtGui.QFileDialog.getExistingDirectory(self, "Choose a folder ...",
                                                          file_path, QtGui.QFileDialog.ShowDirsOnly)
@@ -1228,7 +1228,7 @@ class edit_cfg_L3(QtGui.QWidget):
         # get the level of the selected item
         level = self.get_level_selected_item()
         if level == 0:
-            selected_text = str(idx.data().toString())
+            selected_text = str(idx.data())
             if selected_text == "Options":
                 # get a list of existing entries
                 existing_entries = self.get_existing_entries()
@@ -1372,7 +1372,7 @@ class edit_cfg_L3(QtGui.QWidget):
                 self.context_menu.addAction(self.context_menu.actionRemovePlot)
                 self.context_menu.actionRemovePlot.triggered.connect(self.remove_item)
         elif level == 2:
-            if str(idx.data().toString()) in ["ExcludeDates"]:
+            if str(idx.data()) in ["ExcludeDates"]:
                 self.context_menu.actionAddExcludeDateRange = QtGui.QAction(self)
                 self.context_menu.actionAddExcludeDateRange.setText("Add date range")
                 self.context_menu.addAction(self.context_menu.actionAddExcludeDateRange)
@@ -1383,7 +1383,7 @@ class edit_cfg_L3(QtGui.QWidget):
             self.context_menu.addAction(self.context_menu.actionRemoveQCCheck)
             self.context_menu.actionRemoveQCCheck.triggered.connect(self.remove_item)
         elif level == 3:
-            if str(idx.parent().data().toString()) in ["ExcludeDates"]:
+            if str(idx.parent().data()) in ["ExcludeDates"]:
                 self.context_menu.actionRemoveExcludeDateRange = QtGui.QAction(self)
                 self.context_menu.actionRemoveExcludeDateRange.setText("Remove date range")
                 self.context_menu.addAction(self.context_menu.actionRemoveExcludeDateRange)
@@ -1776,7 +1776,7 @@ class edit_cfg_concatenate(QtGui.QWidget):
         # get the index of the selected item
         idx = self.view.selectedIndexes()[0]
         # get the selected item text
-        selected_text = str(idx.data().toString())
+        selected_text = str(idx.data())
         # get the selected item
         selected_item = idx.model().itemFromIndex(idx)
         # get the level of the selected item
@@ -1868,7 +1868,7 @@ class edit_cfg_concatenate(QtGui.QWidget):
             # get the child subsection
             subsection = section.child(i)
             # check to see if we have the selected subsection
-            if str(subsection.text()) == str(idx.data().toString()):
+            if str(subsection.text()) == str(idx.data()):
                 break
         return subsection, i
 
@@ -2094,7 +2094,7 @@ class edit_cfg_concatenate(QtGui.QWidget):
         for i in range(section.rowCount()):
             key = str(section.child(i, 0).text())
             val = str(section.child(i, 1).text())
-            if str(idx.data().toString()) == key:
+            if str(idx.data()) == key:
                 result = True
                 break
         return result
@@ -2105,7 +2105,7 @@ class edit_cfg_concatenate(QtGui.QWidget):
         for i in range(section.rowCount()):
             key = str(section.child(i, 0).text())
             val = str(section.child(i, 1).text())
-            if str(idx.data().toString()) == val:
+            if str(idx.data()) == val:
                 result = True
                 break
         return result
@@ -2277,7 +2277,7 @@ class edit_cfg_L4(QtGui.QWidget):
         # get the index of the selected item
         idx = self.view.selectedIndexes()[0]
         # get the selected item text
-        selected_text = str(idx.data().toString())
+        selected_text = str(idx.data())
         # get the selected item
         selected_item = idx.model().itemFromIndex(idx)
         # get the level of the selected item
@@ -2422,7 +2422,7 @@ class edit_cfg_L4(QtGui.QWidget):
                 self.context_menu.actionRemoveOption.triggered.connect(self.remove_item)
         elif level == 2:
             # sections with 3 levels
-            subsubsection_name = str(idx.data().toString())
+            subsubsection_name = str(idx.data())
             if subsubsection_name in ["RangeCheck", "DependencyCheck", "DiurnalCheck", "ExcludeDates"]:
                 self.context_menu.actionRemoveQCCheck = QtGui.QAction(self)
                 self.context_menu.actionRemoveQCCheck.setText("Remove QC check")
@@ -2469,10 +2469,10 @@ class edit_cfg_L4(QtGui.QWidget):
             self.context_menu.actionRemoveGFMethodVariable.triggered.connect(self.remove_item)
         elif level == 4:
             selected_item = idx.model().itemFromIndex(idx)
-            selected_text = str(idx.data().toString())
+            selected_text = str(idx.data())
             parent = idx.parent()
             key = parent.child(selected_item.row(), 0)
-            key_text = str(key.data().toString())
+            key_text = str(key.data())
             if selected_text in ["fit", "lag"]:
                 self.context_menu.actionRemoveItem = QtGui.QAction(self)
                 self.context_menu.actionRemoveItem.setText("Remove item")
@@ -2544,7 +2544,7 @@ class edit_cfg_L4(QtGui.QWidget):
     def add_climatology(self):
         """ Add GapFillFromClimatology to a variable."""
         idx = self.view.selectedIndexes()[0]
-        var_name = str(idx.data().toString()) + "_cli"
+        var_name = str(idx.data()) + "_cli"
         dict_to_add = {"GapFillFromClimatology": {var_name: {"method":"interpolated daily"}}}
         # add the subsubsection (GapFillFromClimatology)
         self.add_subsubsubsection(dict_to_add)
@@ -2588,7 +2588,7 @@ class edit_cfg_L4(QtGui.QWidget):
     def add_MDS(self):
         """ Add GapFillUsingMDS to a variable."""
         idx = self.view.selectedIndexes()[0]
-        var_name = str(idx.data().toString()) + "_MDS"
+        var_name = str(idx.data()) + "_MDS"
         dict_to_add = {"GapFillUsingMDS":{var_name: {"source": "MDS"}}}
         # add the subsubsection (GapFillUsingMDS)
         self.add_subsubsubsection(dict_to_add)
@@ -2596,7 +2596,7 @@ class edit_cfg_L4(QtGui.QWidget):
     def add_more_alternate(self):
         """ Add another alternate source to a variable."""
         idx = self.view.selectedIndexes()[0]
-        var_name = str(idx.parent().data().toString()) + "_<alt>"
+        var_name = str(idx.parent().data()) + "_<alt>"
         dict_to_add = {var_name: {"source": "<alt>"}}
         # add the subsubsection (RangeCheck)
         self.add_subsubsection(dict_to_add)
@@ -2681,7 +2681,7 @@ class edit_cfg_L4(QtGui.QWidget):
         if str(parent.child(selected_item.row(), 0).text()) in ["climatology"]:
             file_filter = "*.xls"
         # get the file path from the selected item
-        file_path = os.path.split(str(idx.data().toString()))[0]
+        file_path = os.path.split(str(idx.data()))[0]
         file_path = os.path.join(file_path, "")
         # dialog for open file
         new_file = QtGui.QFileDialog.getOpenFileName(caption="Choose an alternate data file ...",
@@ -2700,7 +2700,7 @@ class edit_cfg_L4(QtGui.QWidget):
         # get the parent of the selected item
         parent = selected_item.parent()
         # get the selected entry text
-        file_path = str(idx.data().toString())
+        file_path = str(idx.data())
         # dialog for new directory
         new_dir = QtGui.QFileDialog.getExistingDirectory(self, "Choose a folder",
                                                          file_path, QtGui.QFileDialog.ShowDirsOnly)
@@ -2816,7 +2816,7 @@ class edit_cfg_L4(QtGui.QWidget):
             # get the child subsection
             subsection = section.child(i)
             # check to see if we have the selected subsection
-            if str(subsection.text()) == str(idx.data().toString()):
+            if str(subsection.text()) == str(idx.data()):
                 break
         return subsection, i
 
@@ -3039,14 +3039,14 @@ class edit_cfg_L5(QtGui.QWidget):
         level = self.get_level_selected_item()
         if level == 0:
             # sections with only 1 level
-            if str(indexes[0].data().toString()) == "Files":
+            if str(indexes[0].data()) == "Files":
                 self.context_menu.actionAddFileEntry = QtGui.QAction(self)
                 self.context_menu.actionAddFileEntry.setText("Add item")
                 self.context_menu.addAction(self.context_menu.actionAddFileEntry)
                 self.context_menu.actionAddFileEntry.triggered.connect(self.add_fileentry)
-            elif str(indexes[0].data().toString()) == "Output":
+            elif str(indexes[0].data()) == "Output":
                 pass
-            elif str(indexes[0].data().toString()) == "Options":
+            elif str(indexes[0].data()) == "Options":
                 idx = indexes[0]
                 # get the selected item from its index
                 selected_item = idx.model().itemFromIndex(idx)
@@ -3106,19 +3106,19 @@ class edit_cfg_L5(QtGui.QWidget):
                     self.context_menu.actionAddsa_threshold.setText("sa_threshold")
                     self.context_menu.addAction(self.context_menu.actionAddsa_threshold)
                     self.context_menu.actionAddsa_threshold.triggered.connect(self.add_sathreshold)
-            elif str(indexes[0].data().toString()) in ["Fluxes", "Variables"]:
+            elif str(indexes[0].data()) in ["Fluxes", "Variables"]:
                 self.context_menu.actionAddVariable = QtGui.QAction(self)
                 self.context_menu.actionAddVariable.setText("Add variable")
                 self.context_menu.addAction(self.context_menu.actionAddVariable)
                 self.context_menu.actionAddVariable.triggered.connect(self.add_variable)
-            elif str(indexes[0].data().toString()) in ["ustar_threshold"]:
+            elif str(indexes[0].data()) in ["ustar_threshold"]:
                 self.context_menu.actionAddUstarThreshold = QtGui.QAction(self)
                 self.context_menu.actionAddUstarThreshold.setText("Add year")
                 self.context_menu.addAction(self.context_menu.actionAddUstarThreshold)
                 self.context_menu.actionAddUstarThreshold.triggered.connect(self.add_ustar_threshold)
         elif level == 1:
             # sections with 2 levels
-            section_name = str(indexes[0].parent().data().toString())
+            section_name = str(indexes[0].parent().data())
             section, i = self.get_section_from_text(model, section_name)
             if (section_name == "Files"):
                 if (self.selection_is_key(section, indexes[0])):
@@ -3127,7 +3127,7 @@ class edit_cfg_L5(QtGui.QWidget):
                     self.context_menu.addAction(self.context_menu.actionRemoveInputFile)
                     self.context_menu.actionRemoveInputFile.triggered.connect(self.remove_item_files)
                 elif (self.selection_is_value(section, indexes[0])):
-                    key, val, found, i = self.get_keyval_by_val_name(section, indexes[0].data().toString())
+                    key, val, found, i = self.get_keyval_by_val_name(section, indexes[0].data())
                     if key in ["file_path", "plot_path"]:
                         self.context_menu.actionBrowseFilePath = QtGui.QAction(self)
                         self.context_menu.actionBrowseFilePath.setText("Browse...")
@@ -3212,10 +3212,10 @@ class edit_cfg_L5(QtGui.QWidget):
                 self.context_menu.actionRemoveOption.triggered.connect(self.remove_variable)
         elif level == 2:
             # sections with 3 levels
-            section_name = str(indexes[0].parent().parent().data().toString())
-            subsection_name = str(indexes[0].parent().data().toString())
-            subsubsection_name = str(indexes[0].data().toString())
-            #if str(indexes[0].data().toString()) in ["ExcludeDates"]:
+            section_name = str(indexes[0].parent().parent().data())
+            subsection_name = str(indexes[0].parent().data())
+            subsubsection_name = str(indexes[0].data())
+            #if str(indexes[0].data()) in ["ExcludeDates"]:
                 #self.context_menu.actionAddExcludeDateRange = QtGui.QAction(self)
                 #self.context_menu.actionAddExcludeDateRange.setText("Add date range")
                 #self.context_menu.addAction(self.context_menu.actionAddExcludeDateRange)
@@ -3233,10 +3233,10 @@ class edit_cfg_L5(QtGui.QWidget):
                 self.context_menu.actionRemoveGFMethod.triggered.connect(self.remove_gf_method)
         elif level == 3:
             # sections with 4 levels
-            section_name = str(indexes[0].parent().parent().parent().data().toString())
-            subsection_name = str(indexes[0].parent().parent().data().toString())
-            subsubsection_name = str(indexes[0].parent().data().toString())
-            subsubsubsection_name = str(indexes[0].data().toString())
+            section_name = str(indexes[0].parent().parent().parent().data())
+            subsection_name = str(indexes[0].parent().parent().data())
+            subsubsection_name = str(indexes[0].parent().data())
+            subsubsubsection_name = str(indexes[0].data())
             if subsubsection_name == "GapFillUsingSOLO":
                 self.context_menu.actionAddSOLOSettings = QtGui.QAction(self)
                 self.context_menu.actionAddSOLOSettings.setText("Add SOLO settings")
@@ -3248,7 +3248,7 @@ class edit_cfg_L5(QtGui.QWidget):
             self.context_menu.addAction(self.context_menu.actionRemoveGFMethodVariable)
             self.context_menu.actionRemoveGFMethodVariable.triggered.connect(self.remove_gf_method_variable)
         elif level == 4:
-            subsubsubsubsection_name = str(indexes[0].data().toString())
+            subsubsubsubsection_name = str(indexes[0].data())
             if subsubsubsubsection_name in ["solo_settings"]:
                 self.context_menu.actionRemoveSOLOSettings = QtGui.QAction(self)
                 self.context_menu.actionRemoveSOLOSettings.setText("Remove item")
@@ -3262,8 +3262,8 @@ class edit_cfg_L5(QtGui.QWidget):
         idx = self.tree.selectedIndexes()[0]
         dict_to_add = {"GapFillUsingSOLO":{"<var>_SOLO": {"drivers": "['Fn','Fg','q','VPD','Ta','Ts']"}}}
         # get the parent and sub section text
-        subsection_text = str(idx.data().toString())
-        section_text = str(idx.parent().data().toString())
+        subsection_text = str(idx.data())
+        section_text = str(idx.parent().data())
         # get the top level and sub sections
         model = self.tree.model()
         section, i = self.get_section_from_text(model, section_text)
@@ -3280,10 +3280,10 @@ class edit_cfg_L5(QtGui.QWidget):
         """ Add solo_settings to a variable."""
         idx = self.tree.selectedIndexes()[0]
         # get the parent and sub section text
-        subsubsubsection_text = str(idx.data().toString())
-        subsubsection_text = str(idx.parent().data().toString())
-        subsection_text = str(idx.parent().parent().data().toString())
-        section_text = str(idx.parent().parent().parent().data().toString())
+        subsubsubsection_text = str(idx.data())
+        subsubsection_text = str(idx.parent().data())
+        subsection_text = str(idx.parent().parent().data())
+        section_text = str(idx.parent().parent().parent().data())
         # get the top level and sub sections
         model = self.tree.model()
         section, i = self.get_section_from_text(model, section_text)
@@ -3302,8 +3302,8 @@ class edit_cfg_L5(QtGui.QWidget):
         idx = self.tree.selectedIndexes()[0]
         dict_to_add = {"GapFillFromClimatology":{"<var>_cli": {"method": "interpolated daily"}}}
         # get the parent and sub section text
-        subsection_text = str(idx.data().toString())
-        section_text = str(idx.parent().data().toString())
+        subsection_text = str(idx.data())
+        section_text = str(idx.parent().data())
         # get the top level and sub sections
         model = self.tree.model()
         section, i = self.get_section_from_text(model, section_text)
@@ -3318,8 +3318,8 @@ class edit_cfg_L5(QtGui.QWidget):
         idx = self.tree.selectedIndexes()[0]
         dict_to_add = {"DependencyCheck":{"Source":"[]"}}
         # get the parents text
-        subsection_text = str(idx.data().toString())
-        section_text = str(idx.parent().data().toString())
+        subsection_text = str(idx.data())
+        section_text = str(idx.parent().data())
         # get the top level and sub sections
         model = self.tree.model()
         section, i = self.get_section_from_text(model, section_text)
@@ -3334,8 +3334,8 @@ class edit_cfg_L5(QtGui.QWidget):
         idx = self.tree.selectedIndexes()[0]
         dict_to_add = {"DiurnalCheck":{"NumSd":"5"}}
         # get the parents text
-        subsection_text = str(idx.data().toString())
-        section_text = str(idx.parent().data().toString())
+        subsection_text = str(idx.data())
+        section_text = str(idx.parent().data())
         # get the top level and sub sections
         model = self.tree.model()
         section, i = self.get_section_from_text(model, section_text)
@@ -3350,8 +3350,8 @@ class edit_cfg_L5(QtGui.QWidget):
         idx = self.tree.selectedIndexes()[0]
         dict_to_add = {"ExcludeDates":{"0":"[YYYY-mm-dd HH:MM, YYYY-mm-dd HH:MM]"}}
         # get the parents text
-        subsection_text = str(idx.data().toString())
-        section_text = str(idx.parent().data().toString())
+        subsection_text = str(idx.data())
+        section_text = str(idx.parent().data())
         # get the top level and sub sections
         model = self.tree.model()
         section, i = self.get_section_from_text(model, section_text)
@@ -3444,7 +3444,7 @@ class edit_cfg_L5(QtGui.QWidget):
         # loop over selected items in the tree
         for idx in self.tree.selectedIndexes():
             # get the name of the parent of the selected item
-            parent = str(idx.parent().data().toString())
+            parent = str(idx.parent().data())
             # get the parent section
             for i in range(model.rowCount()):
                 section = model.item(i)
@@ -3460,8 +3460,8 @@ class edit_cfg_L5(QtGui.QWidget):
         dict_to_add = {"GapFillUsingMDS":{"<var>_MDS": {"drivers": "['Fsd','Ta','VPD']",
                                                         "tolerances":"[(20, 50), 2.5, 0.5]"}}}
         # get the parent and sub section text
-        subsection_text = str(idx.data().toString())
-        section_text = str(idx.parent().data().toString())
+        subsection_text = str(idx.data())
+        section_text = str(idx.parent().data())
         # get the top level and sub sections
         model = self.tree.model()
         section, i = self.get_section_from_text(model, section_text)
@@ -3479,8 +3479,8 @@ class edit_cfg_L5(QtGui.QWidget):
         idx = self.tree.selectedIndexes()[0]
         dict_to_add = {"RangeCheck":{"Lower":0, "Upper": 1}}
         # get the parents text
-        subsection_text = str(idx.data().toString())
-        section_text = str(idx.parent().data().toString())
+        subsection_text = str(idx.data())
+        section_text = str(idx.parent().data())
         # get the top level and sub sections
         model = self.tree.model()
         section, i = self.get_section_from_text(model, section_text)
@@ -3533,16 +3533,16 @@ class edit_cfg_L5(QtGui.QWidget):
         model = self.tree.model()
         idx = self.tree.selectedIndexes()[0]
         # get the section containing the selected item
-        section_text = str(idx.parent().data().toString())
+        section_text = str(idx.parent().data())
         # get the top level and sub sections
         model = self.tree.model()
         section, i = self.get_section_from_text(model, section_text)
         # get the key and value of the selected item
-        key, val, found, i = self.get_keyval_by_val_name(section, str(idx.data().toString()))
+        key, val, found, i = self.get_keyval_by_val_name(section, str(idx.data()))
         # set the file filter
         file_filter = "*.xls"
         # get the file path from the selected item
-        file_path = os.path.split(str(idx.data().toString()))[0]
+        file_path = os.path.split(str(idx.data()))[0]
         file_path = os.path.join(file_path,"")
         # dialog for open file
         file_path = os.path.join(file_path, "")
@@ -3558,12 +3558,12 @@ class edit_cfg_L5(QtGui.QWidget):
         model = self.tree.model()
         idx = self.tree.selectedIndexes()[0]
         # get the section containing the selected item
-        section_text = str(idx.parent().data().toString())
+        section_text = str(idx.parent().data())
         # get the top level and sub sections
         model = self.tree.model()
         section, i = self.get_section_from_text(model, section_text)
         # get the key and value of the selected item
-        key, val, found, j = self.get_keyval_by_val_name(section, str(idx.data().toString()))
+        key, val, found, j = self.get_keyval_by_val_name(section, str(idx.data()))
         # dialog for new directory
         new_dir = QtGui.QFileDialog.getExistingDirectory(self, "Open a folder", val, QtGui.QFileDialog.ShowDirsOnly)
         new_dir = os.path.join(str(new_dir), "")
@@ -3576,8 +3576,8 @@ class edit_cfg_L5(QtGui.QWidget):
         model = self.tree.model()
         idx = self.tree.selectedIndexes()[0]
         # get the section containing the selected item
-        section_text = str(idx.parent().data().toString())
-        subsection_text = str(idx.data().toString())
+        section_text = str(idx.parent().data())
+        subsection_text = str(idx.data())
         # get the top level and sub sections
         model = self.tree.model()
         section, i = self.get_section_from_text(model, section_text)
@@ -3598,8 +3598,8 @@ class edit_cfg_L5(QtGui.QWidget):
         model = self.tree.model()
         idx = self.tree.selectedIndexes()[0]
         # get the section containing the selected item
-        section_text = str(idx.parent().data().toString())
-        subsection_text = str(idx.data().toString())
+        section_text = str(idx.parent().data())
+        subsection_text = str(idx.data())
         # get the top level and sub sections
         model = self.tree.model()
         section, i = self.get_section_from_text(model, section_text)
@@ -3668,7 +3668,7 @@ class edit_cfg_L5(QtGui.QWidget):
             # get the child subsection
             subsection = section.child(i)
             # check to see if we have the selected subsection
-            if str(subsection.text()) == str(idx.data().toString()):
+            if str(subsection.text()) == str(idx.data()):
                 break
         return subsection, i
 
@@ -3719,8 +3719,8 @@ class edit_cfg_L5(QtGui.QWidget):
         """ Remove an item from the Files section."""
         # loop over selected items in the tree
         for idx in self.tree.selectedIndexes():
-            section_text = str(idx.parent().data().toString())
-            subsection_text = str(idx.data().toString())
+            section_text = str(idx.parent().data())
+            subsection_text = str(idx.data())
             # get the top level section
             model = self.tree.model()
             section, i = self.get_section_from_text(model, section_text)
@@ -3734,9 +3734,9 @@ class edit_cfg_L5(QtGui.QWidget):
         """ Remove a QC check."""
         # loop over selected items in the tree
         for idx in self.tree.selectedIndexes():
-            subsubsection_text = str(idx.data().toString())
-            subsection_text = str(idx.parent().data().toString())
-            section_text = str(idx.parent().parent().data().toString())
+            subsubsection_text = str(idx.data())
+            subsection_text = str(idx.parent().data())
+            section_text = str(idx.parent().parent().data())
             # get the [Variables] section
             model = self.tree.model()
             section, i = self.get_section_from_text(model, section_text)
@@ -3751,9 +3751,9 @@ class edit_cfg_L5(QtGui.QWidget):
         """ Remove a gap filling method."""
         # loop over selected items in the tree
         for idx in self.tree.selectedIndexes():
-            subsubsection_text = str(idx.data().toString())
-            subsection_text = str(idx.parent().data().toString())
-            section_text = str(idx.parent().parent().data().toString())
+            subsubsection_text = str(idx.data())
+            subsection_text = str(idx.parent().data())
+            section_text = str(idx.parent().parent().data())
             # get the [Variables] section
             model = self.tree.model()
             section, i = self.get_section_from_text(model, section_text)
@@ -3769,10 +3769,10 @@ class edit_cfg_L5(QtGui.QWidget):
         # loop over selected items in the tree
         for idx in self.tree.selectedIndexes():
             # get the parents text
-            subsubsubsection_text = str(idx.data().toString())
-            subsubsection_text = str(idx.parent().data().toString())
-            subsection_text = str(idx.parent().parent().data().toString())
-            section_text = str(idx.parent().parent().parent().data().toString())
+            subsubsubsection_text = str(idx.data())
+            subsubsection_text = str(idx.parent().data())
+            subsection_text = str(idx.parent().parent().data())
+            section_text = str(idx.parent().parent().parent().data())
             # get the [Variables] section
             model = self.tree.model()
             section, i = self.get_section_from_text(model, section_text)
@@ -3790,11 +3790,11 @@ class edit_cfg_L5(QtGui.QWidget):
         # loop over selected items in the tree
         for idx in self.tree.selectedIndexes():
             # get the parents text
-            subsubsubsubsection_text = str(idx.data().toString())
-            subsubsubsection_text = str(idx.parent().data().toString())
-            subsubsection_text = str(idx.parent().parent().data().toString())
-            subsection_text = str(idx.parent().parent().parent().data().toString())
-            section_text = str(idx.parent().parent().parent().parent().data().toString())
+            subsubsubsubsection_text = str(idx.data())
+            subsubsubsection_text = str(idx.parent().data())
+            subsubsection_text = str(idx.parent().parent().data())
+            subsection_text = str(idx.parent().parent().parent().data())
+            section_text = str(idx.parent().parent().parent().parent().data())
             # get the [Variables] section
             model = self.tree.model()
             section, i = self.get_section_from_text(model, section_text)
@@ -3813,8 +3813,8 @@ class edit_cfg_L5(QtGui.QWidget):
         """ Remove an item from the Options section."""
         # loop over selected items in the tree
         for idx in self.tree.selectedIndexes():
-            section_text = str(idx.parent().data().toString())
-            subsection_text = str(idx.data().toString())
+            section_text = str(idx.parent().data())
+            subsection_text = str(idx.data())
             # get the "Options" section
             model = self.tree.model()
             section, i = self.get_section_from_text(model, section_text)
@@ -3826,8 +3826,8 @@ class edit_cfg_L5(QtGui.QWidget):
         """ Remove a variable."""
         for idx in self.tree.selectedIndexes():
             # get the parents text
-            subsection_text = str(idx.data().toString())
-            section_text = str(idx.parent().data().toString())
+            subsection_text = str(idx.data())
+            section_text = str(idx.parent().data())
             # get the "Drivers" section
             model = self.tree.model()
             section, i = self.get_section_from_text(model, section_text)
@@ -3841,7 +3841,7 @@ class edit_cfg_L5(QtGui.QWidget):
         for i in range(section.rowCount()):
             key = str(section.child(i, 0).text())
             val = str(section.child(i, 1).text())
-            if str(idx.data().toString()) == key:
+            if str(idx.data()) == key:
                 result = True
                 break
         return result
@@ -3852,7 +3852,7 @@ class edit_cfg_L5(QtGui.QWidget):
         for i in range(section.rowCount()):
             key = str(section.child(i, 0).text())
             val = str(section.child(i, 1).text())
-            if str(idx.data().toString()) == val:
+            if str(idx.data()) == val:
                 result = True
                 break
         return result
@@ -3997,14 +3997,14 @@ class edit_cfg_L6(QtGui.QWidget):
         level = self.get_level_selected_item()
         if level == 0:
             # sections with only 1 level
-            if str(idx.data().toString()) == "Files":
+            if str(idx.data()) == "Files":
                 self.context_menu.actionAddFileEntry = QtGui.QAction(self)
                 self.context_menu.actionAddFileEntry.setText("Add item")
                 self.context_menu.addAction(self.context_menu.actionAddFileEntry)
                 self.context_menu.actionAddFileEntry.triggered.connect(self.add_fileentry)
-            elif str(idx.data().toString()) == "Output":
+            elif str(idx.data()) == "Output":
                 pass
-            elif str(idx.data().toString()) == "Options":
+            elif str(idx.data()) == "Options":
                 # get the selected item from its index
                 selected_item = idx.model().itemFromIndex(idx)
                 # build a list of existing QC checks
@@ -4018,12 +4018,12 @@ class edit_cfg_L6(QtGui.QWidget):
                     self.context_menu.actionAddMaxGapInterpolate.setText("MaxGapInterpolate")
                     self.context_menu.addAction(self.context_menu.actionAddMaxGapInterpolate)
                     self.context_menu.actionAddMaxGapInterpolate.triggered.connect(self.add_maxgapinterpolate)
-            elif str(idx.data().toString()) == "Global":
+            elif str(idx.data()) == "Global":
                 self.context_menu.actionAddGlobalAttribute = QtGui.QAction(self)
                 self.context_menu.actionAddGlobalAttribute.setText("Add global attribute")
                 self.context_menu.addAction(self.context_menu.actionAddGlobalAttribute)
                 self.context_menu.actionAddGlobalAttribute.triggered.connect(self.add_global_attribute)
-            elif str(idx.data().toString()) in ["ER"]:
+            elif str(idx.data()) in ["ER"]:
                 pass
                 #self.context_menu.actionAddVariable = QtGui.QAction(self)
                 #self.context_menu.actionAddVariable.setText("Add variable")
@@ -4031,7 +4031,7 @@ class edit_cfg_L6(QtGui.QWidget):
                 #self.context_menu.actionAddVariable.triggered.connect(self.add_er_variable)
         elif level == 1:
             # sections with 2 levels
-            section_name = str(idx.parent().data().toString())
+            section_name = str(idx.parent().data())
             section, i = self.get_section_from_text(model, section_name)
             if (section_name == "Files"):
                 if (self.selection_is_key(section, idx)):
@@ -4040,7 +4040,7 @@ class edit_cfg_L6(QtGui.QWidget):
                     self.context_menu.addAction(self.context_menu.actionRemoveInputFile)
                     self.context_menu.actionRemoveInputFile.triggered.connect(self.remove_item_files)
                 elif (self.selection_is_value(section, idx)):
-                    key, val, found, i = self.get_keyval_by_val_name(section, idx.data().toString())
+                    key, val, found, i = self.get_keyval_by_val_name(section, idx.data())
                     if key in ["file_path", "plot_path"]:
                         self.context_menu.actionBrowseFilePath = QtGui.QAction(self)
                         self.context_menu.actionBrowseFilePath.setText("Browse...")
@@ -4113,12 +4113,12 @@ class edit_cfg_L6(QtGui.QWidget):
         model = self.tree.model()
         idx = self.tree.selectedIndexes()[0]
         # get the section containing the selected item
-        section_text = str(idx.parent().data().toString())
+        section_text = str(idx.parent().data())
         # get the top level and sub sections
         model = self.tree.model()
         section, i = self.get_section_from_text(model, section_text)
         # get the key and value of the selected item
-        key, val, found, j = self.get_keyval_by_val_name(section, str(idx.data().toString()))
+        key, val, found, j = self.get_keyval_by_val_name(section, str(idx.data()))
         # dialog for new directory
         new_dir = QtGui.QFileDialog.getExistingDirectory(self, "Open a folder", val, QtGui.QFileDialog.ShowDirsOnly)
         new_dir = os.path.join(str(new_dir), "")
@@ -4131,8 +4131,8 @@ class edit_cfg_L6(QtGui.QWidget):
         model = self.tree.model()
         idx = self.tree.selectedIndexes()[0]
         # get the section containing the selected item
-        section_text = str(idx.parent().data().toString())
-        subsection_text = str(idx.data().toString())
+        section_text = str(idx.parent().data())
+        subsection_text = str(idx.data())
         # get the top level and sub sections
         model = self.tree.model()
         section, i = self.get_section_from_text(model, section_text)
@@ -4153,8 +4153,8 @@ class edit_cfg_L6(QtGui.QWidget):
         model = self.tree.model()
         idx = self.tree.selectedIndexes()[0]
         # get the section containing the selected item
-        section_text = str(idx.parent().data().toString())
-        subsection_text = str(idx.data().toString())
+        section_text = str(idx.parent().data())
+        subsection_text = str(idx.data())
         # get the top level and sub sections
         model = self.tree.model()
         section, i = self.get_section_from_text(model, section_text)
@@ -4270,8 +4270,8 @@ class edit_cfg_L6(QtGui.QWidget):
         """ Remove an item from the Files section."""
         # loop over selected items in the tree
         for idx in self.tree.selectedIndexes():
-            section_text = str(idx.parent().data().toString())
-            subsection_text = str(idx.data().toString())
+            section_text = str(idx.parent().data())
+            subsection_text = str(idx.data())
             # get the top level section
             model = self.tree.model()
             section, i = self.get_section_from_text(model, section_text)
@@ -4285,8 +4285,8 @@ class edit_cfg_L6(QtGui.QWidget):
         """ Remove an attribute from the Global section."""
         # loop over selected items in the tree
         for idx in self.tree.selectedIndexes():
-            section_text = str(idx.parent().data().toString())
-            subsection_text = str(idx.data().toString())
+            section_text = str(idx.parent().data())
+            subsection_text = str(idx.data())
             # get the top level section
             model = self.tree.model()
             section, i = self.get_section_from_text(model, section_text)
@@ -4302,7 +4302,7 @@ class edit_cfg_L6(QtGui.QWidget):
         for i in range(section.rowCount()):
             key = str(section.child(i, 0).text())
             val = str(section.child(i, 1).text())
-            if str(idx.data().toString()) == key:
+            if str(idx.data()) == key:
                 result = True
                 break
         return result
@@ -4313,7 +4313,7 @@ class edit_cfg_L6(QtGui.QWidget):
         for i in range(section.rowCount()):
             key = str(section.child(i, 0).text())
             val = str(section.child(i, 1).text())
-            if str(idx.data().toString()) == val:
+            if str(idx.data()) == val:
                 result = True
                 break
         return result
