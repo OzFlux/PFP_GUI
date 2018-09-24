@@ -4,6 +4,9 @@ import logging
 import os
 import sys
 import time
+# force QVariant API to V2 to avoid AttributeErrors on Mac OS X
+import sip
+sip.setapi('QVariant', 2)
 # 3rd party modules
 from configobj import ConfigObj
 import matplotlib
