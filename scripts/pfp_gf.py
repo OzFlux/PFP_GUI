@@ -331,6 +331,9 @@ def gfMDS_createdict(cf, ds, series):
         # get the day/night filter option
         opt = pfp_utils.get_keyvaluefromcf(cf, [section, series, "GapFillUsingMDS", output], "daynight_filter", default="")
         ds.mds[output]["daynight_filter"] = opt
+        # get the include QC option
+        opt = pfp_utils.get_keyvaluefromcf(cf, [section, series, "GapFillUsingMDS", output], "include_qc", default="No")
+        ds.mds[output]["include_qc"] = opt
 
     # check that all requested targets and drivers have a mapping to
     # a FluxNet label, remove if they don't

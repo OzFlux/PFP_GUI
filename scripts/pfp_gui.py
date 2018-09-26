@@ -3047,14 +3047,7 @@ class edit_cfg_L5(QtGui.QWidget):
             elif str(indexes[0].data()) == "Output":
                 pass
             elif str(indexes[0].data()) == "Options":
-                idx = indexes[0]
-                # get the selected item from its index
-                selected_item = idx.model().itemFromIndex(idx)
-                # build a list of existing QC checks
-                if selected_item.hasChildren():
-                    existing_entries = []
-                    for i in range(selected_item.rowCount()):
-                        existing_entries.append(str(selected_item.child(i, 0).text()))
+                existing_entries = self.get_existing_entries()
                 # only put a QC check in the context menu if it is not already present
                 if "MaxGapInterpolate" not in existing_entries:
                     self.context_menu.actionAddMaxGapInterpolate = QtGui.QAction(self)
@@ -3160,14 +3153,7 @@ class edit_cfg_L5(QtGui.QWidget):
                     self.context_menu.addAction(self.context_menu.actionRemoveOption)
                     self.context_menu.actionRemoveOption.triggered.connect(self.remove_item_options)
             elif (section_name in ["Fluxes", "Variables"]):
-                idx = indexes[0]
-                # get the selected item from its index
-                selected_item = idx.model().itemFromIndex(idx)
-                # build a list of existing QC checks
-                if selected_item.hasChildren():
-                    existing_entries = []
-                    for i in range(selected_item.rowCount()):
-                        existing_entries.append(str(selected_item.child(i, 0).text()))
+                existing_entries = self.get_existing_entries()
                 # only put a QC check in the context menu if it is not already present
                 if "GapFillUsingSOLO" not in existing_entries:
                     self.context_menu.actionAddSOLO = QtGui.QAction(self)
@@ -3232,24 +3218,33 @@ class edit_cfg_L5(QtGui.QWidget):
                 self.context_menu.addAction(self.context_menu.actionRemoveGFMethod)
                 self.context_menu.actionRemoveGFMethod.triggered.connect(self.remove_gf_method)
         elif level == 3:
+            existing_entries = self.get_existing_entries()
             # sections with 4 levels
             section_name = str(indexes[0].parent().parent().parent().data())
             subsection_name = str(indexes[0].parent().parent().data())
             subsubsection_name = str(indexes[0].parent().data())
             subsubsubsection_name = str(indexes[0].data())
             if subsubsection_name == "GapFillUsingSOLO":
-                self.context_menu.actionAddSOLOSettings = QtGui.QAction(self)
-                self.context_menu.actionAddSOLOSettings.setText("Add SOLO settings")
-                self.context_menu.addAction(self.context_menu.actionAddSOLOSettings)
-                self.context_menu.actionAddSOLOSettings.triggered.connect(self.add_solo_settings)
-                self.context_menu.addSeparator()
+                if "solo_settings" not in existing_entries:
+                    self.context_menu.actionAddSOLOSettings = QtGui.QAction(self)
+                    self.context_menu.actionAddSOLOSettings.setText("Add SOLO settings")
+                    self.context_menu.addAction(self.context_menu.actionAddSOLOSettings)
+                    self.context_menu.actionAddSOLOSettings.triggered.connect(self.add_solo_settings)
+                    self.context_menu.addSeparator()
+            if subsubsection_name == "GapFillUsingMDS":
+                if "include_qc" not in existing_entries:
+                    self.context_menu.actionAddIncludeQC = QtGui.QAction(self)
+                    self.context_menu.actionAddIncludeQC.setText("Add include_qc")
+                    self.context_menu.addAction(self.context_menu.actionAddIncludeQC)
+                    self.context_menu.actionAddIncludeQC.triggered.connect(self.add_include_qc)
+                    self.context_menu.addSeparator()
             self.context_menu.actionRemoveGFMethodVariable = QtGui.QAction(self)
             self.context_menu.actionRemoveGFMethodVariable.setText("Remove variable")
             self.context_menu.addAction(self.context_menu.actionRemoveGFMethodVariable)
             self.context_menu.actionRemoveGFMethodVariable.triggered.connect(self.remove_gf_method_variable)
         elif level == 4:
             subsubsubsubsection_name = str(indexes[0].data())
-            if subsubsubsubsection_name in ["solo_settings"]:
+            if subsubsubsubsection_name in ["solo_settings", "include_qc"]:
                 self.context_menu.actionRemoveSOLOSettings = QtGui.QAction(self)
                 self.context_menu.actionRemoveSOLOSettings.setText("Remove item")
                 self.context_menu.addAction(self.context_menu.actionRemoveSOLOSettings)
@@ -3292,7 +3287,7 @@ class edit_cfg_L5(QtGui.QWidget):
         subsubsubsection, l = self.get_subsection_from_text(subsubsection, subsubsubsection_text)
         # add the subsubsection
         child0 = QtGui.QStandardItem("solo_settings")
-        child1 = QtGui.QStandardItem("[5,500,5,0.001,500]")
+        child1 = QtGui.QStandardItem("10,500,5,0.001,500")
         subsubsubsection.appendRow([child0, child1])
         # update the tab text with an asterix if required
         self.update_tab_text()
@@ -3366,6 +3361,27 @@ class edit_cfg_L5(QtGui.QWidget):
         child0 = QtGui.QStandardItem("New item")
         child1 = QtGui.QStandardItem("")
         self.tree.sections["Files"].appendRow([child0, child1])
+        self.update_tab_text()
+
+    def add_include_qc(self):
+        """ Add include_qc to a variable."""
+        idx = self.tree.selectedIndexes()[0]
+        # get the parent and sub section text
+        subsubsubsection_text = str(idx.data())
+        subsubsection_text = str(idx.parent().data())
+        subsection_text = str(idx.parent().parent().data())
+        section_text = str(idx.parent().parent().parent().data())
+        # get the top level and sub sections
+        model = self.tree.model()
+        section, i = self.get_section_from_text(model, section_text)
+        subsection, j = self.get_subsection_from_text(section, subsection_text)
+        subsubsection, k = self.get_subsection_from_text(subsection, subsubsection_text)
+        subsubsubsection, l = self.get_subsection_from_text(subsubsection, subsubsubsection_text)
+        # add the subsubsection
+        child0 = QtGui.QStandardItem("include_qc")
+        child1 = QtGui.QStandardItem("Yes")
+        subsubsubsection.appendRow([child0, child1])
+        # update the tab text with an asterix if required
         self.update_tab_text()
 
     def add_maxgapinterpolate(self):
@@ -3614,6 +3630,19 @@ class edit_cfg_L5(QtGui.QWidget):
         if len(str(new_file_path)) > 0:
             new_file_parts = os.path.split(str(new_file_path))
             section.child(k, 1).setText(new_file_parts[1])
+
+    def get_existing_entries(self):
+        """ Get a list of existing entries in the current section."""
+        # index of the selected item
+        idx = self.view.selectedIndexes()[0]
+        # get the selected item from its index
+        selected_item = idx.model().itemFromIndex(idx)
+        # build a list of existing QC checks
+        existing_entries = []
+        if selected_item.hasChildren():
+            for i in range(selected_item.rowCount()):
+                existing_entries.append(str(selected_item.child(i, 0).text()))
+        return existing_entries
 
     def get_keyval_by_key_name(self, section, key):
         """ Get the value from a section based on the key name."""

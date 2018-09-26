@@ -83,7 +83,10 @@ def GapFillFluxUsingMDS(cf, ds):
         mds_out_file = os.path.join("mds", "output", "mds.csv")
         os.rename(mds_out_file, out_file_path)
         # and put the MDS results into the data structure
-        gfMDS_get_mds_output(ds, mds_label, out_file_path)
+        include_qc = False
+        if ds.mds[mds_label]["include_qc"] == "Yes":
+            include_qc = True
+        gfMDS_get_mds_output(ds, mds_label, out_file_path, include_qc=include_qc)
         # plot the MDS results
         target = ds.mds[mds_label]["target"]
         drivers = ds.mds[mds_label]["drivers"]
@@ -129,7 +132,7 @@ def gfMDS_get_mds_output(ds, mds_label, out_file_path, include_qc=False):
     # check to see if the QC outputs have been requested
     if not include_qc:
         # if not, then remove them from the list of requested outputs
-        for item in ["QC","HAT","SAMPLE","STDDEV","METHOD","QC_HAT"]:
+        for item in ["HAT","SAMPLE","STDDEV","METHOD","QC_HAT"]:
             if item in mds_output_names:
                 mds_output_names.remove(item)
     # and now loop over the MDS output series
