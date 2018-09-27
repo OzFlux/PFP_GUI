@@ -154,9 +154,9 @@ class pfp_main_ui(QtGui.QWidget, QPlainTextEditLogger):
         self.actionUtilitiesClimatology = QtGui.QAction(self)
         self.actionUtilitiesClimatology.setText("Climatology")
         self.actionUtilitiesUstarCPD = QtGui.QAction(self)
-        self.actionUtilitiesUstarCPD.setText("u* thtreshold (CPD)")
+        self.actionUtilitiesUstarCPD.setText("u* threshold (CPD)")
         self.actionUtilitiesUstarMPT = QtGui.QAction(self)
-        self.actionUtilitiesUstarMPT.setText("u* thtreshold (MPT)")
+        self.actionUtilitiesUstarMPT.setText("u* threshold (MPT)")
         # add the actions to the menus
         # File/Convert submenu
         self.menuFileConvert.addAction(self.actionFileConvertnc2biomet)
