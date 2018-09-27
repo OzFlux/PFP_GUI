@@ -482,7 +482,7 @@ class edit_cfg_L2(QtGui.QWidget):
 
     def add_excludedaterange(self):
         """ Add another date range to the ExcludeDates QC check."""
-        # loop over selected items in the tree
+        # get the index of the selected item
         idx = self.view.selectedIndexes()[0]
         # get the selected item from the index
         selected_item = idx.model().itemFromIndex(idx)
@@ -2091,28 +2091,6 @@ class edit_cfg_concatenate(QtGui.QWidget):
             parent.removeRow(selected_item.row())
         self.update_tab_text()
 
-    def selection_is_key(self, section, idx):
-        """ Return True if the selected item is a key."""
-        result = False
-        for i in range(section.rowCount()):
-            key = str(section.child(i, 0).text())
-            val = str(section.child(i, 1).text())
-            if str(idx.data()) == key:
-                result = True
-                break
-        return result
-
-    def selection_is_value(self, section, idx):
-        """ Return True if the selected item is a value."""
-        result = False
-        for i in range(section.rowCount()):
-            key = str(section.child(i, 0).text())
-            val = str(section.child(i, 1).text())
-            if str(idx.data()) == val:
-                result = True
-                break
-        return result
-
     def renumber_subsection_keys(self, subsection):
         """ Renumber the subsection keys when an item is removed."""
         for i in range(subsection.rowCount()):
@@ -2244,8 +2222,7 @@ class edit_cfg_L4(QtGui.QWidget):
                     key2 = str(subsection.text())
                     cfg[key1][key2] = {}
                     for k in range(subsection.rowCount()):
-                        # subsubsections are GapFillFromAlternate, GapFillFromClimatology
-                        # MergeSeries
+                        # subsubsections are GapFillFromAlternate, GapFillFromClimatology and MergeSeries
                         subsubsection = subsection.child(k)
                         key3 = str(subsubsection.text())
                         cfg[key1][key2][key3] = {}
@@ -2299,6 +2276,7 @@ class edit_cfg_L4(QtGui.QWidget):
             elif selected_text == "Options":
                 # get a list of existing entries
                 existing_entries = self.get_existing_entries()
+                # only put an option in the context menu if it is not already present
                 if "MaxGapInterpolate" not in existing_entries:
                     self.context_menu.actionAddMaxGapInterpolate = QtGui.QAction(self)
                     self.context_menu.actionAddMaxGapInterpolate.setText("MaxGapInterpolate")
@@ -2313,7 +2291,7 @@ class edit_cfg_L4(QtGui.QWidget):
                 self.context_menu.actionAddVariable = QtGui.QAction(self)
                 self.context_menu.actionAddVariable.setText("Add variable")
                 self.context_menu.addAction(self.context_menu.actionAddVariable)
-                self.context_menu.actionAddVariable.triggered.connect(self.add_variable)
+                self.context_menu.actionAddVariable.triggered.connect(self.add_new_variable)
         elif level == 1:
             # sections with 2 levels
             # get the parent of the selected item
@@ -2592,7 +2570,8 @@ class edit_cfg_L4(QtGui.QWidget):
         """ Add GapFillUsingMDS to a variable."""
         idx = self.view.selectedIndexes()[0]
         var_name = str(idx.data()) + "_MDS"
-        dict_to_add = {"GapFillUsingMDS":{var_name: {"source": "MDS"}}}
+        dict_to_add = {"GapFillUsingMDS":{var_name: {"drivers": "['Fsd','Ta','VPD']",
+                                                     "tolerances":"[(20, 50), 2.5, 0.5]"}}}
         # add the subsubsection (GapFillUsingMDS)
         self.add_subsubsubsection(dict_to_add)
 
@@ -2658,18 +2637,44 @@ class edit_cfg_L4(QtGui.QWidget):
             subsection.appendRow(subsubsection)
         self.update_tab_text()
 
-    def add_variable(self):
-        """ Add a variable."""
-        dict_to_add = {"GapFillFromAlternate":{"<var_alt>": {"source": "<alt>"}},
-                       "GapFillUsingMDS":{"<var>_MDS":{"source":"MDS"}},
-                       "GapFillFromClimatology":{"<var>_cli":{"method":"interpolated daily"}}}
-        subsection = QtGui.QStandardItem("New variable")
-        self.add_subsubsubsection(subsection, dict_to_add)
-        dict_to_add = {"MergeSeries":{"Source":""}}
-        self.add_subsubsection(subsection, dict_to_add)
-        self.view.sections["Drivers"].appendRow(subsection)
+    def add_new_variable(self):
+        """ Add a new variable."""
+        gfALT = {"<var>_<alt>": {"source": "<alt>"}}
+        gfCLIM = {"<var>_cli": {"method": "interpolated daily"}}
+        gfMS = {"Source": "<var>,<var>_<alt>,<var>_cli"}
+        d2a = {"New variable": {"GapFillFromAlternate": gfALT,
+                                "GapFillFromClimatology": gfCLIM,
+                                "MergeSeries": gfMS}}
+        self.add_variable(d2a)
         # update the tab text with an asterix if required
         self.update_tab_text()
+
+    def add_variable(self, d2a):
+        """ Add a variable."""
+        for key2 in d2a:
+            parent2 = QtGui.QStandardItem(key2)
+            # key3 is the gap filling method
+            for key3 in d2a[key2]:
+                parent3 = QtGui.QStandardItem(key3)
+                if key3 in ["GapFillFromAlternate", "GapFillFromClimatology"]:
+                    # key4 is the gap fill variable name
+                    for key4 in d2a[key2][key3]:
+                        parent4 = QtGui.QStandardItem(key4)
+                        # key5 is the source of the alternate data
+                        for key5 in d2a[key2][key3][key4]:
+                            val = d2a[key2][key3][key4][key5]
+                            child0 = QtGui.QStandardItem(key5)
+                            child1 = QtGui.QStandardItem(val)
+                            parent4.appendRow([child0, child1])
+                        parent3.appendRow(parent4)
+                elif key3 in ["MergeSeries", "RangeCheck", "ExcludeDates"]:
+                    for key4 in d2a[key2][key3]:
+                        val = d2a[key2][key3][key4]
+                        child0 = QtGui.QStandardItem(key4)
+                        child1 = QtGui.QStandardItem(val)
+                        parent3.appendRow([child0, child1])
+                parent2.appendRow(parent3)
+            self.sections["Drivers"].appendRow(parent2)
 
     def browse_alternate_file(self):
         """ Browse for the alternate data file path."""
@@ -2805,14 +2810,6 @@ class edit_cfg_L4(QtGui.QWidget):
             level += 1
         return level
 
-    def get_section_from_text(self, model, section_name):
-        """ Gets a section from a model by matching the section name."""
-        for i in range(model.rowCount()):
-            section = model.item(i)
-            if str(section.text()) == str(section_name):
-                break
-        return section, i
-
     def get_subsection_from_index(self, section, idx):
         """ Gets a subsection from a model by matching the subsection name."""
         for i in range(section.rowCount()):
@@ -2891,8 +2888,8 @@ class edit_cfg_L5(QtGui.QWidget):
         super(edit_cfg_L5, self).__init__()
 
         self.cfg_mod = copy.deepcopy(main_gui.cfg)
-        self.cfg_changed = False
 
+        self.cfg_changed = False
         self.tabs = main_gui.tabs
 
         self.edit_l5_gui()
@@ -2900,56 +2897,60 @@ class edit_cfg_L5(QtGui.QWidget):
     def edit_l5_gui(self):
         """ Edit an L5 control file GUI."""
         # get a QTreeView
-        self.tree = QtGui.QTreeView()
+        self.view = QtGui.QTreeView()
+        self.model = QtGui.QStandardItemModel()
         # set the context menu policy
-        self.tree.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
+        self.view.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
         # connect the context menu requested signal to appropriate slot
-        self.tree.customContextMenuRequested.connect(self.context_menu)
+        self.view.customContextMenuRequested.connect(self.context_menu)
         vbox = QtGui.QVBoxLayout()
-        vbox.addWidget(self.tree)
+        vbox.addWidget(self.view)
         self.setLayout(vbox)
         self.setGeometry(300, 300, 600, 400)
         # Tree view
-        self.tree.setAlternatingRowColors(True)
+        self.view.setAlternatingRowColors(True)
         #self.tree.setSortingEnabled(True)
-        self.tree.setHeaderHidden(False)
-        self.tree.setSelectionBehavior(QtGui.QAbstractItemView.SelectItems)
+        self.view.setHeaderHidden(False)
+        self.view.setSelectionBehavior(QtGui.QAbstractItemView.SelectItems)
+        self.view.setModel(self.model)
         # build the model
         self.get_model_from_data()
         # set the default width for the first column
-        self.tree.setColumnWidth(0, 200)
+        self.view.setColumnWidth(0, 200)
 
     def get_model_from_data(self):
         """ Build the data model."""
-        self.tree.setModel(QtGui.QStandardItemModel())
-        #self.tree.setDragDropMode(QtGui.QAbstractItemView.InternalMove)
-        self.tree.model().setHorizontalHeaderLabels(['Parameter', 'Value'])
-        self.tree.model().itemChanged.connect(self.handleItemChanged)
+        self.model.setHorizontalHeaderLabels(['Parameter', 'Value'])
+        self.model.itemChanged.connect(self.handleItemChanged)
         # there must be someway outa here, said the Joker to the Thief ...
-        self.tree.sections = {}
+        self.sections = {}
         for key1 in self.cfg_mod:
             if not self.cfg_mod[key1]:
                 continue
             if key1 in ["Files", "Global", "Options", "ustar_threshold"]:
                 # sections with only 1 level
-                self.tree.sections[key1] = QtGui.QStandardItem(key1)
+                self.sections[key1] = QtGui.QStandardItem(key1)
                 for key2 in self.cfg_mod[key1]:
                     val = self.cfg_mod[key1][key2]
                     val = self.parse_cfg_values(key2, val, ["[", "]", "'", '"', " "])
                     child0 = QtGui.QStandardItem(key2)
                     child1 = QtGui.QStandardItem(val)
-                    self.tree.sections[key1].appendRow([child0, child1])
-                self.tree.model().appendRow(self.tree.sections[key1])
+                    self.sections[key1].appendRow([child0, child1])
+                self.model.appendRow(self.sections[key1])
             elif key1 in ["Fluxes", "Variables"]:
                 # sections with 4 levels
-                self.tree.sections[key1] = QtGui.QStandardItem(key1)
+                self.sections[key1] = QtGui.QStandardItem(key1)
+                # key2 is the variable name
                 for key2 in self.cfg_mod[key1]:
                     parent2 = QtGui.QStandardItem(key2)
+                    # key3 is the gap filling method
                     for key3 in self.cfg_mod[key1][key2]:
                         parent3 = QtGui.QStandardItem(key3)
                         if key3 in ["GapFillUsingSOLO", "GapFillUsingMDS"]:
+                            # key4 is the gap fill variable name
                             for key4 in self.cfg_mod[key1][key2][key3]:
                                 parent4 = QtGui.QStandardItem(key4)
+                                # key5 is the source of the alternate data
                                 for key5 in self.cfg_mod[key1][key2][key3][key4]:
                                     val = self.cfg_mod[key1][key2][key3][key4][key5]
                                     val = self.parse_cfg_values(key5, val, ["[", "]", "'", '"', " "])
@@ -2965,13 +2966,13 @@ class edit_cfg_L5(QtGui.QWidget):
                                 child1 = QtGui.QStandardItem(val)
                                 parent3.appendRow([child0, child1])
                         parent2.appendRow(parent3)
-                    self.tree.sections[key1].appendRow(parent2)
-                self.tree.model().appendRow(self.tree.sections[key1])
+                    self.sections[key1].appendRow(parent2)
+                self.model.appendRow(self.sections[key1])
 
     def get_data_from_model(self):
         """ Iterate over the model and get the data."""
         cfg = self.cfg_mod
-        model = self.tree.model()
+        model = self.model
         # there must be a way to do this recursively
         for i in range(model.rowCount()):
             section = model.item(i)
@@ -3027,38 +3028,38 @@ class edit_cfg_L5(QtGui.QWidget):
 
     def handleItemChanged(self, item):
         """ Handler for when view items are edited."""
-        # add an asterisk to the tab text to indicate the tab contents have changed
-        tab_text = str(self.tabs.tabText(self.tabs.tab_index_current))
-        if "*" not in tab_text:
-            self.tabs.setTabText(self.tabs.tab_index_current, tab_text+"*")
         # update the control file contents
         self.cfg_mod = self.get_data_from_model()
+        # add an asterisk to the tab text to indicate the tab contents have changed
+        self.update_tab_text()
 
     def context_menu(self, position):
         """ Right click context menu."""
-        model = self.tree.model()
-        indexes = self.tree.selectedIndexes()
+        # get a menu
         self.context_menu = QtGui.QMenu()
+        # get the index of the selected item
+        idx = self.view.selectedIndexes()[0]
+        # get the selected item text
+        selected_text = str(idx.data())
+        # get the selected item
+        selected_item = idx.model().itemFromIndex(idx)
+        # get the level of the selected item
         level = self.get_level_selected_item()
+        # initialise logical for inserting a separator
+        add_separator = False
         if level == 0:
             # sections with only 1 level
-            if str(indexes[0].data()) == "Files":
+            if selected_text == "Files":
                 self.context_menu.actionAddFileEntry = QtGui.QAction(self)
                 self.context_menu.actionAddFileEntry.setText("Add item")
                 self.context_menu.addAction(self.context_menu.actionAddFileEntry)
                 self.context_menu.actionAddFileEntry.triggered.connect(self.add_fileentry)
-            elif str(indexes[0].data()) == "Output":
+            elif selected_text == "Output":
                 pass
-            elif str(indexes[0].data()) == "Options":
-                idx = indexes[0]
-                # get the selected item from its index
-                selected_item = idx.model().itemFromIndex(idx)
-                # build a list of existing QC checks
-                existing_entries = []
-                if selected_item.hasChildren():
-                    for i in range(selected_item.rowCount()):
-                        existing_entries.append(str(selected_item.child(i, 0).text()))
-                # only put a QC check in the context menu if it is not already present
+            elif selected_text == "Options":
+                # get a list of existing entries
+                existing_entries = self.get_existing_entries()
+                # only put an option in the context menu if it is not already present
                 if "MaxGapInterpolate" not in existing_entries:
                     self.context_menu.actionAddMaxGapInterpolate = QtGui.QAction(self)
                     self.context_menu.actionAddMaxGapInterpolate.setText("MaxGapInterpolate")
@@ -3109,402 +3110,343 @@ class edit_cfg_L5(QtGui.QWidget):
                     self.context_menu.actionAddsa_threshold.setText("sa_threshold")
                     self.context_menu.addAction(self.context_menu.actionAddsa_threshold)
                     self.context_menu.actionAddsa_threshold.triggered.connect(self.add_sathreshold)
-            elif str(indexes[0].data()) in ["Fluxes", "Variables"]:
+            elif selected_text in ["Fluxes", "Variables"]:
                 self.context_menu.actionAddVariable = QtGui.QAction(self)
                 self.context_menu.actionAddVariable.setText("Add variable")
                 self.context_menu.addAction(self.context_menu.actionAddVariable)
-                self.context_menu.actionAddVariable.triggered.connect(self.add_variable)
-            elif str(indexes[0].data()) in ["ustar_threshold"]:
+                self.context_menu.actionAddVariable.triggered.connect(self.add_new_variable)
+            elif selected_text in ["ustar_threshold"]:
                 self.context_menu.actionAddUstarThreshold = QtGui.QAction(self)
                 self.context_menu.actionAddUstarThreshold.setText("Add year")
                 self.context_menu.addAction(self.context_menu.actionAddUstarThreshold)
                 self.context_menu.actionAddUstarThreshold.triggered.connect(self.add_ustar_threshold)
         elif level == 1:
             # sections with 2 levels
-            section_name = str(indexes[0].parent().data())
-            section, i = self.get_section_from_text(model, section_name)
-            if (section_name == "Files"):
-                if (self.selection_is_key(section, indexes[0])):
-                    self.context_menu.actionRemoveInputFile = QtGui.QAction(self)
-                    self.context_menu.actionRemoveInputFile.setText("Remove item")
-                    self.context_menu.addAction(self.context_menu.actionRemoveInputFile)
-                    self.context_menu.actionRemoveInputFile.triggered.connect(self.remove_item_files)
-                elif (self.selection_is_value(section, indexes[0])):
-                    key, val, found, i = self.get_keyval_by_val_name(section, indexes[0].data())
-                    if key in ["file_path", "plot_path"]:
-                        self.context_menu.actionBrowseFilePath = QtGui.QAction(self)
-                        self.context_menu.actionBrowseFilePath.setText("Browse...")
-                        self.context_menu.addAction(self.context_menu.actionBrowseFilePath)
-                        self.context_menu.actionBrowseFilePath.triggered.connect(self.browse_file_path)
-                    elif key in ["in_filename"]:
-                        self.context_menu.actionBrowseInputFile = QtGui.QAction(self)
-                        self.context_menu.actionBrowseInputFile.setText("Browse...")
-                        self.context_menu.addAction(self.context_menu.actionBrowseInputFile)
-                        self.context_menu.actionBrowseInputFile.triggered.connect(self.browse_input_file)
-                    elif key in ["out_filename"]:
-                        self.context_menu.actionBrowseOutputFile = QtGui.QAction(self)
-                        self.context_menu.actionBrowseOutputFile.setText("Browse...")
-                        self.context_menu.addAction(self.context_menu.actionBrowseOutputFile)
-                        self.context_menu.actionBrowseOutputFile.triggered.connect(self.browse_output_file)
-                    elif key in ["cpd_filename"]:
-                        self.context_menu.actionBrowseCPDFile = QtGui.QAction(self)
-                        self.context_menu.actionBrowseCPDFile.setText("Browse...")
-                        self.context_menu.addAction(self.context_menu.actionBrowseCPDFile)
-                        self.context_menu.actionBrowseCPDFile.triggered.connect(self.browse_cpd_file)
-                    else:
-                        self.context_menu.actionBrowseInputFile = QtGui.QAction(self)
-                        self.context_menu.actionBrowseInputFile.setText("Browse...")
-                        self.context_menu.addAction(self.context_menu.actionBrowseInputFile)
-                        self.context_menu.actionBrowseInputFile.triggered.connect(self.browse_input_file)
-            elif (section_name == "Options"):
-                if (self.selection_is_key(section, indexes[0])):
+            # get the parent of the selected item
+            parent = selected_item.parent()
+            if (str(parent.text()) == "Files") and (selected_item.column() == 1):
+                key = str(parent.child(selected_item.row(),0).text())
+                if key in ["file_path", "plot_path"]:
+                    self.context_menu.actionBrowseFilePath = QtGui.QAction(self)
+                    self.context_menu.actionBrowseFilePath.setText("Browse...")
+                    self.context_menu.addAction(self.context_menu.actionBrowseFilePath)
+                    self.context_menu.actionBrowseFilePath.triggered.connect(self.browse_file_path)
+                elif key in ["in_filename"]:
+                    self.context_menu.actionBrowseInputFile = QtGui.QAction(self)
+                    self.context_menu.actionBrowseInputFile.setText("Browse...")
+                    self.context_menu.addAction(self.context_menu.actionBrowseInputFile)
+                    self.context_menu.actionBrowseInputFile.triggered.connect(self.browse_input_file)
+                elif key in ["out_filename"]:
+                    self.context_menu.actionBrowseOutputFile = QtGui.QAction(self)
+                    self.context_menu.actionBrowseOutputFile.setText("Browse...")
+                    self.context_menu.addAction(self.context_menu.actionBrowseOutputFile)
+                    self.context_menu.actionBrowseOutputFile.triggered.connect(self.browse_output_file)
+                elif key in ["cpd_filename"]:
+                    self.context_menu.actionBrowseCPDFile = QtGui.QAction(self)
+                    self.context_menu.actionBrowseCPDFile.setText("Browse...")
+                    self.context_menu.addAction(self.context_menu.actionBrowseCPDFile)
+                    self.context_menu.actionBrowseCPDFile.triggered.connect(self.browse_cpd_file)
+                else:
+                    self.context_menu.actionBrowseInputFile = QtGui.QAction(self)
+                    self.context_menu.actionBrowseInputFile.setText("Browse...")
+                    self.context_menu.addAction(self.context_menu.actionBrowseInputFile)
+                    self.context_menu.actionBrowseInputFile.triggered.connect(self.browse_input_file)
+            elif (str(parent.text()) == "Files") and (selected_item.column() == 0):
+                key = str(parent.child(selected_item.row(),0).text())
+                if key not in ["file_path", "plot_path", "in_filename", "out_filename"]:
+                    self.context_menu.actionRemoveItem = QtGui.QAction(self)
+                    self.context_menu.actionRemoveItem.setText("Remove item")
+                    self.context_menu.addAction(self.context_menu.actionRemoveItem)
+                    self.context_menu.actionRemoveItem.triggered.connect(self.remove_item)
+                else:
+                    pass
+            elif (str(parent.text()) == "Options"):
+                key = str(parent.child(selected_item.row(),0).text())
+                if (selected_item.column() == 0):
                     self.context_menu.actionRemoveOption = QtGui.QAction(self)
                     self.context_menu.actionRemoveOption.setText("Remove option")
                     self.context_menu.addAction(self.context_menu.actionRemoveOption)
-                    self.context_menu.actionRemoveOption.triggered.connect(self.remove_item_options)
-            elif (section_name in ["Fluxes", "Variables"]):
-                idx = indexes[0]
-                # get the selected item from its index
-                selected_item = idx.model().itemFromIndex(idx)
-                # build a list of existing QC checks
-                existing_entries = []
-                if selected_item.hasChildren():
-                    for i in range(selected_item.rowCount()):
-                        existing_entries.append(str(selected_item.child(i, 0).text()))
+                    self.context_menu.actionRemoveOption.triggered.connect(self.remove_item)
+                elif (selected_item.column() == 1) and (key == "InterpolateType"):
+                    if selected_text != "linear":
+                        self.context_menu.actionChangeInterpolateType = QtGui.QAction(self)
+                        self.context_menu.actionChangeInterpolateType.setText("linear")
+                        self.context_menu.addAction(self.context_menu.actionChangeInterpolateType)
+                        self.context_menu.actionChangeInterpolateType.triggered.connect(lambda:self.change_selected_text("linear"))
+                    if selected_text != "Akima":
+                        self.context_menu.actionChangeInterpolateType = QtGui.QAction(self)
+                        self.context_menu.actionChangeInterpolateType.setText("Akima")
+                        self.context_menu.addAction(self.context_menu.actionChangeInterpolateType)
+                        self.context_menu.actionChangeInterpolateType.triggered.connect(lambda:self.change_selected_text("Akima"))
+            elif (str(parent.text()) in ["Fluxes", "Variables"]):
+                # get a list of existing entries
+                existing_entries = self.get_existing_entries()
                 # only put a QC check in the context menu if it is not already present
                 if "GapFillUsingSOLO" not in existing_entries:
                     self.context_menu.actionAddSOLO = QtGui.QAction(self)
                     self.context_menu.actionAddSOLO.setText("Add SOLO")
                     self.context_menu.addAction(self.context_menu.actionAddSOLO)
                     self.context_menu.actionAddSOLO.triggered.connect(self.add_solo)
+                    add_separator = True
                 if "GapFillUsingMDS" not in existing_entries:
                     self.context_menu.actionAddMDS = QtGui.QAction(self)
                     self.context_menu.actionAddMDS.setText("Add MDS")
                     self.context_menu.addAction(self.context_menu.actionAddMDS)
                     self.context_menu.actionAddMDS.triggered.connect(self.add_MDS)
-                if "GapFillUsingClimatology" not in existing_entries:
+                    add_separator = True
+                if "GapFillFromClimatology" not in existing_entries:
                     self.context_menu.actionAddClimatology = QtGui.QAction(self)
                     self.context_menu.actionAddClimatology.setText("Add Climatology")
                     self.context_menu.addAction(self.context_menu.actionAddClimatology)
                     self.context_menu.actionAddClimatology.triggered.connect(self.add_climatology)
-                self.context_menu.addSeparator()
+                    add_separator = True
+                if add_separator:
+                    add_separator = False
+                    self.context_menu.addSeparator()
                 if "RangeCheck" not in existing_entries:
                     self.context_menu.actionAddRangeCheck = QtGui.QAction(self)
                     self.context_menu.actionAddRangeCheck.setText("Add RangeCheck")
                     self.context_menu.addAction(self.context_menu.actionAddRangeCheck)
                     self.context_menu.actionAddRangeCheck.triggered.connect(self.add_rangecheck)
+                    add_separator = True
                 if "DependencyCheck" not in existing_entries:
                     self.context_menu.actionAddDependencyCheck = QtGui.QAction(self)
                     self.context_menu.actionAddDependencyCheck.setText("Add DependencyCheck")
                     self.context_menu.addAction(self.context_menu.actionAddDependencyCheck)
                     self.context_menu.actionAddDependencyCheck.triggered.connect(self.add_dependencycheck)
+                    add_separator = True
                 if "DiurnalCheck" not in existing_entries:
                     self.context_menu.actionAddDiurnalCheck = QtGui.QAction(self)
                     self.context_menu.actionAddDiurnalCheck.setText("Add DiurnalCheck")
                     self.context_menu.addAction(self.context_menu.actionAddDiurnalCheck)
                     self.context_menu.actionAddDiurnalCheck.triggered.connect(self.add_diurnalcheck)
+                    add_separator = True
                 if "ExcludeDates" not in existing_entries:
                     self.context_menu.actionAddExcludeDates = QtGui.QAction(self)
                     self.context_menu.actionAddExcludeDates.setText("Add ExcludeDates")
                     self.context_menu.addAction(self.context_menu.actionAddExcludeDates)
                     self.context_menu.actionAddExcludeDates.triggered.connect(self.add_excludedates)
-                self.context_menu.addSeparator()
+                    add_separator = True
+                if add_separator:
+                    add_separator = False
+                    self.context_menu.addSeparator()
                 self.context_menu.actionRemoveOption = QtGui.QAction(self)
                 self.context_menu.actionRemoveOption.setText("Remove variable")
                 self.context_menu.addAction(self.context_menu.actionRemoveOption)
-                self.context_menu.actionRemoveOption.triggered.connect(self.remove_variable)
+                self.context_menu.actionRemoveOption.triggered.connect(self.remove_item)
         elif level == 2:
             # sections with 3 levels
-            section_name = str(indexes[0].parent().parent().data())
-            subsection_name = str(indexes[0].parent().data())
-            subsubsection_name = str(indexes[0].data())
-            #if str(indexes[0].data()) in ["ExcludeDates"]:
-                #self.context_menu.actionAddExcludeDateRange = QtGui.QAction(self)
-                #self.context_menu.actionAddExcludeDateRange.setText("Add date range")
-                #self.context_menu.addAction(self.context_menu.actionAddExcludeDateRange)
-                #self.context_menu.actionAddExcludeDateRange.triggered.connect(self.add_excludedaterange)
-                #self.context_menu.addSeparator()
+            subsubsection_name = str(idx.data())
             if subsubsection_name in ["RangeCheck", "DependencyCheck", "DiurnalCheck", "ExcludeDates"]:
                 self.context_menu.actionRemoveQCCheck = QtGui.QAction(self)
                 self.context_menu.actionRemoveQCCheck.setText("Remove QC check")
                 self.context_menu.addAction(self.context_menu.actionRemoveQCCheck)
-                self.context_menu.actionRemoveQCCheck.triggered.connect(self.remove_qc_check)
+                self.context_menu.actionRemoveQCCheck.triggered.connect(self.remove_item)
             elif subsubsection_name in ["GapFillUsingSOLO", "GapFillUsingMDS", "GapFillFromClimatology"]:
                 self.context_menu.actionRemoveGFMethod = QtGui.QAction(self)
                 self.context_menu.actionRemoveGFMethod.setText("Remove method")
                 self.context_menu.addAction(self.context_menu.actionRemoveGFMethod)
-                self.context_menu.actionRemoveGFMethod.triggered.connect(self.remove_gf_method)
+                self.context_menu.actionRemoveGFMethod.triggered.connect(self.remove_item)
         elif level == 3:
             # sections with 4 levels
-            section_name = str(indexes[0].parent().parent().parent().data())
-            subsection_name = str(indexes[0].parent().parent().data())
-            subsubsection_name = str(indexes[0].parent().data())
-            subsubsubsection_name = str(indexes[0].data())
-            if subsubsection_name == "GapFillUsingSOLO":
+            # get a list of existing entries
+            existing_entries = self.get_existing_entries()
+            if "solo_settings" not in existing_entries:
                 self.context_menu.actionAddSOLOSettings = QtGui.QAction(self)
                 self.context_menu.actionAddSOLOSettings.setText("Add SOLO settings")
                 self.context_menu.addAction(self.context_menu.actionAddSOLOSettings)
                 self.context_menu.actionAddSOLOSettings.triggered.connect(self.add_solo_settings)
+                add_separator = True
+            if add_separator:
+                add_separator = False
                 self.context_menu.addSeparator()
             self.context_menu.actionRemoveGFMethodVariable = QtGui.QAction(self)
             self.context_menu.actionRemoveGFMethodVariable.setText("Remove variable")
             self.context_menu.addAction(self.context_menu.actionRemoveGFMethodVariable)
-            self.context_menu.actionRemoveGFMethodVariable.triggered.connect(self.remove_gf_method_variable)
+            self.context_menu.actionRemoveGFMethodVariable.triggered.connect(self.remove_item)
         elif level == 4:
-            subsubsubsubsection_name = str(indexes[0].data())
-            if subsubsubsubsection_name in ["solo_settings"]:
+            selected_text = str(idx.data())
+            if selected_text in ["solo_settings"]:
                 self.context_menu.actionRemoveSOLOSettings = QtGui.QAction(self)
                 self.context_menu.actionRemoveSOLOSettings.setText("Remove item")
                 self.context_menu.addAction(self.context_menu.actionRemoveSOLOSettings)
-                self.context_menu.actionRemoveSOLOSettings.triggered.connect(self.remove_gf_method_variable_setting)
+                self.context_menu.actionRemoveSOLOSettings.triggered.connect(self.remove_item)
 
-        self.context_menu.exec_(self.tree.viewport().mapToGlobal(position))
+        self.context_menu.exec_(self.view.viewport().mapToGlobal(position))
 
     def add_solo(self):
         """ Add GapFillUsingSOLO to a variable."""
-        idx = self.tree.selectedIndexes()[0]
         dict_to_add = {"GapFillUsingSOLO":{"<var>_SOLO": {"drivers": "['Fn','Fg','q','VPD','Ta','Ts']"}}}
-        # get the parent and sub section text
-        subsection_text = str(idx.data())
-        section_text = str(idx.parent().data())
-        # get the top level and sub sections
-        model = self.tree.model()
-        section, i = self.get_section_from_text(model, section_text)
-        subsection, j = self.get_subsection_from_text(section, subsection_text)
-        # change to the variable name
-        var_name = subsection_text+"_SOLO"
-        dict_to_add["GapFillUsingSOLO"][var_name] = dict_to_add["GapFillUsingSOLO"].pop("<var>_SOLO")
-        # add the subsubsection (RangeCheck)
-        self.add_subsubsubsection(subsection, dict_to_add)
-        # update the tab text with an asterix if required
-        self.update_tab_text()
+        # add the subsubsection (GapFillUsingSOLO)
+        self.add_subsubsection(dict_to_add)
 
     def add_solo_settings(self):
         """ Add solo_settings to a variable."""
-        idx = self.tree.selectedIndexes()[0]
-        # get the parent and sub section text
-        subsubsubsection_text = str(idx.data())
-        subsubsection_text = str(idx.parent().data())
-        subsection_text = str(idx.parent().parent().data())
-        section_text = str(idx.parent().parent().parent().data())
-        # get the top level and sub sections
-        model = self.tree.model()
-        section, i = self.get_section_from_text(model, section_text)
-        subsection, j = self.get_subsection_from_text(section, subsection_text)
-        subsubsection, k = self.get_subsection_from_text(subsection, subsubsection_text)
-        subsubsubsection, l = self.get_subsection_from_text(subsubsection, subsubsubsection_text)
-        # add the subsubsection
-        child0 = QtGui.QStandardItem("solo_settings")
-        child1 = QtGui.QStandardItem("[5,500,5,0.001,500]")
-        subsubsubsection.appendRow([child0, child1])
-        # update the tab text with an asterix if required
-        self.update_tab_text()
+        dict_to_add = {"solo_settings":"5,500,5,0.001,500"}
+        # add the subsubsection (GapFillFromAlternate)
+        self.add_subsection(dict_to_add)
 
     def add_climatology(self):
         """ Add GapFillFromClimatology to a variable."""
-        idx = self.tree.selectedIndexes()[0]
-        dict_to_add = {"GapFillFromClimatology":{"<var>_cli": {"method": "interpolated daily"}}}
-        # get the parent and sub section text
-        subsection_text = str(idx.data())
-        section_text = str(idx.parent().data())
-        # get the top level and sub sections
-        model = self.tree.model()
-        section, i = self.get_section_from_text(model, section_text)
-        subsection, j = self.get_subsection_from_text(section, subsection_text)
-        # add the subsubsection (RangeCheck)
-        self.add_subsubsubsection(subsection, dict_to_add)
-        # update the tab text with an asterix if required
-        self.update_tab_text()
+        idx = self.view.selectedIndexes()[0]
+        var_name = str(idx.data()) + "_cli"
+        dict_to_add = {"GapFillFromClimatology": {var_name: {"method":"interpolated daily"}}}
+        # add the subsubsection (GapFillFromClimatology)
+        self.add_subsubsubsection(dict_to_add)
 
     def add_dependencycheck(self):
         """ Add a dependency check to a variable."""
-        idx = self.tree.selectedIndexes()[0]
-        dict_to_add = {"DependencyCheck":{"Source":"[]"}}
-        # get the parents text
-        subsection_text = str(idx.data())
-        section_text = str(idx.parent().data())
-        # get the top level and sub sections
-        model = self.tree.model()
-        section, i = self.get_section_from_text(model, section_text)
-        subsection, j = self.get_subsection_from_text(section, subsection_text)
-        # add the subsubsection (RangeCheck)
-        self.add_subsubsection(subsection, dict_to_add)
-        # update the tab text with an asterix if required
-        self.update_tab_text()
+        dict_to_add = {"DependencyCheck":{"Source":""}}
+        # add the subsubsection (DependencyCheck)
+        self.add_subsubsection(dict_to_add)
 
     def add_diurnalcheck(self):
         """ Add a diurnal check to a variable."""
-        idx = self.tree.selectedIndexes()[0]
         dict_to_add = {"DiurnalCheck":{"NumSd":"5"}}
-        # get the parents text
-        subsection_text = str(idx.data())
-        section_text = str(idx.parent().data())
-        # get the top level and sub sections
-        model = self.tree.model()
-        section, i = self.get_section_from_text(model, section_text)
-        subsection, j = self.get_subsection_from_text(section, subsection_text)
-        # add the subsubsection (RangeCheck)
-        self.add_subsubsection(subsection, dict_to_add)
-        # update the tab text with an asterix if required
-        self.update_tab_text()
+        # add the subsubsection (DiurnalCheck)
+        self.add_subsubsection(dict_to_add)
 
     def add_excludedates(self):
         """ Add an exclude dates check to a variable."""
-        idx = self.tree.selectedIndexes()[0]
         dict_to_add = {"ExcludeDates":{"0":"[YYYY-mm-dd HH:MM, YYYY-mm-dd HH:MM]"}}
-        # get the parents text
-        subsection_text = str(idx.data())
-        section_text = str(idx.parent().data())
-        # get the top level and sub sections
-        model = self.tree.model()
-        section, i = self.get_section_from_text(model, section_text)
-        subsection, j = self.get_subsection_from_text(section, subsection_text)
-        # add the subsubsection (RangeCheck)
-        self.add_subsubsection(subsection, dict_to_add)
-        # update the tab text with an asterix if required
-        self.update_tab_text()
+        # add the subsubsection (ExcludeDates)
+        self.add_subsubsection(dict_to_add)
 
     def add_fileentry(self):
         """ Add a new entry to the [Files] section."""
-        child0 = QtGui.QStandardItem("New item")
-        child1 = QtGui.QStandardItem("")
-        self.tree.sections["Files"].appendRow([child0, child1])
-        self.update_tab_text()
+        dict_to_add = {"New item":""}
+        # add the subsection
+        self.add_subsection(dict_to_add)
+
+    def add_interpolatetype(self):
+        """ Add InterpolateType to the [Options] section."""
+        dict_to_add = {"InterpolateType": "Akima"}
+        # add the subsection
+        self.add_subsection(dict_to_add)
 
     def add_maxgapinterpolate(self):
         """ Add MaxGapInterpolate to the [Options] section."""
-        child0 = QtGui.QStandardItem("MaxGapInterpolate")
-        child1 = QtGui.QStandardItem("3")
-        self.tree.sections["Options"].appendRow([child0, child1])
-        self.update_tab_text()
+        dict_to_add = {"MaxGapInterpolate": "3"}
+        # add the subsection
+        self.add_subsection(dict_to_add)
 
     def add_filterlist(self):
         """ Add FilterList to the [Options] section."""
-        child0 = QtGui.QStandardItem("FilterList")
-        child1 = QtGui.QStandardItem("Fc")
-        self.tree.sections["Options"].appendRow([child0, child1])
-        self.update_tab_text()
+        dict_to_add = {"FilterList": "Fc"}
+        # add the subsection
+        self.add_subsection(dict_to_add)
 
     def add_turbulencefilter(self):
         """ Add TurbulenceFilter to the [Options] section."""
-        child0 = QtGui.QStandardItem("TurbulenceFilter")
-        child1 = QtGui.QStandardItem("ustar")
-        self.tree.sections["Options"].appendRow([child0, child1])
-        self.update_tab_text()
+        dict_to_add = {"TurbulenceFilter": "ustar"}
+        # add the subsection
+        self.add_subsection(dict_to_add)
 
     def add_daynightfilter(self):
         """ Add DayNightFilter to the [Options] section."""
-        child0 = QtGui.QStandardItem("DayNightFilter")
-        child1 = QtGui.QStandardItem("Fsd")
-        self.tree.sections["Options"].appendRow([child0, child1])
-        self.update_tab_text()
+        dict_to_add = {"DayNightFilter": "Fsd"}
+        # add the subsection
+        self.add_subsection(dict_to_add)
 
     def add_usefsdsynthreshold(self):
         """ Add UseFsdsyn_threshold to the [Options] section."""
-        child0 = QtGui.QStandardItem("UseFsdsyn_threshold")
-        child1 = QtGui.QStandardItem("No")
-        self.tree.sections["Options"].appendRow([child0, child1])
-        self.update_tab_text()
+        dict_to_add = {"UseFsdsyn_threshold": "No"}
+        # add the subsection
+        self.add_subsection(dict_to_add)
 
     def add_acceptdaytimes(self):
         """ Add AcceptDayTimes to the [Options] section."""
-        child0 = QtGui.QStandardItem("AcceptDayTimes")
-        child1 = QtGui.QStandardItem("Yes")
-        self.tree.sections["Options"].appendRow([child0, child1])
-        self.update_tab_text()
+        dict_to_add = {"AcceptDayTimes": "Yes"}
+        # add the subsection
+        self.add_subsection(dict_to_add)
 
     def add_useeveningfilter(self):
         """ Add UseEveningFilter to the [Options] section."""
-        child0 = QtGui.QStandardItem("UseEveningFilter")
-        child1 = QtGui.QStandardItem("No")
-        self.tree.sections["Options"].appendRow([child0, child1])
-        self.update_tab_text()
+        dict_to_add = {"UseEveningFilter": "No"}
+        # add the subsection
+        self.add_subsection(dict_to_add)
 
     def add_eveningfilterlength(self):
         """ Add EveningFilterLength to the [Options] section."""
-        child0 = QtGui.QStandardItem("EveningFilterLength")
-        child1 = QtGui.QStandardItem("3")
-        self.tree.sections["Options"].appendRow([child0, child1])
-        self.update_tab_text()
+        dict_to_add = {"EveningFilterLength": "3"}
+        # add the subsection
+        self.add_subsection(dict_to_add)
 
     def add_fsdthreshold(self):
         """ Add Fsd_threshold to the [Options] section."""
-        child0 = QtGui.QStandardItem("Fsd_threshold")
-        child1 = QtGui.QStandardItem("10")
-        self.tree.sections["Options"].appendRow([child0, child1])
-        self.update_tab_text()
+        dict_to_add = {"Fsd_threshold": "10"}
+        # add the subsection
+        self.add_subsection(dict_to_add)
 
     def add_sathreshold(self):
         """ Add sa_threshold to the [Options] section."""
-        child0 = QtGui.QStandardItem("sa_threshold")
-        child1 = QtGui.QStandardItem("-5")
-        self.tree.sections["Options"].appendRow([child0, child1])
-        self.update_tab_text()
+        dict_to_add = {"sa_threshold": "-5"}
+        # add the subsection
+        self.add_subsection(dict_to_add)
 
     def add_ustar_threshold(self):
         """ Add a year to the [ustar_threshold] section."""
-        model = self.tree.model()
-        # loop over selected items in the tree
-        for idx in self.tree.selectedIndexes():
-            # get the name of the parent of the selected item
-            parent = str(idx.parent().data())
-            # get the parent section
-            for i in range(model.rowCount()):
-                section = model.item(i)
-                if str(section.text()) == "ustar_threshold":
-                    break
-            child0 = QtGui.QStandardItem(str(section.rowCount()))
-            child1 = QtGui.QStandardItem("YYYY-mm-dd HH:MM, YYYY-mm-dd HH:MM, <ustar_threshold>")
-            section.appendRow([child0, child1])
+        # get the index of the selected item
+        idx = self.view.selectedIndexes()[0]
+        # get the selected item from the index
+        selected_item = idx.model().itemFromIndex(idx)
+        # get the children
+        child0 = QtGui.QStandardItem(str(selected_item.rowCount()))
+        child1 = QtGui.QStandardItem("YYYY-mm-dd HH:MM, YYYY-mm-dd HH:MM, <ustar_threshold>")
+        # add them
+        selected_item.appendRow([child0, child1])
+        self.update_tab_text()
 
     def add_MDS(self):
         """ Add GapFillUsingMDS to a variable."""
-        idx = self.tree.selectedIndexes()[0]
-        dict_to_add = {"GapFillUsingMDS":{"<var>_MDS": {"drivers": "['Fsd','Ta','VPD']",
-                                                        "tolerances":"[(20, 50), 2.5, 0.5]"}}}
-        # get the parent and sub section text
-        subsection_text = str(idx.data())
-        section_text = str(idx.parent().data())
-        # get the top level and sub sections
-        model = self.tree.model()
-        section, i = self.get_section_from_text(model, section_text)
-        subsection, j = self.get_subsection_from_text(section, subsection_text)
-        # change to the variable name
-        var_name = subsection_text+"_MDS"
-        dict_to_add["GapFillUsingMDS"][var_name] = dict_to_add["GapFillUsingMDS"].pop("<var>_MDS")
-        # add the subsubsection (MDS)
-        self.add_subsubsubsection(subsection, dict_to_add)
-        # update the tab text with an asterix if required
-        self.update_tab_text()
+        idx = self.view.selectedIndexes()[0]
+        var_name = str(idx.data()) + "_MDS"
+        dict_to_add = {"GapFillUsingMDS":{var_name: {"drivers": "['Fsd','Ta','VPD']",
+                                                     "tolerances":"[(20, 50), 2.5, 0.5]"}}}
+        # add the subsubsection (GapFillUsingMDS)
+        self.add_subsubsubsection(dict_to_add)
 
     def add_rangecheck(self):
         """ Add a range check to a variable."""
-        idx = self.tree.selectedIndexes()[0]
         dict_to_add = {"RangeCheck":{"Lower":0, "Upper": 1}}
-        # get the parents text
-        subsection_text = str(idx.data())
-        section_text = str(idx.parent().data())
-        # get the top level and sub sections
-        model = self.tree.model()
-        section, i = self.get_section_from_text(model, section_text)
-        subsection, j = self.get_subsection_from_text(section, subsection_text)
         # add the subsubsection (RangeCheck)
-        self.add_subsubsection(subsection, dict_to_add)
-        # update the tab text with an asterix if required
+        self.add_subsubsection(dict_to_add)
+
+    def add_subsection(self, dict_to_add):
+        """ Add a subsection to the model."""
+        # get the index of the selected item
+        idx = self.view.selectedIndexes()[0]
+        # get the selected item from the index
+        section = idx.model().itemFromIndex(idx)
+        for key in dict_to_add:
+            val = str(dict_to_add[key])
+            child0 = QtGui.QStandardItem(key)
+            child1 = QtGui.QStandardItem(val)
+            section.appendRow([child0, child1])
         self.update_tab_text()
 
-    def add_subsubsection(self, subsection, dict_to_add):
+    def add_subsubsection(self, dict_to_add):
         """ Add a subsubsection to the model."""
+        # get the index of the selected item
+        idx = self.view.selectedIndexes()[0]
+        # get the selected item from the index
+        subsection = idx.model().itemFromIndex(idx)
         for key1 in dict_to_add:
             subsubsection = QtGui.QStandardItem(key1)
             for key2 in dict_to_add[key1]:
+                val = str(dict_to_add[key1][key2])
                 child0 = QtGui.QStandardItem(key2)
-                child1 = QtGui.QStandardItem(str(dict_to_add[key1][key2]))
+                child1 = QtGui.QStandardItem(val)
                 subsubsection.appendRow([child0, child1])
             subsection.appendRow(subsubsection)
+        self.update_tab_text()
 
-    def add_subsubsubsection(self, subsection, dict_to_add):
+    def add_subsubsubsection(self, dict_to_add):
         """ Add a subsubsubsection to the model."""
+        # get the index of the selected item
+        idx = self.view.selectedIndexes()[0]
+        # get the selected item from the index
+        subsection = idx.model().itemFromIndex(idx)
         for key3 in dict_to_add:
             subsubsection = QtGui.QStandardItem(key3)
             for key4 in dict_to_add[key3]:
@@ -3516,32 +3458,57 @@ class edit_cfg_L5(QtGui.QWidget):
                     subsubsubsection.appendRow([child0, child1])
                 subsubsection.appendRow(subsubsubsection)
             subsection.appendRow(subsubsection)
+        self.update_tab_text()
 
-    def add_variable(self):
-        """ Add a variable."""
-        dict_to_add = {"GapFillUsingSOLO":{"<var>_SOLO": {"drivers": "[]"}},
-                       "GapFillUsingMDS":{"<var>_MDS":{"drivers":"['Fsd','Ta','VPD']",
-                                                       "tolerances":"[(20, 50), 2.5, 0.5]"}},
-                       "GapFillFromClimatology":{"<var>_cli":{"method":"interpolated daily"}}}
-        subsection = QtGui.QStandardItem("New variable")
-        self.add_subsubsubsection(subsection, dict_to_add)
-        dict_to_add = {"MergeSeries":{"Source":"['<var>','<var>_SOLO', '<var>_MDS', '<var>_cli']"}}
-        self.add_subsubsection(subsection, dict_to_add)
-        self.tree.sections["Fluxes"].appendRow(subsection)
+    def add_new_variable(self):
+        """ Add a new variable."""
+        gfSOLO = {"<var>_SOLO": {"drivers": ""}}
+        gfMDS = {"<var>_MDS": {"drivers": "Fsd,Ta,VPD", "tolerances": "(20, 50), 2.5, 0.5"}}
+        gfCLIM = {"<var>_cli": {"method": "interpolated daily"}}
+        gfMS = {"Source": "<var>,<var>_SOLO,<var>_MDS,<var>_cli"}
+        d2a = {"New variable": {"GapFillUsingSOLO": gfSOLO,
+                                "GapFillUsingMDS": gfMDS,
+                                "GapFillFromClimatology": gfCLIM,
+                                "MergeSeries": gfMS}}
+        self.add_variable(d2a)
         # update the tab text with an asterix if required
         self.update_tab_text()
 
+    def add_variable(self, d2a):
+        """ Add a variable."""
+        for key2 in d2a:
+            parent2 = QtGui.QStandardItem(key2)
+            # key3 is the gap filling method
+            for key3 in d2a[key2]:
+                parent3 = QtGui.QStandardItem(key3)
+                if key3 in ["GapFillUsingSOLO", "GapFillUsingMDS", "GapFillFromClimatology"]:
+                    # key4 is the gap fill variable name
+                    for key4 in d2a[key2][key3]:
+                        parent4 = QtGui.QStandardItem(key4)
+                        # key5 is the source of the alternate data
+                        for key5 in d2a[key2][key3][key4]:
+                            val = d2a[key2][key3][key4][key5]
+                            child0 = QtGui.QStandardItem(key5)
+                            child1 = QtGui.QStandardItem(val)
+                            parent4.appendRow([child0, child1])
+                        parent3.appendRow(parent4)
+                elif key3 in ["MergeSeries", "RangeCheck", "ExcludeDates"]:
+                    for key4 in d2a[key2][key3]:
+                        val = d2a[key2][key3][key4]
+                        child0 = QtGui.QStandardItem(key4)
+                        child1 = QtGui.QStandardItem(val)
+                        parent3.appendRow([child0, child1])
+                parent2.appendRow(parent3)
+            self.sections["Fluxes"].appendRow(parent2)
+
     def browse_cpd_file(self):
         """ Browse for the CPD results file path."""
-        model = self.tree.model()
-        idx = self.tree.selectedIndexes()[0]
-        # get the section containing the selected item
-        section_text = str(idx.parent().data())
-        # get the top level and sub sections
-        model = self.tree.model()
-        section, i = self.get_section_from_text(model, section_text)
-        # get the key and value of the selected item
-        key, val, found, i = self.get_keyval_by_val_name(section, str(idx.data()))
+        # get the index of the selected item
+        idx = self.view.selectedIndexes()[0]
+        # get the selected item from the index
+        selected_item = idx.model().itemFromIndex(idx)
+        # get the parent of the selected item
+        parent = selected_item.parent()
         # set the file filter
         file_filter = "*.xls"
         # get the file path from the selected item
@@ -3554,69 +3521,83 @@ class edit_cfg_L5(QtGui.QWidget):
         # update the model
         if len(str(new_file_path)) > 0:
             new_file_parts = os.path.split(str(new_file_path))
-            section.child(i, 1).setText(new_file_parts[1])
+            parent.child(selected_item.row(), 1).setText(new_file_parts[1])
 
     def browse_file_path(self):
         """ Browse for the data file path."""
-        model = self.tree.model()
-        idx = self.tree.selectedIndexes()[0]
-        # get the section containing the selected item
-        section_text = str(idx.parent().data())
-        # get the top level and sub sections
-        model = self.tree.model()
-        section, i = self.get_section_from_text(model, section_text)
-        # get the key and value of the selected item
-        key, val, found, j = self.get_keyval_by_val_name(section, str(idx.data()))
+        # get the index of the selected item
+        idx = self.view.selectedIndexes()[0]
+        # get the selected item from the index
+        selected_item = idx.model().itemFromIndex(idx)
+        # get the parent of the selected item
+        parent = selected_item.parent()
+        # get the selected entry text
+        file_path = str(idx.data())
         # dialog for new directory
-        new_dir = QtGui.QFileDialog.getExistingDirectory(self, "Open a folder", val, QtGui.QFileDialog.ShowDirsOnly)
-        new_dir = os.path.join(str(new_dir), "")
-        # update the model
+        new_dir = QtGui.QFileDialog.getExistingDirectory(self, "Choose a folder",
+                                                             file_path, QtGui.QFileDialog.ShowDirsOnly)
+        # quit if cancel button pressed
         if len(str(new_dir)) > 0:
-            section.child(j, 1).setText(new_dir)
+            # make sure the string ends with a path delimiter
+            new_dir = os.path.join(str(new_dir), "")
+            # update the model
+            parent.child(selected_item.row(), 1).setText(new_dir)
 
     def browse_input_file(self):
         """ Browse for the input data file path."""
-        model = self.tree.model()
-        idx = self.tree.selectedIndexes()[0]
-        # get the section containing the selected item
-        section_text = str(idx.parent().data())
-        subsection_text = str(idx.data())
-        # get the top level and sub sections
-        model = self.tree.model()
-        section, i = self.get_section_from_text(model, section_text)
+        # get the index of the selected item
+        idx = self.view.selectedIndexes()[0]
+        # get the selected item from the index
+        selected_item = idx.model().itemFromIndex(idx)
+        # get the parent of the selected item
+        parent = selected_item.parent()
         # get the file_path so it can be used as a default directory
-        key, file_path, found, j = self.get_keyval_by_key_name(section, "file_path")
-        # get the row number for the selected item
-        key, val, found, k = self.get_keyval_by_val_name(section, subsection_text)
+        key, file_path, found, j = self.get_keyval_by_key_name(parent, "file_path")
         # dialog for open file
         new_file_path = QtGui.QFileDialog.getOpenFileName(caption="Choose an input file ...",
-                                                          directory=file_path, filter="*.nc")
+                                                              directory=file_path)
         # update the model
         if len(str(new_file_path)) > 0:
             new_file_parts = os.path.split(str(new_file_path))
-            section.child(k, 1).setText(new_file_parts[1])
+            parent.child(selected_item.row(), 1).setText(new_file_parts[1])
 
     def browse_output_file(self):
         """ Browse for the output data file path."""
-        model = self.tree.model()
-        idx = self.tree.selectedIndexes()[0]
-        # get the section containing the selected item
-        section_text = str(idx.parent().data())
-        subsection_text = str(idx.data())
+        # get the index of the selected item
+        idx = self.view.selectedIndexes()[0]
+        # get the selected item from the index
+        selected_item = idx.model().itemFromIndex(idx)
+        # get the parent of the selected item
+        parent = selected_item.parent()
         # get the top level and sub sections
-        model = self.tree.model()
-        section, i = self.get_section_from_text(model, section_text)
         # get the file_path so it can be used as a default directory
-        key, file_path, found, j = self.get_keyval_by_key_name(section, "file_path")
-        # get the row number for the selected item
-        key, val, found, k = self.get_keyval_by_val_name(section, subsection_text)
+        key, file_path, found, j = self.get_keyval_by_key_name(parent, "file_path")
         # dialog for open file
         new_file_path = QtGui.QFileDialog.getSaveFileName(caption="Choose an output file ...",
-                                                          directory=file_path, filter="*.nc")
+                                                              directory=file_path, filter="*.nc")
         # update the model
         if len(str(new_file_path)) > 0:
             new_file_parts = os.path.split(str(new_file_path))
-            section.child(k, 1).setText(new_file_parts[1])
+            parent.child(selected_item.row(), 1).setText(new_file_parts[1])
+
+    def change_selected_text(self, new_text):
+        """ Change the selected text."""
+        idx = self.view.selectedIndexes()[0]
+        selected_item = idx.model().itemFromIndex(idx)
+        selected_item.setText(new_text)
+
+    def get_existing_entries(self):
+        """ Get a list of existing entries in the current section."""
+        # index of the selected item
+        idx = self.view.selectedIndexes()[0]
+        # get the selected item from its index
+        selected_item = idx.model().itemFromIndex(idx)
+        # build a list of existing QC checks
+        existing_entries = []
+        if selected_item.hasChildren():
+            for i in range(selected_item.rowCount()):
+                existing_entries.append(str(selected_item.child(i, 0).text()))
+        return existing_entries
 
     def get_keyval_by_key_name(self, section, key):
         """ Get the value from a section based on the key name."""
@@ -3631,23 +3612,10 @@ class edit_cfg_L5(QtGui.QWidget):
                 break
         return key_child, val_child, found, i
 
-    def get_keyval_by_val_name(self, section, val):
-        """ Get the value from a section based on the value name."""
-        found = False
-        key_child = ""
-        val_child = ""
-        for i in range(section.rowCount()):
-            if str(section.child(i, 1).text()) == str(val):
-                found = True
-                key_child = str(section.child(i, 0).text())
-                val_child = str(section.child(i, 1).text())
-                break
-        return key_child, val_child, found, i
-
     def get_level_selected_item(self):
         """ Get the level of the selected item."""
-        model = self.tree.model()
-        indexes = self.tree.selectedIndexes()
+        model = self.model
+        indexes = self.view.selectedIndexes()
         level = -1
         if len(indexes) > 0:
             level = 0
@@ -3656,32 +3624,6 @@ class edit_cfg_L5(QtGui.QWidget):
                 index = index.parent()
                 level += 1
         return level
-
-    def get_section_from_text(self, model, section_name):
-        """ Gets a section from a model by matching the section name."""
-        for i in range(model.rowCount()):
-            section = model.item(i)
-            if str(section.text()) == str(section_name):
-                break
-        return section, i
-
-    def get_subsection_from_index(self, section, idx):
-        """ Gets a subsection from a model by matching the subsection name."""
-        for i in range(section.rowCount()):
-            # get the child subsection
-            subsection = section.child(i)
-            # check to see if we have the selected subsection
-            if str(subsection.text()) == str(idx.data()):
-                break
-        return subsection, i
-
-    def get_subsection_from_text(self, section, text):
-        """ Gets a subsection from a model by matching the subsection name"""
-        for i in range(section.rowCount()):
-            subsection = section.child(i)
-            if str(subsection.text()) == text:
-                break
-        return subsection, i
 
     def parse_cfg_values(self, k, v, strip_list):
         """ Parse key values to remove unnecessary characters."""
@@ -3718,147 +3660,17 @@ class edit_cfg_L5(QtGui.QWidget):
                 self.cfg_changed = True
         return v
 
-    def remove_item_files(self):
-        """ Remove an item from the Files section."""
+    def remove_item(self):
+        """ Remove an item from the view."""
         # loop over selected items in the tree
-        for idx in self.tree.selectedIndexes():
-            section_text = str(idx.parent().data())
-            subsection_text = str(idx.data())
-            # get the top level section
-            model = self.tree.model()
-            section, i = self.get_section_from_text(model, section_text)
-            # get the subsection within the top level section
-            subsection, j = self.get_subsection_from_text(section, subsection_text)
-            # remove it
-            section.removeRow(j)
-            self.update_tab_text()
-
-    def remove_qc_check(self):
-        """ Remove a QC check."""
-        # loop over selected items in the tree
-        for idx in self.tree.selectedIndexes():
-            subsubsection_text = str(idx.data())
-            subsection_text = str(idx.parent().data())
-            section_text = str(idx.parent().parent().data())
-            # get the [Variables] section
-            model = self.tree.model()
-            section, i = self.get_section_from_text(model, section_text)
-            # get the variable section
-            subsection, j = self.get_subsection_from_text(section, subsection_text)
-            # get the gap filling method section
-            subsubsection, k = self.get_subsection_from_text(subsection, subsubsection_text)
-            subsection.removeRow(k)
-            self.update_tab_text()
-
-    def remove_gf_method(self):
-        """ Remove a gap filling method."""
-        # loop over selected items in the tree
-        for idx in self.tree.selectedIndexes():
-            subsubsection_text = str(idx.data())
-            subsection_text = str(idx.parent().data())
-            section_text = str(idx.parent().parent().data())
-            # get the [Variables] section
-            model = self.tree.model()
-            section, i = self.get_section_from_text(model, section_text)
-            # get the variable section
-            subsection, j = self.get_subsection_from_text(section, subsection_text)
-            # get the gap filling method section
-            subsubsection, k = self.get_subsection_from_text(subsection, subsubsection_text)
-            subsection.removeRow(k)
-            self.update_tab_text()
-
-    def remove_gf_method_variable(self):
-        """ Remove a gap filling method variable."""
-        # loop over selected items in the tree
-        for idx in self.tree.selectedIndexes():
-            # get the parents text
-            subsubsubsection_text = str(idx.data())
-            subsubsection_text = str(idx.parent().data())
-            subsection_text = str(idx.parent().parent().data())
-            section_text = str(idx.parent().parent().parent().data())
-            # get the [Variables] section
-            model = self.tree.model()
-            section, i = self.get_section_from_text(model, section_text)
-            # get the variable section
-            subsection, j = self.get_subsection_from_text(section, subsection_text)
-            # get the gap filling method section
-            subsubsection, k = self.get_subsection_from_text(subsection, subsubsection_text)
-            # get the variable gap fill method section
-            subsubsubsection, l = self.get_subsection_from_text(subsubsection, subsubsubsection_text)
-            subsubsection.removeRow(l)
-            self.update_tab_text()
-
-    def remove_gf_method_variable_setting(self):
-        """ Remove a setting for a gap filling method variable."""
-        # loop over selected items in the tree
-        for idx in self.tree.selectedIndexes():
-            # get the parents text
-            subsubsubsubsection_text = str(idx.data())
-            subsubsubsection_text = str(idx.parent().data())
-            subsubsection_text = str(idx.parent().parent().data())
-            subsection_text = str(idx.parent().parent().parent().data())
-            section_text = str(idx.parent().parent().parent().parent().data())
-            # get the [Variables] section
-            model = self.tree.model()
-            section, i = self.get_section_from_text(model, section_text)
-            # get the variable section
-            subsection, j = self.get_subsection_from_text(section, subsection_text)
-            # get the gap filling method section
-            subsubsection, k = self.get_subsection_from_text(subsection, subsubsection_text)
-            # get the variable gap fill method section
-            subsubsubsection, l = self.get_subsection_from_text(subsubsection, subsubsubsection_text)
-            # get the setting for the variable in gap fill method section
-            subsubsubsubsection, m = self.get_subsection_from_text(subsubsubsection, subsubsubsubsection_text)
-            subsubsubsection.removeRow(m)
-            self.update_tab_text()
-
-    def remove_item_options(self):
-        """ Remove an item from the Options section."""
-        # loop over selected items in the tree
-        for idx in self.tree.selectedIndexes():
-            section_text = str(idx.parent().data())
-            subsection_text = str(idx.data())
-            # get the "Options" section
-            model = self.tree.model()
-            section, i = self.get_section_from_text(model, section_text)
-            subsection, j = self.get_subsection_from_text(section, subsection_text)
-            section.removeRow(j)
-            self.update_tab_text()
-
-    def remove_variable(self):
-        """ Remove a variable."""
-        for idx in self.tree.selectedIndexes():
-            # get the parents text
-            subsection_text = str(idx.data())
-            section_text = str(idx.parent().data())
-            # get the "Drivers" section
-            model = self.tree.model()
-            section, i = self.get_section_from_text(model, section_text)
-            subsection, j = self.get_subsection_from_text(section, subsection_text)
-            section.removeRow(j)
-            self.update_tab_text()
-
-    def selection_is_key(self, section, idx):
-        """ Return True if the selected item is a key."""
-        result = False
-        for i in range(section.rowCount()):
-            key = str(section.child(i, 0).text())
-            val = str(section.child(i, 1).text())
-            if str(idx.data()) == key:
-                result = True
-                break
-        return result
-
-    def selection_is_value(self, section, idx):
-        """ Return True if the selected item is a value."""
-        result = False
-        for i in range(section.rowCount()):
-            key = str(section.child(i, 0).text())
-            val = str(section.child(i, 1).text())
-            if str(idx.data()) == val:
-                result = True
-                break
-        return result
+        for idx in self.view.selectedIndexes():
+            # get the selected item from the index
+            selected_item = idx.model().itemFromIndex(idx)
+            # get the parent of the selected item
+            parent = selected_item.parent()
+            # remove the row
+            parent.removeRow(selected_item.row())
+        self.update_tab_text()
 
     def update_tab_text(self):
         """ Add an asterisk to the tab title text to indicate tab contents have changed."""
