@@ -678,13 +678,8 @@ class edit_cfg_L2(QtGui.QWidget):
                 else:
                     pass
             elif str(parent.text()) == "Variables":
-                # get the selected item from its index
-                selected_item = idx.model().itemFromIndex(idx)
-                # build a list of existing QC checks
-                if selected_item.hasChildren():
-                    existing_entries = []
-                    for i in range(selected_item.rowCount()):
-                        existing_entries.append(str(selected_item.child(i, 0).text()))
+                # get a list of existing entries
+                existing_entries = self.get_existing_entries()
                 # only put a QC check in the context menu if it is not already present
                 if "RangeCheck" not in existing_entries:
                     self.context_menu.actionAddRangeCheck = QtGui.QAction(self)
@@ -807,6 +802,19 @@ class edit_cfg_L2(QtGui.QWidget):
                             val4 = str(subsubsection.child(l, 1).text())
                             cfg[key1][key2][key3][key4] = val4
         return cfg
+
+    def get_existing_entries(self):
+        """ Get a list of existing entries in the current section."""
+        # index of the selected item
+        idx = self.view.selectedIndexes()[0]
+        # get the selected item from its index
+        selected_item = idx.model().itemFromIndex(idx)
+        # build a list of existing QC checks
+        existing_entries = []
+        if selected_item.hasChildren():
+            for i in range(selected_item.rowCount()):
+                existing_entries.append(str(selected_item.child(i, 0).text()))
+        return existing_entries
 
     def get_keyval_by_key_name(self, section, key):
         """ Get the value from a section based on the key name."""
@@ -1318,13 +1326,8 @@ class edit_cfg_L3(QtGui.QWidget):
                 self.context_menu.addAction(self.context_menu.actionRemoveOption)
                 self.context_menu.actionRemoveOption.triggered.connect(self.remove_item)
             elif str(parent.text()) == "Variables":
-                # get the selected item from its index
-                selected_item = idx.model().itemFromIndex(idx)
-                # build a list of existing QC checks
-                if selected_item.hasChildren():
-                    existing_entries = []
-                    for i in range(selected_item.rowCount()):
-                        existing_entries.append(str(selected_item.child(i, 0).text()))
+                # get a list of existing entries
+                existing_entries = self.get_existing_entries()
                 # only put a QC check in the context menu if it is not already present
                 if "RangeCheck" not in existing_entries:
                     self.context_menu.actionAddRangeCheck = QtGui.QAction(self)
@@ -3051,8 +3054,8 @@ class edit_cfg_L5(QtGui.QWidget):
                 # get the selected item from its index
                 selected_item = idx.model().itemFromIndex(idx)
                 # build a list of existing QC checks
+                existing_entries = []
                 if selected_item.hasChildren():
-                    existing_entries = []
                     for i in range(selected_item.rowCount()):
                         existing_entries.append(str(selected_item.child(i, 0).text()))
                 # only put a QC check in the context menu if it is not already present
@@ -3164,8 +3167,8 @@ class edit_cfg_L5(QtGui.QWidget):
                 # get the selected item from its index
                 selected_item = idx.model().itemFromIndex(idx)
                 # build a list of existing QC checks
+                existing_entries = []
                 if selected_item.hasChildren():
-                    existing_entries = []
                     for i in range(selected_item.rowCount()):
                         existing_entries.append(str(selected_item.child(i, 0).text()))
                 # only put a QC check in the context menu if it is not already present
@@ -4008,8 +4011,8 @@ class edit_cfg_L6(QtGui.QWidget):
                 # get the selected item from its index
                 selected_item = idx.model().itemFromIndex(idx)
                 # build a list of existing QC checks
+                existing_entries = []
                 if selected_item.hasChildren():
-                    existing_entries = []
                     for i in range(selected_item.rowCount()):
                         existing_entries.append(str(selected_item.child(i, 0).text()))
                 # only put a QC check in the context menu if it is not already present
