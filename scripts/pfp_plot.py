@@ -404,7 +404,7 @@ def plottimeseries(cf, nFig, dsa, dsb):
             section = pfp_utils.get_cfsection(cf,series=ThisOne,mode='quiet')
             if len(section)!=0:
                 if 'DiurnalCheck' in cf[section][ThisOne].keys():
-                    NSdarr = numpy.array(eval(cf[section][ThisOne]['DiurnalCheck']['NumSd']),dtype=float)
+                    NSdarr = numpy.array(pfp_ck.parse_rangecheck_limit(cf[section][ThisOne]['DiurnalCheck']['NumSd']))
                     nSd = NSdarr[Month-1]
                     hr2_ax.plot(Hr2,Av2+nSd*Sd2,'r.',Hr2,Av2-nSd*Sd2,'b.')
             plt.xlim(0,24)
