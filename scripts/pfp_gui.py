@@ -735,7 +735,7 @@ class edit_cfg_L2(QtGui.QWidget):
                 self.context_menu.actionRemoveExcludeDateRange = QtGui.QAction(self)
                 self.context_menu.actionRemoveExcludeDateRange.setText("Remove date range")
                 self.context_menu.addAction(self.context_menu.actionRemoveExcludeDateRange)
-                self.context_menu.actionRemoveExcludeDateRange.triggered.connect(self.remove_item)
+                self.context_menu.actionRemoveExcludeDateRange.triggered.connect(self.remove_daterange)
 
         self.context_menu.exec_(self.view.viewport().mapToGlobal(position))
 
@@ -960,6 +960,20 @@ class edit_cfg_L2(QtGui.QWidget):
                 v = v.replace(c, "")
                 self.cfg_changed = True
         return v
+
+    def remove_daterange(self):
+        """ Remove a date range from the ustar_threshold section."""
+        # remove the date range
+        self.remove_item()
+        # index of selected item
+        idx = self.view.selectedIndexes()[0]
+        # item from index
+        selected_item = idx.model().itemFromIndex(idx)
+        # parent of selected item
+        parent = selected_item.parent()
+        # renumber the subsections
+        for i in range(parent.rowCount()):
+            parent.child(i, 0).setText(str(i))
 
     def remove_item(self):
         """ Remove an item from the view."""
@@ -1390,7 +1404,7 @@ class edit_cfg_L3(QtGui.QWidget):
                 self.context_menu.actionRemoveExcludeDateRange = QtGui.QAction(self)
                 self.context_menu.actionRemoveExcludeDateRange.setText("Remove date range")
                 self.context_menu.addAction(self.context_menu.actionRemoveExcludeDateRange)
-                self.context_menu.actionRemoveExcludeDateRange.triggered.connect(self.remove_item)
+                self.context_menu.actionRemoveExcludeDateRange.triggered.connect(self.remove_daterange)
 
         self.context_menu.exec_(self.view.viewport().mapToGlobal(position))
 
@@ -1649,6 +1663,20 @@ class edit_cfg_L3(QtGui.QWidget):
                     self.cfg_changed = True
                 v = v.replace(c, "")
         return v
+
+    def remove_daterange(self):
+        """ Remove a date range from the ustar_threshold section."""
+        # remove the date range
+        self.remove_item()
+        # index of selected item
+        idx = self.view.selectedIndexes()[0]
+        # item from index
+        selected_item = idx.model().itemFromIndex(idx)
+        # parent of selected item
+        parent = selected_item.parent()
+        # renumber the subsections
+        for i in range(parent.rowCount()):
+            parent.child(i, 0).setText(str(i))
 
     def remove_item(self):
         """ Remove an item from the view."""
@@ -2404,7 +2432,17 @@ class edit_cfg_L4(QtGui.QWidget):
         elif level == 2:
             # sections with 3 levels
             subsubsection_name = str(idx.data())
-            if subsubsection_name in ["RangeCheck", "DependencyCheck", "DiurnalCheck", "ExcludeDates"]:
+            if subsubsection_name in ["RangeCheck", "DependencyCheck", "DiurnalCheck"]:
+                self.context_menu.actionRemoveQCCheck = QtGui.QAction(self)
+                self.context_menu.actionRemoveQCCheck.setText("Remove QC check")
+                self.context_menu.addAction(self.context_menu.actionRemoveQCCheck)
+                self.context_menu.actionRemoveQCCheck.triggered.connect(self.remove_item)
+            elif subsubsection_name in ["ExcludeDates"]:
+                self.context_menu.actionAddExcludeDateRange = QtGui.QAction(self)
+                self.context_menu.actionAddExcludeDateRange.setText("Add date range")
+                self.context_menu.addAction(self.context_menu.actionAddExcludeDateRange)
+                self.context_menu.actionAddExcludeDateRange.triggered.connect(self.add_excludedaterange)
+                self.context_menu.addSeparator()
                 self.context_menu.actionRemoveQCCheck = QtGui.QAction(self)
                 self.context_menu.actionRemoveQCCheck.setText("Remove QC check")
                 self.context_menu.addAction(self.context_menu.actionRemoveQCCheck)
@@ -2421,33 +2459,36 @@ class edit_cfg_L4(QtGui.QWidget):
                 self.context_menu.actionRemoveGFMethod.triggered.connect(self.remove_item)
         elif level == 3:
             # sections with 4 levels
-            # get a list of existing entries
-            existing_entries = self.get_existing_entries()
-            if "source" not in existing_entries:
-                self.context_menu.actionAddAltSource = QtGui.QAction(self)
-                self.context_menu.actionAddAltSource.setText("Add alternate source")
-                self.context_menu.addAction(self.context_menu.actionAddAltSource)
-                self.context_menu.actionAddAltSource.triggered.connect(self.add_alternate_source)
-                add_separator = True
-            if "fit" not in existing_entries:
-                self.context_menu.actionAddAltFit = QtGui.QAction(self)
-                self.context_menu.actionAddAltFit.setText("Add fit")
-                self.context_menu.addAction(self.context_menu.actionAddAltFit)
-                self.context_menu.actionAddAltFit.triggered.connect(self.add_alternate_fit)
-                add_separator = True
-            if "lag" not in existing_entries:
-                self.context_menu.actionAddAltLag = QtGui.QAction(self)
-                self.context_menu.actionAddAltLag.setText("Add lag")
-                self.context_menu.addAction(self.context_menu.actionAddAltLag)
-                self.context_menu.actionAddAltLag.triggered.connect(self.add_alternate_lag)
-                add_separator = True
-            if add_separator:
-                add_separator = False
-                self.context_menu.addSeparator()
-            self.context_menu.actionRemoveGFMethodVariable = QtGui.QAction(self)
-            self.context_menu.actionRemoveGFMethodVariable.setText("Remove variable")
-            self.context_menu.addAction(self.context_menu.actionRemoveGFMethodVariable)
-            self.context_menu.actionRemoveGFMethodVariable.triggered.connect(self.remove_item)
+            # get the parent text
+            parent = idx.parent()
+            parent_text = str(parent.data())
+            if parent_text == "ExcludeDates":
+                self.context_menu.actionRemoveExcludeDateRange = QtGui.QAction(self)
+                self.context_menu.actionRemoveExcludeDateRange.setText("Remove date range")
+                self.context_menu.addAction(self.context_menu.actionRemoveExcludeDateRange)
+                self.context_menu.actionRemoveExcludeDateRange.triggered.connect(self.remove_daterange)
+            elif parent_text == "GapFillFromAlternate":
+                # get a list of existing entries
+                existing_entries = self.get_existing_entries()
+                if "fit" not in existing_entries:
+                    self.context_menu.actionAddAltFit = QtGui.QAction(self)
+                    self.context_menu.actionAddAltFit.setText("Add fit")
+                    self.context_menu.addAction(self.context_menu.actionAddAltFit)
+                    self.context_menu.actionAddAltFit.triggered.connect(self.add_alternate_fit)
+                    add_separator = True
+                if "lag" not in existing_entries:
+                    self.context_menu.actionAddAltLag = QtGui.QAction(self)
+                    self.context_menu.actionAddAltLag.setText("Add lag")
+                    self.context_menu.addAction(self.context_menu.actionAddAltLag)
+                    self.context_menu.actionAddAltLag.triggered.connect(self.add_alternate_lag)
+                    add_separator = True
+                if add_separator:
+                    add_separator = False
+                    self.context_menu.addSeparator()
+                self.context_menu.actionRemoveGFMethodVariable = QtGui.QAction(self)
+                self.context_menu.actionRemoveGFMethodVariable.setText("Remove variable")
+                self.context_menu.addAction(self.context_menu.actionRemoveGFMethodVariable)
+                self.context_menu.actionRemoveGFMethodVariable.triggered.connect(self.remove_item)
         elif level == 4:
             selected_item = idx.model().itemFromIndex(idx)
             selected_text = str(idx.data())
@@ -2544,9 +2585,22 @@ class edit_cfg_L4(QtGui.QWidget):
 
     def add_excludedates(self):
         """ Add an exclude dates check to a variable."""
-        dict_to_add = {"ExcludeDates":{"0":"[YYYY-mm-dd HH:MM, YYYY-mm-dd HH:MM]"}}
+        dict_to_add = {"ExcludeDates":{"0":"YYYY-mm-dd HH:MM, YYYY-mm-dd HH:MM"}}
         # add the subsubsection (ExcludeDates)
         self.add_subsubsection(dict_to_add)
+
+    def add_excludedaterange(self):
+        """ Add another date range to the ExcludeDates QC check."""
+        # loop over selected items in the tree
+        idx = self.view.selectedIndexes()[0]
+        # get the selected item from the index
+        selected_item = idx.model().itemFromIndex(idx)
+        # get the children
+        child0 = QtGui.QStandardItem(str(selected_item.rowCount()))
+        child1 = QtGui.QStandardItem("YYYY-mm-dd HH:MM, YYYY-mm-dd HH:MM")
+        # add them
+        selected_item.appendRow([child0, child1])
+        self.update_tab_text()
 
     def add_fileentry(self):
         """ Add a new entry to the [Files] section."""
@@ -2863,6 +2917,20 @@ class edit_cfg_L4(QtGui.QWidget):
                 self.cfg_changed = True
         return v
 
+    def remove_daterange(self):
+        """ Remove a date range from the ustar_threshold section."""
+        # remove the date range
+        self.remove_item()
+        # index of selected item
+        idx = self.view.selectedIndexes()[0]
+        # item from index
+        selected_item = idx.model().itemFromIndex(idx)
+        # parent of selected item
+        parent = selected_item.parent()
+        # renumber the subsections
+        for i in range(parent.rowCount()):
+            parent.child(i, 0).setText(str(i))
+
     def remove_item(self):
         """ Remove an item from the view."""
         # loop over selected items in the tree
@@ -3049,6 +3117,16 @@ class edit_cfg_L5(QtGui.QWidget):
         add_separator = False
         if level == 0:
             # sections with only 1 level
+            # get a list of the section headings at the root level
+            section_headings = []
+            root = self.model.invisibleRootItem()
+            for i in range(root.rowCount()):
+                section_headings.append(str(root.child(i).text()))
+            if "ustar_threshold" not in section_headings:
+                self.context_menu.actionAddUstarThreshold = QtGui.QAction(self)
+                self.context_menu.actionAddUstarThreshold.setText("Add u* threshold section")
+                self.context_menu.addAction(self.context_menu.actionAddUstarThreshold)
+                self.context_menu.actionAddUstarThreshold.triggered.connect(self.add_ustar_threshold_section)
             if selected_text == "Files":
                 self.context_menu.actionAddFileEntry = QtGui.QAction(self)
                 self.context_menu.actionAddFileEntry.setText("Add item")
@@ -3057,7 +3135,7 @@ class edit_cfg_L5(QtGui.QWidget):
             elif selected_text == "Output":
                 pass
             elif selected_text == "Options":
-                # get a list of existing entries
+                # get a list of existing entries in this section
                 existing_entries = self.get_existing_entries()
                 # only put an option in the context menu if it is not already present
                 if "MaxGapInterpolate" not in existing_entries:
@@ -3119,7 +3197,12 @@ class edit_cfg_L5(QtGui.QWidget):
                 self.context_menu.actionAddUstarThreshold = QtGui.QAction(self)
                 self.context_menu.actionAddUstarThreshold.setText("Add year")
                 self.context_menu.addAction(self.context_menu.actionAddUstarThreshold)
-                self.context_menu.actionAddUstarThreshold.triggered.connect(self.add_ustar_threshold)
+                self.context_menu.actionAddUstarThreshold.triggered.connect(self.add_ustar_threshold_daterange)
+                self.context_menu.addSeparator()
+                self.context_menu.actionRemoveUstarThreshold = QtGui.QAction(self)
+                self.context_menu.actionRemoveUstarThreshold.setText("Remove section")
+                self.context_menu.addAction(self.context_menu.actionRemoveUstarThreshold)
+                self.context_menu.actionRemoveUstarThreshold.triggered.connect(self.remove_section)
         elif level == 1:
             # sections with 2 levels
             # get the parent of the selected item
@@ -3234,10 +3317,25 @@ class edit_cfg_L5(QtGui.QWidget):
                 self.context_menu.actionRemoveOption.setText("Remove variable")
                 self.context_menu.addAction(self.context_menu.actionRemoveOption)
                 self.context_menu.actionRemoveOption.triggered.connect(self.remove_item)
+            elif (str(parent.text()) == "ustar_threshold"):
+                self.context_menu.actionRemoveDateRange = QtGui.QAction(self)
+                self.context_menu.actionRemoveDateRange.setText("Remove date range")
+                self.context_menu.addAction(self.context_menu.actionRemoveDateRange)
+                self.context_menu.actionRemoveDateRange.triggered.connect(self.remove_daterange)
         elif level == 2:
             # sections with 3 levels
             subsubsection_name = str(idx.data())
-            if subsubsection_name in ["RangeCheck", "DependencyCheck", "DiurnalCheck", "ExcludeDates"]:
+            if subsubsection_name in ["RangeCheck", "DependencyCheck", "DiurnalCheck"]:
+                self.context_menu.actionRemoveQCCheck = QtGui.QAction(self)
+                self.context_menu.actionRemoveQCCheck.setText("Remove QC check")
+                self.context_menu.addAction(self.context_menu.actionRemoveQCCheck)
+                self.context_menu.actionRemoveQCCheck.triggered.connect(self.remove_item)
+            elif subsubsection_name in ["ExcludeDates"]:
+                self.context_menu.actionAddExcludeDateRange = QtGui.QAction(self)
+                self.context_menu.actionAddExcludeDateRange.setText("Add date range")
+                self.context_menu.addAction(self.context_menu.actionAddExcludeDateRange)
+                self.context_menu.actionAddExcludeDateRange.triggered.connect(self.add_excludedaterange)
+                self.context_menu.addSeparator()
                 self.context_menu.actionRemoveQCCheck = QtGui.QAction(self)
                 self.context_menu.actionRemoveQCCheck.setText("Remove QC check")
                 self.context_menu.addAction(self.context_menu.actionRemoveQCCheck)
@@ -3249,21 +3347,29 @@ class edit_cfg_L5(QtGui.QWidget):
                 self.context_menu.actionRemoveGFMethod.triggered.connect(self.remove_item)
         elif level == 3:
             # sections with 4 levels
-            # get a list of existing entries
-            existing_entries = self.get_existing_entries()
-            if "solo_settings" not in existing_entries:
-                self.context_menu.actionAddSOLOSettings = QtGui.QAction(self)
-                self.context_menu.actionAddSOLOSettings.setText("Add SOLO settings")
-                self.context_menu.addAction(self.context_menu.actionAddSOLOSettings)
-                self.context_menu.actionAddSOLOSettings.triggered.connect(self.add_solo_settings)
-                add_separator = True
-            if add_separator:
-                add_separator = False
-                self.context_menu.addSeparator()
-            self.context_menu.actionRemoveGFMethodVariable = QtGui.QAction(self)
-            self.context_menu.actionRemoveGFMethodVariable.setText("Remove variable")
-            self.context_menu.addAction(self.context_menu.actionRemoveGFMethodVariable)
-            self.context_menu.actionRemoveGFMethodVariable.triggered.connect(self.remove_item)
+            # get the parent text
+            parent_text = str(idx.parent().data())
+            if parent_text == "ExcludeDates":
+                self.context_menu.actionRemoveExcludeDateRange = QtGui.QAction(self)
+                self.context_menu.actionRemoveExcludeDateRange.setText("Remove date range")
+                self.context_menu.addAction(self.context_menu.actionRemoveExcludeDateRange)
+                self.context_menu.actionRemoveExcludeDateRange.triggered.connect(self.remove_daterange)
+            elif parent_text == "GapFillUsingSOLO":
+                # get a list of existing entries
+                existing_entries = self.get_existing_entries()
+                if "solo_settings" not in existing_entries:
+                    self.context_menu.actionAddSOLOSettings = QtGui.QAction(self)
+                    self.context_menu.actionAddSOLOSettings.setText("Add SOLO settings")
+                    self.context_menu.addAction(self.context_menu.actionAddSOLOSettings)
+                    self.context_menu.actionAddSOLOSettings.triggered.connect(self.add_solo_settings)
+                    add_separator = True
+                if add_separator:
+                    add_separator = False
+                    self.context_menu.addSeparator()
+                self.context_menu.actionRemoveGFMethodVariable = QtGui.QAction(self)
+                self.context_menu.actionRemoveGFMethodVariable.setText("Remove variable")
+                self.context_menu.addAction(self.context_menu.actionRemoveGFMethodVariable)
+                self.context_menu.actionRemoveGFMethodVariable.triggered.connect(self.remove_item)
         elif level == 4:
             selected_text = str(idx.data())
             if selected_text in ["solo_settings"]:
@@ -3306,9 +3412,22 @@ class edit_cfg_L5(QtGui.QWidget):
         # add the subsubsection (DiurnalCheck)
         self.add_subsubsection(dict_to_add)
 
+    def add_excludedaterange(self):
+        """ Add another date range to the ExcludeDates QC check."""
+        # loop over selected items in the tree
+        idx = self.view.selectedIndexes()[0]
+        # get the selected item from the index
+        selected_item = idx.model().itemFromIndex(idx)
+        # get the children
+        child0 = QtGui.QStandardItem(str(selected_item.rowCount()))
+        child1 = QtGui.QStandardItem("YYYY-mm-dd HH:MM, YYYY-mm-dd HH:MM")
+        # add them
+        selected_item.appendRow([child0, child1])
+        self.update_tab_text()
+
     def add_excludedates(self):
         """ Add an exclude dates check to a variable."""
-        dict_to_add = {"ExcludeDates":{"0":"[YYYY-mm-dd HH:MM, YYYY-mm-dd HH:MM]"}}
+        dict_to_add = {"ExcludeDates":{"0":"YYYY-mm-dd HH:MM, YYYY-mm-dd HH:MM"}}
         # add the subsubsection (ExcludeDates)
         self.add_subsubsection(dict_to_add)
 
@@ -3384,7 +3503,16 @@ class edit_cfg_L5(QtGui.QWidget):
         # add the subsection
         self.add_subsection(dict_to_add)
 
-    def add_ustar_threshold(self):
+    def add_ustar_threshold_section(self):
+        """ Add a ustar threshold section."""
+        self.sections["ustar_threshold"] = QtGui.QStandardItem("ustar_threshold")
+        child0 = QtGui.QStandardItem("0")
+        child1 = QtGui.QStandardItem("YYYY-mm-dd HH:MM, YYYY-mm-dd HH:MM, <ustar_threshold>")
+        self.sections["ustar_threshold"].appendRow([child0, child1])
+        self.model.appendRow(self.sections["ustar_threshold"])
+        self.update_tab_text()
+
+    def add_ustar_threshold_daterange(self):
         """ Add a year to the [ustar_threshold] section."""
         # get the index of the selected item
         idx = self.view.selectedIndexes()[0]
@@ -3660,6 +3788,20 @@ class edit_cfg_L5(QtGui.QWidget):
                 self.cfg_changed = True
         return v
 
+    def remove_daterange(self):
+        """ Remove a date range from the ustar_threshold section."""
+        # remove the date range
+        self.remove_item()
+        # index of selected item
+        idx = self.view.selectedIndexes()[0]
+        # item from index
+        selected_item = idx.model().itemFromIndex(idx)
+        # parent of selected item
+        parent = selected_item.parent()
+        # renumber the subsections
+        for i in range(parent.rowCount()):
+            parent.child(i, 0).setText(str(i))
+
     def remove_item(self):
         """ Remove an item from the view."""
         # loop over selected items in the tree
@@ -3670,6 +3812,18 @@ class edit_cfg_L5(QtGui.QWidget):
             parent = selected_item.parent()
             # remove the row
             parent.removeRow(selected_item.row())
+        self.update_tab_text()
+
+    def remove_section(self):
+        """ Remove a section from the view."""
+        # loop over selected items in the tree
+        idx = self.view.selectedIndexes()[0]
+        # get the selected item from the index
+        selected_item = idx.model().itemFromIndex(idx)
+        # get the root
+        root = self.model.invisibleRootItem()
+        # remove the row
+        root.removeRow(selected_item.row())
         self.update_tab_text()
 
     def update_tab_text(self):
