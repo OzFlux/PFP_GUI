@@ -104,6 +104,8 @@ class pfp_main_ui(QtGui.QWidget, QPlainTextEditLogger):
         # File/Convert submenu
         self.actionFileConvertnc2biomet = QtGui.QAction(self)
         self.actionFileConvertnc2biomet.setText("nc to Biomet")
+        self.actionFileConvertnc2ecostress = QtGui.QAction(self)
+        self.actionFileConvertnc2ecostress.setText("nc to ECOSTRESS")
         self.actionFileConvertnc2xls = QtGui.QAction(self)
         self.actionFileConvertnc2xls.setText("nc to Excel")
         self.actionFileConvertnc2fluxnet = QtGui.QAction(self)
@@ -160,6 +162,7 @@ class pfp_main_ui(QtGui.QWidget, QPlainTextEditLogger):
         # add the actions to the menus
         # File/Convert submenu
         self.menuFileConvert.addAction(self.actionFileConvertnc2biomet)
+        self.menuFileConvert.addAction(self.actionFileConvertnc2ecostress)
         self.menuFileConvert.addAction(self.actionFileConvertnc2xls)
         self.menuFileConvert.addAction(self.actionFileConvertnc2fluxnet)
         self.menuFileConvert.addAction(self.actionFileConvertnc2reddyproc)
@@ -238,6 +241,7 @@ class pfp_main_ui(QtGui.QWidget, QPlainTextEditLogger):
         # Connect signals to slots
         # File menu actions
         self.actionFileConvertnc2biomet.triggered.connect(pfp_top_level.do_file_convert_biomet)
+        self.actionFileConvertnc2ecostress.triggered.connect(pfp_top_level.do_file_convert_nc2ecostress)
         self.actionFileConvertnc2xls.triggered.connect(pfp_top_level.do_file_convert_nc2xls)
         self.actionFileConvertnc2fluxnet.triggered.connect(pfp_top_level.do_file_convert_nc2fluxnet)
         self.actionFileConvertnc2reddyproc.triggered.connect(pfp_top_level.do_file_convert_nc2reddyproc)

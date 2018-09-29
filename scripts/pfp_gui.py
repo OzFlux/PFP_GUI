@@ -2177,7 +2177,8 @@ class edit_cfg_L4(QtGui.QWidget):
                 self.sections[key1] = QtGui.QStandardItem(key1)
                 for key2 in self.cfg_mod[key1]:
                     val = self.cfg_mod[key1][key2]
-                    val = self.parse_cfg_values(key2, val, ['"', "'"])
+                    if ("browse" not in val):
+                        val = self.parse_cfg_values(key2, val, ['"', "'"])
                     child0 = QtGui.QStandardItem(key2)
                     child1 = QtGui.QStandardItem(val)
                     self.sections[key1].appendRow([child0, child1])
