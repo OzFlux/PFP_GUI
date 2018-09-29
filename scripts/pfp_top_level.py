@@ -44,6 +44,28 @@ def do_file_concatenate(cfg=None):
 def do_file_convert_biomet():
     logger.warning("File/Convert/nc to biomet not implemented yet")
     return
+def do_file_convert_nc2ecostress():
+    """
+    Purpose:
+     Convert a PFP-style netCDF file to an ECOSTRESS CSV file.
+    Usage:
+    Side effects:
+     Creates a CSV file in the same directory as the netCDF file.
+    Author: PRI
+    Date: Back in the day
+    Mods:
+     September 2018: rewrite for use with new GUI
+    """
+    logger.info(" Starting conversion to ECOSTRESS file")
+    # check to see if there is an nc2ecostress.txt control file in controlfiles/standard
+    #  if there is
+    #   open controlfiles/standard/nc2csv_ecostress.txt
+    #   ask for netCDF file name
+    #   add [Files] section to control file
+    pfp_io.write_csv_ecostress(cfg)
+    logger.info(" Finished converting netCDF file")
+    logger.info("")
+    return
 def do_file_convert_nc2xls():
     """
     Purpose:

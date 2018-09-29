@@ -1,0 +1,81 @@
+[Files]
+    file_path = Right click to browse
+    in_filename = Right click to browse
+
+[Variables]
+    [[LHF]]
+        ncname = Fe
+        units = W/m2
+        format = 0
+    [[SHF]]
+        ncname = Fh
+        units = W/m2
+        format = 0
+    [[GHF]]
+        ncname = Fg
+        units = W/m2
+        format = 0
+    [[GPP]]
+        ncname = GPP_SOLO
+        units = gC/m2/s
+        format = 0.000
+    [[Ta]]
+        ncname = Ta
+        units = C
+        format = 0.00
+#    [[T2]]
+#        ncname = 
+#        units = C
+#        format = 0.00
+    [[VPD]]
+        ncname = VPD
+        units = kPa
+        format = 0.00
+    [[Rn]]
+        ncname = Fn
+        units = W/m2
+        format = 0
+    [[RdS]]
+        ncname = Fsd
+        units = W/m2
+        format = 0
+    [[RdL]]
+        ncname = Fld
+        units = W/m2
+        format = 0
+    [[RuS]]
+        ncname = Fsu
+        units = W/m2
+        format = 0
+    [[RuL]]
+        ncname = Flu
+        units = W/m2
+        format = 0
+    [[PRESS]]
+        ncname = ps
+        units = kPa
+        format = 0.00
+    [[PREC]]
+        ncname = Precip
+        units = mm
+        format = 0.00
+    [[Rh]]
+        ncname = RH
+        units = %
+        format = 0.0
+    [[Wspd]]
+        ncname = Ws
+        units = m/s
+        format = 0.00
+    [[Wdir]]
+        ncname = Wd
+        units = degrees
+        format = 0
+    [[Ts]]
+        ncname = Ts
+        units = C
+        format = 0.00
+    [[SWC]]
+        ncname = Sws
+        units = % volmetric
+        format = 0.00
