@@ -132,6 +132,23 @@ def Fc_mgpm2psfromumolpm2ps(Fc_umolpm2ps):
     if WasND: Fc_mgpm2ps, WasMA = MAtoSeries(Fc_mgpm2ps)
     return Fc_mgpm2ps
 
+def Fc_gCpm2psfromumolpm2ps(Fc_umolpm2ps):
+    """
+    Convert Fc in units of umol/m2/s to units of gC/m2/s
+    Usage:
+     Fc_mgpm2ps = Fc_gCpm2psfromumolpm2ps(Fc_umolpm2ps)
+     where:
+      Fc_umolpm2ps (input) - CO2 flux in units of umol/m2/s
+    Returns the CO2 flux in units of gC/m2/s
+    """
+    # convert to masked array
+    Fc_umolpm2ps, WasND = SeriestoMA(Fc_umolpm2ps)
+    # do the job
+    Fc_gCpm2ps = Fc_umolpm2ps * c.Mc/1E6
+    # convert back to ndarray if input is not a masked array
+    if WasND: Fc_Cgpm2ps, WasMA = MAtoSeries(Fc_gCpm2ps)
+    return Fc_gCpm2ps
+
 def h2o_mmolpmolfromgpm3(h_gpm3,T,p):
     """
      Convert H2O concentration units of g/m3 to mmol/mol.

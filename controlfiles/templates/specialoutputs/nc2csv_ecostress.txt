@@ -23,10 +23,10 @@
         ncname = Ta
         units = C
         format = 0.00
-#    [[T2]]
-#        ncname = 
-#        units = C
-#        format = 0.00
+    [[T2]]
+        ncname = 
+        units = C
+        format = 0.00
     [[VPD]]
         ncname = VPD
         units = kPa
@@ -50,6 +50,10 @@
     [[RuL]]
         ncname = Flu
         units = W/m2
+        format = 0
+    [[PAR]]
+        ncname = 
+        units = umol/m2/s
         format = 0
     [[PRESS]]
         ncname = ps
