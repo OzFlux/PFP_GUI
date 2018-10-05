@@ -704,14 +704,12 @@ def write_csv_ecostress(cf):
     series_list = cf["Variables"].keys()
     for series in series_list:
         ncname = cf["Variables"][series]["ncname"]
-        #logger.info(series+" "+ncname)
-        #if ncname not in ds.series.keys():
-            #logger.error(series+": "+ncname+" not in netCDF file, skipping ...")
-            #series_list.remove(series)
-            #continue
         data[series] = pfp_utils.GetVariable(ds, ncname)
         fmt = cf["Variables"][series]["format"]
-        if "." in fmt:
+        if "E" in fmt or "e" in fmt:
+            numdec = (fmt.index("E")) - (fmt.index(".")) - 1
+            strfmt = "{:."+str(numdec)+"e}"
+        elif "." in fmt:
             numdec = len(fmt) - (fmt.index(".") + 1)
             strfmt = "{0:."+str(numdec)+"f}"
         else:
@@ -739,8 +737,7 @@ def write_csv_ecostress(cf):
         row_list.append(item)
     csv_writer.writerow(row_list)
     # now write the data
-#    for i in range(len(dt)):
-    for i in range(48):
+    for i in range(len(dt)):
         # get the timestamp at the start and end of the period
         timestamp_end = dt[i].strftime("%Y%m%d%H%M")
         timestamp_start = (dt[i] - datetime.timedelta(minutes=ts)).strftime("%Y%m%d%H%M")
@@ -753,9 +750,6 @@ def write_csv_ecostress(cf):
                 data_list.append(strfmt.format(int(round(data[series]["Data"][i]))))
             else:
                 data_list.append(strfmt.format(data[series]["Data"][i]))
-            if series == "GPP":
-                print i, data[series]["Data"][i], strfmt
-                print data_list
         csv_writer.writerow(data_list)
     # close the csv file
     csv_file.close()
