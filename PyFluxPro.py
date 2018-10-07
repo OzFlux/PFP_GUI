@@ -104,6 +104,8 @@ class pfp_main_ui(QtGui.QWidget, QPlainTextEditLogger):
         # File/Convert submenu
         self.actionFileConvertnc2biomet = QtGui.QAction(self)
         self.actionFileConvertnc2biomet.setText("nc to Biomet")
+        self.actionFileConvertnc2ecostress = QtGui.QAction(self)
+        self.actionFileConvertnc2ecostress.setText("nc to ECOSTRESS")
         self.actionFileConvertnc2xls = QtGui.QAction(self)
         self.actionFileConvertnc2xls.setText("nc to Excel")
         self.actionFileConvertnc2fluxnet = QtGui.QAction(self)
@@ -160,6 +162,7 @@ class pfp_main_ui(QtGui.QWidget, QPlainTextEditLogger):
         # add the actions to the menus
         # File/Convert submenu
         self.menuFileConvert.addAction(self.actionFileConvertnc2biomet)
+        self.menuFileConvert.addAction(self.actionFileConvertnc2ecostress)
         self.menuFileConvert.addAction(self.actionFileConvertnc2xls)
         self.menuFileConvert.addAction(self.actionFileConvertnc2fluxnet)
         self.menuFileConvert.addAction(self.actionFileConvertnc2reddyproc)
@@ -238,6 +241,7 @@ class pfp_main_ui(QtGui.QWidget, QPlainTextEditLogger):
         # Connect signals to slots
         # File menu actions
         self.actionFileConvertnc2biomet.triggered.connect(pfp_top_level.do_file_convert_biomet)
+        self.actionFileConvertnc2ecostress.triggered.connect(pfp_top_level.do_file_convert_nc2ecostress)
         self.actionFileConvertnc2xls.triggered.connect(pfp_top_level.do_file_convert_nc2xls)
         self.actionFileConvertnc2fluxnet.triggered.connect(pfp_top_level.do_file_convert_nc2fluxnet)
         self.actionFileConvertnc2reddyproc.triggered.connect(pfp_top_level.do_file_convert_nc2reddyproc)
@@ -315,6 +319,10 @@ class pfp_main_ui(QtGui.QWidget, QPlainTextEditLogger):
             self.tabs.cfg_dict[self.tabs.tab_index_all]["controlfile_name"] = cfgpath
         elif self.cfg["level"] in ["L6"]:
             self.tabs.tab_dict[self.tabs.tab_index_all] = pfp_gui.edit_cfg_L6(self)
+            self.tabs.cfg_dict[self.tabs.tab_index_all] = self.tabs.tab_dict[self.tabs.tab_index_all].get_data_from_model()
+            self.tabs.cfg_dict[self.tabs.tab_index_all]["controlfile_name"] = cfgpath
+        elif self.cfg["level"] in ["nc2csv_ecostress"]:
+            self.tabs.tab_dict[self.tabs.tab_index_all] = pfp_gui.edit_cfg_nc2csv_ecostress(self)
             self.tabs.cfg_dict[self.tabs.tab_index_all] = self.tabs.tab_dict[self.tabs.tab_index_all].get_data_from_model()
             self.tabs.cfg_dict[self.tabs.tab_index_all]["controlfile_name"] = cfgpath
         else:
@@ -572,6 +580,8 @@ class pfp_main_ui(QtGui.QWidget, QPlainTextEditLogger):
             pfp_top_level.do_run_l5(self, cfg=cfg)
         elif self.tabs.cfg_dict[tab_index_current]["level"] == "L6":
             pfp_top_level.do_run_l6(self, cfg=cfg)
+        elif self.tabs.cfg_dict[tab_index_current]["level"] == "nc2csv_ecostress":
+            pfp_top_level.do_file_convert_nc2ecostress(cfg=cfg)
         else:
             logger.error("Level not implemented yet ...")
 

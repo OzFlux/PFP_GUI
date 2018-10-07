@@ -1,0 +1,91 @@
+[Files]
+    file_path = ../Sites/<site_name>/Data/Processed/<year>/
+    in_filename = <site_name>_<year>_L3.nc
+    out_filename = <site_name>_<year>_FluxNet.csv
+
+[General]
+    CanopyHeight = ""
+    DataPolicy = "OzFlux (http://data.ozflux.org.au/portal/site/licenceinfo.jspx)"
+    DataURL = "http://data.ozflux.org.au/"
+    Elevation = "<elevation>m"
+    Institution = "<institution>"
+    LandUse = "<land_use>"
+    Latitude = "<latitude>"
+    LicenseType = "TERN-BY-SA_NC"
+    LicenseURL = "http://www.tern.org.au/datalicence/TERN-BY-SA-NC/1.0"
+    Longitude = "<longitude>"
+    MeasurementHeight = "<measurement_height>"
+    MetadataURL = "http://www.ozflux.org.au/monitoringsites/<site>/index.html"
+    PIEmail = "<PI_email>"
+    PIName = "<PI_name>"
+    SiteName = "<site_name>, <state_name>, <country_name>"
+    SoilType = "<soil_type>"
+    SWC1Depth = "<SWC1_depth>"
+    TS1Depth = "<TS1_depth>"
+    start_datetime = "<year>-<month>-<day> <hour>:<minute>"
+    end_datetime = "<year>-<month>-<day> <hour>:<minute>"
+
+[Variables]
+    [[FC]]
+        ncname = "Fc"
+        format = "0.00"
+    [[CO2]]
+        ncname = "Cc"
+        format = "0.0"
+    [[ust]]
+        ncname = "ustar"
+        format = "0.00"
+    [[RG_in]]
+        ncname = "Fsd"
+        format = "0"
+    [[TA]]
+        ncname = "Ta"
+        format = "0.00"
+    [[H2O]]
+        ncname = "Ah"
+        format = "0.00"
+    [[LE]]
+        ncname = "Fe"
+        format = "0"
+    [[H]]
+        ncname = "Fh"
+        format = "0"
+    [[G1]]
+        ncname = "Fg"
+        format = "0"
+    [[PRECIP]]
+        ncname = "Precip"
+        format = "0.00"
+    [[SWC1]]
+        ncname = "Sws"
+        format = "0.000"
+    [[TS1]]
+        ncname = "Ts"
+        format = "0.00"
+    [[RNET]]
+        ncname = "Fn"
+        format = "0"
+    [[SWin]]
+        ncname = "Fsd"
+        format = "0"
+    [[SWout]]
+        ncname = "Fsu"
+        format = "0"
+    [[LWin]]
+        ncname = "Fld"
+        format = "0"
+    [[LWout]]
+        ncname = "Flu"
+        format = "0"
+    [[WD]]
+        ncname = "Wd"
+        format = "0"
+    [[WS]]
+        ncname = "Ws"
+        format = "0.00"
+    [[PA]]
+        ncname = "ps"
+        format = "0.00"
+    [[RH]]
+        ncname = "RH"
+        format = "0"
