@@ -703,9 +703,9 @@ def write_csv_ecostress(cf):
     data = {}
     series_list = cf["Variables"].keys()
     for series in series_list:
-        ncname = cf["Variables"][series]["ncname"]
+        ncname = cf["Variables"][series]["in_name"]
         data[series] = pfp_utils.GetVariable(ds, ncname)
-        fmt = cf["Variables"][series]["format"]
+        fmt = cf["Variables"][series]["out_format"]
         if "E" in fmt or "e" in fmt:
             numdec = (fmt.index("E")) - (fmt.index(".")) - 1
             strfmt = "{:."+str(numdec)+"e}"

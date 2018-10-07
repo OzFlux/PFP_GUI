@@ -1,85 +1,86 @@
+level = nc2csv_ecostress
 [Files]
     file_path = Right click to browse
     in_filename = Right click to browse
 
 [Variables]
     [[LHF]]
-        ncname = Fe
-        units = W/m2
-        format = 0
+        in_name = Fe
+        out_units = W/m2
+        out_format = 0
     [[SHF]]
-        ncname = Fh
-        units = W/m2
-        format = 0
+        in_name = Fh
+        out_units = W/m2
+        out_format = 0
     [[GHF]]
-        ncname = Fg
-        units = W/m2
-        format = 0
+        in_name = Fg
+        out_units = W/m2
+        out_format = 0
     [[GPP]]
-        ncname = GPP_SOLO
-        units = gC/m2/s
-        format = 0.000
+        in_name = GPP_SOLO
+        out_units = gC/m2/s
+        out_format = 0.00E+00
     [[Ta]]
-        ncname = Ta
-        units = C
-        format = 0.00
+        in_name = Ta
+        out_units = C
+        out_format = 0.00
     [[T2]]
-        ncname = 
-        units = C
-        format = 0.00
+        in_name = 
+        out_units = C
+        out_format = 0.00
     [[VPD]]
-        ncname = VPD
-        units = kPa
-        format = 0.00
+        in_name = VPD
+        out_units = kPa
+        out_format = 0.00
     [[Rn]]
-        ncname = Fn
-        units = W/m2
-        format = 0
+        in_name = Fn
+        out_units = W/m2
+        out_format = 0
     [[RdS]]
-        ncname = Fsd
-        units = W/m2
-        format = 0
+        in_name = Fsd
+        out_units = W/m2
+        out_format = 0
     [[RdL]]
-        ncname = Fld
-        units = W/m2
-        format = 0
+        in_name = Fld
+        out_units = W/m2
+        out_format = 0
     [[RuS]]
-        ncname = Fsu
-        units = W/m2
-        format = 0
+        in_name = Fsu
+        out_units = W/m2
+        out_format = 0
     [[RuL]]
-        ncname = Flu
-        units = W/m2
-        format = 0
+        in_name = Flu
+        out_units = W/m2
+        out_format = 0
     [[PAR]]
-        ncname = 
-        units = umol/m2/s
-        format = 0
+        in_name = 
+        out_units = umol/m2/s
+        out_format = 0
     [[PRESS]]
-        ncname = ps
-        units = kPa
-        format = 0.00
+        in_name = ps
+        out_units = kPa
+        out_format = 0.00
     [[PREC]]
-        ncname = Precip
-        units = mm
-        format = 0.00
+        in_name = Precip
+        out_units = mm
+        out_format = 0.00
     [[Rh]]
-        ncname = RH
-        units = %
-        format = 0.0
+        in_name = RH
+        out_units = %
+        out_format = 0.0
     [[Wspd]]
-        ncname = Ws
-        units = m/s
-        format = 0.00
+        in_name = Ws
+        out_units = m/s
+        out_format = 0.00
     [[Wdir]]
-        ncname = Wd
-        units = degrees
-        format = 0
+        in_name = Wd
+        out_units = degrees
+        out_format = 0
     [[Ts]]
-        ncname = Ts
-        units = C
-        format = 0.00
+        in_name = Ts
+        out_units = C
+        out_format = 0.00
     [[SWC]]
-        ncname = Sws
-        units = % volmetric
-        format = 0.00
+        in_name = Sws
+        out_units = % volmetric
+        out_format = 0.00

@@ -44,7 +44,7 @@ def do_file_concatenate(cfg=None):
 def do_file_convert_biomet():
     logger.warning("File/Convert/nc to biomet not implemented yet")
     return
-def do_file_convert_nc2ecostress():
+def do_file_convert_nc2ecostress(cfg=None):
     """
     Purpose:
      Convert a PFP-style netCDF file to an ECOSTRESS CSV file.
@@ -57,25 +57,26 @@ def do_file_convert_nc2ecostress():
      September 2018: rewrite for use with new GUI
     """
     logger.info(" Starting conversion to ECOSTRESS file")
-    # check to see if there is an nc2ecostress.txt control file in controlfiles/standard
-    #  if there is
-    #   open controlfiles/standard/nc2csv_ecostress.txt
-    #   ask for netCDF file name
-    #   add [Files] section to control file
-    stdname = "controlfiles/standard/nc2csv_ecostress.txt"
-    if os.path.exists(stdname):
-        cfg = pfp_io.get_controlfilecontents(stdname)
-        filename = pfp_io.get_filename_dialog(file_path="../Sites", title="Choose a netCDF file")
-        if len(filename) == 0:
-            return
-        if "Files" not in dir(cfg):
-            cfg["Files"] = {}
-        cfg["Files"]["file_path"] = os.path.join(os.path.split(filename)[0], "")
-        cfg["Files"]["in_filename"] = os.path.split(filename)[1]
-    else:
-        cfg = pfp_io.load_controlfile(path="controlfiles")
-        if len(cfg) == 0:
-            return
+    if not cfg:
+        # check to see if there is an nc2ecostress.txt control file in controlfiles/standard
+        #  if there is
+        #   open controlfiles/standard/nc2csv_ecostress.txt
+        #   ask for netCDF file name
+        #   add [Files] section to control file
+        stdname = "controlfiles/standard/nc2csv_ecostress.txt"
+        if os.path.exists(stdname):
+            cfg = pfp_io.get_controlfilecontents(stdname)
+            filename = pfp_io.get_filename_dialog(file_path="../Sites", title="Choose a netCDF file")
+            if len(filename) == 0:
+                return
+            if "Files" not in dir(cfg):
+                cfg["Files"] = {}
+            cfg["Files"]["file_path"] = os.path.join(os.path.split(filename)[0], "")
+            cfg["Files"]["in_filename"] = os.path.split(filename)[1]
+        else:
+            cfg = pfp_io.load_controlfile(path="controlfiles")
+            if len(cfg) == 0:
+                return
     if "Options" not in cfg:
         cfg["Options"]={}
     cfg["Options"]["call_mode"] = "interactive"

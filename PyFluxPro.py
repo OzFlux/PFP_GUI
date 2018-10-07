@@ -321,6 +321,10 @@ class pfp_main_ui(QtGui.QWidget, QPlainTextEditLogger):
             self.tabs.tab_dict[self.tabs.tab_index_all] = pfp_gui.edit_cfg_L6(self)
             self.tabs.cfg_dict[self.tabs.tab_index_all] = self.tabs.tab_dict[self.tabs.tab_index_all].get_data_from_model()
             self.tabs.cfg_dict[self.tabs.tab_index_all]["controlfile_name"] = cfgpath
+        elif self.cfg["level"] in ["nc2csv_ecostress"]:
+            self.tabs.tab_dict[self.tabs.tab_index_all] = pfp_gui.edit_cfg_nc2csv_ecostress(self)
+            self.tabs.cfg_dict[self.tabs.tab_index_all] = self.tabs.tab_dict[self.tabs.tab_index_all].get_data_from_model()
+            self.tabs.cfg_dict[self.tabs.tab_index_all]["controlfile_name"] = cfgpath
         else:
             logger.error(" Unrecognised control file type: "+self.cfg["level"])
         # add a tab for the control file
@@ -576,6 +580,8 @@ class pfp_main_ui(QtGui.QWidget, QPlainTextEditLogger):
             pfp_top_level.do_run_l5(self, cfg=cfg)
         elif self.tabs.cfg_dict[tab_index_current]["level"] == "L6":
             pfp_top_level.do_run_l6(self, cfg=cfg)
+        elif self.tabs.cfg_dict[tab_index_current]["level"] == "nc2csv_ecostress":
+            pfp_top_level.do_file_convert_nc2ecostress(cfg=cfg)
         else:
             logger.error("Level not implemented yet ...")
 
