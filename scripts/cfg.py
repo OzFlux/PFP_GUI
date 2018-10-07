@@ -1,5 +1,9 @@
 version_name = "PyFluxPro"
-version_number = "V0.9.1"
+version_number = "V0.9.2"
+# V0.9.2 - 7th October 2018
+#        - implemented output to ECOSTRESS CSV file
+#        - implemented L5 and L6 processing
+#        - cleaned up the GUI routines in pfp_gui.py
 # V0.9.1 - updated to PyFluxPro V0.1.5
 #        - working steps at this stage are:
 #          - L1 to L4
