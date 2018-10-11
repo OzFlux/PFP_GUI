@@ -4430,6 +4430,11 @@ class edit_cfg_nc2csv_ecostress(QtGui.QWidget):
                     self.context_menu.actionBrowseInputFile.setText("Browse...")
                     self.context_menu.addAction(self.context_menu.actionBrowseInputFile)
                     self.context_menu.actionBrowseInputFile.triggered.connect(self.browse_input_file)
+                elif key in ["out_filename"]:
+                    self.context_menu.actionBrowseOutputFile = QtGui.QAction(self)
+                    self.context_menu.actionBrowseOutputFile.setText("Browse...")
+                    self.context_menu.addAction(self.context_menu.actionBrowseOutputFile)
+                    self.context_menu.actionBrowseOutputFile.triggered.connect(self.browse_output_file)
             elif (str(parent.text()) == "Variables") and (selected_item.column() == 0):
                 self.context_menu.actionRemoveOption = QtGui.QAction(self)
                 self.context_menu.actionRemoveOption.setText("Remove variable")
@@ -4499,6 +4504,25 @@ class edit_cfg_nc2csv_ecostress(QtGui.QWidget):
         # dialog for open file
         new_file_path = QtGui.QFileDialog.getOpenFileName(caption="Choose an input file ...",
                                                               directory=file_path)
+        # update the model
+        if len(str(new_file_path)) > 0:
+            new_file_parts = os.path.split(str(new_file_path))
+            parent.child(selected_item.row(), 1).setText(new_file_parts[1])
+
+    def browse_output_file(self):
+        """ Browse for the output data file path."""
+        # get the index of the selected item
+        idx = self.view.selectedIndexes()[0]
+        # get the selected item from the index
+        selected_item = idx.model().itemFromIndex(idx)
+        # get the parent of the selected item
+        parent = selected_item.parent()
+        # get the top level and sub sections
+        # get the file_path so it can be used as a default directory
+        key, file_path, found, j = self.get_keyval_by_key_name(parent, "file_path")
+        # dialog for open file
+        new_file_path = QtGui.QFileDialog.getSaveFileName(caption="Choose an output file ...",
+                                                              directory=file_path, filter="*.nc")
         # update the model
         if len(str(new_file_path)) > 0:
             new_file_parts = os.path.split(str(new_file_path))
