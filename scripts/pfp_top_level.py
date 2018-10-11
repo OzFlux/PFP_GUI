@@ -80,9 +80,14 @@ def do_file_convert_nc2ecostress(cfg=None):
     if "Options" not in cfg:
         cfg["Options"]={}
     cfg["Options"]["call_mode"] = "interactive"
-    pfp_io.write_csv_ecostress(cfg)
-    logger.info(" Finished converting netCDF file")
-    logger.info("")
+    result = pfp_io.write_csv_ecostress(cfg)
+    if result == 0:
+        logger.info(" Finished converting netCDF file")
+        logger.info("")
+    else:
+        logger.error("")
+        logger.error(" An error occured, check the log messages")
+        logger.error("")
     return
 def do_file_convert_nc2xls():
     """

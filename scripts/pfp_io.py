@@ -685,8 +685,22 @@ def write_csv_ecostress(cf):
     Date: September 2018
     """
     # get the file names
-    nc_file_name = get_infilenamefromcf(cf)
-    csv_file_name = nc_file_name.replace(".nc", "_ECOSTRESS.csv")
+    file_path = pfp_utils.get_keyvaluefromcf(cf, ["Files"], "file_path", default="")
+    if not os.path.isdir(file_path):
+        msg = " Specified file path "+file_path+" doesn't exist ..."
+        logger.error(msg)
+        return 1
+    in_filename = pfp_utils.get_keyvaluefromcf(cf, ["Files"], "in_filename", default="")
+    nc_file_name = os.path.join(file_path, in_filename)
+    if not os.path.exists(nc_file_name):
+        msg = " Specified input file "+nc_file_name+" not found ..."
+        logger.error(msg)
+        return 1
+    out_filename = pfp_utils.get_keyvaluefromcf(cf, ["Files"], "out_filename", default="")
+    if len(out_filename) == 0:
+        csv_file_name = nc_file_name.replace(".nc", "_ECOSTRESS.csv")
+    else:
+        csv_file_name = os.path.join(file_path, out_filename)
     # open the csv file
     csv_file = open(csv_file_name, 'wb')
     csv_writer = csv.writer(csv_file)
@@ -716,8 +730,11 @@ def write_csv_ecostress(cf):
             strfmt = "{0:d}"
         data[series]["Attr"]["fmt"] = strfmt
     # adjust units as required
+    # GPP
     data["GPP"]["Data"] = pfp_mf.Fc_gCpm2psfromumolpm2ps(data["GPP"]["Data"])
     data["GPP"]["Attr"]["units"] = "gC/m2/s"
+    # SWC
+    data["SWC"]["Attr"]["units"] = "m3/m3"
     # add the QC flags for Fh, Fe, Fg, GPP, Ta, T2, VPD, Fn
     # for Fh, Fe, Fg, Fn, Ta, T2 and VPD QC flag is:
     #  a) 0 for observation
@@ -731,6 +748,17 @@ def write_csv_ecostress(cf):
         data[qc_label]["Data"] = numpy.where(data[series]["Flag"] == 0, zeros, ones)
         data[qc_label]["Attr"] = {}
         data[qc_label]["Attr"]["fmt"] = "{0:d}"
+        data[qc_label]["Attr"]["units"] = "-"
+    # write the metadata to the CSV file
+    if "General" in cf:
+        for item in cf["General"]:
+            csv_writer.writerow([item,str(cf['General'][item])])
+        csv_writer.writerow("")
+    # write the units row
+    row_list = ["YYYYMMDDhhmm", "YYYYMMDDhhmm"]
+    for item in series_list:
+        row_list.append(data[item]["Attr"]["units"])
+    csv_writer.writerow(row_list)
     # write the variable names to the csv file
     row_list = ["TIME_START", "TIME_END"]
     for item in series_list:
@@ -753,7 +781,7 @@ def write_csv_ecostress(cf):
         csv_writer.writerow(data_list)
     # close the csv file
     csv_file.close()
-    return
+    return 0
 
 def xl2nc(cf,InLevel):
     # get the data series from the Excel file
