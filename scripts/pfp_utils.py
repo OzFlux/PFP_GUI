@@ -1566,6 +1566,8 @@ def GetVariable(ds, label, start=0, end=-1, mode="truncate", out_type="ma"):
       label - label of the data variable in ds (string)
       start - start date or index (integer), default 0
       end   - end date or index (integer), default -1
+      mode  - truncate or pad the data
+      out_type - masked array or ndarray
     and the returned values are;
      The data are returned as a dictionary;
       variable["label"] - variable label in data structure
@@ -1587,7 +1589,7 @@ def GetVariable(ds, label, start=0, end=-1, mode="truncate", out_type="ma"):
     si = get_start_index(ldt, start)
     ei = get_end_index(ldt, end)
     data,flag,attr = GetSeries(ds, label, si=si, ei=ei, mode=mode)
-    if isinstance(data, numpy.ndarray):
+    if isinstance(data, numpy.ndarray) and out_type == "ma":
         data, WasND = SeriestoMA(data)
     variable = {"Label":label,"Data":data,"Flag":flag,"Attr":attr,
                 "DateTime":ldt[si:ei+1],"time_step":ts}

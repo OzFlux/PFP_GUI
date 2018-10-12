@@ -24,7 +24,7 @@ from PyQt4 import QtGui
 # PFP modules
 import cfg
 import constants as c
-import meteorologicalfunctions as mf
+import meteorologicalfunctions as pfp_mf
 import pfp_cfg
 import pfp_ck
 import pfp_func
@@ -674,6 +674,114 @@ def smap_writeheaders(cf,csvfile):
     writer.writerow(units_list)
     writer.writerow(row_list)
     return writer
+
+def write_csv_ecostress(cf):
+    """
+    Purpose:
+     Write the data structure to an ECOSTRESS CSV file.
+    Usage:
+    Side effects:
+    Author: PRI
+    Date: September 2018
+    """
+    # get the file names
+    file_path = pfp_utils.get_keyvaluefromcf(cf, ["Files"], "file_path", default="")
+    if not os.path.isdir(file_path):
+        msg = " Specified file path "+file_path+" doesn't exist ..."
+        logger.error(msg)
+        return 1
+    in_filename = pfp_utils.get_keyvaluefromcf(cf, ["Files"], "in_filename", default="")
+    nc_file_name = os.path.join(file_path, in_filename)
+    if not os.path.exists(nc_file_name):
+        msg = " Specified input file "+nc_file_name+" not found ..."
+        logger.error(msg)
+        return 1
+    out_filename = pfp_utils.get_keyvaluefromcf(cf, ["Files"], "out_filename", default="")
+    if len(out_filename) == 0:
+        csv_file_name = nc_file_name.replace(".nc", "_ECOSTRESS.csv")
+    else:
+        csv_file_name = os.path.join(file_path, out_filename)
+    # open the csv file
+    csv_file = open(csv_file_name, 'wb')
+    csv_writer = csv.writer(csv_file)
+    # read the netCDF file
+    ds = nc_read_series(nc_file_name)
+    nRecs = int(ds.globalattributes["nc_nrecs"])
+    zeros = numpy.zeros(nRecs,dtype=numpy.int32)
+    ones = numpy.ones(nRecs,dtype=numpy.int32)
+    ts = int(ds.globalattributes["time_step"])
+    ts_delta = datetime.timedelta(minutes=ts)
+    # get the datetime series
+    dt = ds.series["DateTime"]["Data"]
+    # get the data
+    data = {}
+    series_list = cf["Variables"].keys()
+    for series in series_list:
+        ncname = cf["Variables"][series]["in_name"]
+        data[series] = pfp_utils.GetVariable(ds, ncname)
+        fmt = cf["Variables"][series]["out_format"]
+        if "E" in fmt or "e" in fmt:
+            numdec = (fmt.index("E")) - (fmt.index(".")) - 1
+            strfmt = "{:."+str(numdec)+"e}"
+        elif "." in fmt:
+            numdec = len(fmt) - (fmt.index(".") + 1)
+            strfmt = "{0:."+str(numdec)+"f}"
+        else:
+            strfmt = "{0:d}"
+        data[series]["Attr"]["fmt"] = strfmt
+    # adjust units as required
+    # GPP
+    data["GPP"]["Data"] = pfp_mf.Fc_gCpm2psfromumolpm2ps(data["GPP"]["Data"])
+    data["GPP"]["Attr"]["units"] = "gC/m2/s"
+    # SWC
+    data["SWC"]["Attr"]["units"] = "m3/m3"
+    # add the QC flags for Fh, Fe, Fg, GPP, Ta, T2, VPD, Fn
+    # for Fh, Fe, Fg, Fn, Ta, T2 and VPD QC flag is:
+    #  a) 0 for observation
+    #  b) 1 for gap filled high quality
+    #  c) 2 for gap filled medium quality
+    #  d) 3 for gap filled low quality
+    for series in ["LHF", "SHF", "GHF", "GPP", "Ta", "T2", "VPD", "Rn"]:
+        qc_label = series + "_qc"
+        series_list.insert(series_list.index(series)+1, qc_label)
+        data[qc_label] = {}
+        data[qc_label]["Data"] = numpy.where(data[series]["Flag"] == 0, zeros, ones)
+        data[qc_label]["Attr"] = {}
+        data[qc_label]["Attr"]["fmt"] = "{0:d}"
+        data[qc_label]["Attr"]["units"] = "-"
+    # write the metadata to the CSV file
+    if "General" in cf:
+        for item in cf["General"]:
+            csv_writer.writerow([item,str(cf['General'][item])])
+        csv_writer.writerow("")
+    # write the units row
+    row_list = ["YYYYMMDDhhmm", "YYYYMMDDhhmm"]
+    for item in series_list:
+        row_list.append(data[item]["Attr"]["units"])
+    csv_writer.writerow(row_list)
+    # write the variable names to the csv file
+    row_list = ["TIME_START", "TIME_END"]
+    for item in series_list:
+        row_list.append(item)
+    csv_writer.writerow(row_list)
+    # now write the data
+    for i in range(len(dt)):
+        # get the timestamp at the start and end of the period
+        timestamp_end = dt[i].strftime("%Y%m%d%H%M")
+        timestamp_start = (dt[i] - datetime.timedelta(minutes=ts)).strftime("%Y%m%d%H%M")
+        data_list = [timestamp_start, timestamp_end]
+        for series in series_list:
+            # convert from masked array to ndarray with -9999 for missing data
+            data[series]["Data"] = numpy.ma.filled(data[series]["Data"], fill_value=float(-9999))
+            strfmt = data[series]["Attr"]["fmt"]
+            if "d" in strfmt:
+                data_list.append(strfmt.format(int(round(data[series]["Data"][i]))))
+            else:
+                data_list.append(strfmt.format(data[series]["Data"][i]))
+        csv_writer.writerow(data_list)
+    # close the csv file
+    csv_file.close()
+    return 0
 
 def xl2nc(cf,InLevel):
     # get the data series from the Excel file
@@ -2606,7 +2714,7 @@ def xlsx_write_series(ds, xlsxfullname, outputlist=None):
         variablelist = ds.series.keys()
         nRecs = len(ds.series[variablelist[0]]["Data"])
     # open the Excel file
-    msg = " Opening and writing Excel file " + os.path.basename(xlfullname)
+    msg = " Opening and writing Excel file " + os.path.basename(xlsxfullname)
     logger.info(msg)
     if "xl_datemode" not in ds.globalattributes:
         if platform.system() == "darwin":
