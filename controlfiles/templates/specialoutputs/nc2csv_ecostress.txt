@@ -5,27 +5,28 @@ level = nc2csv_ecostress
     out_filename = Right click to browse
 
 [General]
-    Altitude = "<altitude>"
-    CanopyHeight = "<canopy_height>"
-    Citation = "<portal_collection_citation>"
-    DataPolicy = "OzFlux (http://ozflux.its.monash.edu.au/ecosystem/site/licenceinfo.jspx)"
-    DataURL = "http://data.ozflux.org.au"
-    FluxNetID = "AU-<ID>"
-    Institution = "<institution>"
-    LandCover = "<land_cover>"
-    LandUse = "<land_use>"
-    Latitude = "<latitude>"
-    LicenseType = "CC BY 4.0"
-    LicenseURL = "https://creativecommons.org/licenses/by/4.0/"
-    Longitude = "<longitude>"
-    MeasurementHeight = "<measurement_height>"
-    MetadataURL = "http://www.ozflux.org.au/monitoringsites/<site_name>/index.html"
-    PIEmail = "<pi_email>"
-    PIName = "<pi_name>"
-    SiteName = "<site_long_name>"
-    SoilType = "<soil_type>"
-    SWCDepth = "<soil_moisture_depth>"
-    TSDepth = "<soil_temperature_depth>"
+    Altitude = <altitude>
+    CanopyHeight = <canopy_height>
+    Citation = <portal_collection_citation>
+    DataPolicy = OzFlux (http://ozflux.its.monash.edu.au/ecosystem/site/licenceinfo.jspx)
+    DataURL = http://data.ozflux.org.au
+    FluxNetID = AU-<ID>
+    Institution = <institution>
+    LandCover = <land_cover>
+    LandUse = <land_use>
+    Latitude = <latitude>
+    LicenseType = CC BY 4.0
+    LicenseURL = https://creativecommons.org/licenses/by/4.0/
+    Longitude = <longitude>
+    MeasurementHeight = <measurement_height>
+    MetadataURL = http://www.ozflux.org.au/monitoringsites/<site_name>/index.html
+    PIEmail = <pi_email>
+    PIName = <pi_name>
+    SiteName = <site_long_name>
+    SoilType = <soil_type>
+    SWCDepth = <soil_moisture_depth>
+    TaDepth = <air_temperature_height>
+    TSDepth = <soil_temperature_depth>
 
 [Variables]
     [[LHF]]

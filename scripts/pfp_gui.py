@@ -4342,7 +4342,7 @@ class edit_cfg_nc2csv_ecostress(QtGui.QWidget):
         for key1 in self.cfg_mod:
             if not self.cfg_mod[key1]:
                 continue
-            if key1 in ["Files"]:
+            if key1 in ["Files", "General"]:
                 # sections with only 1 level
                 self.sections[key1] = QtGui.QStandardItem(key1)
                 for key2 in self.cfg_mod[key1]:
@@ -4375,7 +4375,7 @@ class edit_cfg_nc2csv_ecostress(QtGui.QWidget):
             section = model.item(i)
             key1 = str(section.text())
             cfg[key1] = {}
-            if key1 in ["Files"]:
+            if key1 in ["Files", "General"]:
                 # sections with only 1 level
                 for j in range(section.rowCount()):
                     key2 = str(section.child(j, 0).text())
@@ -4414,6 +4414,11 @@ class edit_cfg_nc2csv_ecostress(QtGui.QWidget):
                 self.context_menu.actionAddVariable.setText("Add variable")
                 self.context_menu.addAction(self.context_menu.actionAddVariable)
                 self.context_menu.actionAddVariable.triggered.connect(self.add_new_variable)
+            elif selected_text in ["General"]:
+                self.context_menu.actionAddItem = QtGui.QAction(self)
+                self.context_menu.actionAddItem.setText("Add item")
+                self.context_menu.addAction(self.context_menu.actionAddItem)
+                self.context_menu.actionAddItem.triggered.connect(self.add_general_item)
         elif level == 1:
             # sections with 2 levels
             # get the parent of the selected item
@@ -4440,11 +4445,26 @@ class edit_cfg_nc2csv_ecostress(QtGui.QWidget):
                 self.context_menu.actionRemoveOption.setText("Remove variable")
                 self.context_menu.addAction(self.context_menu.actionRemoveOption)
                 self.context_menu.actionRemoveOption.triggered.connect(self.remove_item)
+            elif (str(parent.text()) == "General") and (selected_item.column() == 0):
+                self.context_menu.actionRemoveItem = QtGui.QAction(self)
+                self.context_menu.actionRemoveItem.setText("Remove item")
+                self.context_menu.addAction(self.context_menu.actionRemoveItem)
+                self.context_menu.actionRemoveItem.triggered.connect(self.remove_item)
         elif level == 2:
             # sections with 3 levels
             pass
 
         self.context_menu.exec_(self.view.viewport().mapToGlobal(position))
+
+    def add_general_item(self):
+        """ Add a new entry to the [Files] section."""
+        # get the index of the selected item
+        idx = self.view.selectedIndexes()[0]
+        # get the selected item from the index
+        section = idx.model().itemFromIndex(idx)
+        dict_to_add = {"New item":""}
+        # add the subsection
+        self.add_subsection(section, dict_to_add)
 
     def add_new_variable(self):
         """ Add a new variable to the 'Variables' section."""
@@ -4461,10 +4481,6 @@ class edit_cfg_nc2csv_ecostress(QtGui.QWidget):
 
     def add_subsection(self, section, dict_to_add):
         """ Add a subsection to the model."""
-        ## get the index of the selected item
-        #idx = self.view.selectedIndexes()[0]
-        ## get the selected item from the index
-        #section = idx.model().itemFromIndex(idx)
         for key in dict_to_add:
             val = str(dict_to_add[key])
             child0 = QtGui.QStandardItem(key)
@@ -4522,7 +4538,7 @@ class edit_cfg_nc2csv_ecostress(QtGui.QWidget):
         key, file_path, found, j = self.get_keyval_by_key_name(parent, "file_path")
         # dialog for open file
         new_file_path = QtGui.QFileDialog.getSaveFileName(caption="Choose an output file ...",
-                                                              directory=file_path, filter="*.nc")
+                                                              directory=file_path, filter="*.csv")
         # update the model
         if len(str(new_file_path)) > 0:
             new_file_parts = os.path.split(str(new_file_path))
