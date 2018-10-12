@@ -1,43 +1,47 @@
+level = L5
 [Files]
     file_path = /home/peter/OzFlux/Sites/Calperum/Data/Tower/
     in_filename = Calperum_L4.nc
-    out_filename = Calperum_L5_MDS.nc
+    out_filename = Calperum_L5_MDS_QC.nc
     plot_path = /home/peter/OzFlux/Sites/Calperum/Plots/
     cpd_filename = Calperum_L3_MPT.xls
 
 [Output]
 
 [Options]
-    MaxGapInterpolate   = 0
-    FilterList          = "['Fc']"
-    TurbulenceFilter    = ustar  # ustar/ustar_evg/L/none, type of turbulence filter
-    DayNightFilter      = Fsd    # Fsd/sa/none, Fsd ==> use Fsd, sa ==> use solar altitude
-    UseFsdsyn_threshold = No     # Yes/No, include Fsd_syn in the day/night filter
-    AcceptDayTimes      = Yes    # Yes/No, accept all day time values (including ustar<threshold)
-    UseEveningFilter    = No     # Yes/No, only use specified hours after sunset
-    EveningFilterLength = 3      # 0/X, period starting after sunset, hours (0 ==> disable)
-    Fsd_threshold       = 10     # Fsd threshold for determining day or night time, W/m2
-    sa_threshold        = -5     # Solar altitude threshold, degrees, -ve below horizon
+    MaxGapInterpolate = 0
+    FilterList = Fc
+    TurbulenceFilter = ustar
+    DayNightFilter = Fsd
+    UseFsdsyn_threshold = No
+    AcceptDayTimes = Yes
+    UseEveningFilter = No
+    EveningFilterLength = 3
+    Fsd_threshold = 10
+    sa_threshold = -5
 
 [Fluxes]
     [[Fe]]
         [[[GapFillUsingMDS]]]
             [[[[Fe_MDS]]]]
-                drivers = "['Fsd', 'Ta', 'VPD']"
-                tolerances = "[(20, 50), 2.5, 0.5]"
+                drivers = Fsd,Ta,VPD
+                tolerances = (20,50),2.5,0.5
+                include_qc = Yes
         [[[MergeSeries]]]
-            Source     = "['Fe','Fe_MDS']"
+            Source = Fe,Fe_MDS
     [[Fh]]
         [[[GapFillUsingMDS]]]
             [[[[Fh_MDS]]]]
-                drivers = "['Fsd', 'Ta', 'VPD']"
-                tolerances = "[(20, 50), 2.5, 0.5]"
+                drivers = Fsd,Ta,VPD
+                tolerances = (20,50),2.5,0.5
+                include_qc = Yes
         [[[MergeSeries]]]
-            Source     = "['Fh','Fh_MDS']"
+            Source = Fh,Fh_MDS
     [[Fc]]
         [[[GapFillUsingMDS]]]
             [[[[Fc_MDS]]]]
-                drivers = "['Fsd', 'Ta', 'VPD']"
-                tolerances = "[(20, 50), 2.5, 0.5]"
+                drivers = Fsd,Ta,VPD
+                tolerances = (20,50),2.5,0.5
+                include_qc = Yes
         [[[MergeSeries]]]
-            Source     = "['Fc','Fc_MDS']"
+            Source = Fc,Fc_MDS

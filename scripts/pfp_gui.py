@@ -3348,6 +3348,7 @@ class edit_cfg_L5(QtGui.QWidget):
                 self.context_menu.addAction(self.context_menu.actionRemoveGFMethod)
                 self.context_menu.actionRemoveGFMethod.triggered.connect(self.remove_item)
         elif level == 3:
+            existing_entries = self.get_existing_entries()
             # sections with 4 levels
             # get the parent text
             parent_text = str(idx.parent().data())
@@ -3444,6 +3445,27 @@ class edit_cfg_L5(QtGui.QWidget):
         dict_to_add = {"InterpolateType": "Akima"}
         # add the subsection
         self.add_subsection(dict_to_add)
+
+    def add_include_qc(self):
+        """ Add include_qc to a variable."""
+        idx = self.tree.selectedIndexes()[0]
+        # get the parent and sub section text
+        subsubsubsection_text = str(idx.data())
+        subsubsection_text = str(idx.parent().data())
+        subsection_text = str(idx.parent().parent().data())
+        section_text = str(idx.parent().parent().parent().data())
+        # get the top level and sub sections
+        model = self.tree.model()
+        section, i = self.get_section_from_text(model, section_text)
+        subsection, j = self.get_subsection_from_text(section, subsection_text)
+        subsubsection, k = self.get_subsection_from_text(subsection, subsubsection_text)
+        subsubsubsection, l = self.get_subsection_from_text(subsubsection, subsubsubsection_text)
+        # add the subsubsection
+        child0 = QtGui.QStandardItem("include_qc")
+        child1 = QtGui.QStandardItem("Yes")
+        subsubsubsection.appendRow([child0, child1])
+        # update the tab text with an asterix if required
+        self.update_tab_text()
 
     def add_maxgapinterpolate(self):
         """ Add MaxGapInterpolate to the [Options] section."""
@@ -3715,6 +3737,19 @@ class edit_cfg_L5(QtGui.QWidget):
         idx = self.view.selectedIndexes()[0]
         selected_item = idx.model().itemFromIndex(idx)
         selected_item.setText(new_text)
+
+    def get_existing_entries(self):
+        """ Get a list of existing entries in the current section."""
+        # index of the selected item
+        idx = self.view.selectedIndexes()[0]
+        # get the selected item from its index
+        selected_item = idx.model().itemFromIndex(idx)
+        # build a list of existing QC checks
+        existing_entries = []
+        if selected_item.hasChildren():
+            for i in range(selected_item.rowCount()):
+                existing_entries.append(str(selected_item.child(i, 0).text()))
+        return existing_entries
 
     def get_existing_entries(self):
         """ Get a list of existing entries in the current section."""
