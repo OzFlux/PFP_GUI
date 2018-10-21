@@ -3001,8 +3001,12 @@ class edit_cfg_L5(QtGui.QWidget):
                 self.sections[key1] = QtGui.QStandardItem(key1)
                 for key2 in self.cfg_mod[key1]:
                     val = self.cfg_mod[key1][key2]
-                    if (key1 in ["Files", "Global", "Options"]) and ("browse" not in val):
+                    if ((key1 in ["Files"]) and ("browse" not in val)):
                         val = self.parse_cfg_values(key2, val, ["[", "]", "'", '"', " "])
+                    elif key1 in ["Global", "Options"]:
+                        val = self.parse_cfg_values(key2, val, ["[", "]", "'", '"', " "])
+                    elif key1 in ["ustar_threshold"]:
+                        val = self.parse_cfg_values(key2, val, ["[", "]", "'", '"'])
                     child0 = QtGui.QStandardItem(key2)
                     child1 = QtGui.QStandardItem(val)
                     self.sections[key1].appendRow([child0, child1])
