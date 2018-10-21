@@ -6,6 +6,7 @@ import matplotlib
 from PyQt4 import QtCore
 # PFP modules
 import pfp_clim
+import pfp_compliance
 import pfp_cpd
 import pfp_mpt
 import pfp_io
@@ -115,6 +116,47 @@ def do_file_convert_nc2fluxnet():
     return
 def do_file_convert_nc2reddyproc():
     logger.warning("File/Convert/nc to REddyProc not implemented yet")
+    return
+def do_file_convert_ncupdate(cfg=None):
+    """
+    Purpose:
+     Convert from original netCDF files to V1 (October 2018).
+    Usage:
+    Author: PRI
+    Date: October 2018
+    """
+    logger.info(" Starting conversion of netCDF")
+    if not cfg:
+        # check to see if there is an nc2ecostress.txt control file in controlfiles/standard
+        #  if there is
+        #   open controlfiles/standard/nc2csv_ecostress.txt
+        #   ask for netCDF file name
+        #   add [Files] section to control file
+        stdname = os.path.join("controlfiles", "standard", "map_old_to_new.txt")
+        if os.path.exists(stdname):
+            cfg = pfp_io.get_controlfilecontents(stdname)
+            filename = pfp_io.get_filename_dialog(file_path="../OzFlux/Sites", title="Choose a netCDF file")
+            if len(filename) == 0:
+                return
+            if "Files" not in dir(cfg):
+                cfg["Files"] = {}
+            cfg["Files"]["file_path"] = os.path.join(os.path.split(filename)[0], "")
+            cfg["Files"]["in_filename"] = os.path.split(filename)[1]
+        else:
+            cfg = pfp_io.load_controlfile(path="controlfiles")
+            if len(cfg) == 0:
+                return
+    if "Options" not in cfg:
+        cfg["Options"]={}
+    cfg["Options"]["call_mode"] = "interactive"
+    result = pfp_compliance.nc_update(cfg)
+    if result == 0:
+        logger.info(" Finished converting netCDF file")
+        logger.info("")
+    else:
+        logger.error("")
+        logger.error(" An error occured, check the log messages")
+        logger.error("")
     return
 def do_file_split():
     logger.warning("File/Split not implemented yet")

@@ -1,4 +1,6 @@
 name: pfp_gui
+channels:
+  - conda-forge
 dependencies:
   - python=2.7
   - configobj
@@ -12,6 +14,7 @@ dependencies:
   - pytz
   - scipy
   - statsmodels
+  - timezonefinder
   - xlwt
   - xlrd
   - xlsxwriter
