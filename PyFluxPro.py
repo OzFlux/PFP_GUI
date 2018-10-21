@@ -112,6 +112,8 @@ class pfp_main_ui(QtGui.QWidget, QPlainTextEditLogger):
         self.actionFileConvertnc2fluxnet.setText("nc to FluxNet")
         self.actionFileConvertnc2reddyproc = QtGui.QAction(self)
         self.actionFileConvertnc2reddyproc.setText("nc to REddyProc")
+        self.actionFileConvertncupdate = QtGui.QAction(self)
+        self.actionFileConvertncupdate.setText("nc update")
         # Edit menu items
         self.actionEditPreferences = QtGui.QAction(self)
         self.actionEditPreferences.setText("Preferences...")
@@ -161,11 +163,12 @@ class pfp_main_ui(QtGui.QWidget, QPlainTextEditLogger):
         self.actionUtilitiesUstarMPT.setText("u* threshold (MPT)")
         # add the actions to the menus
         # File/Convert submenu
+        self.menuFileConvert.addAction(self.actionFileConvertnc2xls)
         self.menuFileConvert.addAction(self.actionFileConvertnc2biomet)
         self.menuFileConvert.addAction(self.actionFileConvertnc2ecostress)
-        self.menuFileConvert.addAction(self.actionFileConvertnc2xls)
         self.menuFileConvert.addAction(self.actionFileConvertnc2fluxnet)
         self.menuFileConvert.addAction(self.actionFileConvertnc2reddyproc)
+        self.menuFileConvert.addAction(self.actionFileConvertncupdate)
         # File menu
         self.menuFile.addAction(self.actionFileOpen)
         self.menuFile.addAction(self.actionFileSave)
@@ -245,6 +248,7 @@ class pfp_main_ui(QtGui.QWidget, QPlainTextEditLogger):
         self.actionFileConvertnc2xls.triggered.connect(pfp_top_level.do_file_convert_nc2xls)
         self.actionFileConvertnc2fluxnet.triggered.connect(pfp_top_level.do_file_convert_nc2fluxnet)
         self.actionFileConvertnc2reddyproc.triggered.connect(pfp_top_level.do_file_convert_nc2reddyproc)
+        self.actionFileConvertncupdate.triggered.connect(pfp_top_level.do_file_convert_ncupdate)
         self.actionFileOpen.triggered.connect(self.open_controlfile)
         self.actionFileSave.triggered.connect(self.save_controlfile)
         self.actionFileSaveAs.triggered.connect(self.saveas_controlfile)
