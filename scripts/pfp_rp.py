@@ -1069,11 +1069,11 @@ def L6_summary(cf, ds):
     # daily averages and totals
     daily_dict = L6_summary_daily(ds, series_dict)
     L6_summary_write_xlfile(xl_file, "Daily (all)", daily_dict)
-    L6_summary_write_ncfile(nc_file, "Daily (all)", daily_dict)
+    L6_summary_write_ncfile(nc_file, "Daily_all", daily_dict)
     #flag_dict = L6_summary_daily_flag(ds,series_dict)
     fluxes_dict = L6_summary_co2andh2o_fluxes(ds, series_dict, daily_dict)
     L6_summary_write_xlfile(xl_file, "Daily (CO2,H2O)", fluxes_dict)
-    L6_summary_write_ncfile(nc_file, "Daily (CO2,H2O)", fluxes_dict)
+    L6_summary_write_ncfile(nc_file, "Daily_CO2_H2O", fluxes_dict)
     # monthly averages and totals
     monthly_dict = L6_summary_monthly(ds, series_dict)
     L6_summary_write_xlfile(xl_file, "Monthly", monthly_dict)
@@ -1086,7 +1086,7 @@ def L6_summary(cf, ds):
     cumulative_dict = L6_summary_cumulative(ds, series_dict)
     for year in cumulative_dict.keys():
         L6_summary_write_xlfile(xl_file, "Cummulative("+str(year)+")", cumulative_dict[str(year)])
-        L6_summary_write_ncfile(nc_file, "Cummulative("+str(year)+")", cumulative_dict[str(year)])
+        L6_summary_write_ncfile(nc_file, "Cummulative_"+str(year), cumulative_dict[str(year)])
     # close the Excel workbook
     xl_file.save(xl_name)
     # close the netCDF file

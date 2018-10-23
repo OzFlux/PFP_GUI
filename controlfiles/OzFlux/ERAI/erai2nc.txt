@@ -1,7 +1,0 @@
-[Files]
-    xl_file_path  = /home/peter/OzFlux/Sites/site_master.xls
-    xl_sheet_name = Individual
-    erai_path     = /home/peter/OzFlux/ERAI/*.nc
-    out_base_path = /home/peter/OzFlux/Sites/
-[Options]
-    site_sa_limit = 5
