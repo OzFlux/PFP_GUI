@@ -5,7 +5,7 @@ import logging
 import dateutil
 import numpy
 # PFP modules
-import meteorologicalfunctions as mf
+import meteorologicalfunctions as pfp_mf
 import pfp_utils
 
 logger = logging.getLogger("pfp_log")
@@ -38,7 +38,7 @@ def AhfromRH(ds,Ah_out,RH_in,Ta_in):
         return 0
     RH_data,RH_flag,RH_attr = pfp_utils.GetSeriesasMA(ds,RH_in)
     Ta_data,Ta_flag,Ta_attr = pfp_utils.GetSeriesasMA(ds,Ta_in)
-    Ah_data = mf.absolutehumidityfromRH(Ta_data,RH_data)
+    Ah_data = pfp_mf.absolutehumidityfromRH(Ta_data,RH_data)
     Ah_attr = pfp_utils.MakeAttributeDictionary(long_name="Absolute humidity calculated from "+RH_in+" and "+Ta_in,
                                               height=RH_attr["height"],
                                               units="g/m3")
@@ -75,7 +75,7 @@ def AhfromMR(ds,Ah_out,MR_in,Ta_in,ps_in):
     MR_data,MR_flag,MR_attr = pfp_utils.GetSeriesasMA(ds,MR_in)
     Ta_data,Ta_flag,Ta_attr = pfp_utils.GetSeriesasMA(ds,Ta_in)
     ps_data,ps_flag,ps_attr = pfp_utils.GetSeriesasMA(ds,ps_in)
-    Ah_data = mf.h2o_gpm3frommmolpmol(MR_data,Ta_data,ps_data)
+    Ah_data = pfp_mf.h2o_gpm3frommmolpmol(MR_data,Ta_data,ps_data)
     long_name = "Absolute humidity calculated from "+MR_in+", "+Ta_in+" and "+ps_in
     Ah_attr = pfp_utils.MakeAttributeDictionary(long_name=long_name,
                                               height=MR_attr["height"],
@@ -264,9 +264,9 @@ def MRfromRH(ds, MR_out, RH_in, Ta_in, ps_in):
         return 0
     RH_data,RH_flag,RH_attr = pfp_utils.GetSeriesasMA(ds, RH_in)
     Ta_data,Ta_flag,Ta_attr = pfp_utils.GetSeriesasMA(ds, Ta_in)
-    Ah_data = mf.absolutehumidityfromRH(Ta_data, RH_data)
+    Ah_data = pfp_mf.absolutehumidityfromRH(Ta_data, RH_data)
     ps_data,ps_flag,ps_attr = pfp_utils.GetSeriesasMA(ds, ps_in)
-    MR_data = mf.h2o_mmolpmolfromgpm3(Ah_data, Ta_data, ps_data)
+    MR_data = pfp_mf.h2o_mmolpmolfromgpm3(Ah_data, Ta_data, ps_data)
     MR_attr = pfp_utils.MakeAttributeDictionary(long_name="H2O mixing ratio calculated from "+RH_in+", "+Ta_in+" and "+ps_in,
                                               height=RH_attr["height"],
                                               units="mmol/mol")

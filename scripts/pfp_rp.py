@@ -15,7 +15,7 @@ import pylab
 import xlrd
 # PFP modules
 import constants as c
-import meteorologicalfunctions as mf
+import meteorologicalfunctions as pfp_mf
 import pfp_io
 import pfp_rpLL
 import pfp_rpLT
