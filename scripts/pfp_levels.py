@@ -189,8 +189,12 @@ def l3qc(cf,ds2):
         # approximate wT from virtual wT using wA (ref: Campbell OPECSystem manual)
         pfp_ts.FhvtoFh(cf, ds3)
         # correct the H2O & CO2 flux due to effects of flux on density measurements
-        pfp_ts.Fe_WPL(cf, ds3)
-        pfp_ts.Fc_WPL(cf, ds3)
+        if pfp_ts.Fe_WPL(cf, ds3):
+            msg = "Error in WPL correction for Fe, please see log file for details"
+            logger.error(msg)            
+        if pfp_ts.Fc_WPL(cf, ds3):
+            msg = "Error in WPL correction for Fc, please see log file for details"
+            logger.error(msg)            
     # **************************************
     # *** Calculate Monin-Obukhov length ***
     # **************************************
