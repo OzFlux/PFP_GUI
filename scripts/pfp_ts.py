@@ -2359,7 +2359,7 @@ def MassmanStandard(cf,ds,Ta_in='Ta',Ah_in='Ah',ps_in='ps',ustar_in='ustar',usta
     Ah,f,a = pfp_utils.GetSeriesasMA(ds,Ah_in)
     ps,f,a = pfp_utils.GetSeriesasMA(ds,ps_in)
     nRecs = numpy.size(Ta)
-    u,f,a = pfp_utils.GetSeriesasMA(ds,'u')
+    u,f,a = pfp_utils.GetSeriesasMA(ds,'U_SONIC_Av')
     uw,f,a = pfp_utils.GetSeriesasMA(ds,'uw')
     vw,f,a = pfp_utils.GetSeriesasMA(ds,'vw')
     wT,f,a = pfp_utils.GetSeriesasMA(ds,'wT')

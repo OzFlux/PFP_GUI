@@ -191,10 +191,14 @@ def l3qc(cf,ds2):
         # correct the H2O & CO2 flux due to effects of flux on density measurements
         if pfp_ts.Fe_WPL(cf, ds3):
             msg = "Error in WPL correction for Fe, please see log file for details"
-            logger.error(msg)            
+            logger.error(msg)
+            ds3.returncodes["value"] = "error"
+            return ds3
         if pfp_ts.Fc_WPL(cf, ds3):
             msg = "Error in WPL correction for Fc, please see log file for details"
-            logger.error(msg)            
+            logger.error(msg)
+            ds3.returncodes["value"] = "error"            
+            return ds3
     # **************************************
     # *** Calculate Monin-Obukhov length ***
     # **************************************
