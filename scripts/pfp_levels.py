@@ -294,7 +294,9 @@ def l4qc(main_gui, cf, ds3):
     pfp_ck.do_qcchecks(cf, ds4)
     # now do the meteorological driver gap filling
     for ThisOne in cf["Drivers"].keys():
-        if ThisOne not in ds4.series.keys(): logger.error("Series "+ThisOne+" not in data structure"); continue
+        if ThisOne not in ds4.series.keys():
+            logger.warning("Series "+ThisOne+" not in data structure")
+            continue
         # parse the control file for information on how the user wants to do the gap filling
         pfp_gf.GapFillParseControlFile(cf, ds4, ThisOne, ds_alt)
     # *** start of the section that does the gap filling of the drivers ***

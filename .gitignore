@@ -29,6 +29,7 @@ mds/output/
 # control files
 controlfiles/AmeriFlux/
 controlfiles/OzFlux/
+controlfiles/Calperum
 
 # Jupyter notebook files
 ipynb/
