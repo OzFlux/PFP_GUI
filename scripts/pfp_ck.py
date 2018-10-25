@@ -559,7 +559,8 @@ def do_excludehours(cf,ds,section,series,code=7):
     ExcludeList = cf[section][series]['ExcludeHours'].keys()
     NumExclude = len(ExcludeList)
     for i in range(NumExclude):
-        ExcludeHourList = ast.literal_eval(cf[section][series]['ExcludeHours'][str(i)])
+        exclude_hours_string = cf[section][series]['ExcludeHours'][str(i)]
+        ExcludeHourList = exclude_hours_string.split(",")
         try:
             dt = datetime.datetime.strptime(ExcludeHourList[0],'%Y-%m-%d %H:%M')
             si = pfp_utils.find_nearest_value(ldt, dt)
@@ -570,9 +571,9 @@ def do_excludehours(cf,ds,section,series,code=7):
             ei = pfp_utils.find_nearest_value(ldt, dt)
         except ValueError:
             ei = -1
-        for j in range(len(ExcludeHourList[2])):
-            ExHr = datetime.datetime.strptime(ExcludeHourList[2][j],'%H:%M').hour
-            ExMn = datetime.datetime.strptime(ExcludeHourList[2][j],'%H:%M').minute
+        for j in range(2,len(ExcludeHourList)):
+            ExHr = datetime.datetime.strptime(ExcludeHourList[j],'%H:%M').hour
+            ExMn = datetime.datetime.strptime(ExcludeHourList[j],'%H:%M').minute
             index = numpy.where((ds.series['Hour']['Data'][si:ei]==ExHr)&
                                 (ds.series['Minute']['Data'][si:ei]==ExMn))[0] + si
             ds.series[series]['Data'][index] = numpy.float64(c.missing_value)
