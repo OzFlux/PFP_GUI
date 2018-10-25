@@ -475,10 +475,10 @@ def rpSOLO_run_gui(solo_gui):
             solo_info["enddate"] = enddate.strftime("%Y-%m-%d")
         logger.info("Finished auto (monthly) run ...")
     elif solo_info["peropt"] == 3:
-        # automatc run with number of days specified by user via the GUI
+        # automatic run with number of days specified by user via the GUI
         logger.info("Starting auto (days) run ...")
         # get the start datetime entered in the SOLO GUI
-        nDays = int(alt_gui.lineEdit_NumberDays.text())
+        nDays = int(solo_gui.lineEdit_NumberDays.text())
         if len(str(solo_gui.lineEdit_StartDate.text())) != 0:
             solo_info["startdate"] = str(solo_gui.lineEdit_StartDate.text())
         if len(solo_gui.lineEdit_EndDate.text()) != 0:

@@ -1492,7 +1492,7 @@ def nc_concatenate(cf):
     Fc_list = [label for label in ds.series.keys() if label[0:2] == "Fc" and "Flag" not in label]
     pfp_utils.CheckUnits(ds, Fc_list, "umol/m2/s", convert_units=True)
     # re-calculate the synthetic Fsd
-    #pfp_ts.get_synthetic_fsd(ds)
+    pfp_ts.get_synthetic_fsd(ds)
     # re-apply the quality control checks (range, diurnal and rules)
     pfp_ck.do_qcchecks(cf,ds)
     # update the global attributes for this level
