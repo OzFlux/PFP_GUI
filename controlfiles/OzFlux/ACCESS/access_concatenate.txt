@@ -1,8 +1,0 @@
-[Files]
-    xl_file_path = "/mnt/OzFlux/Sites/site_master.xls"
-    sheet_name = "Active"
-    cf_base_path = "/mnt/PyFluxPro/controlfiles/OzFlux/ACCESS/concatenate"
-    nc_base_path = "/mnt/OzFlux/Sites/"
-    access_base_path = "/mnt/OzFlux/ACCESS/monthly"
-[Options]
-    last_month_processed = "201702"

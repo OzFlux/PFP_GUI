@@ -450,7 +450,7 @@ def reddyproc_write_csv(cf):
     for series in series_list:
         if series=="NEE":
             if data[series]["Attr"]["units"] in ["mg/m2/s","mgCO2/m2/s"]:
-                data[series]["Data"] = mf.Fc_umolpm2psfrommgpm2ps(data[series]["Data"])
+                data[series]["Data"] = pfp_mf.Fc_umolpm2psfrommgCO2pm2ps(data[series]["Data"])
                 data[series]["Attr"]["units"] = "umolm-2s-1"
             elif data[series]["Attr"]["units"]=='umol/m2/s':
                 data[series]["Attr"]["units"] = "umolm-2s-1"
@@ -942,7 +942,7 @@ def fn_write_csv(cf):
     if "RH" not in ds.series.keys():
         Ah,f,a = pfp_utils.GetSeriesasMA(ds,'Ah')
         Ta,f,a = pfp_utils.GetSeriesasMA(ds,'Ta')
-        RH = mf.RHfromabsolutehumidity(Ah, Ta)
+        RH = pfp_mf.RHfromabsolutehumidity(Ah, Ta)
         attr = pfp_utils.MakeAttributeDictionary(long_name='Relative humidity',units='%',standard_name='relative_humidity')
         flag = numpy.where(numpy.ma.getmaskarray(RH)==True,ones,zeros)
         pfp_utils.CreateSeries(ds,"RH",RH,flag,attr)
@@ -1049,19 +1049,19 @@ def fn_write_csv(cf):
     #adjust units if required
     for series in series_list:
         if series=="FC" and data[series]["Attr"]["units"]=='mg/m2/s':
-            data[series]["Data"] = mf.Fc_umolpm2psfrommgpm2ps(data[series]["Data"])
+            data[series]["Data"] = pfp_mf.Fc_umolpm2psfrommgCO2pm2ps(data[series]["Data"])
             data[series]["Attr"]["units"] = "umol/m2/s"
         if series=="CO2" and data[series]["Attr"]["units"]=='mg/m3':
             CO2 = data["CO2"]["Data"]
             TA = data["TA"]["Data"]
             PA = data["PA"]["Data"]
-            data[series]["Data"] = mf.co2_ppmfrommgpm3(CO2,TA,PA)
+            data[series]["Data"] = pfp_mf.co2_ppmfrommgCO2pm3(CO2,TA,PA)
             data[series]["Attr"]["units"] = "umol/mol"
         if series=="H2O" and data[series]["Attr"]["units"]=='g/m3':
             H2O = data["H2O"]["Data"]
             TA = data["TA"]["Data"]
             PA = data["PA"]["Data"]
-            data[series]["Data"] = mf.h2o_mmolpmolfromgpm3(H2O,TA,PA)
+            data[series]["Data"] = pfp_mf.h2o_mmolpmolfromgpm3(H2O,TA,PA)
             data[series]["Attr"]["units"] = "mmol/mol"
         if series=="RH" and data[series]["Attr"]["units"] in ["fraction","frac"]:
             data[series]["Data"] = float(100)*data[series]["Data"]
@@ -1431,7 +1431,7 @@ def nc_concatenate(cf):
     # loop over the data series and calculate fraction of data present
     opt = pfp_utils.get_keyvaluefromcf(cf,["Options"],"Truncate",default="Yes")
     if opt.lower() == "yes":
-        default_string = "Ah,Cc,Fa,Fg,Fld,Flu,Fn,Fsd,Fsu,ps,Sws,Ta,Ts,Ws,Wd,Precip"
+        default_string = "Ah,CO2,Fa,Fg,Fld,Flu,Fn,Fsd,Fsu,ps,Sws,Ta,Ts,Ws,Wd,Precip"
         series_string = pfp_utils.get_keyvaluefromcf(cf,["Options"],"SeriesToCheck",default=default_string)
         series_list = pfp_cfg.cfg_string_to_list(series_string)
         if isinstance(series_list, basestring):
@@ -1656,7 +1656,7 @@ def ncsplit_progress(split_gui,text):
     split_gui.progress.grid(row=9,column=0,columnspan=6,sticky="W")
     split_gui.update()
 
-def nc_read_series(ncFullName,checktimestep=True,fixtimestepmethod=""):
+def nc_read_series(ncFullName,checktimestep=True,fixtimestepmethod="round"):
     """
     Purpose:
      Reads a netCDF file and returns the meta-data and data in a DataStructure.

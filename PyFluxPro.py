@@ -342,6 +342,7 @@ class pfp_main_ui(QtGui.QWidget, QPlainTextEditLogger):
         """ Sniff the control file to find out it's type."""
         if "level" in self.cfg:
             return self.cfg["level"]
+        self.cfg["level"] = ""
         # check for L1
         if self.check_cfg_L1():
             logger.info(" L1 control file detected")
@@ -370,6 +371,11 @@ class pfp_main_ui(QtGui.QWidget, QPlainTextEditLogger):
         elif self.check_cfg_L6():
             logger.info(" L6 control file detected")
             self.cfg["level"] = "L6"
+        else:
+            logger.info(" Unable to detect level, enter manually ...")
+            text, ok = QtGui.QInputDialog.getText(self, 'Processing level', 'Enter the processing level:')
+            if ok:
+                self.cfg["level"] = text
         return self.cfg["level"]
 
     def check_cfg_L1(self):

@@ -10,7 +10,7 @@ import numpy
 import xlrd
 # PFP modules
 import constants as c
-import meteorologicalfunctions as mf
+import meteorologicalfunctions as pfp_mf
 import pfp_ck
 import pfp_gf
 import pfp_gfALT

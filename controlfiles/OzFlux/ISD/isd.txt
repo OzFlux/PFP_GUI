@@ -1,5 +1,0 @@
-[Files]
-    xl_file_path = /home/peter/OzFlux/Sites/site_master.xls
-    xl_sheet_name = Individual
-    isd_base_path = /home/peter/OzFlux/ISD
-    out_base_path = /home/peter/OzFlux/Sites

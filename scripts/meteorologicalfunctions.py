@@ -14,13 +14,13 @@ def absolutehumidityfromRH(Ta,RH):
     if WasND: ah, WasMA = MAtoSeries(ah)
     return ah
 
-def co2_ppmfrommgpm3(c_mgpm3,T,p):
+def co2_ppmfrommgCO2pm3(c_mgpm3,T,p):
     """
-     Convert CO2 concentration units of mg/m3 to umol/mol (ppm)
+     Convert CO2 concentration units of mgCO2/m3 to umol/mol (ppm)
         Usage:
-         CO2_ppm = co2_ppmfrommgpm3(CO2_mgpm3, T, p)
+         CO2_ppm = co2_ppmfrommgCO2pm3(CO2_mgpm3, T, p)
          where
-         CO2_mgpm3 (input) - CO2 concentration, mg/m3
+         CO2_mgpm3 (input) - CO2 concentration, mgCO2/m3
          T (input) - air temperature, C
          p (input) - air pressure, kPa
         Returns the CO2 concentration in ppm.
@@ -32,16 +32,16 @@ def co2_ppmfrommgpm3(c_mgpm3,T,p):
     p, dummy = SeriestoMA(p)
     p = p * float(1000)        # pressure in Pa
     # do the job
-    c_ppm = (c_mgpm3/c.Mc)*c.R*T/p
+    c_ppm = (c_mgpm3/c.Mco2)*c.R*T/p
     # convert back to ndarray if input is not a masked array
     if WasND: c_ppm, WasMA = MAtoSeries(c_ppm)
     return c_ppm
 
-def co2_mgpm3fromppm(c_ppm,T,p):
+def co2_mgCO2pm3fromppm(c_ppm,T,p):
     """
-     Convert CO2 concentration units of umol/mol (ppm) to mg/m3
+     Convert CO2 concentration units of umol/mol (ppm) to mgCO2/m3
         Usage:
-         CO2_mgpm3 = co2_mgpm3fromppm(CO2_ppm, T, p)
+         CO2_mgpm3 = co2_mgCO2pm3fromppm(CO2_ppm, T, p)
          where
          CO2_ppm (input) - CO2 concentration, umol/mol
          T (input) - air temperature, C
@@ -55,7 +55,7 @@ def co2_mgpm3fromppm(c_ppm,T,p):
     p, dummy = SeriestoMA(p)
     p = p * float(1000)        # pressure in Pa
     # do the job
-    c_mgpm3 = c_ppm*c.Mc*p/(c.R*T)
+    c_mgpm3 = c_ppm*c.Mco2*p/(c.R*T)
     # convert back to ndarray if input is not a masked array
     if WasND: c_mgpm3, WasMA = MAtoSeries(c_mgpm3)
     return c_mgpm3
@@ -98,11 +98,11 @@ def es(T):
     es = 0.6106 * numpy.exp(17.27 * T / (T + 237.3))
     return es
 
-def Fc_umolpm2psfrommgpm2ps(Fc_mgpm2ps):
+def Fc_umolpm2psfrommgCO2pm2ps(Fc_mgpm2ps):
     """
     Convert Fc in units of mg/m2/s to units of umol/m2/s
     Usage:
-     Fc_umolpm2ps = Fc_umolpm2psfrommgpm2ps(Fc_mgpm2ps)
+     Fc_umolpm2ps = Fc_umolpm2psfrommgCO2pm2ps(Fc_mgpm2ps)
      where:
       Fc_mgpm2ps (input) - CO2 flux in units of mg/m2/s
     Returns the CO2 flux in units of umol/m2/s
@@ -110,27 +110,10 @@ def Fc_umolpm2psfrommgpm2ps(Fc_mgpm2ps):
     # convert to masked array
     Fc_mgpm2ps, WasND = SeriestoMA(Fc_mgpm2ps)
     # do the job
-    Fc_umolpm2ps = Fc_mgpm2ps / c.Mc
+    Fc_umolpm2ps = Fc_mgpm2ps / c.Mco2
     # convert back to ndarray if input is not a masked array
     if WasND: Fc_umolpm2ps, WasMA = MAtoSeries(Fc_umolpm2ps)
     return Fc_umolpm2ps
-
-def Fc_mgpm2psfromumolpm2ps(Fc_umolpm2ps):
-    """
-    Convert Fc in units of umol/m2/s to units of mg/m2/s
-    Usage:
-     Fc_mgpm2ps = Fc_mgpm2psfromumolpm2ps(Fc_umolpm2ps)
-     where:
-      Fc_umolpm2ps (input) - CO2 flux in units of umol/m2/s
-    Returns the CO2 flux in units of mg/m2/s
-    """
-    # convert to masked array
-    Fc_umolpm2ps, WasND = SeriestoMA(Fc_umolpm2ps)
-    # do the job
-    Fc_mgpm2ps = Fc_umolpm2ps * c.Mc
-    # convert back to ndarray if input is not a masked array
-    if WasND: Fc_mgpm2ps, WasMA = MAtoSeries(Fc_mgpm2ps)
-    return Fc_mgpm2ps
 
 def Fc_gCpm2psfromumolpm2ps(Fc_umolpm2ps):
     """
@@ -144,10 +127,27 @@ def Fc_gCpm2psfromumolpm2ps(Fc_umolpm2ps):
     # convert to masked array
     Fc_umolpm2ps, WasND = SeriestoMA(Fc_umolpm2ps)
     # do the job
-    Fc_gCpm2ps = Fc_umolpm2ps * c.Mc/1E6
+    Fc_gCpm2ps = Fc_umolpm2ps * c.Mc/1E3
     # convert back to ndarray if input is not a masked array
     if WasND: Fc_Cgpm2ps, WasMA = MAtoSeries(Fc_gCpm2ps)
     return Fc_gCpm2ps
+
+def Fc_mgCO2pm2psfromumolpm2ps(Fc_umolpm2ps):
+    """
+    Convert Fc in units of umol/m2/s to units of mgCO2/m2/s
+    Usage:
+     Fc_mgCO2pm2ps = Fc_mgCO2pm2psfromumolpm2ps(Fc_umolpm2ps)
+     where:
+      Fc_umolpm2ps (input) - CO2 flux in units of umol/m2/s
+    Returns the CO2 flux in units of mgCO2/m2/s
+    """
+    # convert to masked array
+    Fc_umolpm2ps, WasND = SeriestoMA(Fc_umolpm2ps)
+    # do the job
+    Fc_mgCO2pm2ps = Fc_umolpm2ps * c.Mco2
+    # convert back to ndarray if input is not a masked array
+    if WasND: Fc_mgCO2pm2ps, WasMA = MAtoSeries(Fc_mgCO2pm2ps)
+    return Fc_mgCO2pm2ps
 
 def h2o_mmolpmolfromgpm3(h_gpm3,T,p):
     """
@@ -292,7 +292,7 @@ def specificheatcapacitydryair(Tv):
     '''
     Specific heat capacity of air at constant pressure.
     USEAGE:
-     cpd = mf.cpd(Tv)
+     cpd = pfp_mf.specificheatcapacitydryair(Tv)
     INPUT:
      Tv - virtual temperature (from sonic anemometer), C
     OUTPUT:
@@ -307,7 +307,7 @@ def specificheatcapacitywatervapour(Ta, Ah):
     '''
     Specific heat capacity of water vapour at constant pressure.
     USEAGE:
-     cpv = mf.cpv(Ta,Ah)
+     cpv = pfp_mf.specificheatcapacitywatervapour(Ta,Ah)
     INPUT:
      Ta - air temperature, C
      Ah - absolute humidity, %

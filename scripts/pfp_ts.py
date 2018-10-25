@@ -16,7 +16,7 @@ import xlrd
 import xlwt
 # PFP
 import constants as c
-import meteorologicalfunctions as mf
+import meteorologicalfunctions as pfp_mf
 import pfp_ck
 import pfp_func
 import pfp_io
@@ -483,7 +483,7 @@ def AbsoluteHumidityFromRH(ds):
     Ta,Ta_flag,a = pfp_utils.GetSeriesasMA(ds,"Ta")
     RH,RH_flag,a = pfp_utils.GetSeriesasMA(ds,"RH")
     Ah_new_flag = pfp_utils.MergeQCFlag([Ta_flag,RH_flag])
-    Ah_new = mf.absolutehumidityfromRH(Ta,RH)
+    Ah_new = pfp_mf.absolutehumidityfromRH(Ta,RH)
     if "Ah" in ds.series.keys():
         Ah,Ah_flag,Ah_attr = pfp_utils.GetSeriesasMA(ds,"Ah")
         index = numpy.where(numpy.ma.getmaskarray(Ah)==True)[0]
@@ -503,8 +503,8 @@ def AbsoluteHumidityFromq(ds):
     ps,ps_flag,a = pfp_utils.GetSeriesasMA(ds,"ps")
     q,q_flag,a = pfp_utils.GetSeriesasMA(ds,"q")
     Ah_new_flag = pfp_utils.MergeQCFlag([Ta_flag,ps_flag,q_flag])
-    RH = mf.RHfromspecifichumidity(q,Ta,ps)
-    Ah_new = mf.absolutehumidityfromRH(Ta,RH)
+    RH = pfp_mf.RHfromspecifichumidity(q,Ta,ps)
+    Ah_new = pfp_mf.absolutehumidityfromRH(Ta,RH)
     if "Ah" in ds.series.keys():
         Ah,Ah_flag,Ah_attr = pfp_utils.GetSeriesasMA(ds,"Ah")
         index = numpy.where(numpy.ma.getmaskarray(Ah)==True)[0]
@@ -524,7 +524,7 @@ def RelativeHumidityFromq(ds):
     ps,ps_flag,a = pfp_utils.GetSeriesasMA(ds,"ps")
     q,q_flag,a = pfp_utils.GetSeriesasMA(ds,"q")
     RH_new_flag = pfp_utils.MergeQCFlag([Ta_flag,ps_flag,q_flag])
-    RH_new = mf.RHfromspecifichumidity(q,Ta,ps)
+    RH_new = pfp_mf.RHfromspecifichumidity(q,Ta,ps)
     if "RH" in ds.series.keys():
         RH,RH_flag,RH_attr = pfp_utils.GetSeriesasMA(ds,"RH")
         index = numpy.where(numpy.ma.getmaskarray(RH)==True)[0]
@@ -543,7 +543,7 @@ def RelativeHumidityFromAh(ds):
     Ta,Ta_flag,a = pfp_utils.GetSeriesasMA(ds,"Ta")
     Ah,Ah_flag,a = pfp_utils.GetSeriesasMA(ds,"Ah")
     RH_new_flag = pfp_utils.MergeQCFlag([Ta_flag,Ah_flag])
-    RH_new = mf.RHfromabsolutehumidity(Ah,Ta)     # relative humidity in units of percent
+    RH_new = pfp_mf.RHfromabsolutehumidity(Ah,Ta)     # relative humidity in units of percent
     if "RH" in ds.series.keys():
         RH,RH_flag,RH_attr = pfp_utils.GetSeriesasMA(ds,"RH")
         index = numpy.where(numpy.ma.getmaskarray(RH)==True)[0]
@@ -609,8 +609,8 @@ def SpecificHumidityFromAh(ds):
     ps,ps_flag,a = pfp_utils.GetSeriesasMA(ds,"ps")
     Ah,Ah_flag,a = pfp_utils.GetSeriesasMA(ds,"Ah")
     q_new_flag = pfp_utils.MergeQCFlag([Ta_flag,ps_flag,Ah_flag])
-    RH = mf.RHfromabsolutehumidity(Ah,Ta)
-    q_new = mf.specifichumidityfromRH(RH, Ta, ps)
+    RH = pfp_mf.RHfromabsolutehumidity(Ah,Ta)
+    q_new = pfp_mf.specifichumidityfromRH(RH, Ta, ps)
     if "q" in ds.series.keys():
         q,q_flag,q_attr = pfp_utils.GetSeriesasMA(ds,"q")
         index = numpy.where(numpy.ma.getmaskarray(q)==True)[0]
@@ -630,7 +630,7 @@ def SpecificHumidityFromRH(ds):
     ps,ps_flag,a = pfp_utils.GetSeriesasMA(ds,"ps")
     RH,RH_flag,a = pfp_utils.GetSeriesasMA(ds,"RH")
     q_new_flag = pfp_utils.MergeQCFlag([Ta_flag,ps_flag,RH_flag])
-    q_new = mf.specifichumidityfromRH(RH,Ta,ps)   # specific humidity in units of kg/kg
+    q_new = pfp_mf.specifichumidityfromRH(RH,Ta,ps)   # specific humidity in units of kg/kg
     if "q" in ds.series.keys():
         q,q_flag,q_attr = pfp_utils.GetSeriesasMA(ds,"q")
         index = numpy.where(numpy.ma.getmaskarray(q)==True)[0]
@@ -659,11 +659,11 @@ def CalculateMeteorologicalVariables(ds,Ta_name='Ta',Tv_name='Tv_SONIC_Av',ps_na
         RH_name: data series for relative humidity
 
         Variables added:
-            rhom: density of moist air, mf.densitymoistair(Ta,ps,Ah)
-            Lv: latent heat of vapourisation, mf.Lv(Ta)
-            q: specific humidity, mf.specifichumidity(mr)
-                where mr (mixing ratio) = mf.mixingratio(ps,vp)
-            Cpm: specific heat of moist air, mf.specificheatmoistair(q)
+            rhom: density of moist air, pfp_mf.densitymoistair(Ta,ps,Ah)
+            Lv: latent heat of vapourisation, pfp_mf.Lv(Ta)
+            q: specific humidity, pfp_mf.specifichumidity(mr)
+                where mr (mixing ratio) = pfp_mf.mixingratio(ps,vp)
+            Cpm: specific heat of moist air, pfp_mf.specificheatmoistair(q)
             VPD: vapour pressure deficit, VPD = esat - e
         """
     nRecs = int(ds.globalattributes["nc_nrecs"])
@@ -692,22 +692,22 @@ def CalculateMeteorologicalVariables(ds,Ta_name='Ta',Tv_name='Tv_SONIC_Av',ps_na
     Ah,f,a = pfp_utils.GetSeriesasMA(ds,Ah_name)
     q,f,a = pfp_utils.GetSeriesasMA(ds,q_name)
     # do the calculations
-    e = mf.vapourpressure(Ah,Ta)                  # vapour pressure from absolute humidity and temperature
-    esat = mf.es(Ta)                              # saturation vapour pressure
-    rhod = mf.densitydryair(Ta,ps,e)              # partial density of dry air
-    rhom = mf.densitymoistair(Ta,ps,e)            # density of moist air
-    rhow = mf.densitywatervapour(Ta,e)            # partial density of water vapour
-    Lv = mf.Lv(Ta)                                # latent heat of vapourisation
-    mr = mf.mixingratio(ps,e)                     # mixing ratio
-    mrsat = mf.mixingratio(ps,esat)               # saturation mixing ratio
-    qsat = mf.specifichumidity(mrsat)             # saturation specific humidity from saturation mixing ratio
-    Cpd = mf.specificheatcapacitydryair(Tv)
-    Cpw = mf.specificheatcapacitywatervapour(Ta,Ah)
-    RhoCp = mf.densitytimesspecificheat(rhow,Cpw,rhod,Cpd)
-    Cpm = mf.specificheatmoistair(q)              # specific heat of moist air
+    e = pfp_mf.vapourpressure(Ah,Ta)                  # vapour pressure from absolute humidity and temperature
+    esat = pfp_mf.es(Ta)                              # saturation vapour pressure
+    rhod = pfp_mf.densitydryair(Ta,ps,e)              # partial density of dry air
+    rhom = pfp_mf.densitymoistair(Ta,ps,e)            # density of moist air
+    rhow = pfp_mf.densitywatervapour(Ta,e)            # partial density of water vapour
+    Lv = pfp_mf.Lv(Ta)                                # latent heat of vapourisation
+    mr = pfp_mf.mixingratio(ps,e)                     # mixing ratio
+    mrsat = pfp_mf.mixingratio(ps,esat)               # saturation mixing ratio
+    qsat = pfp_mf.specifichumidity(mrsat)             # saturation specific humidity from saturation mixing ratio
+    Cpd = pfp_mf.specificheatcapacitydryair(Tv)
+    Cpw = pfp_mf.specificheatcapacitywatervapour(Ta,Ah)
+    RhoCp = pfp_mf.densitytimesspecificheat(rhow,Cpw,rhod,Cpd)
+    Cpm = pfp_mf.specificheatmoistair(q)              # specific heat of moist air
     VPD = esat - e                                # vapour pressure deficit
     SHD = qsat - q                                # specific humidity deficit
-    h2o = mf.h2o_mmolpmolfromgpm3(Ah,Ta,ps)
+    h2o = pfp_mf.h2o_mmolpmolfromgpm3(Ah,Ta,ps)
     # write the meteorological series to the data structure
     attr = pfp_utils.MakeAttributeDictionary(long_name='Vapour pressure',units='kPa',standard_name='water_vapor_partial_pressure_in_air')
     flag = numpy.where(numpy.ma.getmaskarray(e)==True,ones,zeros)
@@ -777,11 +777,11 @@ def CalculateMoninObukhovLength(ds):
     ustar = pfp_utils.GetVariable(ds, "ustar")
     Fh = pfp_utils.GetVariable(ds, "Fh")
     # calculate the density of dry air
-    rho_dry = mf.densitydryair(Ta["Data"], ps["Data"], vp["Data"])
+    rho_dry = pfp_mf.densitydryair(Ta["Data"], ps["Data"], vp["Data"])
     # calculate virtual potential temperature
-    Tp = mf.theta(Ta["Data"], ps["Data"])
-    mr = mf.mixingratio(ps["Data"], vp["Data"])
-    Tvp = mf.virtualtheta(Tp, mr)
+    Tp = pfp_mf.theta(Ta["Data"], ps["Data"])
+    mr = pfp_mf.mixingratio(ps["Data"], vp["Data"])
+    Tvp = pfp_mf.virtualtheta(Tp, mr)
     L["Data"] = -Tvp*rho_dry*c.Cp*(ustar["Data"]**3)/(c.g*c.k*Fh["Data"])
     # get the QC flag
     L["Flag"] = numpy.where(numpy.ma.getmaskarray(L["Data"]) == True, ones, zeros)
@@ -858,7 +858,7 @@ def CheckCovarianceUnits(ds):
         if "umol" in attr["units"]:
             Ta,f,a = pfp_utils.GetSeriesasMA(ds,"Ta")
             ps,f,a = pfp_utils.GetSeriesasMA(ds,"ps")
-            data = mf.co2_mgpm3fromppm(data,Ta,ps)
+            data = pfp_mf.co2_mgCO2pm3fromppm(data,Ta,ps)
             attr["units"] = "mg/m2/s"
             pfp_utils.CreateSeries(ds,item,data,flag,attr)
     for item in h2o_list:
@@ -867,7 +867,7 @@ def CheckCovarianceUnits(ds):
         if "mmol" in attr["units"]:
             Ta,f,a = pfp_utils.GetSeriesasMA(ds,"Ta")
             ps,f,a = pfp_utils.GetSeriesasMA(ds,"ps")
-            data = mf.h2o_gpm3frommmolpmol(data,Ta,ps)
+            data = pfp_mf.h2o_gpm3frommmolpmol(data,Ta,ps)
             attr["units"] = "g/m2/s"
             if "H" in item: item = item.replace("H","A")
             pfp_utils.CreateSeries(ds,item,data,flag,attr)
@@ -1105,11 +1105,11 @@ def CalculateFcStorageSinglePoint(cf,ds,Fc_out='Fc_single',CO2_in='CO2'):
         # check the CO2 concentration units
         # if the units are mg/m3, convert CO2 concentration to umol/mol before taking the difference
         if Cc_attr["units"]=="mg/m3":
-            Cc = mf.co2_ppmfrommgpm3(Cc, Ta, ps)
+            Cc = pfp_mf.co2_ppmfrommgCO2pm3(Cc, Ta, ps)
         # calculate the change in CO2 concentration between time steps, CO2 concentration in umol/mol.
         dc = numpy.ma.ediff1d(Cc, to_begin=0)
         # convert the CO2 concentration difference from umol/mol to mg/m3
-        dc = mf.co2_mgpm3fromppm(dc, Ta, ps)
+        dc = pfp_mf.co2_mgCO2pm3fromppm(dc, Ta, ps)
         # calculate the time step in seconds
         dt=86400*numpy.ediff1d(ds.series["xlDateTime"]["Data"], to_begin=float(ts)/1440)
         # calculate the CO2 flux based on storage below the measurement height
@@ -1782,7 +1782,7 @@ def Fc_WPL(cf,ds,Fc_wpl_out='Fc',Fc_raw_in='Fc',Fh_in='Fh',Fe_in='Fe',Ta_in='Ta'
         if Cc_attr["units"]=="umol/mol":
             msg = " Fc_WPL: CO2 units ("+Cc_attr["units"]+") converted to mg/m3"
             logger.warning(msg)
-            Cc = mf.co2_mgpm3fromppm(Cc,Ta,ps)
+            Cc = pfp_mf.co2_mgCO2pm3fromppm(Cc,Ta,ps)
         else:
             msg = " Fc_WPL: unrecognised units ("+Cc_attr["units"]+") for CO2"
             logger.error(msg)
@@ -2370,7 +2370,7 @@ def MassmanStandard(cf,ds,Ta_in='Ta',Ah_in='Ah',ps_in='ps',ustar_in='ustar',usta
     else:
         ustarm,f,a = pfp_utils.GetSeriesasMA(ds,ustar_in)
     if L_in not in ds.series.keys():
-        Lm = mf.molen(Ta, Ah, ps, ustarm, wT, fluxtype='kinematic')
+        Lm = pfp_mf.molen(Ta, Ah, ps, ustarm, wT, fluxtype='kinematic')
     else:
         Lm,f,a = pfp_utils.GetSeriesasMA(ds,Lm_in)
     # now calculate z on L
@@ -2419,7 +2419,7 @@ def MassmanStandard(cf,ds,Ta_in='Ta',Ah_in='Ah',ps_in='ps',ustar_in='ustar',usta
     # these to calculate the final corrections
     #  first, get the 2nd pass corrected friction velocity and Monin-Obukhov length
     ustarm = numpy.ma.sqrt(numpy.ma.sqrt(uwm ** 2 + vwm ** 2))
-    Lm = mf.molen(Ta, Ah, ps, ustarm, wTm, fluxtype='kinematic')
+    Lm = pfp_mf.molen(Ta, Ah, ps, ustarm, wTm, fluxtype='kinematic')
     zoLm = zmd / Lm
     nxMom, nxScalar, alpha = pfp_utils.nxMom_nxScalar_alpha(zoLm)
     fxMom = nxMom * (u / zmd)
@@ -2441,7 +2441,7 @@ def MassmanStandard(cf,ds,Ta_in='Ta',Ah_in='Ah',ps_in='ps',ustar_in='ustar',usta
     wCM = wC / rwIRGA
     wAM = wA / rwIRGA
     ustarM = numpy.ma.sqrt(numpy.ma.sqrt(uwM ** 2 + vwM ** 2))
-    LM = mf.molen(Ta, Ah, ps, ustarM, wTM, fluxtype='kinematic')
+    LM = pfp_mf.molen(Ta, Ah, ps, ustarM, wTM, fluxtype='kinematic')
     # write the 2nd pass Massman corrected covariances to the data structure
     attr = pfp_utils.MakeAttributeDictionary(long_name='Massman true ustar',units='m/s')
     flag = numpy.where(numpy.ma.getmaskarray(ustarM)==True,ones,zeros)
@@ -2827,15 +2827,15 @@ def TaFromTv(cf,ds,Ta_out='Ta_SONIC_Av',Tv_in='Tv_SONIC_Av',Ah_in='Ah',RH_in='RH
     ps,f,a = pfp_utils.GetSeriesasMA(ds,ps_in)
     if Ah_in in ds.series.keys():
         Ah,f,a = pfp_utils.GetSeriesasMA(ds,Ah_in)
-        vp = mf.vapourpressure(Ah,Tv)
-        mr = mf.mixingratio(ps,vp)
-        q = mf.specifichumidity(mr)
+        vp = pfp_mf.vapourpressure(Ah,Tv)
+        mr = pfp_mf.mixingratio(ps,vp)
+        q = pfp_mf.specifichumidity(mr)
     elif RH_in in ds.series.keys():
         RH,f,a = pfp_utils.GetSeriesasMA(ds,RH_in)
-        q = mf.specifichumidityfromRH(RH,Tv,ps)
+        q = pfp_mf.specifichumidityfromRH(RH,Tv,ps)
     elif q_in in ds.series.keys():
         q,f,a = pfp_utils.GetSeriesasMA(ds,q_in)
-    Ta_data = mf.tafromtv(Tv,q)
+    Ta_data = pfp_mf.tafromtv(Tv,q)
     nRecs = int(ds.globalattributes['nc_nrecs'])
     Ta_flag = numpy.zeros(nRecs,numpy.int32)
     mask = numpy.ma.getmask(Ta_data)

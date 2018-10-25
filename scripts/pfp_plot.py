@@ -5,7 +5,7 @@ import time
 import math
 import matplotlib.dates as mdt
 import matplotlib.pyplot as plt
-import meteorologicalfunctions as mf
+import meteorologicalfunctions as pfp_mf
 import numpy
 import os
 import statsmodels.api as sm
@@ -304,7 +304,7 @@ def plot_fluxnet(cf):
     if "RH" not in ds.series.keys():
         Ah,f,a = pfp_utils.GetSeriesasMA(ds,'Ah')
         Ta,f,a = pfp_utils.GetSeriesasMA(ds,'Ta')
-        RH = mf.RHfromabsolutehumidity(Ah, Ta)
+        RH = pfp_mf.RHfromabsolutehumidity(Ah, Ta)
         attr = pfp_utils.MakeAttributeDictionary(long_name='Relative humidity',units='%',standard_name='relative_humidity')
         flag = numpy.where(numpy.ma.getmaskarray(RH)==True,ones,zeros)
         pfp_utils.CreateSeries(ds,"RH",RH,flag,attr)
