@@ -76,6 +76,10 @@ class edit_cfg_L1(QtGui.QWidget):
         self.get_model_from_data()
         # set the default width for the first column
         self.view.setColumnWidth(0, 200)
+        # expand the top level of the sections
+        for row in range(self.model.rowCount()):
+            idx = self.model.index(row, 0)
+            self.view.expand(idx)
 
     def get_model_from_data(self):
         """ Build the data model."""
@@ -764,6 +768,10 @@ class edit_cfg_L2(QtGui.QWidget):
         self.get_model_from_data()
         # set the default width for the first column
         self.view.setColumnWidth(0, 200)
+        # expand the top level of the sections
+        for row in range(self.model.rowCount()):
+            idx = self.model.index(row, 0)
+            self.view.expand(idx)
 
     def get_data_from_model(self):
         """ Iterate over the model and get the data."""
@@ -1451,6 +1459,10 @@ class edit_cfg_L3(QtGui.QWidget):
         self.get_model_from_data()
         # set the default width for the first column
         self.view.setColumnWidth(0, 200)
+        # expand the top level of the sections
+        for row in range(self.model.rowCount()):
+            idx = self.model.index(row, 0)
+            self.view.expand(idx)
 
     def get_data_from_model(self):
         """ Iterate over the model and get the data."""
@@ -1732,6 +1744,10 @@ class edit_cfg_concatenate(QtGui.QWidget):
         self.get_model_from_data()
         # set the default width for the first column
         self.view.setColumnWidth(0, 200)
+        # expand the top level of the sections
+        for row in range(self.model.rowCount()):
+            idx = self.model.index(row, 0)
+            self.view.expand(idx)
 
     def get_model_from_data(self):
         """ Build the data model."""
@@ -2162,6 +2178,10 @@ class edit_cfg_L4(QtGui.QWidget):
         self.get_model_from_data()
         # set the default width for the first column
         self.view.setColumnWidth(0, 210)
+        # expand the top level of the sections
+        for row in range(self.model.rowCount()):
+            idx = self.model.index(row, 0)
+            self.view.expand(idx)
 
     def get_model_from_data(self):
         """ Build the data model."""
@@ -2986,6 +3006,10 @@ class edit_cfg_L5(QtGui.QWidget):
         self.get_model_from_data()
         # set the default width for the first column
         self.view.setColumnWidth(0, 200)
+        # expand the top level of the sections
+        for row in range(self.model.rowCount()):
+            idx = self.model.index(row, 0)
+            self.view.expand(idx)
 
     def get_model_from_data(self):
         """ Build the data model."""
@@ -4371,6 +4395,10 @@ class edit_cfg_nc2csv_ecostress(QtGui.QWidget):
         self.get_model_from_data()
         # set the default width for the first column
         self.view.setColumnWidth(0, 210)
+        # expand the top level of the sections
+        for row in range(self.model.rowCount()):
+            idx = self.model.index(row, 0)
+            self.view.expand(idx)
 
     def get_model_from_data(self):
         """ Build the data model."""

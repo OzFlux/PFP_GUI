@@ -1725,7 +1725,8 @@ def do_solo(cf,ds4,Fc_in='Fc',Fe_in='Fe',Fh_in='Fh',Fc_out='Fc',Fe_out='Fe',Fh_o
         attr = pfp_utils.MakeAttributeDictionary(long_name='ANN gapfilled Sensible Heat Flux',units='W/m2',standard_name='surface_upward_sensible_heat_flux')
         pfp_utils.CreateSeries(ds4,Fh_out,Fh,flag,attr)
 
-def Fc_WPL(cf,ds,Fc_wpl_out='Fc',Fc_raw_in='Fc',Fh_in='Fh',Fe_in='Fe',Ta_in='Ta',Ah_in='Ah',Cc_in='CO2',ps_in='ps'):
+def Fc_WPL(cf, ds, Fc_wpl_out='Fc', Fc_raw_in='Fc', Fh_in='Fh', Fe_in='Fe',
+           Ta_in='Ta', Ah_in='Ah', Cc_in='CO2', ps_in='ps'):
     """
         Apply Webb, Pearman and Leuning correction to carbon flux.  This
         correction is necessary to account for flux effects on density
@@ -1752,7 +1753,7 @@ def Fc_WPL(cf,ds,Fc_wpl_out='Fc',Fc_raw_in='Fc',Fh_in='Fh',Fe_in='Fe',Ta_in='Ta'
         """
     if 'DisableFcWPL' in cf['Options'] and cf['Options'].as_bool('DisableFcWPL'):
         logger.warning(" WPL correction for Fc disabled in control file")
-        return
+        return 0
     logger.info(' Applying WPL correction to Fc')
     nRecs = int(ds.globalattributes["nc_nrecs"])
     zeros = numpy.zeros(nRecs,dtype=numpy.int32)
@@ -1764,19 +1765,22 @@ def Fc_WPL(cf,ds,Fc_wpl_out='Fc',Fc_raw_in='Fc',Fh_in='Fh',Fe_in='Fe',Ta_in='Ta'
     Ta,f,a = pfp_utils.GetSeriesasMA(ds,Ta_in)
     TaK = Ta+c.C2K                                # air temperature from C to K
     Ah,Ah_flag,Ah_attr = pfp_utils.GetSeriesasMA(ds,Ah_in)
-    if Ah_attr["units"]!="g/m3":
+    if Ah_attr["units"] != "g/m3":
         msg = " Fc_WPL: units for Ah ("+Ah_attr["units"]+") are incorrect"
         logger.error(msg)
+        ds.returncodes["message"] = msg
+        ds.returncodes["value"] = 1
         return 1 # ! Return to pfp_levels but make sure error message is communicated
     Ah = Ah*c.g2kg                                # absolute humidity from g/m3 to kg/m3
     # deal with aliases for CO2 concentration
-    if Cc_in not in ds.series.keys():
-        if "Cc" in ds.series.keys():
-            Cc_in = "Cc"
-        else:
-            msg = "Fc_WPL: did not find CO2 in data structure"
-            logger.error(msg)
-            return 1 # ! Return to pfp_levels but make sure error message is communicated
+    if Cc_in not in ds.series.keys() and "Cc" in ds.series.keys():
+        Cc_in = "Cc"
+    else:
+        msg = " Fc_WPL: did not find CO2 in data structure"
+        logger.error(msg)
+        ds.returncodes["message"] = msg
+        ds.returncodes["value"] = 1
+        return 1 # ! Return to pfp_levels but make sure error message is communicated
     Cc,Cc_flag,Cc_attr = pfp_utils.GetSeriesasMA(ds,Cc_in)
     if Cc_attr["units"]!="mg/m3":
         if Cc_attr["units"]=="umol/mol":
@@ -1786,6 +1790,8 @@ def Fc_WPL(cf,ds,Fc_wpl_out='Fc',Fc_raw_in='Fc',Fh_in='Fh',Fe_in='Fe',Ta_in='Ta'
         else:
             msg = " Fc_WPL: unrecognised units ("+Cc_attr["units"]+") for CO2"
             logger.error(msg)
+            ds.returncodes["message"] = msg
+            ds.returncodes["value"] = 1
             return 1 # ! Return to pfp_levels but make sure error message is communicated
     rhod,f,a = pfp_utils.GetSeriesasMA(ds,'rhod')
     RhoCp,f,a = pfp_utils.GetSeriesasMA(ds,'RhoCp')
@@ -1797,7 +1803,7 @@ def Fc_WPL(cf,ds,Fc_wpl_out='Fc',Fc_raw_in='Fc',Fh_in='Fh',Fe_in='Fe',Ta_in='Ta'
     Fc_wpl_flag = numpy.zeros(len(Fc_wpl_data))
     index = numpy.where(numpy.ma.getmaskarray(Fc_wpl_data)==True)[0]
     Fc_wpl_flag[index] = numpy.int32(14)
-    attr = pfp_utils.MakeAttributeDictionary(long_name='WPL corrected Fc',units='mg/m2/s')
+    attr = pfp_utils.MakeAttributeDictionary(long_name='CO2 flux, WPL corrected', units='mg/m2/s')
     if "height" in Fc_raw_attr: attr["height"] = Fc_raw_attr["height"]
     pfp_utils.CreateSeries(ds, Fc_wpl_out, Fc_wpl_data, Fc_wpl_flag, attr)
     pfp_utils.CreateSeries(ds, "Fc_PFP", Fc_wpl_data, Fc_wpl_flag, attr)
@@ -1811,7 +1817,7 @@ def Fc_WPL(cf,ds,Fc_wpl_out='Fc',Fc_raw_in='Fc',Fh_in='Fh',Fe_in='Fe',Ta_in='Ta'
     flag = numpy.where(numpy.ma.getmaskarray(co2_wpl_Fh)==True,ones,zeros)
     pfp_utils.CreateSeries(ds,'co2_wpl_Fh',co2_wpl_Fh,flag,attr)
 
-    return
+    return 0
 
 def Fe_WPL(cf,ds,Fe_wpl_out='Fe',Fe_raw_in='Fe',Fh_in='Fh',Ta_in='Ta',Ah_in='Ah',ps_in='ps'):
     """
@@ -1837,24 +1843,18 @@ def Fe_WPL(cf,ds,Fe_wpl_out='Fe',Fe_raw_in='Fe',Fh_in='Fh',Ta_in='Ta',Ah_in='Ah'
         """
     if 'DisableFeWPL' in cf['Options'] and cf['Options'].as_bool('DisableFeWPL'):
         logger.warning(" WPL correction for Fe disabled in control file")
-        return
+        return 0
     logger.info(' Applying WPL correction to Fe')
-    if pfp_utils.cfkeycheck(cf,Base='FunctionArgs',ThisOne='EWPL'):
-        Eargs = ast.literal_eval(cf['FunctionArgs']['EWPL'])
-        Fe_wpl_out = Eargs[0]
-        Fe_raw_in = Eargs[1]
-        Fh_in = Eargs[2]
-        Ta_in = Eargs[3]
-        Ah_in = Eargs[4]
-        ps_in = Eargs[5]
     Fe_raw,Fe_raw_flag,Fe_raw_attr = pfp_utils.GetSeriesasMA(ds,Fe_raw_in)
     Fh,f,a = pfp_utils.GetSeriesasMA(ds,Fh_in)
     Ta,f,a = pfp_utils.GetSeriesasMA(ds,Ta_in)
     TaK = Ta + c.C2K                              # air temperature from C to K
     Ah,Ah_flag,Ah_attr = pfp_utils.GetSeriesasMA(ds,Ah_in)
     if Ah_attr["units"]!="g/m3":
-        msg = " Fe_WPL: incorrect units for Ah"
+        msg = " Fe_WPL: incorrect units for Ah, WPL not applied to Fe"
         logger.error(msg)
+        ds.returncodes["message"] = msg
+        ds.returncodes["value"] = 1
         return 1 # ! Return to pfp_levels but make sure error message is communicated
     ps,f,a = pfp_utils.GetSeriesasMA(ds,ps_in)
     rhod,f,a = pfp_utils.GetSeriesasMA(ds,'rhod')     # density dry air
@@ -1883,6 +1883,7 @@ def Fe_WPL(cf,ds,Fe_wpl_out='Fe',Fe_raw_in='Fe',Fh_in='Fh',Ta_in='Ta',Ah_in='Ah'
         ReplaceWhereMissing(ds.series['Fe'],ds.series['Fe'],ds.series['Fe_raw'],FlagValue=20)
         if 'RelaxFeWPL' not in ds.globalattributes['Functions']:
             ds.globalattributes['Functions'] = ds.globalattributes['Functions']+', RelaxFeWPL'
+    return 0
 
 def FhvtoFh(cf,ds,Fh_out='Fh',Fhv_in='Fhv',Tv_in='Tv_SONIC_Av',q_in='q',wA_in='wA',wT_in='wT'):
     '''
@@ -2297,46 +2298,30 @@ def InterpolateOverMissing(ds, series='', maxlen=0, int_type="linear"):
     attr_int = dict(attr_org)
     pfp_utils.CreateSeries(ds,series,data_int,flag_int,attr_int)
 
-def MassmanStandard(cf,ds,Ta_in='Ta',Ah_in='Ah',ps_in='ps',ustar_in='ustar',ustar_out='ustar',L_in='L',L_out ='L',uw_out='uw',vw_out='vw',wT_out='wT',wA_out='wA',wC_out='wC'):
+def MassmanStandard(cf, ds, Ta_in='Ta', Ah_in='Ah', ps_in='ps', u_in="U_SONIC_Av",
+                    ustar_in='ustar', ustar_out='ustar', L_in='L', L_out ='L',
+                    uw_out='uw', vw_out='vw', wT_out='wT', wA_out='wA', wC_out='wC'):
     """
        Massman corrections.
        The steps involved are as follows:
         1) calculate ustar and L using rotated but otherwise uncorrected covariances
        """
-    #if not pfp_utils.cfoptionskeylogical(cf,Key='Massman'):
-        #return
-    if 'Massman' not in cf:
+    if "Massman" not in cf:
         logger.info(" Massman section not in control file, skipping correction ...")
         return
-    #if pfp_utils.cfkeycheck(cf,Base='FunctionArgs',ThisOne='MassmanVars'):
-        #MArgs = ast.literal_eval(cf['FunctionArgs']['MassmanVars'])
-        #Ta_in = MArgs[0]
-        #Ah_in = MArgs[1]
-        #ps_in = MArgs[2]
-    #if pfp_utils.cfkeycheck(cf,Base='FunctionArgs',ThisOne='MassmanOuts'):
-        #MOut = ast.literal_eval(cf['FunctionArgs']['MassmanOuts'])
-        #ustar_in = MOut[0]
-        #ustar_out = MOut[1]
-        #L_in = MOut[2]
-        #L_out = MOut[3]
-        #uw_out = MOut[4]
-        #vw_out = MOut[5]
-        #wT_out = MOut[6]
-        #wA_out = MOut[7]
-        #wC_out = MOut[8]
-    logger.info(' Correcting for flux loss from spectral attenuation')
+    logger.info(" Correcting for flux loss from spectral attenuation")
     nRecs = int(ds.globalattributes["nc_nrecs"])
-    zeros = numpy.zeros(nRecs,dtype=numpy.int32)
-    ones = numpy.ones(nRecs,dtype=numpy.int32)
-    zmd = float(cf['Massman']['zmd'])             # z-d for site
+    zeros = numpy.zeros(nRecs, dtype=numpy.int32)
+    ones = numpy.ones(nRecs, dtype=numpy.int32)
+    zmd = float(cf["Massman"]["zmd"])             # z-d for site
     if ("angle" in cf["Massman"] and
         "CSATarm" in cf["Massman"] and
         "IRGAarm" in cf["Massman"]):
         # this is the original definition of lateral and longitudinal separation
         # as coded by James
-        angle = float(cf['Massman']['angle'])         # CSAT3-IRGA separation angle
-        CSATarm = float(cf['Massman']['CSATarm'])     # CSAT3 mounting distance
-        IRGAarm = float(cf['Massman']['IRGAarm'])     # IRGA mounting distance
+        angle = float(cf["Massman"]["angle"])         # CSAT3-IRGA separation angle
+        CSATarm = float(cf["Massman"]["CSATarm"])     # CSAT3 mounting distance
+        IRGAarm = float(cf["Massman"]["IRGAarm"])     # IRGA mounting distance
         lLat = numpy.ma.sin(numpy.deg2rad(angle)) * IRGAarm
         lLong = CSATarm - (numpy.ma.cos(numpy.deg2rad(angle)) * IRGAarm)
     elif ("north_separation" in cf["Massman"] and
@@ -2355,24 +2340,23 @@ def MassmanStandard(cf,ds,Ta_in='Ta',Ah_in='Ah',ps_in='ps',ustar_in='ustar',usta
     #  The code for the first and second passes is very similar.  It would be useful to make them the
     #  same and put into a loop to reduce the number of lines in this function.
     # calculate ustar and Monin-Obukhov length from rotated but otherwise uncorrected covariances
-    Ta,f,a = pfp_utils.GetSeriesasMA(ds,Ta_in)
-    Ah,f,a = pfp_utils.GetSeriesasMA(ds,Ah_in)
-    ps,f,a = pfp_utils.GetSeriesasMA(ds,ps_in)
-    nRecs = numpy.size(Ta)
-    u,f,a = pfp_utils.GetSeriesasMA(ds,'U_SONIC_Av')
-    uw,f,a = pfp_utils.GetSeriesasMA(ds,'uw')
-    vw,f,a = pfp_utils.GetSeriesasMA(ds,'vw')
-    wT,f,a = pfp_utils.GetSeriesasMA(ds,'wT')
-    wC,f,a = pfp_utils.GetSeriesasMA(ds,'wC')
-    wA,f,a = pfp_utils.GetSeriesasMA(ds,'wA')
+    Ta, f, a = pfp_utils.GetSeriesasMA(ds, Ta_in)
+    Ah, f, a = pfp_utils.GetSeriesasMA(ds, Ah_in)
+    ps, f, a = pfp_utils.GetSeriesasMA(ds, ps_in)
+    u, f, a = pfp_utils.GetSeriesasMA(ds, u_in)
+    uw, f, a = pfp_utils.GetSeriesasMA(ds, "uw")
+    vw, f, a = pfp_utils.GetSeriesasMA(ds, "vw")
+    wT, f, a = pfp_utils.GetSeriesasMA(ds, "wT")
+    wC, f, a = pfp_utils.GetSeriesasMA(ds, "wC")
+    wA, f, a = pfp_utils.GetSeriesasMA(ds, "wA")
     if ustar_in not in ds.series.keys():
         ustarm = numpy.ma.sqrt(numpy.ma.sqrt(uw ** 2 + vw ** 2))
     else:
-        ustarm,f,a = pfp_utils.GetSeriesasMA(ds,ustar_in)
+        ustarm,f,a = pfp_utils.GetSeriesasMA(ds, ustar_in)
     if L_in not in ds.series.keys():
-        Lm = pfp_mf.molen(Ta, Ah, ps, ustarm, wT, fluxtype='kinematic')
+        Lm = pfp_mf.molen(Ta, Ah, ps, ustarm, wT, fluxtype="kinematic")
     else:
-        Lm,f,a = pfp_utils.GetSeriesasMA(ds,Lm_in)
+        Lm, f, a = pfp_utils.GetSeriesasMA(ds, Lm_in)
     # now calculate z on L
     zoLm = zmd / Lm
     # start calculating the correction coefficients for approximate corrections
