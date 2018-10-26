@@ -1767,7 +1767,7 @@ def Fc_WPL(cf,ds,Fc_wpl_out='Fc',Fc_raw_in='Fc',Fh_in='Fh',Fe_in='Fe',Ta_in='Ta'
     if Ah_attr["units"]!="g/m3":
         msg = " Fc_WPL: units for Ah ("+Ah_attr["units"]+") are incorrect"
         logger.error(msg)
-        sys.exit()
+        return 1 # ! Return to pfp_levels but make sure error message is communicated
     Ah = Ah*c.g2kg                                # absolute humidity from g/m3 to kg/m3
     # deal with aliases for CO2 concentration
     if Cc_in not in ds.series.keys():
@@ -1776,7 +1776,7 @@ def Fc_WPL(cf,ds,Fc_wpl_out='Fc',Fc_raw_in='Fc',Fh_in='Fh',Fe_in='Fe',Ta_in='Ta'
         else:
             msg = "Fc_WPL: did not find CO2 in data structure"
             logger.error(msg)
-            sys.exit()
+            return 1 # ! Return to pfp_levels but make sure error message is communicated
     Cc,Cc_flag,Cc_attr = pfp_utils.GetSeriesasMA(ds,Cc_in)
     if Cc_attr["units"]!="mg/m3":
         if Cc_attr["units"]=="umol/mol":
@@ -1786,7 +1786,7 @@ def Fc_WPL(cf,ds,Fc_wpl_out='Fc',Fc_raw_in='Fc',Fh_in='Fh',Fe_in='Fe',Ta_in='Ta'
         else:
             msg = " Fc_WPL: unrecognised units ("+Cc_attr["units"]+") for CO2"
             logger.error(msg)
-            sys.exit()
+            return 1 # ! Return to pfp_levels but make sure error message is communicated
     rhod,f,a = pfp_utils.GetSeriesasMA(ds,'rhod')
     RhoCp,f,a = pfp_utils.GetSeriesasMA(ds,'RhoCp')
     Lv,f,a = pfp_utils.GetSeriesasMA(ds,'Lv')
@@ -1855,7 +1855,7 @@ def Fe_WPL(cf,ds,Fe_wpl_out='Fe',Fe_raw_in='Fe',Fh_in='Fh',Ta_in='Ta',Ah_in='Ah'
     if Ah_attr["units"]!="g/m3":
         msg = " Fe_WPL: incorrect units for Ah"
         logger.error(msg)
-        sys.exit()
+        return 1 # ! Return to pfp_levels but make sure error message is communicated
     ps,f,a = pfp_utils.GetSeriesasMA(ds,ps_in)
     rhod,f,a = pfp_utils.GetSeriesasMA(ds,'rhod')     # density dry air
     rhom,f,a = pfp_utils.GetSeriesasMA(ds,'rhom')     # density moist air
@@ -2359,7 +2359,7 @@ def MassmanStandard(cf,ds,Ta_in='Ta',Ah_in='Ah',ps_in='ps',ustar_in='ustar',usta
     Ah,f,a = pfp_utils.GetSeriesasMA(ds,Ah_in)
     ps,f,a = pfp_utils.GetSeriesasMA(ds,ps_in)
     nRecs = numpy.size(Ta)
-    u,f,a = pfp_utils.GetSeriesasMA(ds,'u')
+    u,f,a = pfp_utils.GetSeriesasMA(ds,'U_SONIC_Av')
     uw,f,a = pfp_utils.GetSeriesasMA(ds,'uw')
     vw,f,a = pfp_utils.GetSeriesasMA(ds,'vw')
     wT,f,a = pfp_utils.GetSeriesasMA(ds,'wT')
