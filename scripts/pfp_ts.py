@@ -2532,13 +2532,11 @@ def MergeSeries(cf,ds,series,okflags=[0,10,20,30,40,50,60],convert_units=False,s
     Date: Back in the day
     History:
      16/7/2017 - made okflags optional, implemented save_originals
+     30/10/2018 - rewrote to use pfp_utils.GetVariable()
     """
-    # check to see if we have to do anything
-    if series == None:
-        return
     # check to see if the series is specified in the control file
     section = pfp_utils.get_cfsection(cf,series=series)
-    if len(section)==0: return
+    if len(section) == 0: return
     # check to see if the entry for series in the control file has the MergeSeries key
     if 'MergeSeries' not in cf[section][series].keys(): return
     # check to see if the series has already been merged
@@ -2549,68 +2547,82 @@ def MergeSeries(cf,ds,series,okflags=[0,10,20,30,40,50,60],convert_units=False,s
     if nSeries==0:
         logger.warning(' MergeSeries: no input series specified for '+str(series))
         return
-    if nSeries==1:
-        logger.info(' Merging '+str(srclist)+'==>'+series)
+    if nSeries == 1:
+        msg = ' Merging ' + str(srclist) + '==>' + series
+        logger.info(msg)
         primary_series = srclist[0]
         if primary_series not in ds.series.keys():
-            msg = "  MergeSeries: primary input series "+primary_series
-            msg = msg+" not found for "+str(series)
+            msg = "  MergeSeries: primary input series " + primary_series
+            msg = msg + " not found for " + str(series)
             logger.warning(msg)
             return
+        #mdata,mflag,mattr = pfp_utils.GetSeriesasMA(ds,primary_series)
         primary = pfp_utils.GetVariable(ds, primary_series)
         if (primary_series == series) and save_originals:
-            tmp = copy.deepcopy(primary)
-            tmp["Label"] = primary_series+"_b4merge"
+            tmp = pfp_utils.CopyVariable(primary)
+            tmp["Label"] = tmp["Label"] + "_b4merge"
             pfp_utils.CreateVariable(ds, tmp)
         SeriesNameString = primary_series
     else:
-        logger.info(' Merging '+str(srclist)+'==>'+series)
+        msg = " Merging " + str(srclist) + "==>" + series
+        logger.info(msg)
         if srclist[0] not in ds.series.keys():
-            logger.warning('  MergeSeries: primary input series '+srclist[0]+' not found for '+str(series))
+            msg = "  MergeSeries: primary input series " + srclist[0] + " not found for " + str(series)
+            logger.warning(msg)
             return
         primary_series = srclist[0]
+        #mdata,mflag,mattr = pfp_utils.GetSeriesasMA(ds,primary_series)
         primary = pfp_utils.GetVariable(ds, primary_series)
+        p_recs = len(primary["Data"])
         if (primary_series == series) and save_originals:
-            tmp = copy.deepcopy(primary)
-            tmp["Label"] = primary_series+"_b4merge"
+            tmp = pfp_utils.CopyVariable(primary)
+            tmp["Label"] = tmp["Label"] + "_b4merge"
             pfp_utils.CreateVariable(ds, tmp)
         SeriesNameString = primary_series
         srclist.remove(primary_series)
         for secondary_series in srclist:
             if secondary_series in ds.series.keys():
+                #ndata,nflag,nattr = pfp_utils.GetSeriesasMA(ds,secondary_series)
                 secondary = pfp_utils.GetVariable(ds, secondary_series)
+                s_recs = len(secondary["Data"])
                 if (secondary_series == series) and save_originals:
-                    tmp = copy.deepcopy(secondary)
-                    tmp["Label"] = primary_series + "_b4merge"
+                    tmp = pfp_utils.CopyVariable(secondary)
+                    tmp["Label"] = tmp["Label"] + "_b4merge"
                     pfp_utils.CreateVariable(ds, tmp)
                 if secondary["Attr"]["units"] != primary["Attr"]["units"]:
-                    msg = " "+secondary_series+" units don't match "+primary_series+" units"
+                    msg = " " + secondary_series + " units don't match " + primary_series + " units"
                     logger.warning(msg)
                     if convert_units:
-                        msg = " "+secondary_series+" units converted from "+secondary["Attr"]["units"]+" to "+primary["Attr"]["units"]
+                        msg = " " + secondary_series + " units converted from "
+                        msg = msg + secondary["Attr"]["units"] + " to " + primary["Attr"]["units"]
                         logger.info(msg)
                         secondary = pfp_utils.convert_units_func(ds, secondary, primary["Attr"]["units"])
                     else:
-                        msg = " MergeSeries: "+secondary_series+" ignored"
+                        msg = " MergeSeries: " + secondary_series + " ignored"
                         logger.error(msg)
                         continue
-                SeriesNameString = SeriesNameString+', '+secondary_series
-                indx1 = numpy.zeros(numpy.size(primary["Data"]), dtype=numpy.int)
-                indx2 = numpy.zeros(numpy.size(secondary["Data"]),dtype=numpy.int)
+                SeriesNameString = SeriesNameString + ", " + secondary_series
+                p_idx = numpy.zeros(p_recs, dtype=numpy.int)
+                s_idx = numpy.zeros(s_recs, dtype=numpy.int)
                 for okflag in okflags:
-                    index = numpy.where(primary["Flag"] == okflag)[0]   # index of acceptable primary values
-                    indx1[index] = 1                                    # set primary index to 1 when primary good
-                    index = numpy.where(secondary["Flag"] == okflag)[0] # same process for secondary
-                    indx2[index] = 1
-                index = numpy.where((indx1 != 1) & (indx2 == 1))[0]     # index where primary bad but secondary good
+                    # index of acceptable primary values
+                    index = numpy.where(primary["Flag"] == okflag)[0]
+                    # set primary index to 1 when primary good
+                    p_idx[index] = 1
+                    # same process for secondary
+                    index = numpy.where(secondary["Flag"] == okflag)[0]
+                    s_idx[index] = 1
+                # index where primary bad but secondary good
+                index = numpy.where((p_idx != 1 ) & (s_idx == 1))[0]
                 # replace bad primary with good secondary
                 primary["Data"][index] = secondary["Data"][index]
                 primary["Flag"][index] = secondary["Flag"][index]
             else:
-                logger.warning("  MergeSeries: secondary input series "+secondary_series+" not found")
+                msg = "  MergeSeries: secondary input series " + secondary_series + " not found"
+                logger.warning(msg)
     ds.mergeserieslist.append(series)
     primary["Label"] = series
-    primary["Attr"]["long_name"] = primary["Attr"]["long_name"] + ", merged from " + SeriesNameString
+    primary["Attr"]["long_name"] += ", merged from " + SeriesNameString
     pfp_utils.CreateVariable(ds, primary)
 
 def PT100(ds,T_out,R_in,m):
