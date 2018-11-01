@@ -245,6 +245,34 @@ def DateTimeFromDateAndTimeString(ds, Date, Time):
     ds.globalattributes["nc_nrecs"] = nRecs
     return 1
 
+def MRfromAh(ds, MR_out, Ah_in, Ta_in, ps_in):
+    """
+    Purpose:
+     Calculate H2O mixing ratio from absolute humidity (Ah).
+    """
+    nRecs = int(ds.globalattributes["nc_nrecs"])
+    zeros = numpy.zeros(nRecs,dtype=numpy.int32)
+    ones = numpy.ones(nRecs,dtype=numpy.int32)
+    for item in [Ah_in, Ta_in, ps_in]:
+        if item not in ds.series.keys():
+            msg = " MRfromAh: Requested series "+item+" not found, "+MR_out+" not calculated"
+            logger.error(msg)
+            return 0
+    if MR_out in ds.series.keys():
+        msg = " MRfromAh: Output series "+MR_out+" already exists, skipping ..."
+        logger.error(msg)
+        return 0
+    Ah_data,Ah_flag,Ah_attr = pfp_utils.GetSeriesasMA(ds, Ah_in)
+    Ta_data,Ta_flag,Ta_attr = pfp_utils.GetSeriesasMA(ds, Ta_in)
+    ps_data,ps_flag,ps_attr = pfp_utils.GetSeriesasMA(ds, ps_in)
+    MR_data = pfp_mf.h2o_mmolpmolfromgpm3(Ah_data, Ta_data, ps_data)
+    MR_attr = pfp_utils.MakeAttributeDictionary(long_name="H2O mixing ratio calculated from "+Ah_in+", "+Ta_in+" and "+ps_in,
+                                              height=Ah_attr["height"],
+                                              units="mmol/mol")
+    flag = numpy.where(numpy.ma.getmaskarray(MR_data)==True,ones,zeros)
+    pfp_utils.CreateSeries(ds, MR_out, MR_data, flag, MR_attr)
+    return 1
+
 def MRfromRH(ds, MR_out, RH_in, Ta_in, ps_in):
     """
     Purpose:

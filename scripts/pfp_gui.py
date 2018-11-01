@@ -244,7 +244,7 @@ class edit_cfg_L1(QtGui.QWidget):
                     self.context_menu.actionAddAttribute.setText("Add attribute")
                     self.context_menu.addAction(self.context_menu.actionAddAttribute)
                     self.context_menu.actionAddAttribute.triggered.connect(self.add_attribute)
-                elif subsubsection_text in ["Function"]:
+                elif subsubsection_text in ["Function", "xl", "csv"]:
                     self.context_menu.actionRemoveSubSubSection = QtGui.QAction(self)
                     self.context_menu.actionRemoveSubSubSection.setText("Remove item")
                     self.context_menu.addAction(self.context_menu.actionRemoveSubSubSection)

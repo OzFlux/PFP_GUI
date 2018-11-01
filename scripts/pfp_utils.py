@@ -292,7 +292,7 @@ def ConvertFcUnits(cf, ds):
             CreateVariable(ds, Fc)
         elif Fc_units_out == "mg/m2/s" and Fc_units_in == "umol/m2/s":
             Fc["Data"] = pfp_mf.Fc_mgCO2pm2psfromumolpm2ps(Fc["Data"])
-            Fc["Attr"]["long_name"] = Fc["Attr"]["long_name"]+", converted to mg/m2/s"
+            Fc["Attr"]["long_name"] = Fc["Attr"]["long_name"]+", converted to mgCO2/m2/s"
             Fc["Attr"]["units"] = Fc_units_out
             #attr["standard_name"] = "not defined"
             CreateVariable(ds, Fc)
@@ -306,18 +306,19 @@ def convert_units_func(ds, variable, new_units, mode="quiet"):
      Generic routine for changing units.
      Nothing is done if the original units are the same as the requested units.
     Usage:
-     new_data = pfp_utils.convert_units_func(old_data,old_units,new_units)
-     where old_data is a 1D array of data in the original units
-           old_units are the units of the original data
-           new_units are the units of the new data
-           ts is the time step
+     new_variable = pfp_utils.convert_units_func(ds, old_variable, new_units)
+     where;
+      new_variable is a copy of old_variable converted to new_units
+      ds is a data structure
+      old_variable is a variable in the original units
+      new_units are the units of the new data
     Author: PRI
     Date: July 2015
     """
     old_units = variable["Attr"]["units"]
     if old_units == new_units:
         # old units same as new units, nothing to do ...
-        return
+        return variable
     # check the units are something we understand
     # add more lists here to cope with water etc
     co2_list = ["umol/m2/s","gC/m2","mg/m3","mgCO2/m3","umol/mol","mg/m2/s","mgCO2/m2/s"]
@@ -586,7 +587,7 @@ def convert_units_co2(ds, variable, new_units):
 
     return variable
 
-def convert_units_h2o(ds, variable, new_units):
+def convert_units_h2o(ds, var_in, new_units):
     """
     Purpose:
      General purpose routine to convert from one set of H2O concentration units
@@ -595,31 +596,182 @@ def convert_units_h2o(ds, variable, new_units):
       g/m3 to mmol/mol
       mmol/mol to g/m3
     Usage:
-     new_data = pfp_utils.convert_units_h2o(ds, variable, new_units)
+     var_out = pfp_utils.convert_units_h2o(ds, var_in, new_units)
       where ds is a data structure
-            variable (dictionary) is a variable dictionary
+            var_in (dictionary) is a variable dictionary
             new_units (string) is the new units
+            var_out is a new variable with data converted to new_units
     Author: PRI
     Date: January 2016
     """
-    ts = int(ds.globalattributes["time_step"])
-    if old_units=="mmol/mol" and new_units=="g/m3":
-        Ta,f,a = GetSeriesasMA(ds,"Ta")
-        ps,f,a = GetSeriesasMA(ds,"ps")
-        new_data = pfp_mf.h2o_gpm3frommmolpmol(old_data,Ta,ps)
-    elif old_units=="g/m3" and new_units=="mmol/mol":
-        Ta,f,a = GetSeriesasMA(ds,"Ta")
-        ps,f,a = GetSeriesasMA(ds,"ps")
-        new_data = pfp_mf.h2o_mmolpmolfromgpm3(old_data,Ta,ps)
+    nrecs = int(ds.globalattributes["nc_nrecs"])
+    series_list = list(ds.series.keys())
+    var_out = CopyVariable(var_in)
+    ok_units = ["mmol/mol", "g/m3", "frac", "%"]
+    old_units = var_in["Attr"]["units"]
+    if (old_units not in ok_units) or (new_units not in ok_units):
+        msg = " Unrecognised conversion from " + old_units + " to " + new_units
+        logger.error(msg)
+        return var_out
+    if old_units == "mmol/mol" and new_units == "g/m3":
+        # this routine may be called before Ta and ps have been created by
+        # merging variables as specified in the control file
+        if "Ta" in series_list:
+            Ta = GetVariable(ds, "Ta")
+        else:
+            # if Ta doesn't exist, create it by merging anything that starts with "Ta" or "Tv"
+            t_list = [t for t in series_list if t[0:2] in ["Ta", "Tv"]]
+            Ta = MergeVariables(ds, "Ta", t_list)
+        if "ps" in series_list:
+            ps = GetVariable(ds, "ps")
+        else:
+            # if ps doesn't exist, create it by merging anything that starts with "ps"
+            p_list = [p for p in series_list if p[0:2] in ["ps"]]
+            ps = MergeVariables(ds, "ps", p_list)
+        month = GetVariable(ds, "Month")
+        var_out["Data"] = pfp_mf.h2o_gpm3frommmolpmol(var_in["Data"], Ta["Data"], ps["Data"])
+        if "rangecheck_lower" in var_out["Attr"]:
+            attr_in = var_out["Attr"]["rangecheck_lower"]
+            attr_out = convert_units_h2o_lower_gpm3(attr_in, Ta["Data"], ps["Data"], month["Data"])
+            var_out["Attr"]["rangecheck_lower"] = str(attr_out)
+        if "rangecheck_upper" in var_out["Attr"]:
+            attr_in = var_out["Attr"]["rangecheck_lower"]
+            attr_out = convert_units_h2o_upper_gpm3(attr_in, Ta["Data"], ps["Data"], month["Data"])
+            var_out["Attr"]["rangecheck_lower"] = str(attr_out)
+    elif old_units == "g/m3" and new_units == "mmol/mol":
+        if "Ta" in series_list:
+            Ta = GetVariable(ds, "Ta")
+        else:
+            # if Ta doesn't exist, create it by merging anything that starts with "Ta" or "Tv"
+            t_list = [t for t in series_list if t[0:2] in ["Ta", "Tv"]]
+            Ta = MergeVariables(ds, "Ta", t_list)
+        if "ps" in series_list:
+            ps = GetVariable(ds, "ps")
+        else:
+            # if ps doesn't exist, create it by merging anything that starts with "ps"
+            p_list = [p for p in series_list if p[0:2] in ["ps"]]
+            ps = MergeVariables(ds, "ps", p_list)
+        month = GetVariable(ds, "Month")
+        var_out["Data"] = pfp_mf.h2o_mmolpmolfromgpm3(var_in["Data"], Ta["Data"], ps["Data"])
+        if "rangecheck_lower" in var_out["Attr"]:
+            attr_in = var_out["Attr"]["rangecheck_lower"]
+            attr_out = convert_units_h2o_lower_mmolpmol(attr_in, Ta["Data"], ps["Data"], month["Data"])
+            var_out["Attr"]["rangecheck_lower"] = str(attr_out)
+        if "rangecheck_upper" in var_out["Attr"]:
+            attr_in = var_out["Attr"]["rangecheck_lower"]
+            attr_out = convert_units_h2o_upper_mmolpmol(attr_in, Ta["Data"], ps["Data"], month["Data"])
+            var_out["Attr"]["rangecheck_lower"] = str(attr_out)
     elif old_units=="frac" and new_units=="%":
-        new_data = old_data*float(100)
+        var_out["Data"] = var_out["Data"] * float(100)
+        var_out["Attr"]["units"] = new_units
+        if "rangecheck_lower" in var_out["Attr"]:
+            attr_in = var_out["Attr"]["rangecheck_lower"]
+            limits = parse_rangecheck_limits(attr_in)
+            limits = [(l * float(100)) for l in limits]
+            var_out["Attr"]["rangecheck_lower"] = ','.join(str(l) for l in limits)
+        if "rangecheck_upper" in var_out["Attr"]:
+            attr_in = var_out["Attr"]["rangecheck_upper"]
+            limits = parse_rangecheck_limits(attr_in)
+            limits = [(l * float(100)) for l in limits]
+            var_out["Attr"]["rangecheck_upper"] = ','.join(str(l) for l in limits)
     elif old_units=="%" and new_units=="frac":
-        new_data = old_data/float(100)
+        var_out["Data"] = var_out["Data"] / float(100)
+        var_out["Attr"]["units"] = new_units
+        if "rangecheck_lower" in var_out["Attr"]:
+            attr_in = var_out["Attr"]["rangecheck_lower"]
+            limits = parse_rangecheck_limits(attr_in)
+            limits = [(l / float(100)) for l in limits]
+            var_out["Attr"]["rangecheck_lower"] = ','.join(str(l) for l in limits)
+        if "rangecheck_upper" in var_out["Attr"]:
+            attr_in = var_out["Attr"]["rangecheck_upper"]
+            limits = parse_rangecheck_limits(attr_in)
+            limits = [(l / float(100)) for l in limits]
+            var_out["Attr"]["rangecheck_upper"] = ','.join(str(l) for l in limits)
     else:
         msg = " Unrecognised conversion from "+old_units+" to "+new_units
         logger.error(msg)
-        new_data = numpy.ma.array(old_data,copy=True,mask=True)
-    return new_data
+        var_out["Data"] = numpy.ma.array(numpy.full(nrecs, c.missing_value))
+    return var_out
+
+def convert_units_h2o_lower_gpm3(attr_in, Ta, ps, month):
+    nrecs = len(Ta)
+    limits = parse_rangecheck_limits(attr_in)
+    if len(limits) == 1:
+        lwr = numpy.ma.array(numpy.full(nrecs, float(limits[0])))
+        lwr = pfp_mf.h2o_gpm3frommmolpmol(lwr, Ta, ps)
+        attr_out = str(numpy.ma.min(lwr))
+    elif len(limits) == 12:
+        lwr = numpy.zeros(nrecs)
+        attr_list = []
+        # set lwr to monthly limits
+        for m, l in enumerate(limits):
+            idx = numpy.where(month == m+1)[0]
+            lwr[idx] = float(l)
+            # convert lwr to new units
+            lwr[idx] = pfp_mf.h2o_gpm3frommmolpmol(lwr[idx], Ta[idx], ps[idx])
+            attr_list.append(numpy.ma.min(lwr[idx]))
+        attr_out = ','.join(str(x) for x in attr_list)
+    return attr_out
+
+def convert_units_h2o_upper_gpm3(attr_in, Ta, ps, month):
+    nrecs = len(Ta)
+    limits = parse_rangecheck_limits(attr_in)
+    if len(limits) == 1:
+        upr = numpy.ma.array(numpy.full(nrecs, float(limits[0])))
+        upr = pfp_mf.h2o_gpm3frommmolpmol(upr, Ta, ps)
+        attr_out = str(numpy.ma.max(upr))
+    elif len(limits) == 12:
+        upr = numpy.zeros(nrecs)
+        attr_list = []
+        # set upr to monthly limits
+        for m, l in enumerate(limits):
+            idx = numpy.where(month == m+1)[0]
+            upr[idx] = float(l)
+            # convert upr to new units
+            upr[idx] = pfp_mf.h2o_gpm3frommmolpmol(upr[idx], Ta[idx], ps[idx])
+            attr_list.append(numpy.ma.max(upr[idx]))
+        attr_out = ','.join(str(x) for x in attr_list)
+    return attr_out
+
+def convert_units_h2o_lower_mmolpmol(attr_in, Ta, ps, month):
+    nrecs = len(Ta)
+    limits = parse_rangecheck_limits(attr_in)
+    if len(limits) == 1:
+        lwr = numpy.ma.array(numpy.full(nrecs, float(limits[0])))
+        lwr = pfp_mf.h2o_mmolpmolfromgpm3(lwr, Ta, ps)
+        attr_out = str(numpy.ma.min(lwr))
+    elif len(limits) == 12:
+        lwr = numpy.zeros(nrecs)
+        attr_list = []
+        # set lwr to monthly limits
+        for m, l in enumerate(limits):
+            idx = numpy.where(month == m+1)[0]
+            lwr[idx] = float(l)
+            # convert lwr to new units
+            lwr[idx] = pfp_mf.h2o_mmolpmolfromgpm3(lwr[idx], Ta[idx], ps[idx])
+            attr_list.append(numpy.ma.min(lwr[idx]))
+        attr_out = ','.join(str(x) for x in attr_list)
+    return attr_out
+
+def convert_units_h2o_upper_mmolpmol(attr_in, Ta, ps, month):
+    nrecs = len(Ta)
+    limits = parse_rangecheck_limits(attr_in)
+    if len(limits) == 1:
+        upr = numpy.ma.array(numpy.full(nrecs, float(limits[0])))
+        upr = pfp_mf.h2o_mmolpmolfromgpm3(upr, Ta, ps)
+        attr_out = str(numpy.ma.max(upr))
+    elif len(limits) == 12:
+        upr = numpy.zeros(nrecs)
+        attr_list = []
+        # set upr to monthly limits
+        for m, l in enumerate(limits):
+            idx = numpy.where(month == m+1)[0]
+            upr[idx] = float(l)
+            # convert upr to new units
+            upr[idx] = pfp_mf.h2o_mmolpmolfromgpm3(upr[idx], Ta[idx], ps[idx])
+            attr_list.append(numpy.ma.max(upr[idx]))
+        attr_out = ','.join(str(x) for x in attr_list)
+    return attr_out
 
 def convert_units_t(ds, var_in, new_units):
     """
@@ -638,13 +790,32 @@ def convert_units_t(ds, var_in, new_units):
     Date: January 2016
     """
     var_out = copy.deepcopy(var_in)
-    ts = int(ds.globalattributes["time_step"])
     if var_in["Attr"]["units"] == "C" and new_units == "K":
         var_out["Data"] = var_in["Data"] + c.C2K
         var_out["Attr"]["units"] = "K"
+        if "rangecheck_lower" in var_out["Attr"]:
+            attr_in = var_out["Attr"]["rangecheck_lower"]
+            limits = parse_rangecheck_limits(attr_in)
+            limits = [(l + c.C2K) for l in limits]
+            var_out["Attr"]["rangecheck_lower"] = ','.join(str(l) for l in limits)
+        if "rangecheck_upper" in var_out["Attr"]:
+            attr_in = var_out["Attr"]["rangecheck_upper"]
+            limits = parse_rangecheck_limits(attr_in)
+            limits = [(l + c.C2K) for l in limits]
+            var_out["Attr"]["rangecheck_upper"] = ','.join(str(l) for l in limits)
     elif var_in["Attr"]["units"] == "K" and new_units == "C":
         var_out["Data"] = var_in["Data"] - c.C2K
         var_out["Attr"]["units"] = "C"
+        if "rangecheck_lower" in var_out["Attr"]:
+            attr_in = var_out["Attr"]["rangecheck_lower"]
+            limits = parse_rangecheck_limits(attr_in)
+            limits = [(l + c.C2K) for l in limits]
+            var_out["Attr"]["rangecheck_lower"] = ','.join(str(l) for l in limits)
+        if "rangecheck_upper" in var_out["Attr"]:
+            attr_in = var_out["Attr"]["rangecheck_upper"]
+            limits = parse_rangecheck_limits(attr_in)
+            limits = [(l + c.C2K) for l in limits]
+            var_out["Attr"]["rangecheck_upper"] = ','.join(str(l) for l in limits)
     else:
         msg = " Unrecognised conversion from "+var_in["Attr"]["units"]+" to "+new_units
         logger.error(msg)
@@ -667,13 +838,32 @@ def convert_units_ps(ds, var_in, new_units):
     Date: February 2018
     """
     var_out = copy.deepcopy(var_in)
-    ts = int(ds.globalattributes["time_step"])
     if var_in["Attr"]["units"] == "Pa" and new_units == "kPa":
         var_out["Data"] = var_in["Data"]/float(1000)
         var_out["Attr"]["units"] = "kPa"
+        if "rangecheck_lower" in var_out["Attr"]:
+            attr_in = var_out["Attr"]["rangecheck_lower"]
+            limits = parse_rangecheck_limits(attr_in)
+            limits = [(l/float(1000)) for l in limits]
+            var_out["Attr"]["rangecheck_lower"] = ','.join(str(l) for l in limits)
+        if "rangecheck_upper" in var_out["Attr"]:
+            attr_in = var_out["Attr"]["rangecheck_upper"]
+            limits = parse_rangecheck_limits(attr_in)
+            limits = [(l/float(1000)) for l in limits]
+            var_out["Attr"]["rangecheck_upper"] = ','.join(str(l) for l in limits)
     elif var_in["Attr"]["units"] == "hPa" and new_units == "kPa":
         var_out["Data"] = var_in["Data"]/float(10)
         var_out["Attr"]["units"] = "kPa"
+        if "rangecheck_lower" in var_out["Attr"]:
+            attr_in = var_out["Attr"]["rangecheck_lower"]
+            limits = parse_rangecheck_limits(attr_in)
+            limits = [(l/float(10)) for l in limits]
+            var_out["Attr"]["rangecheck_lower"] = ','.join(str(l) for l in limits)
+        if "rangecheck_upper" in var_out["Attr"]:
+            attr_in = var_out["Attr"]["rangecheck_upper"]
+            limits = parse_rangecheck_limits(attr_in)
+            limits = [(l/float(10)) for l in limits]
+            var_out["Attr"]["rangecheck_upper"] = ','.join(str(l) for l in limits)
     else:
         msg = " Unrecognised conversion from "+var_in["Attr"]["units"]+" to "+new_units
         logger.error(msg)
@@ -692,31 +882,41 @@ def convert_anglestring(anglestring):
       astr = '''34.123 S'''
       astr = '''-34.123'''
     """
-    quadlist=["N","E","S","W"]
+    quadlist = ["N", "E", "S", "W"]
     direction = {'N':1, 'S':-1, 'E': 1, 'W':-1}
+    # replace the degrees, minutes and seconds symbols with spaces
+    new = anglestring.replace(u'\B0', ' ').replace('\'', ' ').replace('"', ' ').strip()
     try:
         # simple casting may work, who knows?
-        return float(anglestring)
+        anglefloat = float(new)
     except ValueError:
-        # replace the degrees, minutes and seconds symbols with spaces
-        new = anglestring.replace(u'\B0',' ').replace('\'',' ').replace('"',' ')
-        # check there is a space between the quadrant letter (assumed to be one of N, E, W or S)
-        # and the next character to the left
-        # find out which of N, E, S, or W is in the string
-        for item in quadlist:
-            if item in new: quadletter=item
-        # now get the index of this character in the string
-        i=new.index(quadletter)
-        # check that the next character to the left is a space character
-        if new[i-1] != " ": new = new[0:i]+" "+new[i:]
-        # now split the string on space characters
-        new = new.split()
-        # get the quadrant letter
-        new_dir = new.pop()
-        # make sure we have 3 parts
-        new.extend([0,0,0])
-        # return with the string converted to a float
-        return (float(new[0])+float(new[1])/60.0+float(new[2])/3600.0) * direction[new_dir]
+        try:
+            # check there is a space between the quadrant letter (assumed to be one of N, E, W or S)
+            # and the next character to the left
+            # find out which of N, E, S, or W is in the string
+            found_quadletter = False
+            for item in quadlist:
+                if item in new:
+                    found_quadletter = True
+                    quadletter = item
+            if found_quadletter:
+                # now get the index of this character in the string
+                i=new.index(quadletter)
+                # check that the next character to the left is a space character
+                if new[i-1] != " ": new = new[0:i]+" "+new[i:]
+                # now split the string on space characters
+                new = new.split()
+                # get the quadrant letter
+                new_dir = new.pop()
+                # make sure we have 3 parts
+                new.extend([0,0,0])
+                anglefloat = (float(new[0])+float(new[1])/60.0+float(new[2])/3600.0) * direction[new_dir]
+            else:
+                anglefloat = float(c.missing_value)
+        except:
+            anglefloat = float(c.missing_value)
+    # return with the string converted to a float
+    return anglefloat
 
 def convert_WSWDtoUV(WS, WD):
     """
@@ -849,6 +1049,24 @@ def CreateSeries(ds,Label,Data,Flag,Attr):
             ds.series['_tmp_']['Attr'][item] = Attr[item]
     ds.series[unicode(Label)] = ds.series['_tmp_']     # copy temporary series to new series
     del ds.series['_tmp_']                        # delete the temporary series
+
+def CopyVariable(var):
+    """
+    Purpose:
+     Make a shallow-ish copy of a variable.
+    Usage:
+     variable_copy = pfp_utils.CopyVariable(variable)
+    Author: PRI
+    Date: October 2018
+    """
+    tmp = {"Data":var["Data"], "Flag":var["Flag"], "Attr":var["Attr"]}
+    if "Label" in var:
+        tmp["Label"] = var["Label"]
+    if "DateTime" in var:
+        tmp["DateTime"] = var["DateTime"]
+    if "time_step" in var:
+        tmp["time_step"] = var["time_step"]
+    return tmp
 
 def CreateDatetimeRange(start,stop,step=datetime.timedelta(minutes=30)):
     '''
@@ -1722,31 +1940,25 @@ def get_datetimefromymdhms(ds):
     ''' Creates a series of Python datetime objects from the year, month,
     day, hour, minute and second series stored in the netCDF file.'''
     SeriesList = ds.series.keys()
-    if 'Year' not in SeriesList or 'Month' not in SeriesList or 'Day' not in SeriesList or 'Hour' not in SeriesList or 'Minute' not in SeriesList or 'Second' not in SeriesList:
+    if ('Year' not in SeriesList or 'Month' not in SeriesList or 'Day' not in SeriesList or
+        'Hour' not in SeriesList or 'Minute' not in SeriesList or 'Second' not in SeriesList):
         logger.info(' get_datetimefromymdhms: unable to find all datetime fields required')
         return
     logger.info(' Getting the date and time series')
-    nRecs = get_nrecs(ds)
-    ts = ds.globalattributes["time_step"]
-    ds.series[unicode('DateTime')] = {}
-    dt = [None]*nRecs
-    if "Microseconds" in ds.series.keys():
-        microseconds = ds.series["Microseconds"]["Data"]
-    else:
-        microseconds = numpy.zeros(nRecs,dtype=numpy.float64)
-    for i in range(nRecs):
-        dt = datetime.datetime(int(ds.series['Year']['Data'][i]),
-                                int(ds.series['Month']['Data'][i]),
-                                int(ds.series['Day']['Data'][i]),
-                                int(ds.series['Hour']['Data'][i]),
-                                int(ds.series['Minute']['Data'][i]),
-                                int(ds.series['Second']['Data'][i]),
-                                int(microseconds[i]))
-    ds.series['DateTime']['Data'] = numpy.array(dt)
-    ds.series['DateTime']['Flag'] = numpy.zeros(nRecs)
-    ds.series['DateTime']['Attr'] = {}
-    ds.series['DateTime']['Attr']['long_name'] = 'Date-time object'
-    ds.series['DateTime']['Attr']['units'] = 'None'
+    year = ds.series["Year"]["Data"]
+    month = ds.series["Month"]["Data"]
+    day = ds.series["Day"]["Data"]
+    hour = ds.series["Hour"]["Data"]
+    minute = ds.series["Minute"]["Data"]
+    second = ds.series["Second"]["Data"]
+    dt = [datetime.datetime(yr,mn,dy,hr,mi,se) for yr,mn,dy,hr,mi,se in zip(year,month,day,hour,minute,second)]
+    ds.series["DateTime"] = {}
+    ds.series["DateTime"]["Data"] = numpy.array(dt)
+    ds.series["DateTime"]["Flag"] = numpy.zeros(len(dt))
+    ds.series["DateTime"]["Attr"] = {}
+    ds.series["DateTime"]["Attr"]["long_name"] = "Datetime in local timezone"
+    ds.series["DateTime"]["Attr"]["units"] = "None"
+    return
 
 def get_diurnalstats(dt,data,info):
     ts = info["time_step"]
@@ -2312,6 +2524,32 @@ def MergeQCFlag(QCFlag_list):
         flag = numpy.maximum(flag,tmp_flag)                 # now take the maximum
     return flag
 
+def MergeVariables(ds, out_label, in_labels):
+    """
+    Purpose:
+     Merge the variables with labels in in_labels into a single variable with
+     the label out_label.
+    Usage:
+    Author: PRI
+    Date: October 2018
+    """
+    var_in = GetVariable(ds, in_labels[0])
+    var_out = CopyVariable(var_in)
+    if len(in_labels) == 1:
+        return var_out
+    for label in in_labels[1:]:
+        var_in = GetVariable(ds, label)
+        if var_in["Attr"]["units"] != var_out["Attr"]["units"]:
+            continue
+        in_mask = numpy.ma.getmaskarray(var_in["Data"])
+        out_mask = numpy.ma.getmaskarray(var_out["Data"])
+        condition = (out_mask == True) & (in_mask == False)
+        var_out["Data"] = numpy.ma.where(condition, var_in["Data"], var_out["Data"])
+        var_out["Flag"] = numpy.ma.where(condition, var_in["Flag"], var_out["Flag"])
+    var_out["Attr"]["description"] = "Merged from "+str(in_labels)
+    var_out["Label"] = out_label
+    return var_out
+
 def nxMom_nxScalar_alpha(zoL):
     nRecs = numpy.size(zoL)
     nxMom = numpy.ma.ones(nRecs) * 0.079
@@ -2348,43 +2586,15 @@ def parse_rangecheck_limits(s):
         # error message and return if input was not a string
         msg = "parse_rangecheck_limits: argument must be a string"
         logger.error(msg)
-    elif "]*" in s:
-        # might be a string using the shorthand "expand this" notation
-        try:
-            # let's try to parse this construct
-            val = s[s.index('[')+1:s.index(']')]
-            rep = s[s.index('*')+1:]
-            # there must be 1 value per month
-            if rep == "12":
-                # construct the list if there are 12 values
-                if "." in val:
-                    l = [float(val)]*int(rep)
-                else:
-                    l = [int(val)]*int(rep)
-            else:
-                # error if not 12 values
-                msg = "parse_rangecheck_limits: expected 12 repetitions, got "+rep
-                logger.error(msg)
-        except:
-            # and error if we can't
-            msg = "parse_rangecheck_limits: unable to parse string "+s
+        return []
+    # split the string on commas
+    l = s.split(",")
+    # only acceptable lengths are 12 (1 per month) or 1
+    if len(l) != 1:
+        if len(l) != 12:
+            msg = "parse_rangecheck_limits: number of values must be 12 or 1"
             logger.error(msg)
-    else:
-        # might be a list as a string
-        try:
-            # in which case literal_eval will do the trick
-            l = ast.literal_eval(s)
-            # there must be 1 value per month
-            if len(l) != 12:
-                # error if not 12 values
-                l = []
-                msg = "parse_rangecheck_limits: expected 12 in list, got "+str(len(l))
-                logger.error(msg)
-        except:
-            # error if literal_eval can't handle this string
-            msg = "parse_rangecheck_limits: literal_eval unable to parse string "+s
-            logger.error(msg)
-    # return the list
+            return []
     return l
 
 def path_exists(pathname,mode="verbose"):
