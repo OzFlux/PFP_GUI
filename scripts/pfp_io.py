@@ -2362,9 +2362,11 @@ def xl_read_series(cf):
                         ds.series[label]["Attr"]["missing_value"] = numpy.int32(c.missing_value)
                     info[label] = {"sheet":active_sheet, "nrecs":nrecs}
                 else:
-                    logger.error("  "+label+" not found on sheet "+xlsheet_name)
+                    if "Functions" in cf["Variables"][label]:
+                        logger.error("  "+label+" not found on sheet "+xlsheet_name)
             else:
-                logger.error("  Sheet "+xlsheet_name+" ("+label+") not found in Excel workbook")
+                if "Functions" in cf["Variables"][label]:
+                    logger.error("  Sheet "+xlsheet_name+" ("+label+") not found in Excel workbook")
     # check that all variables have the same length
     all_good = True
     label_list = info.keys()
