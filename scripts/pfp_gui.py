@@ -501,9 +501,57 @@ class edit_cfg_L2(QtGui.QWidget):
         """ Add an exclude hours check to a variable."""
         print " add ExcludeHours here"
 
+    def add_file_path(self):
+        """ Add file_path to the 'Files' section."""
+        # get the index of the selected item
+        idx = self.view.selectedIndexes()[0]
+        # get the selected item from the index
+        parent = idx.model().itemFromIndex(idx)
+        child0 = QtGui.QStandardItem("file_path")
+        child1 = QtGui.QStandardItem("Right click to browse")
+        parent.appendRow([child0, child1])
+        # add an asterisk to the tab text to indicate the tab contents have changed
+        self.update_tab_text()
+
+    def add_in_filename(self):
+        """ Add in_filename to the 'Files' section."""
+        # get the index of the selected item
+        idx = self.view.selectedIndexes()[0]
+        # get the selected item from the index
+        parent = idx.model().itemFromIndex(idx)
+        child0 = QtGui.QStandardItem("in_filename")
+        child1 = QtGui.QStandardItem("Right click to browse")
+        parent.appendRow([child0, child1])
+        # add an asterisk to the tab text to indicate the tab contents have changed
+        self.update_tab_text()
+
     def add_linear(self):
         """ Add a linear correction to a variable."""
         print " add Linear here"
+
+    def add_out_filename(self):
+        """ Add out_filename to the 'Files' section."""
+        # get the index of the selected item
+        idx = self.view.selectedIndexes()[0]
+        # get the selected item from the index
+        parent = idx.model().itemFromIndex(idx)
+        child0 = QtGui.QStandardItem("out_filename")
+        child1 = QtGui.QStandardItem("Right click to browse")
+        parent.appendRow([child0, child1])
+        # add an asterisk to the tab text to indicate the tab contents have changed
+        self.update_tab_text()
+
+    def add_plot_path(self):
+        """ Add plot_path to the 'Files' section."""
+        # get the index of the selected item
+        idx = self.view.selectedIndexes()[0]
+        # get the selected item from the index
+        parent = idx.model().itemFromIndex(idx)
+        child0 = QtGui.QStandardItem("plot_path")
+        child1 = QtGui.QStandardItem("Right click to browse")
+        parent.appendRow([child0, child1])
+        # add an asterisk to the tab text to indicate the tab contents have changed
+        self.update_tab_text()
 
     def add_qc_check(self, selected_item, new_qc):
         for key1 in new_qc:
@@ -634,6 +682,26 @@ class edit_cfg_L2(QtGui.QWidget):
             new_file_parts = os.path.split(str(new_file_path))
             parent.child(selected_item.row(), 1).setText(new_file_parts[1])
 
+    def browse_plot_path(self):
+        """ Browse for the plot path."""
+        # get the index of the selected item
+        idx = self.view.selectedIndexes()[0]
+        # get the selected item from the index
+        selected_item = idx.model().itemFromIndex(idx)
+        # get the parent of the selected item
+        parent = selected_item.parent()
+        # get the selected entry text
+        file_path = str(idx.data())
+        # dialog for new directory
+        new_dir = QtGui.QFileDialog.getExistingDirectory(self, "Choose a folder ...",
+                                                         file_path, QtGui.QFileDialog.ShowDirsOnly)
+        # quit if cancel button pressed
+        if len(str(new_dir)) > 0:
+            # make sure the string ends with a path delimiter
+            new_dir = os.path.join(str(new_dir), "")
+            # update the model
+            parent.child(selected_item.row(), 1).setText(new_dir)
+
     def context_menu(self, position):
         """ Right click context menu."""
         # get a menu
@@ -644,7 +712,29 @@ class edit_cfg_L2(QtGui.QWidget):
         level = self.get_level_selected_item()
         if level == 0:
             selected_text = str(idx.data())
-            if selected_text == "Variables":
+            if selected_text == "Files":
+                existing_entries = self.get_existing_entries()
+                if "file_path" not in existing_entries:
+                    self.context_menu.actionAddfile_path = QtGui.QAction(self)
+                    self.context_menu.actionAddfile_path.setText("Add file_path")
+                    self.context_menu.addAction(self.context_menu.actionAddfile_path)
+                    self.context_menu.actionAddfile_path.triggered.connect(self.add_file_path)
+                if "in_filename" not in existing_entries:
+                    self.context_menu.actionAddin_filename = QtGui.QAction(self)
+                    self.context_menu.actionAddin_filename.setText("Add in_filename")
+                    self.context_menu.addAction(self.context_menu.actionAddin_filename)
+                    self.context_menu.actionAddin_filename.triggered.connect(self.add_in_filename)
+                if "out_filename" not in existing_entries:
+                    self.context_menu.actionAddout_filename = QtGui.QAction(self)
+                    self.context_menu.actionAddout_filename.setText("Add out_filename")
+                    self.context_menu.addAction(self.context_menu.actionAddout_filename)
+                    self.context_menu.actionAddout_filename.triggered.connect(self.add_out_filename)
+                if "plot_path" not in existing_entries:
+                    self.context_menu.actionAddplot_path = QtGui.QAction(self)
+                    self.context_menu.actionAddplot_path.setText("Add plot_path")
+                    self.context_menu.addAction(self.context_menu.actionAddplot_path)
+                    self.context_menu.actionAddplot_path.triggered.connect(self.add_plot_path)
+            elif selected_text == "Variables":
                 self.context_menu.actionAddVariable = QtGui.QAction(self)
                 self.context_menu.actionAddVariable.setText("Add variable")
                 self.context_menu.addAction(self.context_menu.actionAddVariable)
@@ -679,6 +769,11 @@ class edit_cfg_L2(QtGui.QWidget):
                     self.context_menu.actionBrowseOutputFile.setText("Browse...")
                     self.context_menu.addAction(self.context_menu.actionBrowseOutputFile)
                     self.context_menu.actionBrowseOutputFile.triggered.connect(self.browse_output_file)
+                elif key == "plot_path":
+                    self.context_menu.actionBrowsePlotPath = QtGui.QAction(self)
+                    self.context_menu.actionBrowsePlotPath.setText("Browse...")
+                    self.context_menu.addAction(self.context_menu.actionBrowsePlotPath)
+                    self.context_menu.actionBrowsePlotPath.triggered.connect(self.browse_plot_path)
                 else:
                     pass
             elif str(parent.text()) == "Variables":
@@ -1031,12 +1126,12 @@ class edit_cfg_L3(QtGui.QWidget):
     def add_averageseries(self):
         """ Add an average series instruction to a variable."""
         # get the index of the selected item
-        idx = self.tree.selectedIndexes()[0]
+        idx = self.view.selectedIndexes()[0]
         # get the selected item from the index
         selected_item = idx.model().itemFromIndex(idx)
         parent = QtGui.QStandardItem("AverageSeries")
         child0 = QtGui.QStandardItem("Source")
-        child1 = QtGui.QStandardItem("[]")
+        child1 = QtGui.QStandardItem("")
         parent.appendRow([child0, child1])
         selected_item.appendRow(parent)
         self.update_tab_text()
@@ -1098,6 +1193,30 @@ class edit_cfg_L3(QtGui.QWidget):
         selected_item.appendRow([child0, child1])
         self.update_tab_text()
 
+    def add_file_path(self):
+        """ Add file_path to the 'Files' section."""
+        # get the index of the selected item
+        idx = self.view.selectedIndexes()[0]
+        # get the selected item from the index
+        parent = idx.model().itemFromIndex(idx)
+        child0 = QtGui.QStandardItem("file_path")
+        child1 = QtGui.QStandardItem("Right click to browse")
+        parent.appendRow([child0, child1])
+        # add an asterisk to the tab text to indicate the tab contents have changed
+        self.update_tab_text()
+
+    def add_in_filename(self):
+        """ Add in_filename to the 'Files' section."""
+        # get the index of the selected item
+        idx = self.view.selectedIndexes()[0]
+        # get the selected item from the index
+        parent = idx.model().itemFromIndex(idx)
+        child0 = QtGui.QStandardItem("in_filename")
+        child1 = QtGui.QStandardItem("Right click to browse")
+        parent.appendRow([child0, child1])
+        # add an asterisk to the tab text to indicate the tab contents have changed
+        self.update_tab_text()
+
     def add_massmancorrection(self):
         """ Add Massman correction to the [Options] section."""
         child0 = QtGui.QStandardItem("MassmanCorrection")
@@ -1108,14 +1227,38 @@ class edit_cfg_L3(QtGui.QWidget):
     def add_mergeseries(self):
         """ Add a merge series instruction to a variable."""
         # get the index of the selected item
-        idx = self.tree.selectedIndexes()[0]
+        idx = self.view.selectedIndexes()[0]
         # get the selected item from the index
         selected_item = idx.model().itemFromIndex(idx)
         parent = QtGui.QStandardItem("MergeSeries")
         child0 = QtGui.QStandardItem("Source")
-        child1 = QtGui.QStandardItem("[]")
+        child1 = QtGui.QStandardItem("")
         parent.appendRow([child0, child1])
         selected_item.appendRow(parent)
+        self.update_tab_text()
+
+    def add_out_filename(self):
+        """ Add out_filename to the 'Files' section."""
+        # get the index of the selected item
+        idx = self.view.selectedIndexes()[0]
+        # get the selected item from the index
+        parent = idx.model().itemFromIndex(idx)
+        child0 = QtGui.QStandardItem("out_filename")
+        child1 = QtGui.QStandardItem("Right click to browse")
+        parent.appendRow([child0, child1])
+        # add an asterisk to the tab text to indicate the tab contents have changed
+        self.update_tab_text()
+
+    def add_plot_path(self):
+        """ Add plot_path to the 'Files' section."""
+        # get the index of the selected item
+        idx = self.view.selectedIndexes()[0]
+        # get the selected item from the index
+        parent = idx.model().itemFromIndex(idx)
+        child0 = QtGui.QStandardItem("plot_path")
+        child1 = QtGui.QStandardItem("Right click to browse")
+        parent.appendRow([child0, child1])
+        # add an asterisk to the tab text to indicate the tab contents have changed
         self.update_tab_text()
 
     def add_qc_check(self, selected_item, new_qc):
@@ -1259,7 +1402,29 @@ class edit_cfg_L3(QtGui.QWidget):
         level = self.get_level_selected_item()
         if level == 0:
             selected_text = str(idx.data())
-            if selected_text == "Options":
+            if selected_text == "Files":
+                existing_entries = self.get_existing_entries()
+                if "file_path" not in existing_entries:
+                    self.context_menu.actionAddfile_path = QtGui.QAction(self)
+                    self.context_menu.actionAddfile_path.setText("Add file_path")
+                    self.context_menu.addAction(self.context_menu.actionAddfile_path)
+                    self.context_menu.actionAddfile_path.triggered.connect(self.add_file_path)
+                if "in_filename" not in existing_entries:
+                    self.context_menu.actionAddin_filename = QtGui.QAction(self)
+                    self.context_menu.actionAddin_filename.setText("Add in_filename")
+                    self.context_menu.addAction(self.context_menu.actionAddin_filename)
+                    self.context_menu.actionAddin_filename.triggered.connect(self.add_in_filename)
+                if "out_filename" not in existing_entries:
+                    self.context_menu.actionAddout_filename = QtGui.QAction(self)
+                    self.context_menu.actionAddout_filename.setText("Add out_filename")
+                    self.context_menu.addAction(self.context_menu.actionAddout_filename)
+                    self.context_menu.actionAddout_filename.triggered.connect(self.add_out_filename)
+                if "plot_path" not in existing_entries:
+                    self.context_menu.actionAddplot_path = QtGui.QAction(self)
+                    self.context_menu.actionAddplot_path.setText("Add plot_path")
+                    self.context_menu.addAction(self.context_menu.actionAddplot_path)
+                    self.context_menu.actionAddplot_path.triggered.connect(self.add_plot_path)
+            elif selected_text == "Options":
                 # get a list of existing entries
                 existing_entries = self.get_existing_entries()
                 if "zms" not in existing_entries:

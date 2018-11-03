@@ -1600,16 +1600,26 @@ def CalculateStandardDeviations(cf,ds):
         Ah_7500_Sd = numpy.ma.sqrt(AhAh)
         attr = pfp_utils.MakeAttributeDictionary(long_name='Absolute humidity from IRGA, standard deviation',units='g/m3')
         pfp_utils.CreateSeries(ds,'Ah_7500_Sd',Ah_7500_Sd,flag,attr)
-    if 'H2O_IRGA_Vr' in ds.series.keys() and 'H2O_IRGA_Sd' not in ds.series.keys():
-        H2O_IRGA_Vr,flag,attr = pfp_utils.GetSeriesasMA(ds,'H2O_IRGA_Vr')
-        H2O_IRGA_Sd = numpy.ma.sqrt(H2O_IRGA_Vr)
-        attr = pfp_utils.MakeAttributeDictionary(long_name='Absolute humidity from IRGA, standard deviation',units='g/m3')
-        pfp_utils.CreateSeries(ds,'H2O_IRGA_Sd',H2O_IRGA_Sd,flag,attr)
     if 'Ah_7500_Sd' in ds.series.keys() and 'AhAh' not in ds.series.keys():
         Ah_7500_Sd,flag,attr = pfp_utils.GetSeriesasMA(ds,'Ah_7500_Sd')
         AhAh = Ah_7500_Sd*Ah_7500_Sd
         attr = pfp_utils.MakeAttributeDictionary(long_name='Absolute humidity from IRGA, variance',units='(g/m3)2')
         pfp_utils.CreateSeries(ds,'AhAh',AhAh,flag,attr)
+    if 'Ah_IRGA_Vr' in ds.series.keys() and 'Ah_IRGA_Sd' not in ds.series.keys():
+        Ah_IRGA_Vr,flag,attr = pfp_utils.GetSeriesasMA(ds,'Ah_IRGA_Vr')
+        Ah_IRGA_Sd = numpy.ma.sqrt(Ah_IRGA_Vr)
+        attr = pfp_utils.MakeAttributeDictionary(long_name='Absolute humidity from IRGA, standard deviation',units='g/m3')
+        pfp_utils.CreateSeries(ds,'Ah_IRGA_Sd',Ah_IRGA_Sd,flag,attr)
+    if 'Ah_IRGA_Sd' in ds.series.keys() and 'Ah_IRGA_Vr' not in ds.series.keys():
+        Ah_IRGA_Sd,flag,attr = pfp_utils.GetSeriesasMA(ds,'Ah_IRGA_Sd')
+        Ah_IRGA_Vr = Ah_IRGA_Sd*Ah_IRGA_Sd
+        attr = pfp_utils.MakeAttributeDictionary(long_name='Absolute humidity from IRGA, variance',units='(g/m3)2')
+        pfp_utils.CreateSeries(ds,'Ah_IRGA_Vr',Ah_IRGA_Vr,flag,attr)
+    if 'H2O_IRGA_Vr' in ds.series.keys() and 'H2O_IRGA_Sd' not in ds.series.keys():
+        H2O_IRGA_Vr,flag,attr = pfp_utils.GetSeriesasMA(ds,'H2O_IRGA_Vr')
+        H2O_IRGA_Sd = numpy.ma.sqrt(H2O_IRGA_Vr)
+        attr = pfp_utils.MakeAttributeDictionary(long_name='Absolute humidity from IRGA, standard deviation',units='g/m3')
+        pfp_utils.CreateSeries(ds,'H2O_IRGA_Sd',H2O_IRGA_Sd,flag,attr)
     if 'H2O_IRGA_Sd' in ds.series.keys() and 'H2O_IRGA_Vr' not in ds.series.keys():
         H2O_IRGA_Sd,flag,attr = pfp_utils.GetSeriesasMA(ds,'H2O_IRGA_Sd')
         H2O_IRGA_Vr = H2O_IRGA_Sd*H2O_IRGA_Sd
@@ -1726,13 +1736,13 @@ def do_solo(cf,ds4,Fc_in='Fc',Fe_in='Fe',Fh_in='Fh',Fc_out='Fc',Fe_out='Fe',Fh_o
         pfp_utils.CreateSeries(ds4,Fh_out,Fh,flag,attr)
 
 def Fc_WPL(cf, ds, Fc_wpl_out='Fc', Fc_raw_in='Fc', Fh_in='Fh', Fe_in='Fe',
-           Ta_in='Ta', Ah_in='Ah', Cc_in='CO2', ps_in='ps'):
+           Ta_in='Ta', Ah_in='Ah', CO2_in='CO2', ps_in='ps'):
     """
         Apply Webb, Pearman and Leuning correction to carbon flux.  This
         correction is necessary to account for flux effects on density
         measurements.  Original formulation: Campbell Scientific
 
-        Usage pfp_ts.Fc_WPL(ds,Fc_wpl_out,Fc_raw_in,Fh_in,Fe_raw_in,Ta_in,Ah_in,Cc_in,ps_in)
+        Usage pfp_ts.Fc_WPL(ds,Fc_wpl_out,Fc_raw_in,Fh_in,Fe_raw_in,Ta_in,Ah_in,CO2_in,ps_in)
         ds: data structure
         Fc_wpl_out: output corrected carbon flux variable to ds.  Example: 'Fc'
         Fc_raw_in: input carbon flux in ds.  Example: 'Fc'
@@ -1740,7 +1750,7 @@ def Fc_WPL(cf, ds, Fc_wpl_out='Fc', Fc_raw_in='Fc', Fh_in='Fh', Fe_in='Fe',
         Fe_raw_in: input uncorrected latent heat flux in ds.  Example: 'Fe_raw'
         Ta_in: input air temperature in ds.  Example: 'Ta'
         Ah_in: input absolute humidity in ds.  Example: 'Ah'
-        Cc_in: input co2 density in ds.  Example: 'Cc'
+        CO2_in: input co2 density in ds.  Example: 'CO2'
         ps_in: input atmospheric pressure in ds.  Example: 'ps'
 
         Used for fluxes that are raw or rotated.
@@ -1773,32 +1783,33 @@ def Fc_WPL(cf, ds, Fc_wpl_out='Fc', Fc_raw_in='Fc', Fh_in='Fh', Fe_in='Fe',
         return 1 # ! Return to pfp_levels but make sure error message is communicated
     Ah = Ah*c.g2kg                                # absolute humidity from g/m3 to kg/m3
     # deal with aliases for CO2 concentration
-    if Cc_in not in ds.series.keys() and "Cc" in ds.series.keys():
-        Cc_in = "Cc"
-    else:
-        msg = " Fc_WPL: did not find CO2 in data structure"
-        logger.error(msg)
-        ds.returncodes["message"] = msg
-        ds.returncodes["value"] = 1
-        return 1 # ! Return to pfp_levels but make sure error message is communicated
-    Cc,Cc_flag,Cc_attr = pfp_utils.GetSeriesasMA(ds,Cc_in)
-    if Cc_attr["units"]!="mg/m3":
-        if Cc_attr["units"]=="umol/mol":
-            msg = " Fc_WPL: CO2 units ("+Cc_attr["units"]+") converted to mg/m3"
-            logger.warning(msg)
-            Cc = pfp_mf.co2_mgCO2pm3fromppm(Cc,Ta,ps)
+    if CO2_in not in ds.series.keys():
+        if "Cc" in ds.series.keys():
+            CO2_in = "Cc"
         else:
-            msg = " Fc_WPL: unrecognised units ("+Cc_attr["units"]+") for CO2"
+            msg = " Fc_WPL: did not find CO2 in data structure"
             logger.error(msg)
             ds.returncodes["message"] = msg
             ds.returncodes["value"] = 1
             return 1 # ! Return to pfp_levels but make sure error message is communicated
-    rhod,f,a = pfp_utils.GetSeriesasMA(ds,'rhod')
-    RhoCp,f,a = pfp_utils.GetSeriesasMA(ds,'RhoCp')
-    Lv,f,a = pfp_utils.GetSeriesasMA(ds,'Lv')
-    sigma = Ah/rhod
-    co2_wpl_Fe = (c.mu/(1+c.mu*sigma))*(Cc/rhod)*(Fe/Lv)
-    co2_wpl_Fh = (Cc/TaK)*(Fh/RhoCp)
+    CO2, CO2_flag, CO2_attr = pfp_utils.GetSeriesasMA(ds, CO2_in)
+    if CO2_attr["units"] != "mg/m3":
+        if CO2_attr["units"] == "umol/mol":
+            msg = " Fc_WPL: CO2 units ("+CO2_attr["units"]+") converted to mg/m3"
+            logger.warning(msg)
+            CO2 = pfp_mf.co2_mgCO2pm3fromppm(CO2, Ta, ps)
+        else:
+            msg = " Fc_WPL: unrecognised units ("+CO2_attr["units"]+") for CO2"
+            logger.error(msg)
+            ds.returncodes["message"] = msg
+            ds.returncodes["value"] = 1
+            return 1 # ! Return to pfp_levels but make sure error message is communicated
+    rhod, f, a = pfp_utils.GetSeriesasMA(ds, "rhod")
+    RhoCp, f, a = pfp_utils.GetSeriesasMA(ds, "RhoCp")
+    Lv, f, a = pfp_utils.GetSeriesasMA(ds, "Lv")
+    sigma = Ah / rhod
+    co2_wpl_Fe = (c.mu/(1+c.mu*sigma))*(CO2/rhod)*(Fe/Lv)
+    co2_wpl_Fh = (CO2/TaK)*(Fh/RhoCp)
     Fc_wpl_data = Fc_raw+co2_wpl_Fe+co2_wpl_Fh
     Fc_wpl_flag = numpy.zeros(len(Fc_wpl_data))
     index = numpy.where(numpy.ma.getmaskarray(Fc_wpl_data)==True)[0]
