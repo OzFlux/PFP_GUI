@@ -1091,8 +1091,8 @@ def plot_setup(cf, title):
         p["plot_path"] = os.path.join("plots", cf["level"])
     p['PlotDescription'] = str(title)
     #p['SeriesList'] = ast.literal_eval(cf['Plots'][str(nFig)]['Variables'])
-    if "," in cf['Plots'][str(title)]['Variables']:
-        var_string = cf['Plots'][str(title)]['Variables']
+    var_string = cf['Plots'][str(title)]['Variables']
+    if "," in var_string:
         p['SeriesList'] = var_string.split(",")
     else:
         p['SeriesList'] = [var_string]

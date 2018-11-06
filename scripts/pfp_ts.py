@@ -1144,8 +1144,8 @@ def CorrectFcForStorage(cf,ds,Fc_out='Fc',Fc_in='Fc',Fc_storage_in='Fc_storage')
     apply_storage = {}
     for label in cf["Variables"].keys():
         if "ApplyFcStorage" in cf["Variables"][label]:
-            source = ast.literal_eval(cf["Variables"][label]["ApplyFcStorage"]["Source"])
-            apply_storage[label] = source[0]
+            source = str(cf["Variables"][label]["ApplyFcStorage"]["Source"])
+            apply_storage[label] = source
     # if no individual series have been specified, do the default
     if len(apply_storage.keys()) == 0:
         # check to see if correction for storage has been requested in [Options]

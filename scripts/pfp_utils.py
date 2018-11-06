@@ -318,6 +318,8 @@ def convert_units_func(ds, variable, new_units, mode="quiet"):
     old_units = variable["Attr"]["units"]
     if old_units == new_units:
         # old units same as new units, nothing to do ...
+        msg = " New units same as old ones, skipping ..."
+        logger.warning(msg)
         return variable
     # check the units are something we understand
     # add more lists here to cope with water etc
@@ -1891,8 +1893,7 @@ def get_datetime(cf, ds):
             function_string = function_string.replace('"','')
             function_name = function_string.split("(")[0]
             function_args = function_string.split("(")[1].replace(")","").replace(" ","").split(",")
-            result = getattr(pfp_func,function_name)(ds, *function_args)
-
+            result = getattr(pfp_func,function_name)(ds, "DateTime", *function_args)
     return
 
 def get_datetimefromnctime(ds,time,time_units):

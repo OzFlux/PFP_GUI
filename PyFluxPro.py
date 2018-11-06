@@ -403,34 +403,28 @@ class pfp_main_ui(QtGui.QWidget, QPlainTextEditLogger):
     def check_cfg_L2(self):
         """ Return true if a control file is an L2 file."""
         result = False
-        try:
-            got_sections = False
-            cfg_sections = self.cfg.keys()
-            if (("Files" in cfg_sections) and
-                ("Variables" in cfg_sections)):
-                got_sections = True
-            # remove the common sections
-            common_sections = ["controlfile_name", "Files", "Global", "Output", "Plots",
-                                "General", "Options", "Soil", "Massman", "GUI"]
-            for section in list(self.cfg.keys()):
-                if section in common_sections:
-                    cfg_sections.remove(section)
-            # loop over remaining sections
-            got_qc = False
-            qc_list = ["RangeCheck", "DiurnalCheck", "ExcludeDates", "DependencyCheck", "UpperCheck",
-                       "LowerCheck", "ExcludeHours", "Linear", "CorrectWindDirection"]
-            for section in cfg_sections:
-                subsections = self.cfg[section].keys()
-                for subsection in subsections:
-                    for qc in qc_list:
-                        if qc in self.cfg[section][subsection].keys():
-                            got_qc = True
-                            break
-            # final check
-            if got_sections and got_qc and not self.check_cfg_L3() and not self.check_cfg_L4():
-                result = True
-        except:
-            result = False
+        #try:
+        got_sections = False
+        cfg_sections = self.cfg.keys()
+        if (("Files" in cfg_sections) and
+            ("Variables" in cfg_sections)):
+            got_sections = True
+        # loop over [Variables] sections
+        got_qc = False
+        qc_list = ["RangeCheck", "DiurnalCheck", "ExcludeDates", "DependencyCheck", "UpperCheck",
+                   "LowerCheck", "ExcludeHours", "Linear", "CorrectWindDirection"]
+        for section in ["Variables"]:
+            subsections = self.cfg[section].keys()
+            for subsection in subsections:
+                for qc in qc_list:
+                    if qc in self.cfg[section][subsection].keys():
+                        got_qc = True
+                        break
+        # final check
+        if got_sections and got_qc and not self.check_cfg_L3() and not self.check_cfg_L4():
+            result = True
+        #except:
+            #result = False
         return result
 
     def check_cfg_L3(self):
