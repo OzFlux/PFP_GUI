@@ -193,10 +193,6 @@ def l3qc(cf,ds2):
             return ds3
         if pfp_ts.Fc_WPL(cf, ds3):
             return ds3
-    # **************************************
-    # *** Calculate Monin-Obukhov length ***
-    # **************************************
-    pfp_ts.CalculateMoninObukhovLength(ds3)
     # **************************
     # *** CO2 and Fc section ***
     # **************************
@@ -246,6 +242,8 @@ def l3qc(cf,ds2):
     pfp_ts.CalculateAvailableEnergy(ds3,Fa_out='Fa',Fn_in='Fn',Fg_in='Fg')
     # create new series using MergeSeries or AverageSeries
     pfp_ck.CreateNewSeries(cf,ds3)
+    # Calculate Monin-Obukhov length
+    pfp_ts.CalculateMoninObukhovLength(ds3)
     # re-apply the quality control checks (range, diurnal and rules)
     pfp_ck.do_qcchecks(cf,ds3)
     # coordinate gaps in the three main fluxes

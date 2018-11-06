@@ -71,7 +71,8 @@ class edit_cfg_L1(QtGui.QWidget):
         self.view.setSelectionBehavior(QtGui.QAbstractItemView.SelectItems)
         # set the QTreeView model
         self.view.setModel(self.model)
-        #self.tree.setDragDropMode(QtGui.QAbstractItemView.InternalMove)
+        # enable drag and drop
+        self.view.setDragDropMode(QtGui.QAbstractItemView.InternalMove)
         # build the model
         self.get_model_from_data()
         # set the default width for the first column
@@ -305,7 +306,7 @@ class edit_cfg_L1(QtGui.QWidget):
         args = inspect.getargspec(implemented_functions_data[implemented_functions_name.index(sender)])
         # construct the function string
         function_string = sender+"("
-        for item in args[0][1:]:
+        for item in args[0][2:]:
             function_string = function_string + str(item) + ","
         function_string = function_string[:-1] + ")"
         # get the selected item from the index
@@ -529,6 +530,29 @@ class edit_cfg_L2(QtGui.QWidget):
         """ Add a linear correction to a variable."""
         print " add Linear here"
 
+    def add_lowercheck(self):
+        """ Add a lower range check to a variable."""
+        new_qc = {"LowerCheck":{"0":"YYYY-mm-dd HH:MM,<start_value>,YYYY-mm-dd HH:MM,<end_value>"}}
+        # get the index of the selected item
+        idx = self.view.selectedIndexes()[0]
+        # get the selected item from the index
+        selected_item = idx.model().itemFromIndex(idx)
+        self.add_qc_check(selected_item, new_qc)
+        self.update_tab_text()
+
+    def add_lowercheckrange(self):
+        """ Add another date range to the LowerCheck QC check."""
+        # get the index of the selected item
+        idx = self.view.selectedIndexes()[0]
+        # get the selected item from the index
+        selected_item = idx.model().itemFromIndex(idx)
+        # get the children
+        child0 = QtGui.QStandardItem(str(selected_item.rowCount()))
+        child1 = QtGui.QStandardItem("YYYY-mm-dd HH:MM,<start_value>,YYYY-mm-dd HH:MM,<end_value>")
+        # add them
+        selected_item.appendRow([child0, child1])
+        self.update_tab_text()
+
     def add_out_filename(self):
         """ Add out_filename to the 'Files' section."""
         # get the index of the selected item
@@ -610,6 +634,29 @@ class edit_cfg_L2(QtGui.QWidget):
             child1 = QtGui.QStandardItem(str(value))
             parent.appendRow([child0, child1])
         self.sections["Plots"].appendRow(parent)
+        self.update_tab_text()
+
+    def add_uppercheck(self):
+        """ Add a upper range check to a variable."""
+        new_qc = {"UpperCheck":{"0":"YYYY-mm-dd HH:MM,<start_value>,YYYY-mm-dd HH:MM,<end_value>"}}
+        # get the index of the selected item
+        idx = self.view.selectedIndexes()[0]
+        # get the selected item from the index
+        selected_item = idx.model().itemFromIndex(idx)
+        self.add_qc_check(selected_item, new_qc)
+        self.update_tab_text()
+
+    def add_uppercheckrange(self):
+        """ Add another date range to the UpperCheck QC check."""
+        # get the index of the selected item
+        idx = self.view.selectedIndexes()[0]
+        # get the selected item from the index
+        selected_item = idx.model().itemFromIndex(idx)
+        # get the children
+        child0 = QtGui.QStandardItem(str(selected_item.rowCount()))
+        child1 = QtGui.QStandardItem("YYYY-mm-dd HH:MM,<start_value>,YYYY-mm-dd HH:MM,<end_value>")
+        # add them
+        selected_item.appendRow([child0, child1])
         self.update_tab_text()
 
     def add_variable(self):
@@ -800,6 +847,16 @@ class edit_cfg_L2(QtGui.QWidget):
                     self.context_menu.actionAddExcludeDates.setText("Add ExcludeDates")
                     self.context_menu.addAction(self.context_menu.actionAddExcludeDates)
                     self.context_menu.actionAddExcludeDates.triggered.connect(self.add_excludedates)
+                if "LowerCheck" not in existing_entries:
+                    self.context_menu.actionAddLowerCheck = QtGui.QAction(self)
+                    self.context_menu.actionAddLowerCheck.setText("Add LowerCheck")
+                    self.context_menu.addAction(self.context_menu.actionAddLowerCheck)
+                    self.context_menu.actionAddLowerCheck.triggered.connect(self.add_lowercheck)
+                if "UpperCheck" not in existing_entries:
+                    self.context_menu.actionAddUpperCheck = QtGui.QAction(self)
+                    self.context_menu.actionAddUpperCheck.setText("Add UpperCheck")
+                    self.context_menu.addAction(self.context_menu.actionAddUpperCheck)
+                    self.context_menu.actionAddUpperCheck.triggered.connect(self.add_uppercheck)
                 #self.context_menu.actionAddExcludeHours = QtGui.QAction(self)
                 #self.context_menu.actionAddExcludeHours.setText("Add ExcludeHours")
                 #self.context_menu.addAction(self.context_menu.actionAddExcludeHours)
@@ -819,18 +876,35 @@ class edit_cfg_L2(QtGui.QWidget):
                 self.context_menu.addAction(self.context_menu.actionRemovePlot)
                 self.context_menu.actionRemovePlot.triggered.connect(self.remove_item)
         elif level == 2:
+            add_separator = False
             if str(idx.data()) in ["ExcludeDates"]:
                 self.context_menu.actionAddExcludeDateRange = QtGui.QAction(self)
                 self.context_menu.actionAddExcludeDateRange.setText("Add date range")
                 self.context_menu.addAction(self.context_menu.actionAddExcludeDateRange)
                 self.context_menu.actionAddExcludeDateRange.triggered.connect(self.add_excludedaterange)
+                add_separator = True
+            if str(idx.data()) in ["LowerCheck"]:
+                self.context_menu.actionAddLowerCheckRange = QtGui.QAction(self)
+                self.context_menu.actionAddLowerCheckRange.setText("Add date range")
+                self.context_menu.addAction(self.context_menu.actionAddLowerCheckRange)
+                self.context_menu.actionAddLowerCheckRange.triggered.connect(self.add_lowercheckrange)
+                add_separator = True
+            if str(idx.data()) in ["UpperCheck"]:
+                self.context_menu.actionAddUpperCheckRange = QtGui.QAction(self)
+                self.context_menu.actionAddUpperCheckRange.setText("Add date range")
+                self.context_menu.addAction(self.context_menu.actionAddUpperCheckRange)
+                self.context_menu.actionAddUpperCheckRange.triggered.connect(self.add_uppercheckrange)
+                add_separator = True
+            if add_separator:
                 self.context_menu.addSeparator()
+                add_separator = False
             self.context_menu.actionRemoveQCCheck = QtGui.QAction(self)
             self.context_menu.actionRemoveQCCheck.setText("Remove QC check")
             self.context_menu.addAction(self.context_menu.actionRemoveQCCheck)
             self.context_menu.actionRemoveQCCheck.triggered.connect(self.remove_item)
         elif level == 3:
-            if str(idx.parent().data()) in ["ExcludeDates"]:
+            if (str(idx.parent().data()) in ["ExcludeDates", "LowerCheck", "UpperCheck"] and
+                str(idx.data()) != "0"):
                 self.context_menu.actionRemoveExcludeDateRange = QtGui.QAction(self)
                 self.context_menu.actionRemoveExcludeDateRange.setText("Remove date range")
                 self.context_menu.addAction(self.context_menu.actionRemoveExcludeDateRange)
@@ -858,7 +932,8 @@ class edit_cfg_L2(QtGui.QWidget):
         self.view.setSelectionBehavior(QtGui.QAbstractItemView.SelectItems)
         # set the QTreeView model
         self.view.setModel(self.model)
-        #self.tree.setDragDropMode(QtGui.QAbstractItemView.InternalMove)
+        # enable drag and drop
+        self.view.setDragDropMode(QtGui.QAbstractItemView.InternalMove)
         # build the model
         self.get_model_from_data()
         # set the default width for the first column
@@ -1055,9 +1130,13 @@ class edit_cfg_L2(QtGui.QWidget):
         # remove white space and quotes
         if k in ["RangeCheck", "DiurnalCheck", "DependencyCheck"]:
             strip_list = [" ", '"', "'"]
-        elif k in ["ExcludeDates", "ExcludeHours"]:
+        elif k in ["ExcludeDates", "ExcludeHours", "LowerCheck", "UpperCheck"]:
             # don't remove white space between date and time
             strip_list = ['"', "'"]
+        else:
+            msg = " QC check " + k + " not recognised"
+            logger.warning(msg)
+            return v
         for c in strip_list:
             if c in v:
                 v = v.replace(c, "")
@@ -1116,11 +1195,24 @@ class edit_cfg_L3(QtGui.QWidget):
         self.sections["Options"].appendRow([child0, child1])
         self.update_tab_text()
 
-    def add_applyfcstorage(self):
+    def add_applyfcstorage_to_options(self):
         """ Add storage term to Fc to the [Options] section."""
         child0 = QtGui.QStandardItem("ApplyFcStorage")
         child1 = QtGui.QStandardItem("Yes")
         self.sections["Options"].appendRow([child0, child1])
+        self.update_tab_text()
+
+    def add_applyfcstorage_to_variable(self):
+        """ Add apply Fc storage instruction to a variable."""
+        # get the index of the selected item
+        idx = self.view.selectedIndexes()[0]
+        # get the selected item from the index
+        selected_item = idx.model().itemFromIndex(idx)
+        parent = QtGui.QStandardItem("ApplyFcStorage")
+        child0 = QtGui.QStandardItem("Source")
+        child1 = QtGui.QStandardItem("")
+        parent.appendRow([child0, child1])
+        selected_item.appendRow(parent)
         self.update_tab_text()
 
     def add_averageseries(self):
@@ -1451,7 +1543,7 @@ class edit_cfg_L3(QtGui.QWidget):
                     self.context_menu.actionAddApplyFcStorage = QtGui.QAction(self)
                     self.context_menu.actionAddApplyFcStorage.setText("ApplyFcStorage")
                     self.context_menu.addAction(self.context_menu.actionAddApplyFcStorage)
-                    self.context_menu.actionAddApplyFcStorage.triggered.connect(self.add_applyfcstorage)
+                    self.context_menu.actionAddApplyFcStorage.triggered.connect(self.add_applyfcstorage_to_options)
                 if "CorrectIndividualFg" not in existing_entries:
                     self.context_menu.actionAddCorrectIndividualFg = QtGui.QAction(self)
                     self.context_menu.actionAddCorrectIndividualFg.setText("CorrectIndividualFg")
@@ -1513,6 +1605,7 @@ class edit_cfg_L3(QtGui.QWidget):
                 self.context_menu.addAction(self.context_menu.actionRemoveOption)
                 self.context_menu.actionRemoveOption.triggered.connect(self.remove_item)
             elif str(parent.text()) == "Variables":
+                selected_text = str(idx.data())
                 # get a list of existing entries
                 existing_entries = self.get_existing_entries()
                 # only put a QC check in the context menu if it is not already present
@@ -1536,6 +1629,11 @@ class edit_cfg_L3(QtGui.QWidget):
                     self.context_menu.actionAddExcludeDates.setText("Add ExcludeDates")
                     self.context_menu.addAction(self.context_menu.actionAddExcludeDates)
                     self.context_menu.actionAddExcludeDates.triggered.connect(self.add_excludedates)
+                if "ApplyFcStorage" not in existing_entries and selected_text[0:2] == "Fc":
+                    self.context_menu.actionAddApplyFcStorage = QtGui.QAction(self)
+                    self.context_menu.actionAddApplyFcStorage.setText("Add ApplyFcStorage")
+                    self.context_menu.addAction(self.context_menu.actionAddApplyFcStorage)
+                    self.context_menu.actionAddApplyFcStorage.triggered.connect(self.add_applyfcstorage_to_variable)
                 self.context_menu.addSeparator()
                 if "MergeSeries" not in existing_entries:
                     self.context_menu.actionAddMergeSeries = QtGui.QAction(self)
@@ -1619,7 +1717,8 @@ class edit_cfg_L3(QtGui.QWidget):
         self.view.setHeaderHidden(False)
         self.view.setSelectionBehavior(QtGui.QAbstractItemView.SelectItems)
         self.view.setModel(self.model)
-        #self.tree.setDragDropMode(QtGui.QAbstractItemView.InternalMove)
+        # enable drag and drop
+        self.view.setDragDropMode(QtGui.QAbstractItemView.InternalMove)
         # build the model
         self.get_model_from_data()
         # set the default width for the first column
@@ -1714,12 +1813,14 @@ class edit_cfg_L3(QtGui.QWidget):
         self.model.itemChanged.connect(self.handleItemChanged)
         # correct legacy variable names in the control file
         self.correct_legacy_variable_names()
+        # transfer anything in the [General] section to [Options]
+        self.transfer_general_to_options()
         # there must be some way to do this recursively
         self.sections = {}
         for key1 in self.cfg_mod:
             if not self.cfg_mod[key1]:
                 continue
-            if key1 in ["Files", "Global", "Output", "General", "Options", "Soil", "Massman"]:
+            if key1 in ["Files", "Global", "Output", "Options", "Soil", "Massman"]:
                 # sections with only 1 level
                 self.sections[key1] = QtGui.QStandardItem(key1)
                 for key2 in self.cfg_mod[key1]:
@@ -1829,7 +1930,7 @@ class edit_cfg_L3(QtGui.QWidget):
                 self.cfg_changed = True
         # remove white space and quotes
         if k in ["RangeCheck", "DiurnalCheck", "DependencyCheck",
-                 "MergeSeries", "AverageSeries"]:
+                 "MergeSeries", "AverageSeries", "ApplyFcStorage"]:
             strip_list = [" ", '"', "'"]
         elif k in ["ExcludeDates", "ExcludeHours", "Linear"]:
             # don't remove white space between date and time
@@ -1866,6 +1967,16 @@ class edit_cfg_L3(QtGui.QWidget):
             # remove the row
             parent.removeRow(selected_item.row())
         self.update_tab_text()
+
+    def transfer_general_to_options(self):
+        """ Copy any entries in [General] to [Options] then delete [General]."""
+        if "General" in self.cfg_mod:
+            if "Options" not in self.cfg_mod:
+                self.cfg_mod["Options"] = {}
+            for item in self.cfg_mod["General"]:
+                self.cfg_mod["Options"][item] = self.cfg_mod["General"][item]
+            del self.cfg_mod["General"]
+        return
 
     def update_tab_text(self):
         """ Add an asterisk to the tab title text to indicate tab contents have changed."""

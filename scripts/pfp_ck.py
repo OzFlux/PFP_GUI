@@ -937,12 +937,13 @@ def do_lowercheck(cf,ds,section,series,code=2):
     lc_list = list(cf[section][series]["LowerCheck"].keys())
     for n,item in enumerate(lc_list):
         # this should be a list and we should probably check for compliance
-        lwr_info = cf[section][series]["LowerCheck"][item]
-        attr["lowercheck_"+str(n)] = str(lwr_info)
-        start_date = dateutil.parser.parse(lwr_info[0])
-        su = float(lwr_info[1])
-        end_date = dateutil.parser.parse(lwr_info[2])
-        eu = float(lwr_info[3])
+        lwr_string = cf[section][series]["LowerCheck"][item]
+        attr["lowercheck_"+str(n)] = lwr_string
+        lwr_list = lwr_string.split(",")
+        start_date = dateutil.parser.parse(lwr_list[0])
+        su = float(lwr_list[1])
+        end_date = dateutil.parser.parse(lwr_list[2])
+        eu = float(lwr_list[3])
         # get the start and end indices
         si = pfp_utils.GetDateIndex(ldt, start_date, ts=ts, default=0, match="exact")
         ei = pfp_utils.GetDateIndex(ldt, end_date, ts=ts, default=len(ldt)-1, match="exact")

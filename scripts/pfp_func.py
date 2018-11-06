@@ -10,7 +10,7 @@ import pfp_utils
 
 logger = logging.getLogger("pfp_log")
 
-def AhfromRH(ds,Ah_out,RH_in,Ta_in):
+def AhfromRH(ds, Ah_out, RH_in, Ta_in):
     """
     Purpose:
      Function to calculate absolute humidity given relative humidity and
@@ -46,7 +46,7 @@ def AhfromRH(ds,Ah_out,RH_in,Ta_in):
     pfp_utils.CreateSeries(ds,Ah_out,Ah_data,flag,Ah_attr)
     return 1
 
-def AhfromMR(ds,Ah_out,MR_in,Ta_in,ps_in):
+def AhfromMR(ds, Ah_out, MR_in, Ta_in, ps_in):
     """
     Purpose:
      Function to calculate absolute humidity given the water vapour mixing
@@ -84,12 +84,12 @@ def AhfromMR(ds,Ah_out,MR_in,Ta_in,ps_in):
     pfp_utils.CreateSeries(ds,Ah_out,Ah_data,flag,Ah_attr)
     return 1
 
-def ConvertK2C(ds, T_in, T_out):
+def ConvertK2C(ds, T_out, T_in):
     """
     Purpose:
      Function to convert temperature from K to C.
     Usage:
-     pfp_func.ConvertK2C(ds, T_in, T_out)
+     pfp_func.ConvertK2C(ds, T_out, T_in)
     Author: PRI
     Date: February 2018
     """
@@ -109,12 +109,12 @@ def ConvertK2C(ds, T_in, T_out):
     pfp_utils.CreateVariable(ds, var_out)
     return 1
 
-def ConvertPa2kPa(ds, ps_in, ps_out):
+def ConvertPa2kPa(ds, ps_out, ps_in):
     """
     Purpose:
      Function to convert pressure from Pa to kPa.
     Usage:
-     pfp_func.ConvertPa2kPa(ds, ps_in, ps_out)
+     pfp_func.ConvertPa2kPa(ds, ps_out, ps_in)
     Author: PRI
     Date: February 2018
     """
@@ -124,7 +124,7 @@ def ConvertPa2kPa(ds, ps_in, ps_out):
     pfp_utils.CreateVariable(ds, var_out)
     return 1
 
-def ConverthPa2kPa(ds, ps_in, ps_out):
+def ConverthPa2kPa(ds, ps_out, ps_in):
     """
     Purpose:
      Function to convert pressure from hPa (mb) to kPa.
@@ -139,7 +139,7 @@ def ConverthPa2kPa(ds, ps_in, ps_out):
     pfp_utils.CreateVariable(ds, var_out)
     return 1
 
-def DateTimeFromDoY(ds,Year_in,DoY_in,Hdh_in):
+def DateTimeFromDoY(ds, dt_out, Year_in, DoY_in, Hdh_in):
     year,f,a = pfp_utils.GetSeriesasMA(ds,Year_in)
     doy,f,a = pfp_utils.GetSeriesasMA(ds,DoY_in)
     hdh,f,a = pfp_utils.GetSeriesasMA(ds,Hdh_in)
@@ -153,22 +153,22 @@ def DateTimeFromDoY(ds,Year_in,DoY_in,Hdh_in):
     minute = numpy.array((hdh-hour)*60,dtype=numpy.integer)
     dt = [datetime.datetime(int(y),1,1,h,m)+datetime.timedelta(int(d)-1) for y,d,h,m in zip(year,doy,hour,minute)]
     nRecs = len(dt)
-    ds.series["DateTime"] = {}
-    ds.series["DateTime"]["Data"] = dt
-    ds.series["DateTime"]["Flag"] = numpy.zeros(len(dt),dtype=numpy.int32)
-    ds.series["DateTime"]["Attr"] = {}
-    ds.series["DateTime"]["Attr"]["long_name"] = "Datetime in local timezone"
-    ds.series["DateTime"]["Attr"]["units"] = "None"
+    ds.series[dt_out] = {}
+    ds.series[dt_out]["Data"] = dt
+    ds.series[dt_out]["Flag"] = numpy.zeros(len(dt),dtype=numpy.int32)
+    ds.series[dt_out]["Attr"] = {}
+    ds.series[dt_out]["Attr"]["long_name"] = "Datetime in local timezone"
+    ds.series[dt_out]["Attr"]["units"] = "None"
     # now remove any "data"" from empty lines
     series_list = ds.series.keys()
-    if "DateTime" in series_list: series_list.remove("DateTime")
+    if dt_out in series_list: series_list.remove(dt_out)
     for item in series_list:
         ds.series[item]["Data"] = ds.series[item]["Data"][idx]
         ds.series[item]["Flag"] = ds.series[item]["Flag"][idx]
     ds.globalattributes["nc_nrecs"] = nRecs
     return 1
 
-def DateTimeFromTimeStamp(ds,TimeStamp_in,fmt=""):
+def DateTimeFromTimeStamp(ds, dt_out, TimeStamp_in, fmt=""):
     if TimeStamp_in not in ds.series.keys():
         logger.error(" Required series "+TimeStamp_in+" not found")
         return 0
@@ -187,22 +187,22 @@ def DateTimeFromTimeStamp(ds,TimeStamp_in,fmt=""):
     # we have finished with the timestamp so delete it from the data structure
     del ds.series[TimeStamp_in]
     nRecs = len(dt)
-    ds.series["DateTime"] = {}
-    ds.series["DateTime"]["Data"] = dt
-    ds.series["DateTime"]["Flag"] = numpy.zeros(len(dt),dtype=numpy.int32)
-    ds.series["DateTime"]["Attr"] = {}
-    ds.series["DateTime"]["Attr"]["long_name"] = "Datetime in local timezone"
-    ds.series["DateTime"]["Attr"]["units"] = "None"
+    ds.series[dt_out] = {}
+    ds.series[dt_out]["Data"] = dt
+    ds.series[dt_out]["Flag"] = numpy.zeros(len(dt),dtype=numpy.int32)
+    ds.series[dt_out]["Attr"] = {}
+    ds.series[dt_out]["Attr"]["long_name"] = "Datetime in local timezone"
+    ds.series[dt_out]["Attr"]["units"] = "None"
     # now remove any "data"" from empty lines
     series_list = ds.series.keys()
-    if "DateTime" in series_list: series_list.remove("DateTime")
+    if dt_out in series_list: series_list.remove(dt_out)
     for item in series_list:
         ds.series[item]["Data"] = ds.series[item]["Data"][idx]
         ds.series[item]["Flag"] = ds.series[item]["Flag"][idx]
     ds.globalattributes["nc_nrecs"] = nRecs
     return 1
 
-def DateTimeFromExcelDateAndTime(ds, xlDate, xlTime):
+def DateTimeFromExcelDateAndTime(ds, dt_out, xlDate, xlTime):
     """ Get Datetime from Excel date and time fields."""
     xldate = ds.series[xlDate]
     xltime = ds.series[xlTime]
@@ -215,7 +215,7 @@ def DateTimeFromExcelDateAndTime(ds, xlDate, xlTime):
     pfp_utils.get_datetimefromxldate(ds)
     return 1
 
-def DateTimeFromDateAndTimeString(ds, Date, Time):
+def DateTimeFromDateAndTimeString(ds, dt_out, Date, Time):
     if Date not in ds.series.keys():
         logger.error(" Requested date series "+Date+" not found")
         return 0
@@ -230,15 +230,15 @@ def DateTimeFromDateAndTimeString(ds, Date, Time):
     # we have finished with the date and time strings so delete them from the data structure
     del ds.series[Date], ds.series[Time]
     nRecs = len(dt)
-    ds.series["DateTime"] = {}
-    ds.series["DateTime"]["Data"] = dt
-    ds.series["DateTime"]["Flag"] = numpy.zeros(len(dt),dtype=numpy.int32)
-    ds.series["DateTime"]["Attr"] = {}
-    ds.series["DateTime"]["Attr"]["long_name"] = "Datetime in local timezone"
-    ds.series["DateTime"]["Attr"]["units"] = "None"
+    ds.series[dt_out] = {}
+    ds.series[dt_out]["Data"] = dt
+    ds.series[dt_out]["Flag"] = numpy.zeros(len(dt),dtype=numpy.int32)
+    ds.series[dt_out]["Attr"] = {}
+    ds.series[dt_out]["Attr"]["long_name"] = "Datetime in local timezone"
+    ds.series[dt_out]["Attr"]["units"] = "None"
     # now remove any "data"" from empty lines
     series_list = ds.series.keys()
-    if "DateTime" in series_list: series_list.remove("DateTime")
+    if dt_out in series_list: series_list.remove(dt_out)
     for item in series_list:
         ds.series[item]["Data"] = ds.series[item]["Data"][idx]
         ds.series[item]["Flag"] = ds.series[item]["Flag"][idx]
