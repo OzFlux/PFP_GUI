@@ -1,8 +1,9 @@
+level = L6
 [Files]
-    file_path = ../Sites/<site_name>/Data/Processed/all/
-    in_filename = <site_name>_<start_year>_to_<end_year>_L5.nc
-    out_filename = <site_name>_<start_year>_to_<end_year>_L6.nc
-    plot_path = ../Sites/<site_name>/Plots/
+    file_path = Right click to browse
+    in_filename = Right click to browse
+    out_filename = Right click to browse
+    plot_path = Right click to browse
 
 [Global]
     acknowledgement = """This work used eddy covariance data collected by the TERN-OzFlux facility. OzFlux
@@ -16,16 +17,16 @@ Fund."""
 [ER]
    [[ER_SOLO]]
         [[[ERUsingSOLO]]]
-            target ="ER"
-            drivers = "['Ts','Ta','Sws']"
-            output = "ER_SOLO_all"
+            target = ER
+            drivers = Ts,Ta,Sws
+            output = ER_SOLO_all
         [[[MergeSeries]]]
-            Source = "['ER','ER_SOLO_all']"
+            Source = ER,ER_SOLO_all
     [[ER_LT]]
         [[[ERUsingLloydTaylor]]]
-            target ="ER"
-            drivers = "['Ta']"
-            output = "ER_LT_all"
+            target = ER
+            drivers = Ta
+            output = ER_LT_all
             minimum_temperature_spread = 5
             step_size_days = 5
             window_size_days = 15
@@ -33,36 +34,36 @@ Fund."""
             minimum_percent_noct_window = 20
             output_plots = False
         [[[MergeSeries]]]
-            Source = "['ER','ER_LT_all']"
+            Source = ER,ER_LT_all
     [[ER_LL]]
         [[[ERUsingLasslop]]]
-            target ="ER"
-            drivers = "['Fsd','VPD','Ta']"
-            output = "ER_LL_all"
+            target = ER
+            drivers = Fsd,VPD,Ta
+            output = ER_LL_all
             step_size_days = 5
             window_size_days = 15
             output_plots = False
         [[[MergeSeries]]]
-            Source = "['ER','ER_LL_all']"
+            Source = ER,ER_LL_all
 
 [NEE]
     [[NEE_SOLO]]
-        Fc  = "Fc"
-        ER = "ER_SOLO"
+        Fc = Fc
+        ER = ER_SOLO
     [[NEE_LT]]
-        Fc  = "Fc"
-        ER = "ER_LT"
+        Fc = Fc
+        ER = ER_LT
     [[NEE_LL]]
-        Fc  = "Fc"
-        ER = "ER_LL"
+        Fc = Fc
+        ER = ER_LL
 
 [GPP]
     [[GPP_SOLO]]
-        NEE = "NEE_SOLO"
-        ER = "ER_SOLO"
+        NEE = NEE_SOLO
+        ER = ER_SOLO
     [[GPP_LT]]
-        NEE  = "NEE_LT"
-        ER = "ER_LT"
+        NEE = NEE_LT
+        ER = ER_LT
     [[GPP_LL]]
-        NEE  = "NEE_LL"
-        ER = "ER_LL"
+        NEE = NEE_LL
+        ER = ER_LL
