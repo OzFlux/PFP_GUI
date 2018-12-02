@@ -651,7 +651,7 @@ def gfSOLO_run_gui(solo_gui):
     elif solo_info["peropt"] == 3:
         logger.info("Starting auto (days) run ...")
         # get the start datetime entered in the SOLO GUI
-        nDays = int(alt_gui.lineEdit_NumberDays.text())
+        nDays = int(solo_gui.lineEdit_NumberDays.text())
         if len(str(solo_gui.lineEdit_StartDate.text())) != 0:
             solo_info["startdate"] = str(solo_gui.lineEdit_StartDate.text())
         if len(solo_gui.lineEdit_EndDate.text()) != 0:
