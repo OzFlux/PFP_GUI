@@ -83,8 +83,6 @@ void readDataPC::  read_init
   in1 >> Nwrite;
 	in1.close();
 
-	range   = M2D_alloc(2,  nvar);
-
 	std::cout << "Read from .inf file:" << std::endl;
   std::cout << "node: "	<< node << std::endl;
   std::cout << "ncyc: "	<< ncyc << std::endl;
@@ -126,6 +124,7 @@ void readDataPC::  getNumRowsNumCols
       	std::cout << "Wrong number of fields on line " << result << std::endl;
       	exit(1);
       }
+  	range   = M2D_alloc(2,  nvar);
   }
   
 // *******************************
