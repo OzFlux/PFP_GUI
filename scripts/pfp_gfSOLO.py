@@ -77,6 +77,7 @@ def  gfSOLO_gui(main_gui, dsa, dsb, solo_info):
     main_gui.l5_ui.dsa = dsa
     main_gui.l5_ui.dsb = dsb
     main_gui.l5_ui.solo_info = solo_info
+    main_gui.l5_ui.edit_cfg = main_gui.tabs.tab_dict[main_gui.tabs.tab_index_running]
     # put up the start and end dates
     main_gui.l5_ui.label_DataStartDate_value.setText(solo_info["startdate"])
     main_gui.l5_ui.label_DataEndDate_value.setText(solo_info["enddate"])
@@ -219,10 +220,11 @@ def gfSOLO_main(dsa,dsb,solo_info,output_list=[]):
         # get the target series label
         series = dsb.solo[output]["label_tower"]
         # clean up the target series if required
-        variable = pfp_utils.GetVariable(dsb, series)
-        pfp_ck.UpdateVariableAttributes_QC(cf, variable)
-        pfp_ck.ApplyQCChecks(variable)
-        pfp_utils.CreateVariable(dsb, variable)
+        # PRI 05/12/2018 - disabled QC checks on variable at this stage
+        #variable = pfp_utils.GetVariable(dsb, series)
+        #pfp_ck.UpdateVariableAttributes_QC(cf, variable)
+        #pfp_ck.ApplyQCChecks(variable)
+        #pfp_utils.CreateVariable(dsb, variable)
         # check to see if we are gap filling L5 or L4
         if dsb.globalattributes["nc_level"].lower()=="l4":
             for driver in dsb.solo[output]["drivers"]:
@@ -556,7 +558,7 @@ def gfSOLO_plotsummary(ds,solo_info):
         else:
             plt.ion()
 
-def gfSOLO_plotsummary_getdata(dt_start,dt_end,result):
+def gfSOLO_plotsummary_getdata(dt_start, dt_end, result):
     dt = []
     data = []
     for s,e,r in zip(dt_start,dt_end,result):
@@ -565,6 +567,23 @@ def gfSOLO_plotsummary_getdata(dt_start,dt_end,result):
         dt.append(e)
         data.append(r)
     return dt,data
+
+def gfSOLO_qcchecks(cfg, dsa, dsb, mode="quiet"):
+    """ Apply QC checks to series being gap filled."""
+    outputs = list(dsb.solo.keys())
+    for output in outputs:
+        # get the target label and the control file section that contains it
+        label = dsb.solo[output]["label_tower"]
+        section = pfp_utils.get_cfsection(cfg, series=label)
+        # copy the variable from dsa to dsb
+        variable = pfp_utils.GetVariable(dsa, label)
+        pfp_utils.CreateVariable(dsb, variable)
+        # do the QC checks
+        pfp_ck.do_rangecheck(cfg, dsb, section, label, code=2)
+        pfp_ck.do_diurnalcheck(cfg, dsb, section, label, code=5)
+        pfp_ck.do_excludedates(cfg, dsb, section, label, code=6)
+        pfp_ck.do_dependencycheck(cfg, dsb, section, label, code=23, mode="quiet")
+    return
 
 def gfSOLO_quit(solo_gui):
     """ Quit the SOLO GUI."""
@@ -617,7 +636,22 @@ def gfSOLO_run_gui(solo_gui):
             solo_info["startdate"] = str(solo_gui.lineEdit_StartDate.text())
         if len(str(solo_gui.lineEdit_EndDate.text())) != 0:
             solo_info["enddate"] = str(solo_gui.lineEdit_EndDate.text())
-        gfSOLO_main(dsa, dsb, solo_info)
+        # get the control file contents
+        cfg = solo_gui.edit_cfg.get_data_from_model()
+        # run the QC checks again
+        gfSOLO_qcchecks(cfg, dsa, dsb, mode="quiet")
+        # get a list of series altered in GUI
+        # if none have been altered, this list will be empty, output_list passed
+        # to gfSOLO_main() will be empty and then all series will be done
+        altered = list(set(solo_gui.edit_cfg.altered))
+        output_list = []
+        for label in altered:
+            output_list += cfg["Fluxes"][label]["GapFillUsingSOLO"].keys()
+        # run the main SOLO gap fill routine
+        gfSOLO_main(dsa, dsb, solo_info, output_list=output_list)
+        # reset the altered list to empty
+        solo_gui.edit_cfg.altered = []
+        # plot the coverage lines
         gfSOLO_plotcoveragelines(dsb, solo_info)
         logger.info("Finished manual run")
     elif solo_info["peropt"] == 2:

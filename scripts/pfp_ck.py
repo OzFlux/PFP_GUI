@@ -530,28 +530,43 @@ def do_EPQCFlagCheck(cf,ds,section,series,code=9):
     return
 
 def do_excludedates(cf,ds,section,series,code=6):
-    if 'ExcludeDates' not in cf[section][series].keys(): return
+    if 'ExcludeDates' not in cf[section][series].keys():
+        return
     ldt = ds.series['DateTime']['Data']
     ExcludeList = cf[section][series]['ExcludeDates'].keys()
     NumExclude = len(ExcludeList)
     for i in range(NumExclude):
         exclude_dates_string = cf[section][series]['ExcludeDates'][str(i)]
         exclude_dates_list = exclude_dates_string.split(",")
-        try:
-            dt = datetime.datetime.strptime(exclude_dates_list[0],'%Y-%m-%d %H:%M')
-            si = pfp_utils.find_nearest_value(ldt, dt)
-        except ValueError:
-            si = 0
-        try:
-            dt = datetime.datetime.strptime(exclude_dates_list[1],'%Y-%m-%d %H:%M')
-            ei = pfp_utils.find_nearest_value(ldt, dt)
-        except ValueError:
-            ei = -1
+        if len(exclude_dates_list) == 1:
+            try:
+                dt = datetime.datetime.strptime(exclude_dates_list[0].strip(),'%Y-%m-%d %H:%M')
+                si = pfp_utils.find_nearest_value(ldt, dt)
+                ei = si + 1
+            except ValueError:
+                si = 0
+                ei = -1
+        elif len(exclude_dates_list) == 2:
+            try:
+                dt = datetime.datetime.strptime(exclude_dates_list[0].strip(),'%Y-%m-%d %H:%M')
+                si = pfp_utils.find_nearest_value(ldt, dt)
+            except ValueError:
+                si = 0
+            try:
+                dt = datetime.datetime.strptime(exclude_dates_list[1].strip(),'%Y-%m-%d %H:%M')
+                ei = pfp_utils.find_nearest_value(ldt, dt)
+            except ValueError:
+                ei = -1
+            if si == ei:
+                ei = si + 1
+        else:
+            msg = "ExcludeDates: bad date string ("+exclude_dates_string+"), skipping ..."
+            logger.warning(msg)
+            return
         ds.series[series]['Data'][si:ei] = numpy.float64(c.missing_value)
         ds.series[series]['Flag'][si:ei] = numpy.int32(code)
         ds.series[series]['Attr']['ExcludeDates_'+str(i)] = cf[section][series]['ExcludeDates'][str(i)]
-    if 'ExcludeDates' not in ds.globalattributes['Functions']:
-        ds.globalattributes['Functions'] = ds.globalattributes['Functions']+',ExcludeDates'
+        return
 
 def do_excludehours(cf,ds,section,series,code=7):
     if 'ExcludeHours' not in cf[section][series].keys(): return

@@ -3256,6 +3256,7 @@ class edit_cfg_L5(QtGui.QWidget):
         self.cfg_mod = copy.deepcopy(main_gui.cfg)
 
         self.cfg_changed = False
+        self.altered = []
         self.tabs = main_gui.tabs
 
         self.edit_l5_gui()
@@ -3334,7 +3335,7 @@ class edit_cfg_L5(QtGui.QWidget):
                                     child1 = QtGui.QStandardItem(val)
                                     parent4.appendRow([child0, child1])
                                 parent3.appendRow(parent4)
-                        elif key3 in ["MergeSeries", "RangeCheck", "ExcludeDates"]:
+                        elif key3 in ["MergeSeries", "RangeCheck", "ExcludeDates", "DiurnalCheck", "DependencyCheck"]:
                             for key4 in self.cfg_mod[key1][key2][key3]:
                                 val = self.cfg_mod[key1][key2][key3][key4]
                                 val = self.parse_cfg_variables_value(key3, val)
@@ -3406,6 +3407,14 @@ class edit_cfg_L5(QtGui.QWidget):
         """ Handler for when view items are edited."""
         # update the control file contents
         self.cfg_mod = self.get_data_from_model()
+        #
+        idx = self.view.selectedIndexes()[0]
+        level = self.get_level_selected_item()
+        if level == 3:
+            parent_text = str(idx.parent().parent().data())
+        elif level == 4:
+            parent_text = str(idx.parent().parent().parent().data())
+        self.altered.append(parent_text)
         # add an asterisk to the tab text to indicate the tab contents have changed
         self.update_tab_text()
 
