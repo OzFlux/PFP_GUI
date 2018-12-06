@@ -219,12 +219,6 @@ def gfSOLO_main(dsa,dsb,solo_info,output_list=[]):
     for output in output_list:
         # get the target series label
         series = dsb.solo[output]["label_tower"]
-        # clean up the target series if required
-        # PRI 05/12/2018 - disabled QC checks on variable at this stage
-        #variable = pfp_utils.GetVariable(dsb, series)
-        #pfp_ck.UpdateVariableAttributes_QC(cf, variable)
-        #pfp_ck.ApplyQCChecks(variable)
-        #pfp_utils.CreateVariable(dsb, variable)
         # check to see if we are gap filling L5 or L4
         if dsb.globalattributes["nc_level"].lower()=="l4":
             for driver in dsb.solo[output]["drivers"]:
