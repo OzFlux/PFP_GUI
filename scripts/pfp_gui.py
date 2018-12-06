@@ -3407,14 +3407,8 @@ class edit_cfg_L5(QtGui.QWidget):
         """ Handler for when view items are edited."""
         # update the control file contents
         self.cfg_mod = self.get_data_from_model()
-        #
-        idx = self.view.selectedIndexes()[0]
-        level = self.get_level_selected_item()
-        if level == 3:
-            parent_text = str(idx.parent().parent().data())
-        elif level == 4:
-            parent_text = str(idx.parent().parent().parent().data())
-        self.altered.append(parent_text)
+        # update the list of altered series
+        self.update_altered_list()
         # add an asterisk to the tab text to indicate the tab contents have changed
         self.update_tab_text()
 
@@ -3723,12 +3717,16 @@ class edit_cfg_L5(QtGui.QWidget):
         dict_to_add = {"DependencyCheck":{"Source":""}}
         # add the subsubsection (DependencyCheck)
         self.add_subsubsection(dict_to_add)
+        # update the list of altered series
+        self.update_altered_list()
 
     def add_diurnalcheck(self):
         """ Add a diurnal check to a variable."""
         dict_to_add = {"DiurnalCheck":{"NumSd":"5"}}
         # add the subsubsection (DiurnalCheck)
         self.add_subsubsection(dict_to_add)
+        # update the list of altered series
+        self.update_altered_list()
 
     def add_excludedaterange(self):
         """ Add another date range to the ExcludeDates QC check."""
@@ -3748,6 +3746,8 @@ class edit_cfg_L5(QtGui.QWidget):
         dict_to_add = {"ExcludeDates":{"0":"YYYY-mm-dd HH:MM, YYYY-mm-dd HH:MM"}}
         # add the subsubsection (ExcludeDates)
         self.add_subsubsection(dict_to_add)
+        # update the list of altered series
+        self.update_altered_list()
 
     def add_fileentry(self):
         """ Add a new entry to the [Files] section."""
@@ -3878,6 +3878,8 @@ class edit_cfg_L5(QtGui.QWidget):
         dict_to_add = {"RangeCheck":{"Lower":0, "Upper": 1}}
         # add the subsubsection (RangeCheck)
         self.add_subsubsection(dict_to_add)
+        # update the list of altered series
+        self.update_altered_list()
 
     def add_subsection(self, dict_to_add):
         """ Add a subsection to the model."""
@@ -4151,6 +4153,9 @@ class edit_cfg_L5(QtGui.QWidget):
             parent = selected_item.parent()
             # remove the row
             parent.removeRow(selected_item.row())
+        # update the list of altered series
+        self.update_altered_list()
+        # update the tab text
         self.update_tab_text()
 
     def remove_section(self):
@@ -4164,6 +4169,28 @@ class edit_cfg_L5(QtGui.QWidget):
         # remove the row
         root.removeRow(selected_item.row())
         self.update_tab_text()
+
+    def update_altered_list(self):
+        """ Update the list of entries in the control file that have been altered."""
+        idx = self.view.selectedIndexes()[0]
+        level = self.get_level_selected_item()
+        if level == 1 and str(idx.parent().data()) == "Fluxes":
+            parent_text = str(idx.data())
+            if parent_text not in self.altered:
+                self.altered.append(parent_text)
+        elif level == 2 and str(idx.parent().parent().data()) == "Fluxes":
+            parent_text = str(idx.parent().data())
+            if parent_text not in self.altered:
+                self.altered.append(parent_text)
+        elif level == 3 and str(idx.parent().parent().parent().data()) == "Fluxes":
+            parent_text = str(idx.parent().parent().data())
+            if parent_text not in self.altered:
+                self.altered.append(parent_text)
+        elif level == 4 and str(idx.parent().parent().parent().parent().data()) == "Fluxes":
+            parent_text = str(idx.parent().parent().parent().data())
+            if parent_text not in self.altered:
+                self.altered.append(parent_text)
+        return
 
     def update_tab_text(self):
         """ Add an asterisk to the tab title text to indicate tab contents have changed."""

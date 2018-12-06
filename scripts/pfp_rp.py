@@ -588,12 +588,11 @@ def GetERFromFc(cf, ds, info):
     """
     ldt = ds.series["DateTime"]["Data"]
     ts = int(ds.globalattributes["time_step"])
-    # get the data
-    Fsd,Fsd_flag,Fsd_attr = pfp_utils.GetSeriesasMA(ds,"Fsd")
-    if "solar_altitude" not in ds.series.keys(): pfp_ts.get_synthetic_fsd(ds)
-    Fsd_syn,flag,attr = pfp_utils.GetSeriesasMA(ds,"Fsd_syn")
-    sa,flag,attr = pfp_utils.GetSeriesasMA(ds,"solar_altitude")
-
+    ## get the data
+    #Fsd,Fsd_flag,Fsd_attr = pfp_utils.GetSeriesasMA(ds,"Fsd")
+    #if "solar_altitude" not in ds.series.keys(): pfp_ts.get_synthetic_fsd(ds)
+    #Fsd_syn,flag,attr = pfp_utils.GetSeriesasMA(ds,"Fsd_syn")
+    #sa,flag,attr = pfp_utils.GetSeriesasMA(ds,"solar_altitude")
     er_type_list = info["er"].keys()
     for er_type in er_type_list:
         label_list = info["er"][er_type].keys()
@@ -612,7 +611,8 @@ def GetERFromFc(cf, ds, info):
             idx_notok = numpy.where((Fc["Flag"] != 0))[0]
             ER["Flag"][idx_notok] = numpy.int32(61)
             # get the indicator series
-            daynight_indicator = get_daynight_indicator(cf, Fsd, Fsd_syn, sa)
+            #daynight_indicator = get_daynight_indicator(cf, Fsd, Fsd_syn, sa)
+            daynight_indicator = get_daynight_indicator(cf, ds)
             idx = numpy.where(daynight_indicator["values"] == 0)[0]
             ER["Flag"][idx] = numpy.int32(63)
             # apply the filter to get ER from Fc
@@ -641,94 +641,236 @@ def get_ustar_thresholds(cf,ldt):
     cleanup_ustar_dict(ldt,ustar_dict)
     return ustar_dict
 
-def get_daynight_indicator(cf,Fsd,Fsd_syn,sa):
+#def get_daynight_indicator(cf,Fsd,Fsd_syn,sa):
+    ## get the day/night indicator
+    #nRecs = len(Fsd)
+    #daynight_indicator = {"values":numpy.zeros(len(Fsd),dtype=numpy.int32),"attr":{}}
+    #inds = daynight_indicator["values"]
+    #attr = daynight_indicator["attr"]
+    ## get the filter type
+    #filter_type = pfp_utils.get_keyvaluefromcf(cf,["Options"],"DayNightFilter",default="Fsd")
+    #attr["daynight_filter"] = filter_type
+    #use_fsdsyn = pfp_utils.get_keyvaluefromcf(cf,["Options"],"UseFsdsyn_threshold",default="Yes")
+    #attr["use_fsdsyn"] = use_fsdsyn
+    ## get the indicator series
+    #if filter_type.lower()=="fsd":
+        ## get the Fsd threshold
+        #Fsd_threshold = int(pfp_utils.get_keyvaluefromcf(cf,["Options"],"Fsd_threshold",default=10))
+        #attr["Fsd_threshold"] = str(Fsd_threshold)
+        ## we are using Fsd only to define day/night
+        #if use_fsdsyn.lower()=="yes":
+            #idx = numpy.ma.where((Fsd<=Fsd_threshold)&(Fsd_syn<=Fsd_threshold))[0]
+        #else:
+            #idx = numpy.ma.where(Fsd<=Fsd_threshold)[0]
+        #inds[idx] = numpy.int32(1)
+    #elif filter_type.lower()=="sa":
+        ## get the solar altitude threshold
+        #sa_threshold = int(pfp_utils.get_keyvaluefromcf(cf,["Options"],"sa_threshold",default="-5"))
+        #attr["sa_threshold"] = str(sa_threshold)
+        ## we are using solar altitude to define day/night
+        #idx = numpy.ma.where(sa<sa_threshold)[0]
+        #inds[idx] = numpy.int32(1)
+    #else:
+        #msg = "Unrecognised DayNightFilter option in L6 control file"
+        #raise Exception(msg)
+    #return daynight_indicator
+
+def get_daynight_indicator(cf, ds):
+    Fsd, f, a = pfp_utils.GetSeriesasMA(ds, "Fsd")
     # get the day/night indicator
     nRecs = len(Fsd)
-    daynight_indicator = {"values":numpy.zeros(len(Fsd),dtype=numpy.int32),"attr":{}}
+    daynight_indicator = {"values":numpy.zeros(len(Fsd), dtype=numpy.int32), "attr":{}}
     inds = daynight_indicator["values"]
     attr = daynight_indicator["attr"]
     # get the filter type
-    filter_type = pfp_utils.get_keyvaluefromcf(cf,["Options"],"DayNightFilter",default="Fsd")
+    filter_type = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "DayNightFilter", default="Fsd")
     attr["daynight_filter"] = filter_type
-    use_fsdsyn = pfp_utils.get_keyvaluefromcf(cf,["Options"],"UseFsdsyn_threshold",default="Yes")
+    use_fsdsyn = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "UseFsdsyn_threshold", default="No")
     attr["use_fsdsyn"] = use_fsdsyn
     # get the indicator series
-    if filter_type.lower()=="fsd":
+    if filter_type.lower() == "fsd":
         # get the Fsd threshold
-        Fsd_threshold = int(pfp_utils.get_keyvaluefromcf(cf,["Options"],"Fsd_threshold",default=10))
+        Fsd_threshold = int(pfp_utils.get_keyvaluefromcf(cf, ["Options"], "Fsd_threshold", default=10))
         attr["Fsd_threshold"] = str(Fsd_threshold)
         # we are using Fsd only to define day/night
-        if use_fsdsyn.lower()=="yes":
-            idx = numpy.ma.where((Fsd<=Fsd_threshold)&(Fsd_syn<=Fsd_threshold))[0]
+        if use_fsdsyn.lower() == "yes":
+            if "solar_altitude" not in ds.series.keys():
+                pfp_ts.get_synthetic_fsd(ds)
+            Fsd_syn, f, a = pfp_utils.GetSeriesasMA(ds, "Fsd_syn")
+            idx = numpy.ma.where((Fsd <= Fsd_threshold) & (Fsd_syn <= Fsd_threshold))[0]
         else:
-            idx = numpy.ma.where(Fsd<=Fsd_threshold)[0]
+            idx = numpy.ma.where(Fsd <= Fsd_threshold)[0]
         inds[idx] = numpy.int32(1)
-    elif filter_type.lower()=="sa":
+    elif filter_type.lower() == "sa":
         # get the solar altitude threshold
-        sa_threshold = int(pfp_utils.get_keyvaluefromcf(cf,["Options"],"sa_threshold",default="-5"))
+        sa_threshold = int(pfp_utils.get_keyvaluefromcf(cf, ["Options"], "sa_threshold", default="-5"))
         attr["sa_threshold"] = str(sa_threshold)
         # we are using solar altitude to define day/night
-        idx = numpy.ma.where(sa<sa_threshold)[0]
+        if "solar_altitude" not in ds.series.keys():
+            pfp_ts.get_synthetic_fsd(ds)
+        sa, f, a = pfp_utils.GetSeriesasMA(ds, "solar_altitude")
+        idx = numpy.ma.where(sa < sa_threshold)[0]
         inds[idx] = numpy.int32(1)
     else:
         msg = "Unrecognised DayNightFilter option in L6 control file"
         raise Exception(msg)
     return daynight_indicator
 
-def get_day_indicator(cf,Fsd,Fsd_syn,sa):
+#def get_day_indicator(cf,Fsd,Fsd_syn,sa):
+    #"""
+    #Purpose:
+     #Returns a dictionary containing an indicator series and some attributes.
+     #The indicator series is 1 during day time and 0 at night time.  The threshold
+     #between night and day is the Fsd threshold specified in the control file.
+    #Usage:
+     #indicators["day"] = get_day_indicator(cf,Fsd,Fsd_syn,sa)
+     #where;
+      #cf is a control file object
+      #Fsd is a series of incoming shortwave radiation values (ndarray)
+      #Fsd_syn is a series of calculated Fsd (ndarray)
+      #sa is a series of solar altitude values (ndarray)
+    #and;
+      #indicators["day"] is a dictionary containing
+      #indicators["day"]["values"] is the indicator series
+      #indicators["day"]["attr"] are the attributes
+    #Author: PRI
+    #Date: March 2016
+    #"""
+    ## indicator = 1 ==> day, indicator = 0 ==> night
+    #day_indicator = {"values":numpy.ones(len(Fsd),dtype=numpy.int32),
+                     #"attr":{}}
+    #inds = day_indicator["values"]
+    #attr = day_indicator["attr"]
+    ## get the filter type
+    #filter_type = pfp_utils.get_keyvaluefromcf(cf,["Options"],"DayNightFilter",default="Fsd")
+    #attr["daynight_filter_type"] = filter_type
+    #use_fsdsyn = pfp_utils.get_keyvaluefromcf(cf,["Options"],"UseFsdsyn_threshold",default="Yes")
+    #attr["use_fsdsyn"] = use_fsdsyn
+    ## get the indicator series
+    #if filter_type.lower()=="fsd":
+        ## get the Fsd threshold
+        #Fsd_threshold = int(pfp_utils.get_keyvaluefromcf(cf,["Options"],"Fsd_threshold",default=10))
+        #attr["Fsd_threshold"] = str(Fsd_threshold)
+        ## we are using Fsd only to define day/night
+        #if use_fsdsyn.lower()=="yes":
+            #idx = numpy.ma.where((Fsd<=Fsd_threshold)&(Fsd_syn<=Fsd_threshold))[0]
+        #else:
+            #idx = numpy.ma.where(Fsd<=Fsd_threshold)[0]
+        #inds[idx] = numpy.int32(0)
+    #elif filter_type.lower()=="sa":
+        ## get the solar altitude threshold
+        #sa_threshold = int(pfp_utils.get_keyvaluefromcf(cf,["Options"],"sa_threshold",default="-5"))
+        #attr["sa_threshold"] = str(sa_threshold)
+        ## we are using solar altitude to define day/night
+        #index = numpy.ma.where(sa<sa_threshold)[0]
+        #inds[index] = numpy.int32(0)
+    #else:
+        #msg = "Unrecognised DayNightFilter option in L6 control file"
+        #raise Exception(msg)
+    #return day_indicator
+
+def get_day_indicator(cf, ds):
     """
     Purpose:
      Returns a dictionary containing an indicator series and some attributes.
      The indicator series is 1 during day time and 0 at night time.  The threshold
      between night and day is the Fsd threshold specified in the control file.
     Usage:
-     indicators["day"] = get_day_indicator(cf,Fsd,Fsd_syn,sa)
+     indicators["day"] = get_day_indicator(cf, ds)
      where;
       cf is a control file object
-      Fsd is a series of incoming shortwave radiation values (ndarray)
-      Fsd_syn is a series of calculated Fsd (ndarray)
-      sa is a series of solar altitude values (ndarray)
+      ds is a data structure
     and;
       indicators["day"] is a dictionary containing
       indicators["day"]["values"] is the indicator series
       indicators["day"]["attr"] are the attributes
     Author: PRI
     Date: March 2016
+    Mods:
+     PRI 6/12/2018 - removed calculation of Fsd_syn by default
     """
+    Fsd, f, a = pfp_utils.GetSeriesasMA(ds, "Fsd")
     # indicator = 1 ==> day, indicator = 0 ==> night
-    day_indicator = {"values":numpy.ones(len(Fsd),dtype=numpy.int32),
-                     "attr":{}}
+    day_indicator = {"values":numpy.ones(len(Fsd), dtype=numpy.int32), "attr":{}}
     inds = day_indicator["values"]
     attr = day_indicator["attr"]
     # get the filter type
-    filter_type = pfp_utils.get_keyvaluefromcf(cf,["Options"],"DayNightFilter",default="Fsd")
+    filter_type = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "DayNightFilter", default="Fsd")
     attr["daynight_filter_type"] = filter_type
-    use_fsdsyn = pfp_utils.get_keyvaluefromcf(cf,["Options"],"UseFsdsyn_threshold",default="Yes")
+    use_fsdsyn = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "UseFsdsyn_threshold", default="No")
     attr["use_fsdsyn"] = use_fsdsyn
     # get the indicator series
-    if filter_type.lower()=="fsd":
+    if filter_type.lower() == "fsd":
         # get the Fsd threshold
-        Fsd_threshold = int(pfp_utils.get_keyvaluefromcf(cf,["Options"],"Fsd_threshold",default=10))
+        Fsd_threshold = int(pfp_utils.get_keyvaluefromcf(cf, ["Options"], "Fsd_threshold", default=10))
         attr["Fsd_threshold"] = str(Fsd_threshold)
         # we are using Fsd only to define day/night
-        if use_fsdsyn.lower()=="yes":
-            idx = numpy.ma.where((Fsd<=Fsd_threshold)&(Fsd_syn<=Fsd_threshold))[0]
+        if use_fsdsyn.lower() == "yes":
+            if "solar_altitude" not in ds.series.keys():
+                pfp_ts.get_synthetic_fsd(ds)
+            Fsd_syn, f, a = pfp_utils.GetSeriesasMA(ds, "Fsd_syn")
+            idx = numpy.ma.where((Fsd <= Fsd_threshold) & (Fsd_syn <= Fsd_threshold))[0]
         else:
-            idx = numpy.ma.where(Fsd<=Fsd_threshold)[0]
+            idx = numpy.ma.where(Fsd <= Fsd_threshold)[0]
         inds[idx] = numpy.int32(0)
-    elif filter_type.lower()=="sa":
+    elif filter_type.lower() == "sa":
         # get the solar altitude threshold
-        sa_threshold = int(pfp_utils.get_keyvaluefromcf(cf,["Options"],"sa_threshold",default="-5"))
+        sa_threshold = int(pfp_utils.get_keyvaluefromcf(cf, ["Options"], "sa_threshold", default="-5"))
         attr["sa_threshold"] = str(sa_threshold)
         # we are using solar altitude to define day/night
-        index = numpy.ma.where(sa<sa_threshold)[0]
+        if "solar_altitude" not in ds.series.keys():
+            pfp_ts.get_synthetic_fsd(ds)
+        sa, f, a = pfp_utils.GetSeriesasMA(ds, "solar_altitude")
+        index = numpy.ma.where(sa < sa_threshold)[0]
         inds[index] = numpy.int32(0)
     else:
-        msg = "Unrecognised DayNightFilter option in L6 control file"
+        msg = "Unrecognised DayNightFilter option in control file"
         raise Exception(msg)
     return day_indicator
 
-def get_evening_indicator(cf,Fsd,Fsd_syn,sa,ts):
+#def get_evening_indicator(cf,Fsd,Fsd_syn,sa,ts):
+    #"""
+    #Purpose:
+     #Returns a dictionary containing an indicator series and some attributes.
+     #The indicator series is 1 during the evening and 0 at all other times.
+     #Evening is defined as the period between sunset and the number of hours
+     #specified in the control file [Options] section as the EveningFilterLength
+     #key.
+    #Usage:
+     #indicators["evening"] = get_evening_indicator(cf,Fsd,Fsd_syn,sa,ts)
+     #where;
+      #cf is a control file object
+      #Fsd is a series of incoming shortwave radiation values (ndarray)
+      #Fsd_syn is a series of calculated Fsd (ndarray)
+      #sa is a series of solar altitude values (ndarray)
+      #ts is the time step (minutes), integer
+    #and;
+      #indicators["evening"] is a dictionary containing
+      #indicators["evening"]["values"] is the indicator series
+      #indicators["evening"]["attr"] are the attributes
+    #Author: PRI
+    #Date: March 2016
+    #"""
+    #evening_indicator = {"values":numpy.zeros(len(Fsd),dtype=numpy.int32),
+                         #"attr":{}}
+    #attr = evening_indicator["attr"]
+    #opt = pfp_utils.get_keyvaluefromcf(cf,["Options"],"EveningFilterLength",default="0")
+    #num_hours = int(opt)
+    #if num_hours<=0 or num_hours>=12:
+        #evening_indicator = numpy.zeros(len(Fsd))
+        #msg = " Evening filter period outside 0 to 12 hours, skipping ..."
+        #logger.warning(msg)
+        #return evening_indicator
+    #night_indicator = get_night_indicator(cf, Fsd, Fsd_syn, sa)
+    #day_indicator = get_day_indicator(cf, Fsd, Fsd_syn, sa)
+    #ntsperhour = int(0.5+float(60)/float(ts))
+    #shift = num_hours*ntsperhour
+    #day_indicator_shifted = numpy.roll(day_indicator["values"], shift)
+    #evening_indicator["values"] = night_indicator["values"]*day_indicator_shifted
+    #attr["evening_filter_length"] = num_hours
+    #return evening_indicator
+
+def get_evening_indicator(cf, ds):
     """
     Purpose:
      Returns a dictionary containing an indicator series and some attributes.
@@ -751,18 +893,23 @@ def get_evening_indicator(cf,Fsd,Fsd_syn,sa,ts):
     Author: PRI
     Date: March 2016
     """
-    evening_indicator = {"values":numpy.zeros(len(Fsd),dtype=numpy.int32),
-                         "attr":{}}
+    ts = int(ds.globalattributes["time_step"])
+    Fsd, f, a = pfp_utils.GetSeriesasMA(ds, "Fsd")
+    evening_indicator = {"values":numpy.zeros(len(Fsd), dtype=numpy.int32), "attr":{}}
     attr = evening_indicator["attr"]
-    opt = pfp_utils.get_keyvaluefromcf(cf,["Options"],"EveningFilterLength",default="0")
+    opt = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "EveningFilterLength", default="0")
     num_hours = int(opt)
-    if num_hours<=0 or num_hours>=12:
+    if num_hours <= 0 or num_hours >= 12:
         evening_indicator = numpy.zeros(len(Fsd))
         msg = " Evening filter period outside 0 to 12 hours, skipping ..."
         logger.warning(msg)
         return evening_indicator
-    night_indicator = get_night_indicator(cf, Fsd, Fsd_syn, sa)
-    day_indicator = get_day_indicator(cf, Fsd, Fsd_syn, sa)
+
+    #night_indicator = get_night_indicator(cf, Fsd, Fsd_syn, sa)
+    #day_indicator = get_day_indicator(cf, Fsd, Fsd_syn, sa)
+    night_indicator = get_night_indicator(cf, ds)
+    day_indicator = get_day_indicator(cf, ds)
+
     ntsperhour = int(0.5+float(60)/float(ts))
     shift = num_hours*ntsperhour
     day_indicator_shifted = numpy.roll(day_indicator["values"], shift)
@@ -770,7 +917,61 @@ def get_evening_indicator(cf,Fsd,Fsd_syn,sa,ts):
     attr["evening_filter_length"] = num_hours
     return evening_indicator
 
-def get_night_indicator(cf,Fsd,Fsd_syn,sa):
+#def get_night_indicator(cf,Fsd,Fsd_syn,sa):
+    #"""
+    #Purpose:
+     #Returns a dictionary containing an indicator series and some attributes.
+     #The indicator series is 1 during night time and 0 during the day.  The
+     #threshold for determining night and day is the Fsd threshold
+     #given in the control file [Options] section.
+    #Usage:
+     #indicators["night"] = get_night_indicator(cf,Fsd,Fsd_syn,sa)
+     #where;
+      #cf is a control file object
+      #Fsd is a series of incoming shortwave radiation values (ndarray)
+      #Fsd_syn is a series of calculated Fsd (ndarray)
+      #sa is a series of solar altitude values (ndarray)
+    #and;
+      #indicators["night"] is a dictionary containing
+      #indicators["night"]["values"] is the indicator series
+      #indicators["night"]["attr"] are the attributes
+    #Author: PRI
+    #Date: March 2016
+    #"""
+    ## indicator = 1 ==> night, indicator = 0 ==> day
+    #night_indicator = {"values":numpy.zeros(len(Fsd),dtype=numpy.int32),
+                       #"attr":{}}
+    #inds = night_indicator["values"]
+    #attr = night_indicator["attr"]
+    ## get the filter type
+    #filter_type = pfp_utils.get_keyvaluefromcf(cf,["Options"],"DayNightFilter",default="Fsd")
+    #attr["daynight_filter_type"] = filter_type
+    #use_fsdsyn = pfp_utils.get_keyvaluefromcf(cf,["Options"],"UseFsdsyn_threshold",default="Yes")
+    #attr["use_fsdsyn"] = use_fsdsyn
+    ## get the indicator series
+    #if filter_type.lower()=="fsd":
+        ## get the Fsd threshold
+        #Fsd_threshold = int(pfp_utils.get_keyvaluefromcf(cf,["Options"],"Fsd_threshold",default=10))
+        #attr["Fsd_threshold"] = str(Fsd_threshold)
+        ## we are using Fsd only to define day/night
+        #if use_fsdsyn.lower()=="yes":
+            #idx = numpy.ma.where((Fsd<=Fsd_threshold)&(Fsd_syn<=Fsd_threshold))[0]
+        #else:
+            #idx = numpy.ma.where(Fsd<=Fsd_threshold)[0]
+        #inds[idx] = numpy.int32(1)
+    #elif filter_type.lower()=="sa":
+        ## get the solar altitude threshold
+        #sa_threshold = int(pfp_utils.get_keyvaluefromcf(cf,["Options"],"sa_threshold",default="-5"))
+        #attr["sa_threshold"] = str(sa_threshold)
+        ## we are using solar altitude to define day/night
+        #index = numpy.ma.where(sa<sa_threshold)[0]
+        #inds[index] = numpy.int32(1)
+    #else:
+        #msg = "Unrecognised DayNightFilter option in L6 control file"
+        #raise Exception(msg)
+    #return night_indicator
+
+def get_night_indicator(cf, ds):
     """
     Purpose:
      Returns a dictionary containing an indicator series and some attributes.
@@ -778,12 +979,10 @@ def get_night_indicator(cf,Fsd,Fsd_syn,sa):
      threshold for determining night and day is the Fsd threshold
      given in the control file [Options] section.
     Usage:
-     indicators["night"] = get_night_indicator(cf,Fsd,Fsd_syn,sa)
+     indicators["night"] = get_night_indicator(cf, ds)
      where;
       cf is a control file object
-      Fsd is a series of incoming shortwave radiation values (ndarray)
-      Fsd_syn is a series of calculated Fsd (ndarray)
-      sa is a series of solar altitude values (ndarray)
+      ds is a data structure
     and;
       indicators["night"] is a dictionary containing
       indicators["night"]["values"] is the indicator series
@@ -791,36 +990,42 @@ def get_night_indicator(cf,Fsd,Fsd_syn,sa):
     Author: PRI
     Date: March 2016
     """
+    Fsd, f, a = pfp_utils.GetSeriesasMA(ds, "Fsd")
     # indicator = 1 ==> night, indicator = 0 ==> day
-    night_indicator = {"values":numpy.zeros(len(Fsd),dtype=numpy.int32),
-                       "attr":{}}
+    night_indicator = {"values":numpy.zeros(len(Fsd), dtype=numpy.int32), "attr":{}}
     inds = night_indicator["values"]
     attr = night_indicator["attr"]
     # get the filter type
-    filter_type = pfp_utils.get_keyvaluefromcf(cf,["Options"],"DayNightFilter",default="Fsd")
+    filter_type = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "DayNightFilter", default="Fsd")
     attr["daynight_filter_type"] = filter_type
-    use_fsdsyn = pfp_utils.get_keyvaluefromcf(cf,["Options"],"UseFsdsyn_threshold",default="Yes")
+    use_fsdsyn = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "UseFsdsyn_threshold", default="No")
     attr["use_fsdsyn"] = use_fsdsyn
     # get the indicator series
-    if filter_type.lower()=="fsd":
+    if filter_type.lower() == "fsd":
         # get the Fsd threshold
-        Fsd_threshold = int(pfp_utils.get_keyvaluefromcf(cf,["Options"],"Fsd_threshold",default=10))
+        Fsd_threshold = int(pfp_utils.get_keyvaluefromcf(cf, ["Options"], "Fsd_threshold", default=10))
         attr["Fsd_threshold"] = str(Fsd_threshold)
         # we are using Fsd only to define day/night
-        if use_fsdsyn.lower()=="yes":
-            idx = numpy.ma.where((Fsd<=Fsd_threshold)&(Fsd_syn<=Fsd_threshold))[0]
+        if use_fsdsyn.lower() == "yes":
+            if "solar_altitude" not in ds.series.keys():
+                pfp_ts.get_synthetic_fsd(ds)
+            Fsd_syn, f, a = pfp_utils.GetSeriesasMA(ds, "Fsd_syn")
+            idx = numpy.ma.where((Fsd <= Fsd_threshold) & (Fsd_syn <= Fsd_threshold))[0]
         else:
-            idx = numpy.ma.where(Fsd<=Fsd_threshold)[0]
+            idx = numpy.ma.where(Fsd <= Fsd_threshold)[0]
         inds[idx] = numpy.int32(1)
-    elif filter_type.lower()=="sa":
+    elif filter_type.lower() == "sa":
         # get the solar altitude threshold
-        sa_threshold = int(pfp_utils.get_keyvaluefromcf(cf,["Options"],"sa_threshold",default="-5"))
+        sa_threshold = int(pfp_utils.get_keyvaluefromcf(cf, ["Options"], "sa_threshold", default="-5"))
         attr["sa_threshold"] = str(sa_threshold)
         # we are using solar altitude to define day/night
-        index = numpy.ma.where(sa<sa_threshold)[0]
+        if "solar_altitude" not in ds.series.keys():
+            pfp_ts.get_synthetic_fsd(ds)
+        sa, f, a = pfp_utils.GetSeriesasMA(ds, "solar_altitude")
+        index = numpy.ma.where(sa < sa_threshold)[0]
         inds[index] = numpy.int32(1)
     else:
-        msg = "Unrecognised DayNightFilter option in L6 control file"
+        msg = "Unrecognised DayNightFilter option in control file"
         raise Exception(msg)
     return night_indicator
 

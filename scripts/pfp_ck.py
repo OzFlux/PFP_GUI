@@ -94,14 +94,15 @@ def ApplyTurbulenceFilter(cf,ds,ustar_threshold=None):
     indicators = {}
     # get data for the indicator series
     ustar,ustar_flag,ustar_attr = pfp_utils.GetSeriesasMA(ds,"ustar")
-    Fsd,f,a = pfp_utils.GetSeriesasMA(ds,"Fsd")
-    if "solar_altitude" not in ds.series.keys():
-        pfp_ts.get_synthetic_fsd(ds)
-    Fsd_syn,f,a = pfp_utils.GetSeriesasMA(ds,"Fsd_syn")
-    sa,f,a = pfp_utils.GetSeriesasMA(ds,"solar_altitude")
+    #Fsd,f,a = pfp_utils.GetSeriesasMA(ds,"Fsd")
+    #if "solar_altitude" not in ds.series.keys():
+        #pfp_ts.get_synthetic_fsd(ds)
+    #Fsd_syn,f,a = pfp_utils.GetSeriesasMA(ds,"Fsd_syn")
+    #sa,f,a = pfp_utils.GetSeriesasMA(ds,"solar_altitude")
     # get the day/night indicator series
     # indicators["day"] = 1 ==> day time, indicators["day"] = 0 ==> night time
-    indicators["day"] = pfp_rp.get_day_indicator(cf,Fsd,Fsd_syn,sa)
+    #indicators["day"] = pfp_rp.get_day_indicator(cf,Fsd,Fsd_syn,sa)
+    indicators["day"] = pfp_rp.get_day_indicator(cf, ds)
     ind_day = indicators["day"]["values"]
     # get the turbulence indicator series
     if opt["turbulence_filter"].lower()=="ustar":
@@ -139,7 +140,8 @@ def ApplyTurbulenceFilter(cf,ds,ustar_threshold=None):
         indicators["final"]["values"][idx] = numpy.int(1)
         indicators["final"]["attr"].update(indicators["day"]["attr"])
     # get the evening indicator series
-    indicators["evening"] = pfp_rp.get_evening_indicator(cf,Fsd,Fsd_syn,sa,ts)
+    #indicators["evening"] = pfp_rp.get_evening_indicator(cf,Fsd,Fsd_syn,sa,ts)
+    indicators["evening"] = pfp_rp.get_evening_indicator(cf, ds)
     indicators["dayevening"] = {"values":indicators["day"]["values"]+indicators["evening"]["values"]}
     indicators["dayevening"]["attr"] = indicators["day"]["attr"].copy()
     indicators["dayevening"]["attr"].update(indicators["evening"]["attr"])
