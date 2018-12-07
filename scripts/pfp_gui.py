@@ -367,7 +367,7 @@ class edit_cfg_L1(QtGui.QWidget):
         # get the selected entry text
         file_path = str(idx.data())
         # dialog for new directory
-        new_dir = QtGui.QFileDialog.getExistingDirectory(self, "Choose a folder ...", file_path, QtGui.QFileDialog.ShowDirsOnly)
+        new_dir = QtGui.QFileDialog.getExistingDirectory(self, "Choose a folder ...", file_path)
         # quit if cancel button pressed
         if len(str(new_dir)) > 0:
             # make sure the string ends with a path delimiter
@@ -672,6 +672,29 @@ class edit_cfg_L2(QtGui.QWidget):
         # add an asterisk to the tab text to indicate the tab contents have changed
         self.update_tab_text()
 
+    def add_winddirectioncorrection(self):
+        """ Add the wind direction correction check to a variable."""
+        new_qc = {"CorrectWindDirection":{"0":"YYYY-mm-dd HH:MM, YYYY-mm-dd HH:MM, <correction>"}}
+        # get the index of the selected item
+        idx = self.view.selectedIndexes()[0]
+        # get the selected item from the index
+        selected_item = idx.model().itemFromIndex(idx)
+        self.add_qc_check(selected_item, new_qc)
+        self.update_tab_text()
+
+    def add_winddirectioncorrectionrange(self):
+        """ Add another date range to the wind direction correction."""
+        # get the index of the selected item
+        idx = self.view.selectedIndexes()[0]
+        # get the selected item from the index
+        selected_item = idx.model().itemFromIndex(idx)
+        # get the children
+        child0 = QtGui.QStandardItem(str(selected_item.rowCount()))
+        child1 = QtGui.QStandardItem("YYYY-mm-dd HH:MM, YYYY-mm-dd HH:MM, <correction>")
+        # add them
+        selected_item.appendRow([child0, child1])
+        self.update_tab_text()
+
     def browse_file_path(self):
         """ Browse for the data file path."""
         # get the index of the selected item
@@ -857,6 +880,11 @@ class edit_cfg_L2(QtGui.QWidget):
                     self.context_menu.actionAddUpperCheck.setText("Add UpperCheck")
                     self.context_menu.addAction(self.context_menu.actionAddUpperCheck)
                     self.context_menu.actionAddUpperCheck.triggered.connect(self.add_uppercheck)
+                if "CorrectWindDirection" not in existing_entries:
+                    self.context_menu.actionAddWindDirectionCorrection = QtGui.QAction(self)
+                    self.context_menu.actionAddWindDirectionCorrection.setText("Add CorrectWindDirection")
+                    self.context_menu.addAction(self.context_menu.actionAddWindDirectionCorrection)
+                    self.context_menu.actionAddWindDirectionCorrection.triggered.connect(self.add_winddirectioncorrection)
                 #self.context_menu.actionAddExcludeHours = QtGui.QAction(self)
                 #self.context_menu.actionAddExcludeHours.setText("Add ExcludeHours")
                 #self.context_menu.addAction(self.context_menu.actionAddExcludeHours)
@@ -894,6 +922,12 @@ class edit_cfg_L2(QtGui.QWidget):
                 self.context_menu.actionAddUpperCheckRange.setText("Add date range")
                 self.context_menu.addAction(self.context_menu.actionAddUpperCheckRange)
                 self.context_menu.actionAddUpperCheckRange.triggered.connect(self.add_uppercheckrange)
+                add_separator = True
+            if str(idx.data()) in ["CorrectWindDirection"]:
+                self.context_menu.actionAddWindDirectionCorrectionRange = QtGui.QAction(self)
+                self.context_menu.actionAddWindDirectionCorrectionRange.setText("Add date range")
+                self.context_menu.addAction(self.context_menu.actionAddWindDirectionCorrectionRange)
+                self.context_menu.actionAddWindDirectionCorrectionRange.triggered.connect(self.add_winddirectioncorrectionrange)
                 add_separator = True
             if add_separator:
                 self.context_menu.addSeparator()
