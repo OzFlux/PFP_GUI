@@ -1438,35 +1438,46 @@ def CorrectSWC(cf,ds):
             flag = numpy.where(numpy.ma.getmaskarray(Sws_out)==True,ones,zeros)
             pfp_utils.CreateSeries(ds,outvar,Sws_out,flag,attr)
 
-def CorrectWindDirection(cf,ds,Wd_in):
+def CorrectWindDirection(cf, ds, Wd_in):
     """
         Correct wind direction for mis-aligned sensor direction.
 
-        Usage pfp_ts.CorrectWindDirection(cf,ds,Wd_in)
+        Usage pfp_ts.CorrectWindDirection(cf, ds, Wd_in)
         cf: control file
         ds: data structure
         Wd_in: input/output wind direction variable in ds.  Example: 'Wd_CSAT'
         """
-    logger.info(' Correcting wind direction')
+    logger.info(" Correcting wind direction")
     Wd,f,a = pfp_utils.GetSeriesasMA(ds,Wd_in)
-    ldt = ds.series['DateTime']['Data']
-    KeyList = cf['Variables'][Wd_in]['CorrectWindDirection'].keys()
+    ldt = ds.series["DateTime"]["Data"]
+    KeyList = cf["Variables"][Wd_in]["CorrectWindDirection"].keys()
     for i in range(len(KeyList)):
-        ItemList = ast.literal_eval(cf['Variables'][Wd_in]['CorrectWindDirection'][str(i)])
+        correct_wd_string = cf["Variables"][Wd_in]["CorrectWindDirection"][str(i)]
+        correct_wd_list = correct_wd_string.split(",")
+        for i, item in enumerate(correct_wd_list):
+            correct_wd_list[i] = correct_wd_list[i].strip()
         try:
-            dt = datetime.datetime.strptime(ItemList[0],'%Y-%m-%d %H:%M')
-            si = pfp_utils.find_nearest_value(ldt, dt)
+            si = pfp_utils.get_start_index(ldt, correct_wd_list[0], mode="quiet")
         except ValueError:
-            si = 0
+            msg = " CorrectWindDirection: start date (" + correct_wd_list[0] + ") not found"
+            logger.warning(msg)
+            continue
         try:
-            dt = datetime.datetime.strptime(ItemList[1],'%Y-%m-%d %H:%M')
-            ei = pfp_utils.find_nearest_value(ldt, dt)
+            ei = pfp_utils.get_end_index(ldt, correct_wd_list[1], mode="quiet")
         except ValueError:
-            ei = -1
-        Correction = float(ItemList[2])
+            msg = " CorrectWindDirection: end date (" + correct_wd_list[1] + ") not found"
+            logger.warning(msg)
+            continue
+        try:
+            Correction = float(correct_wd_list[2])
+        except:
+            msg = " CorrectWindDirection: bad value (" + correct_wd_list[2] + ") for correction"
+            logger.warning(msg)
+            continue
         Wd[si:ei] = Wd[si:ei] + Correction
-    Wd = numpy.mod(Wd,float(360))
-    ds.series[Wd_in]['Data'] = numpy.ma.filled(Wd,float(c.missing_value))
+    Wd = numpy.mod(Wd, float(360))
+    ds.series[Wd_in]["Data"] = numpy.ma.filled(Wd, float(c.missing_value))
+    return
 
 def LowPassFilterSws(cf,ds,Sws_out='Sws_LP',Sws_in='Sws',npoles=5,co_ny=0.05):
     '''
