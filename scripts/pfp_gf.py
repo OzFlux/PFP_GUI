@@ -668,7 +668,8 @@ def gf_getdateticks(start, end):
 
 def ImportSeries(cf,ds):
     # check to see if there is an Imports section
-    if "Imports" not in cf.keys(): return
+    if "Imports" not in cf.keys():
+        return
     # number of records
     nRecs = int(ds.globalattributes["nc_nrecs"])
     # get the start and end datetime
@@ -677,26 +678,27 @@ def ImportSeries(cf,ds):
     end_date = ldt[-1]
     # loop over the series in the Imports section
     for label in cf["Imports"].keys():
-        import_filename = pfp_utils.get_keyvaluefromcf(cf,["Imports",label],"file_name",default="")
-        if import_filename=="":
+        import_filename = pfp_utils.get_keyvaluefromcf(cf, ["Imports", label], "file_name", default="")
+        if import_filename == "":
             msg = " ImportSeries: import filename not found in control file, skipping ..."
             logger.warning(msg)
             continue
-        var_name = pfp_utils.get_keyvaluefromcf(cf,["Imports",label],"var_name",default="")
-        if var_name=="":
+        var_name = pfp_utils.get_keyvaluefromcf(cf, ["Imports", label], "var_name", default="")
+        if var_name == "":
             msg = " ImportSeries: variable name not found in control file, skipping ..."
             logger.warning(msg)
             continue
         ds_import = pfp_io.nc_read_series(import_filename)
         ts_import = ds_import.globalattributes["time_step"]
         ldt_import = ds_import.series["DateTime"]["Data"]
-        si = pfp_utils.GetDateIndex(ldt_import,str(start_date),ts=ts_import,default=0,match="exact")
-        ei = pfp_utils.GetDateIndex(ldt_import,str(end_date),ts=ts_import,default=len(ldt_import)-1,match="exact")
+        si = pfp_utils.GetDateIndex(ldt_import, str(start_date), ts=ts_import, default=0, match="exact")
+        ei = pfp_utils.GetDateIndex(ldt_import, str(end_date), ts=ts_import, default=len(ldt_import)-1, match="exact")
         data = numpy.ma.ones(nRecs)*float(c.missing_value)
         flag = numpy.ma.ones(nRecs)
-        data_import,flag_import,attr_import = pfp_utils.GetSeriesasMA(ds_import,var_name,si=si,ei=ei)
+        data_import, flag_import, attr_import = pfp_utils.GetSeriesasMA(ds_import, var_name, si=si, ei=ei)
         ldt_import = ldt_import[si:ei+1]
-        index = pfp_utils.FindIndicesOfBInA(ldt_import,ldt)
-        data[index] = data_import
-        flag[index] = flag_import
-        pfp_utils.CreateSeries(ds,label,data,flag,attr_import)
+        #index = pfp_utils.FindIndicesOfBInA(ldt_import,ldt)
+        indainb, indbina = pfp_utils.FindMatchingIndices(ldt_import, ldt)
+        data[indbina] = data_import[indainb]
+        flag[indbina] = flag_import[indainb]
+        pfp_utils.CreateSeries(ds, label, data, flag, attr_import)
