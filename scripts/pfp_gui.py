@@ -5,6 +5,7 @@ import logging
 import os
 import pdb
 # 3rd party modules
+from configobj import ConfigObj
 from PyQt4 import QtCore, QtGui
 # PFP modules
 import pfp_func
@@ -1331,6 +1332,25 @@ class edit_cfg_L3(QtGui.QWidget):
         # add an asterisk to the tab text to indicate the tab contents have changed
         self.update_tab_text()
 
+    def add_imports_section(self):
+        """ Add an Imports section."""
+        self.sections["Imports"] = QtGui.QStandardItem("Imports")
+        self.add_imports_variable()
+        self.model.appendRow(self.sections["Imports"])
+        self.update_tab_text()
+
+    def add_imports_variable(self):
+        """ Add a variable to the Imports section."""
+        new_import = {"file_name": "Right click to browse", "var_name": "<variable_name>"}
+        new_variable = QtGui.QStandardItem("New variable")
+        for key in new_import:
+            val = new_import[key]
+            child0 = QtGui.QStandardItem(key)
+            child1 = QtGui.QStandardItem(val)
+            new_variable.appendRow([child0, child1])
+        self.sections["Imports"].appendRow(new_variable)
+        self.update_tab_text()
+
     def add_in_filename(self):
         """ Add in_filename to the 'Files' section."""
         # get the index of the selected item
@@ -1461,6 +1481,27 @@ class edit_cfg_L3(QtGui.QWidget):
         self.sections["Options"].appendRow([child0, child1])
         self.update_tab_text()
 
+    def browse_alternate_file(self):
+        """ Browse for the alternate data file path."""
+        # get the index of the selected item
+        idx = self.view.selectedIndexes()[0]
+        # get the selected item from the index
+        selected_item = idx.model().itemFromIndex(idx)
+        # get the parent of the selected item
+        parent = selected_item.parent()
+        # set the file filter
+        file_filter = "*.nc"
+        # get the file path from the selected item
+        file_path = os.path.split(str(idx.data()))[0]
+        file_path = os.path.join(file_path, "")
+        # dialog for open file
+        new_file = QtGui.QFileDialog.getOpenFileName(caption="Choose an alternate data file ...",
+                                                     directory=file_path, filter=file_filter)
+        # quit if cancel button pressed
+        if len(str(new_file)) > 0:
+            # update the model
+            parent.child(selected_item.row(), 1).setText(new_file)
+
     def browse_file_path(self):
         """ Browse for the data file path."""
         # get the index of the selected item
@@ -1528,6 +1569,15 @@ class edit_cfg_L3(QtGui.QWidget):
         level = self.get_level_selected_item()
         if level == 0:
             selected_text = str(idx.data())
+            section_headings = []
+            root = self.model.invisibleRootItem()
+            for i in range(root.rowCount()):
+                section_headings.append(str(root.child(i).text()))
+            if "Imports" not in section_headings:
+                self.context_menu.actionAddImportsSection = QtGui.QAction(self)
+                self.context_menu.actionAddImportsSection.setText("Add Imports section")
+                self.context_menu.addAction(self.context_menu.actionAddImportsSection)
+                self.context_menu.actionAddImportsSection.triggered.connect(self.add_imports_section)
             if selected_text == "Files":
                 existing_entries = self.get_existing_entries()
                 if "file_path" not in existing_entries:
@@ -1550,6 +1600,16 @@ class edit_cfg_L3(QtGui.QWidget):
                     self.context_menu.actionAddplot_path.setText("Add plot_path")
                     self.context_menu.addAction(self.context_menu.actionAddplot_path)
                     self.context_menu.actionAddplot_path.triggered.connect(self.add_plot_path)
+            elif selected_text == "Imports":
+                self.context_menu.actionAddImportsVariable = QtGui.QAction(self)
+                self.context_menu.actionAddImportsVariable.setText("Add variable")
+                self.context_menu.addAction(self.context_menu.actionAddImportsVariable)
+                self.context_menu.actionAddImportsVariable.triggered.connect(self.add_imports_variable)
+                self.context_menu.addSeparator()
+                self.context_menu.actionRemoveImportsSection = QtGui.QAction(self)
+                self.context_menu.actionRemoveImportsSection.setText("Remove section")
+                self.context_menu.addAction(self.context_menu.actionRemoveImportsSection)
+                self.context_menu.actionRemoveImportsSection.triggered.connect(self.remove_section)
             elif selected_text == "Options":
                 # get a list of existing entries
                 existing_entries = self.get_existing_entries()
@@ -1633,6 +1693,11 @@ class edit_cfg_L3(QtGui.QWidget):
                     self.context_menu.actionBrowseOutputFile.triggered.connect(self.browse_output_file)
                 else:
                     pass
+            elif (str(parent.text()) == "Imports"):
+                self.context_menu.actionRemoveImportsVariable = QtGui.QAction(self)
+                self.context_menu.actionRemoveImportsVariable.setText("Remove variable")
+                self.context_menu.addAction(self.context_menu.actionRemoveImportsVariable)
+                self.context_menu.actionRemoveImportsVariable.triggered.connect(self.remove_item)
             elif str(parent.text()) == "Options":
                 self.context_menu.actionRemoveOption = QtGui.QAction(self)
                 self.context_menu.actionRemoveOption.setText("Remove option")
@@ -1694,12 +1759,29 @@ class edit_cfg_L3(QtGui.QWidget):
                 self.context_menu.addAction(self.context_menu.actionRemovePlot)
                 self.context_menu.actionRemovePlot.triggered.connect(self.remove_item)
         elif level == 2:
+            # we are in a subsection
+            selected_item = idx.model().itemFromIndex(idx)
+            # get the subsection
+            subsection = selected_item.parent()
+            # get the section
+            section = subsection.parent()
+            # check to see what the user whats us to do based on what was selected when the right click happened
             if str(idx.data()) in ["ExcludeDates"]:
+                # we are adding a date range to an ExcludeDates QC check
                 self.context_menu.actionAddExcludeDateRange = QtGui.QAction(self)
                 self.context_menu.actionAddExcludeDateRange.setText("Add date range")
                 self.context_menu.addAction(self.context_menu.actionAddExcludeDateRange)
                 self.context_menu.actionAddExcludeDateRange.triggered.connect(self.add_excludedaterange)
                 self.context_menu.addSeparator()
+            elif (str(section.text()) == "Imports") and (selected_item.column() == 1):
+                # we are browsing for a file name in an Imports section
+                key = str(subsection.child(selected_item.row(),0).text())
+                if key in ["file_name"]:
+                    self.context_menu.actionBrowseAlternateFile = QtGui.QAction(self)
+                    self.context_menu.actionBrowseAlternateFile.setText("Browse...")
+                    self.context_menu.addAction(self.context_menu.actionBrowseAlternateFile)
+                    self.context_menu.actionBrowseAlternateFile.triggered.connect(self.browse_alternate_file)
+                    self.context_menu.addSeparator()
             self.context_menu.actionRemoveQCCheck = QtGui.QAction(self)
             self.context_menu.actionRemoveQCCheck.setText("Remove item")
             self.context_menu.addAction(self.context_menu.actionRemoveQCCheck)
@@ -1764,7 +1846,9 @@ class edit_cfg_L3(QtGui.QWidget):
 
     def get_data_from_model(self):
         """ Iterate over the model and get the data."""
-        cfg = self.cfg_mod
+        #cfg = self.cfg_mod
+        cfg = ConfigObj(indent_type="    ", list_values=False)
+        #cfg.filename = self.cfg_mod["controlfile_name"]
         model = self.model
         # there must be a way to do this recursively
         for i in range(model.rowCount()):
@@ -1777,7 +1861,7 @@ class edit_cfg_L3(QtGui.QWidget):
                     key2 = str(section.child(j, 0).text())
                     val2 = str(section.child(j, 1).text())
                     cfg[key1][key2] = val2
-            elif key1 in ["Plots"]:
+            elif key1 in ["Plots", "Imports"]:
                 # sections with 2 levels
                 for j in range(section.rowCount()):
                     subsection = section.child(j)
@@ -1864,14 +1948,19 @@ class edit_cfg_L3(QtGui.QWidget):
                     child1 = QtGui.QStandardItem(val)
                     self.sections[key1].appendRow([child0, child1])
                 self.model.appendRow(self.sections[key1])
-            elif key1 in ["Plots"]:
+            elif key1 in ["Plots", "Imports"]:
                 # sections with 2 levels
                 self.sections[key1] = QtGui.QStandardItem(key1)
                 for key2 in self.cfg_mod[key1]:
-                    # handle old-style control files with separate Title key
-                    title = self.parse_cfg_plots_title(key1, key2)
-                    parent2 = QtGui.QStandardItem(title)
+                    if key1 == "Plots":
+                        # handle old-style control files with separate Title key
+                        title = self.parse_cfg_plots_title(key1, key2)
+                        parent2 = QtGui.QStandardItem(title)
+                    else:
+                        parent2 = QtGui.QStandardItem(key2)
                     for key3 in self.cfg_mod[key1][key2]:
+                        if key3 in ["source"]:
+                            continue
                         val = self.cfg_mod[key1][key2][key3]
                         val = self.parse_cfg_plots_value(key3, val)
                         child0 = QtGui.QStandardItem(key3)
@@ -1941,7 +2030,7 @@ class edit_cfg_L3(QtGui.QWidget):
                 if (v != '""') and (v != "''"):
                     self.cfg_changed = True
                 v = v.replace(c, "")
-        if k in ["file_path", "plot_path"]:
+        if k in ["file_path", "plot_path"] and "browse" not in v:
             if os.path.join(str(v), "") != v:
                 v = os.path.join(str(v), "")
                 self.cfg_changed = True
@@ -2000,6 +2089,18 @@ class edit_cfg_L3(QtGui.QWidget):
             parent = selected_item.parent()
             # remove the row
             parent.removeRow(selected_item.row())
+        self.update_tab_text()
+
+    def remove_section(self):
+        """ Remove a section from the view."""
+        # loop over selected items in the tree
+        idx = self.view.selectedIndexes()[0]
+        # get the selected item from the index
+        selected_item = idx.model().itemFromIndex(idx)
+        # get the root
+        root = self.model.invisibleRootItem()
+        # remove the row
+        root.removeRow(selected_item.row())
         self.update_tab_text()
 
     def transfer_general_to_options(self):

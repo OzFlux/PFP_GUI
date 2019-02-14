@@ -5,7 +5,6 @@ dependencies:
   - python=2.7
   - configobj
   - dateutil
-  - jupyter
   - matplotlib
   - netcdf4
   - numpy
@@ -14,7 +13,7 @@ dependencies:
   - pytz
   - scipy
   - statsmodels
-  - timezonefinder
+  - timezonefinder=3.3.0
   - xlwt
   - xlrd
   - xlsxwriter
