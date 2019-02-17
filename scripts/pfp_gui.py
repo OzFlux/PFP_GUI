@@ -73,7 +73,7 @@ class edit_cfg_L1(QtGui.QWidget):
         # set the QTreeView model
         self.view.setModel(self.model)
         # enable drag and drop
-        self.view.setDragDropMode(QtGui.QAbstractItemView.InternalMove)
+        #self.view.setDragDropMode(QtGui.QAbstractItemView.InternalMove)
         # build the model
         self.get_model_from_data()
         # set the default width for the first column
@@ -119,7 +119,8 @@ class edit_cfg_L1(QtGui.QWidget):
 
     def get_data_from_model(self):
         """ Iterate over the model and get the data."""
-        cfg = self.cfg_mod
+        cfg = ConfigObj(indent_type="    ", list_values=False)
+        cfg["level"] = "L1"
         model = self.model
         # there must be a way to do this recursively
         for i in range(model.rowCount()):
@@ -968,7 +969,7 @@ class edit_cfg_L2(QtGui.QWidget):
         # set the QTreeView model
         self.view.setModel(self.model)
         # enable drag and drop
-        self.view.setDragDropMode(QtGui.QAbstractItemView.InternalMove)
+        #self.view.setDragDropMode(QtGui.QAbstractItemView.InternalMove)
         # build the model
         self.get_model_from_data()
         # set the default width for the first column
@@ -980,7 +981,8 @@ class edit_cfg_L2(QtGui.QWidget):
 
     def get_data_from_model(self):
         """ Iterate over the model and get the data."""
-        cfg = self.cfg_mod
+        cfg = ConfigObj(indent_type="    ", list_values=False)
+        cfg["level"] = "L2"
         model = self.model
         # there must be a way to do this recursively
         for i in range(model.rowCount()):
@@ -1336,7 +1338,7 @@ class edit_cfg_L3(QtGui.QWidget):
         """ Add an Imports section."""
         self.sections["Imports"] = QtGui.QStandardItem("Imports")
         self.add_imports_variable()
-        self.model.appendRow(self.sections["Imports"])
+        self.model.insertRow(self.section_headings.index("Files")+1, self.sections["Imports"])
         self.update_tab_text()
 
     def add_imports_variable(self):
@@ -1368,6 +1370,21 @@ class edit_cfg_L3(QtGui.QWidget):
         child0 = QtGui.QStandardItem("MassmanCorrection")
         child1 = QtGui.QStandardItem("Yes")
         self.sections["Options"].appendRow([child0, child1])
+        self.update_tab_text()
+
+    def add_massman_section(self):
+        """ Add a Massman section."""
+        self.sections["Massman"] = QtGui.QStandardItem("Massman")
+        new_massman = {"zmd": "<height_above_displacement_plane>",
+                       "z0": "<roughness_length>",
+                       "north_separation": "<north_separation>",
+                       "east_separation": "<east_separation>"}
+        for key in new_massman:
+            value = new_massman[key]
+            child0 = QtGui.QStandardItem(key)
+            child1 = QtGui.QStandardItem(value)
+            self.sections["Massman"].appendRow([child0, child1])
+        self.model.insertRow(self.section_headings.index("Variables"), self.sections["Massman"])
         self.update_tab_text()
 
     def add_mergeseries(self):
@@ -1568,17 +1585,28 @@ class edit_cfg_L3(QtGui.QWidget):
         # get the level of the selected item
         level = self.get_level_selected_item()
         if level == 0:
+            add_separator = False
             selected_text = str(idx.data())
-            section_headings = []
+            self.section_headings = []
             root = self.model.invisibleRootItem()
             for i in range(root.rowCount()):
-                section_headings.append(str(root.child(i).text()))
-            if "Imports" not in section_headings:
+                self.section_headings.append(str(root.child(i).text()))
+            if "Imports" not in self.section_headings and selected_text == "Files":
                 self.context_menu.actionAddImportsSection = QtGui.QAction(self)
                 self.context_menu.actionAddImportsSection.setText("Add Imports section")
                 self.context_menu.addAction(self.context_menu.actionAddImportsSection)
                 self.context_menu.actionAddImportsSection.triggered.connect(self.add_imports_section)
+                add_separator = True
+            if "Massman" not in self.section_headings and selected_text == "Files":
+                self.context_menu.actionAddMassmanSection = QtGui.QAction(self)
+                self.context_menu.actionAddMassmanSection.setText("Add Massman section")
+                self.context_menu.addAction(self.context_menu.actionAddMassmanSection)
+                self.context_menu.actionAddMassmanSection.triggered.connect(self.add_massman_section)
+                add_separator = True
             if selected_text == "Files":
+                if add_separator:
+                    self.context_menu.addSeparator()
+                    add_separator = False
                 existing_entries = self.get_existing_entries()
                 if "file_path" not in existing_entries:
                     self.context_menu.actionAddfile_path = QtGui.QAction(self)
@@ -1656,6 +1684,11 @@ class edit_cfg_L3(QtGui.QWidget):
                 #self.context_menu.actionCoordinateAhFcGaps.setText("CoordinateAhFcGaps")
                 #self.context_menu.addAction(self.context_menu.actionAddCoordinateAhFcGaps)
                 #self.context_menu.actionAddCoordinateAhFcGaps.triggered.connect(self.add_coordinateahfcgaps)
+            elif selected_text == "Massman":
+                self.context_menu.actionRemoveMassmanSection = QtGui.QAction(self)
+                self.context_menu.actionRemoveMassmanSection.setText("Remove section")
+                self.context_menu.addAction(self.context_menu.actionRemoveMassmanSection)
+                self.context_menu.actionRemoveMassmanSection.triggered.connect(self.remove_section)
             elif selected_text == "Variables":
                 self.context_menu.actionAddVariable = QtGui.QAction(self)
                 self.context_menu.actionAddVariable.setText("Add variable")
@@ -1834,7 +1867,7 @@ class edit_cfg_L3(QtGui.QWidget):
         self.view.setSelectionBehavior(QtGui.QAbstractItemView.SelectItems)
         self.view.setModel(self.model)
         # enable drag and drop
-        self.view.setDragDropMode(QtGui.QAbstractItemView.InternalMove)
+        #self.view.setDragDropMode(QtGui.QAbstractItemView.InternalMove)
         # build the model
         self.get_model_from_data()
         # set the default width for the first column
@@ -1846,9 +1879,8 @@ class edit_cfg_L3(QtGui.QWidget):
 
     def get_data_from_model(self):
         """ Iterate over the model and get the data."""
-        #cfg = self.cfg_mod
         cfg = ConfigObj(indent_type="    ", list_values=False)
-        #cfg.filename = self.cfg_mod["controlfile_name"]
+        cfg["level"] = "L3"
         model = self.model
         # there must be a way to do this recursively
         for i in range(model.rowCount()):
@@ -2194,7 +2226,8 @@ class edit_cfg_concatenate(QtGui.QWidget):
 
     def get_data_from_model(self):
         """ Iterate over the model and get the data."""
-        cfg = self.cfg_mod
+        cfg = ConfigObj(indent_type="    ", list_values=False)
+        cfg["level"] = "concatenate"
         model = self.model
         # there must be a way to do this recursively
         for i in range(model.rowCount()):
@@ -2585,7 +2618,7 @@ class edit_cfg_L4(QtGui.QWidget):
         self.view.setSelectionBehavior(QtGui.QAbstractItemView.SelectItems)
         self.view.setModel(self.model)
         # enable drag and drop
-        self.view.setDragDropMode(QtGui.QAbstractItemView.InternalMove)
+        #self.view.setDragDropMode(QtGui.QAbstractItemView.InternalMove)
         # build the model
         self.get_model_from_data()
         # set the default width for the first column
@@ -2649,7 +2682,8 @@ class edit_cfg_L4(QtGui.QWidget):
 
     def get_data_from_model(self):
         """ Iterate over the model and get the data."""
-        cfg = self.cfg_mod
+        cfg = ConfigObj(indent_type="    ", list_values=False)
+        cfg["level"] = "L4"
         model = self.model
         # there must be a way to do this recursively
         for i in range(model.rowCount()):
@@ -3415,7 +3449,7 @@ class edit_cfg_L5(QtGui.QWidget):
         self.view.setSelectionBehavior(QtGui.QAbstractItemView.SelectItems)
         self.view.setModel(self.model)
         # enable drag and drop
-        self.view.setDragDropMode(QtGui.QAbstractItemView.InternalMove)
+        #self.view.setDragDropMode(QtGui.QAbstractItemView.InternalMove)
         # build the model
         self.get_model_from_data()
         # set the default width for the first column
@@ -3483,7 +3517,8 @@ class edit_cfg_L5(QtGui.QWidget):
 
     def get_data_from_model(self):
         """ Iterate over the model and get the data."""
-        cfg = self.cfg_mod
+        cfg = ConfigObj(indent_type="    ", list_values=False)
+        cfg["level"] = "L5"
         model = self.model
         # there must be a way to do this recursively
         for i in range(model.rowCount()):
@@ -4365,7 +4400,7 @@ class edit_cfg_L6(QtGui.QWidget):
         self.view.setSelectionBehavior(QtGui.QAbstractItemView.SelectItems)
         self.view.setModel(self.model)
         # enable drag and drop
-        self.view.setDragDropMode(QtGui.QAbstractItemView.InternalMove)
+        #self.view.setDragDropMode(QtGui.QAbstractItemView.InternalMove)
         # build the model
         self.get_model_from_data()
         # set the default width for the first column
@@ -4426,7 +4461,8 @@ class edit_cfg_L6(QtGui.QWidget):
 
     def get_data_from_model(self):
         """ Iterate over the model and get the data."""
-        cfg = self.cfg_mod
+        cfg = ConfigObj(indent_type="    ", list_values=False)
+        cfg["level"] = "L5"
         model = self.model
         # there must be a way to do this recursively
         for i in range(model.rowCount()):
@@ -4821,7 +4857,8 @@ class edit_cfg_nc2csv_ecostress(QtGui.QWidget):
 
     def get_data_from_model(self):
         """ Iterate over the model and get the data."""
-        cfg = self.cfg_mod
+        cfg = ConfigObj(indent_type="    ", list_values=False)
+        cfg["level"] = "nc2csv_ecostress"
         model = self.model
         # there must be a way to do this recursively
         for i in range(model.rowCount()):
