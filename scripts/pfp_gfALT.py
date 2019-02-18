@@ -48,10 +48,8 @@ def GapFillFromAlternate(main_gui, cf, ds4, ds_alt):
     alternate_info = {"overlap_startdate":startdate.strftime("%Y-%m-%d %H:%M"),
                       "overlap_enddate":enddate.strftime("%Y-%m-%d %H:%M"),
                       "startdate":startdate.strftime("%Y-%m-%d %H:%M"),
-                      "enddate":enddate.strftime("%Y-%m-%d %H:%M")}
-    # put the control file name into alternate_info
-    alternate_info["controlfile_name"] = cf["controlfile_name"]
-    alternate_info["plot_path"] = cf["Files"]["plot_path"]
+                      "enddate":enddate.strftime("%Y-%m-%d %H:%M"),
+                      "plot_path": cf["Files"]["plot_path"]}
     # check to see if this is a batch or an interactive run
     call_mode = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "call_mode", default="interactive")
     alternate_info["call_mode"]= call_mode
@@ -80,6 +78,7 @@ def gfalternate_gui(main_gui, ds4, ds_alt, alternate_info):
     main_gui.l4_ui.ds4 = ds4
     main_gui.l4_ui.ds_alt = ds_alt
     main_gui.l4_ui.alternate_info = alternate_info
+    main_gui.l4_ui.edit_cfg = main_gui.tabs.tab_dict[main_gui.tabs.tab_index_running]
     start_date = ds4.series["DateTime"]["Data"][0].strftime("%Y-%m-%d %H:%M")
     end_date = ds4.series["DateTime"]["Data"][-1].strftime("%Y-%m-%d %H:%M")
     main_gui.l4_ui.label_DataStartDate_value.setText(start_date)
@@ -505,15 +504,10 @@ def gfalternate_getmrevcorrected(data_dict,stat_dict,alternate_info):
     # local copies of the data
     data_tower = numpy.ma.copy(data_dict[label_tower]["data"])
     data_alternate = numpy.ma.copy(data_dict[label_output][label_alternate]["data"])
-
     data_2d = gfalternate_getdataas2d(odt,data_tower,alternate_info)
     data_twr_hravg = numpy.ma.average(data_2d,axis=0)
     data_2d = gfalternate_getdataas2d(odt,data_alternate,alternate_info)
     data_alt_hravg = numpy.ma.average(data_2d,axis=0)
-
-    #data_twr_hravg = numpy.ma.copy(data_plot["tower"]["hourlyavg"])
-    #data_alt_hravg = numpy.ma.copy(data_plot["alternate"][label_alternate]["lagcorr"]["hourlyavg"])
-
     # calculate the means
     mean_tower = numpy.ma.mean(data_tower)
     mean_alternate = numpy.ma.mean(data_alternate)
@@ -554,20 +548,6 @@ def gfalternate_getodrcorrecteddata(data_dict,stat_dict,alternate_info):
     stat_dict[label_output][label_alternate]["slope"] = odr_slope
     stat_dict[label_output][label_alternate]["offset"] = odr_offset
     stat_dict[label_output][label_alternate]["eqnstr"] = "y = %.3fx + %.3f"%(odr_slope,odr_offset)
-
-    #resols = sm.OLS(y,sm.add_constant(x,prepend=False)).fit()
-    #if resols.params.shape[0]==2:
-        #rma_slope = resols.params[0]/numpy.sqrt(resols.rsquared)
-        #rma_offset = numpy.mean(y) - rma_slope * numpy.mean(x)
-        #data_dict[label_output][label_alternate]["fitcorr"] = rma_slope*x_in+rma_offset
-        #stat_dict[label_output][label_alternate]["slope"] = rma_slope
-        #stat_dict[label_output][label_alternate]["offset"] = rma_offset
-        #stat_dict[label_output][label_alternate]["eqnstr"] = "y = %.3fx + %.3f"%(rma_slope,rma_offset)
-    #else:
-        #data_dict[label_output][label_alternate]["fitcorr"] = numpy.ma.copy(x_in)
-        #stat_dict[label_output][label_alternate]["slope"] = float(0)
-        #stat_dict[label_output][label_alternate]["offset"] = float(0)
-        #stat_dict[label_output][label_alternate]["eqnstr"] = "RMA error, replaced"
 
 def gfalternate_getolscorrecteddata(data_dict,stat_dict,alternate_info):
     """
@@ -781,10 +761,8 @@ def gfalternate_initplot(data_dict,alternate_info,**kwargs):
           "xy_height":0.25,"xy_width":0.20,"xyts_space":0.05,"xyxy_space":0.05,"ts_width":0.9,
           "text_left":0.675,"num_left":0.825,"row_bottom":0.35,"row_space":0.030}
     # calculate bottom of the first time series and the height of the time series plots
-    #pd["ts_bottom"] = pd["margin_bottom"]+pd["xy_height"]+pd["xyxy_space"]+pd["xy_height"]+pd["xyts_space"]
     label_tower = alternate_info["label_tower"]
     label_composite = alternate_info["label_composite"]
-
     output_list = list(data_dict[label_tower]["output_list"])
     for item in [label_tower,label_composite]:
         if item in output_list: output_list.remove(item)
@@ -855,13 +833,6 @@ def gfalternate_main(ds_tower, ds_alt, alternate_info, label_tower_list=[]):
     if len(plt.get_fignums())!=0:
         for i in plt.get_fignums():
             if i!=0: plt.close(i)
-    # read the control file again
-    cfname = alternate_info["controlfile_name"]
-    cf = pfp_io.get_controlfilecontents(cfname, mode="quiet")
-    # do any QC checks
-    pfp_ck.do_qcchecks(cf, ds_tower, mode="quiet")
-    # update the ds.alternate dictionary
-    gfalternate_updatedict(cf, ds_tower, ds_alt)
     # get local pointer to the datetime series
     dt_tower = ds_tower.series["DateTime"]["Data"]
     si_tower = pfp_utils.GetDateIndex(dt_tower, alternate_info["startdate"], ts=ts, default=0)
