@@ -294,7 +294,6 @@ class pfp_main_ui(QtGui.QWidget, QPlainTextEditLogger):
             return
         # read the contents of the control file
         self.cfg = ConfigObj(cfgpath, indent_type="    ", list_values=False)
-        self.cfg["controlfile_name"] = cfgpath
         self.cfg["level"] = self.get_cf_level()
         # create a QtTreeView to edit the control file
         if self.cfg["level"] in ["L1"]:
@@ -511,14 +510,10 @@ class pfp_main_ui(QtGui.QWidget, QPlainTextEditLogger):
         tab_index_current = self.tabs.tab_index_current
         # get the updated control file data
         cfg = self.tabs.tab_dict[tab_index_current].get_data_from_model()
-        # strip out the redundant control file name
-        if "controlfile_name" in cfg:
-            cfg_name = cfg["controlfile_name"]
-            cfg.pop("controlfile_name", None)
-            cfg.write()
-            cfg["controlfile_name"] = cfg_name
-        else:
-            cfg.write()
+        # set the control file name
+        cfg.filename = self.cfg.filename
+        # write the control file
+        cfg.write()
         # remove the asterisk in the tab text
         tab_text = str(self.tabs.tabText(tab_index_current))
         self.tabs.setTabText(self.tabs.tab_index_current, tab_text.replace("*",""))
@@ -538,14 +533,8 @@ class pfp_main_ui(QtGui.QWidget, QPlainTextEditLogger):
             return
         # set the control file name
         cfg.filename = str(cfgpath)
-        # strip out the redundant control file name
-        if "controlfile_name" in cfg:
-            cfg_name = cfg["controlfile_name"]
-            cfg.pop("controlfile_name", None)
-            cfg.write()
-            cfg["controlfile_name"] = cfg_name
-        else:
-            cfg.write()
+        # write the control file
+        cfg.write()
         # update the tab text
         self.tabs.setTabText(tab_index_current, os.path.basename(str(cfgpath)))
         # reset the cfg changed logical to false
