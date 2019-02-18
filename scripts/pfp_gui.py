@@ -43,7 +43,7 @@ class edit_cfg_L1(QtGui.QWidget):
 
         super(edit_cfg_L1, self).__init__()
 
-        self.cfg_mod = copy.deepcopy(main_gui.cfg)
+        self.cfg = copy.deepcopy(main_gui.cfg)
         self.cfg_changed = False
 
         self.tabs = main_gui.tabs
@@ -89,13 +89,13 @@ class edit_cfg_L1(QtGui.QWidget):
         self.model.itemChanged.connect(self.handleItemChanged)
         # there must be some way to do this recursively
         self.sections = {}
-        for key1 in self.cfg_mod:
-            if not self.cfg_mod[key1]:
+        for key1 in self.cfg:
+            if not self.cfg[key1]:
                 continue
             if key1 in ["Files", "Global", "Output"]:
                 self.sections[key1] = QtGui.QStandardItem(key1)
-                for key2 in self.cfg_mod[key1]:
-                    val = self.cfg_mod[key1][key2]
+                for key2 in self.cfg[key1]:
+                    val = self.cfg[key1][key2]
                     val = self.parse_cfg_values(key2, val, ['"', "'"])
                     child0 = QtGui.QStandardItem(key2)
                     child1 = QtGui.QStandardItem(val)
@@ -103,12 +103,12 @@ class edit_cfg_L1(QtGui.QWidget):
                 self.model.appendRow(self.sections[key1])
             elif key1 in ["Variables"]:
                 self.sections[key1] = QtGui.QStandardItem(key1)
-                for key2 in self.cfg_mod[key1]:
+                for key2 in self.cfg[key1]:
                     parent2 = QtGui.QStandardItem(key2)
-                    for key3 in self.cfg_mod[key1][key2]:
+                    for key3 in self.cfg[key1][key2]:
                         parent3 = QtGui.QStandardItem(key3)
-                        for key4 in self.cfg_mod[key1][key2][key3]:
-                            val = self.cfg_mod[key1][key2][key3][key4]
+                        for key4 in self.cfg[key1][key2][key3]:
+                            val = self.cfg[key1][key2][key3][key4]
                             val = self.parse_cfg_values(key4, val, ['"', "'"])
                             child0 = QtGui.QStandardItem(key4)
                             child1 = QtGui.QStandardItem(val)
@@ -121,7 +121,6 @@ class edit_cfg_L1(QtGui.QWidget):
         """ Iterate over the model and get the data."""
         cfg = ConfigObj(indent_type="    ", list_values=False)
         cfg["level"] = "L1"
-        cfg["controlfile_name"] = self.cfg_mod["controlfile_name"]
         model = self.model
         # there must be a way to do this recursively
         for i in range(model.rowCount()):
@@ -176,7 +175,7 @@ class edit_cfg_L1(QtGui.QWidget):
     def handleItemChanged(self, item):
         """ Handler for when view items are edited."""
         # update the control file contents
-        self.cfg_mod = self.get_data_from_model()
+        self.cfg = self.get_data_from_model()
         # add an asterisk to the tab text to indicate the tab contents have changed
         self.update_tab_text()
 
@@ -451,7 +450,7 @@ class edit_cfg_L2(QtGui.QWidget):
 
         super(edit_cfg_L2, self).__init__()
 
-        self.cfg_mod = copy.deepcopy(main_gui.cfg)
+        self.cfg = copy.deepcopy(main_gui.cfg)
         self.cfg_changed = False
 
         self.tabs = main_gui.tabs
@@ -984,7 +983,6 @@ class edit_cfg_L2(QtGui.QWidget):
         """ Iterate over the model and get the data."""
         cfg = ConfigObj(indent_type="    ", list_values=False)
         cfg["level"] = "L2"
-        cfg["controlfile_name"] = self.cfg_mod["controlfile_name"]
         model = self.model
         # there must be a way to do this recursively
         for i in range(model.rowCount()):
@@ -1064,14 +1062,14 @@ class edit_cfg_L2(QtGui.QWidget):
         self.model.itemChanged.connect(self.handleItemChanged)
         # there must be some way to do this recursively
         self.sections = {}
-        for key1 in self.cfg_mod:
-            if not self.cfg_mod[key1]:
+        for key1 in self.cfg:
+            if not self.cfg[key1]:
                 continue
             if key1 in ["Files"]:
                 # sections with only 1 level
                 self.sections[key1] = QtGui.QStandardItem(key1)
-                for val in self.cfg_mod[key1]:
-                    value = self.cfg_mod[key1][val]
+                for val in self.cfg[key1]:
+                    value = self.cfg[key1][val]
                     value = self.parse_cfg_files_value(val, value)
                     child0 = QtGui.QStandardItem(val)
                     child1 = QtGui.QStandardItem(value)
@@ -1079,12 +1077,12 @@ class edit_cfg_L2(QtGui.QWidget):
                 self.model.appendRow(self.sections[key1])
             elif  key1 in ["Plots"]:
                 self.sections[key1] = QtGui.QStandardItem(key1)
-                for key2 in self.cfg_mod[key1]:
+                for key2 in self.cfg[key1]:
                     # handle old-style control files with separate Title key
                     title = self.parse_cfg_plots_title(key1, key2)
                     parent2 = QtGui.QStandardItem(title)
-                    for val in self.cfg_mod[key1][key2]:
-                        value = self.cfg_mod[key1][key2][val]
+                    for val in self.cfg[key1][key2]:
+                        value = self.cfg[key1][key2][val]
                         value = self.parse_cfg_plots_value(val, value)
                         child0 = QtGui.QStandardItem(val)
                         child1 = QtGui.QStandardItem(value)
@@ -1094,12 +1092,12 @@ class edit_cfg_L2(QtGui.QWidget):
             elif key1 in ["Variables"]:
                 # sections with 3 levels
                 self.sections[key1] = QtGui.QStandardItem(key1)
-                for key2 in self.cfg_mod[key1]:
+                for key2 in self.cfg[key1]:
                     parent2 = QtGui.QStandardItem(key2)
-                    for key3 in self.cfg_mod[key1][key2]:
+                    for key3 in self.cfg[key1][key2]:
                         parent3 = QtGui.QStandardItem(key3)
-                        for val in self.cfg_mod[key1][key2][key3]:
-                            value = self.cfg_mod[key1][key2][key3][val]
+                        for val in self.cfg[key1][key2][key3]:
+                            value = self.cfg[key1][key2][key3][val]
                             value = self.parse_cfg_variables_value(key3, value)
                             child0 = QtGui.QStandardItem(val)
                             child1 = QtGui.QStandardItem(value)
@@ -1113,7 +1111,7 @@ class edit_cfg_L2(QtGui.QWidget):
         # add an asterisk to the tab text to indicate the tab contents have changed
         self.update_tab_text()
         # update the control file contents
-        self.cfg_mod = self.get_data_from_model()
+        self.cfg = self.get_data_from_model()
 
     def parse_cfg_files_value(self, k, v):
         """ Parse the [Files] section keys to remove unnecessary characters."""
@@ -1126,9 +1124,9 @@ class edit_cfg_L2(QtGui.QWidget):
 
     def parse_cfg_plots_title(self, key1, key2):
         """ Parse the [Plots] section for a title."""
-        if "Title" in self.cfg_mod[key1][key2]:
-            title = self.cfg_mod[key1][key2]["Title"]
-            del self.cfg_mod[key1][key2]["Title"]
+        if "Title" in self.cfg[key1][key2]:
+            title = self.cfg[key1][key2]["Title"]
+            del self.cfg[key1][key2]["Title"]
             self.cfg_changed = True
         else:
             title = key2
@@ -1220,7 +1218,7 @@ class edit_cfg_L3(QtGui.QWidget):
 
         super(edit_cfg_L3, self).__init__()
 
-        self.cfg_mod = copy.deepcopy(main_gui.cfg)
+        self.cfg = copy.deepcopy(main_gui.cfg)
         self.cfg_changed = False
 
         self.tabs = main_gui.tabs
@@ -1833,12 +1831,12 @@ class edit_cfg_L3(QtGui.QWidget):
     def correct_legacy_variable_names(self):
         """ Correct some legacy variable names."""
         # change Fn_KZ to Fn_4cmpt
-        opt = pfp_utils.get_keyvaluefromcf(self.cfg_mod, ["Variables", "Fn", "MergeSeries"],
+        opt = pfp_utils.get_keyvaluefromcf(self.cfg, ["Variables", "Fn", "MergeSeries"],
                                            "Source", default="", mode="quiet")
         if len(opt) != 0:
             if "Fn_KZ" in opt:
                 opt = opt.replace("Fn_KZ", "Fn_4cmpt")
-                self.cfg_mod["Variables"]["Fn"]["MergeSeries"]["Source"] = opt
+                self.cfg["Variables"]["Fn"]["MergeSeries"]["Source"] = opt
                 self.cfg_changed = True
         return
 
@@ -1881,9 +1879,10 @@ class edit_cfg_L3(QtGui.QWidget):
 
     def get_data_from_model(self):
         """ Iterate over the model and get the data."""
+        # create a new control file object
         cfg = ConfigObj(indent_type="    ", list_values=False)
+        # set the control file level
         cfg["level"] = "L3"
-        cfg["controlfile_name"] = self.cfg_mod["controlfile_name"]
         model = self.model
         # there must be a way to do this recursively
         for i in range(model.rowCount()):
@@ -1970,14 +1969,14 @@ class edit_cfg_L3(QtGui.QWidget):
         self.transfer_general_to_options()
         # there must be some way to do this recursively
         self.sections = {}
-        for key1 in self.cfg_mod:
-            if not self.cfg_mod[key1]:
+        for key1 in self.cfg:
+            if not self.cfg[key1]:
                 continue
             if key1 in ["Files", "Global", "Output", "Options", "Soil", "Massman"]:
                 # sections with only 1 level
                 self.sections[key1] = QtGui.QStandardItem(key1)
-                for key2 in self.cfg_mod[key1]:
-                    val = self.cfg_mod[key1][key2]
+                for key2 in self.cfg[key1]:
+                    val = self.cfg[key1][key2]
                     val = self.parse_cfg_values(key2, val, ['"', "'", "[", "]"])
                     child0 = QtGui.QStandardItem(key2)
                     child1 = QtGui.QStandardItem(val)
@@ -1986,17 +1985,17 @@ class edit_cfg_L3(QtGui.QWidget):
             elif key1 in ["Plots", "Imports"]:
                 # sections with 2 levels
                 self.sections[key1] = QtGui.QStandardItem(key1)
-                for key2 in self.cfg_mod[key1]:
+                for key2 in self.cfg[key1]:
                     if key1 == "Plots":
                         # handle old-style control files with separate Title key
                         title = self.parse_cfg_plots_title(key1, key2)
                         parent2 = QtGui.QStandardItem(title)
                     else:
                         parent2 = QtGui.QStandardItem(key2)
-                    for key3 in self.cfg_mod[key1][key2]:
+                    for key3 in self.cfg[key1][key2]:
                         if key3 in ["source"]:
                             continue
-                        val = self.cfg_mod[key1][key2][key3]
+                        val = self.cfg[key1][key2][key3]
                         val = self.parse_cfg_plots_value(key3, val)
                         child0 = QtGui.QStandardItem(key3)
                         child1 = QtGui.QStandardItem(val)
@@ -2006,14 +2005,14 @@ class edit_cfg_L3(QtGui.QWidget):
             elif key1 in ["Variables"]:
                 # sections with 3 levels
                 self.sections[key1] = QtGui.QStandardItem(key1)
-                for key2 in self.cfg_mod[key1]:
+                for key2 in self.cfg[key1]:
                     parent2 = QtGui.QStandardItem(key2)
-                    for key3 in self.cfg_mod[key1][key2]:
+                    for key3 in self.cfg[key1][key2]:
                         if key3 in ["ustar_threshold"]:
                             continue
                         parent3 = QtGui.QStandardItem(key3)
-                        for key4 in self.cfg_mod[key1][key2][key3]:
-                            val = self.cfg_mod[key1][key2][key3][key4]
+                        for key4 in self.cfg[key1][key2][key3]:
+                            val = self.cfg[key1][key2][key3][key4]
                             val = self.parse_cfg_variables_value(key3, val)
                             child0 = QtGui.QStandardItem(key4)
                             child1 = QtGui.QStandardItem(val)
@@ -2025,15 +2024,15 @@ class edit_cfg_L3(QtGui.QWidget):
     def handleItemChanged(self, item):
         """ Handler for when view items are edited."""
         # update the control file contents
-        self.cfg_mod = self.get_data_from_model()
+        self.cfg = self.get_data_from_model()
         # add an asterisk to the tab text to indicate the tab contents have changed
         self.update_tab_text()
 
     def parse_cfg_plots_title(self, key1, key2):
         """ Parse the [Plots] section for a title."""
-        if "Title" in self.cfg_mod[key1][key2]:
-            title = self.cfg_mod[key1][key2]["Title"]
-            del self.cfg_mod[key1][key2]["Title"]
+        if "Title" in self.cfg[key1][key2]:
+            title = self.cfg[key1][key2]["Title"]
+            del self.cfg[key1][key2]["Title"]
             self.cfg_changed = True
         else:
             title = key2
@@ -2140,12 +2139,12 @@ class edit_cfg_L3(QtGui.QWidget):
 
     def transfer_general_to_options(self):
         """ Copy any entries in [General] to [Options] then delete [General]."""
-        if "General" in self.cfg_mod:
-            if "Options" not in self.cfg_mod:
-                self.cfg_mod["Options"] = {}
-            for item in self.cfg_mod["General"]:
-                self.cfg_mod["Options"][item] = self.cfg_mod["General"][item]
-            del self.cfg_mod["General"]
+        if "General" in self.cfg:
+            if "Options" not in self.cfg:
+                self.cfg["Options"] = {}
+            for item in self.cfg["General"]:
+                self.cfg["Options"][item] = self.cfg["General"][item]
+            del self.cfg["General"]
         return
 
     def update_tab_text(self):
@@ -2160,7 +2159,7 @@ class edit_cfg_concatenate(QtGui.QWidget):
 
         super(edit_cfg_concatenate, self).__init__()
 
-        self.cfg_mod = copy.deepcopy(main_gui.cfg)
+        self.cfg = copy.deepcopy(main_gui.cfg)
 
         self.cfg_changed = False
         self.tabs = main_gui.tabs
@@ -2201,14 +2200,14 @@ class edit_cfg_concatenate(QtGui.QWidget):
         self.model.itemChanged.connect(self.handleItemChanged)
         # there must be someway outa here, said the Joker to the Thief ...
         self.sections = {}
-        for key1 in self.cfg_mod:
-            if not self.cfg_mod[key1]:
+        for key1 in self.cfg:
+            if not self.cfg[key1]:
                 continue
             if key1 in ["Options"]:
                 # sections with only 1 level
                 self.sections[key1] = QtGui.QStandardItem(key1)
-                for key2 in self.cfg_mod[key1]:
-                    val = self.cfg_mod[key1][key2]
+                for key2 in self.cfg[key1]:
+                    val = self.cfg[key1][key2]
                     val = self.parse_cfg_values(key2, val, ["[","]",'"', "'"])
                     child0 = QtGui.QStandardItem(key2)
                     child1 = QtGui.QStandardItem(str(val))
@@ -2217,10 +2216,10 @@ class edit_cfg_concatenate(QtGui.QWidget):
             elif key1 in ["Files"]:
                 # sections with 2 levels
                 self.sections[key1] = QtGui.QStandardItem(key1)
-                for key2 in self.cfg_mod[key1]:
+                for key2 in self.cfg[key1]:
                     parent2 = QtGui.QStandardItem(key2)
-                    for val in self.cfg_mod[key1][key2]:
-                        value = self.cfg_mod[key1][key2][val]
+                    for val in self.cfg[key1][key2]:
+                        value = self.cfg[key1][key2][val]
                         child0 = QtGui.QStandardItem(val)
                         child1 = QtGui.QStandardItem(str(value))
                         parent2.appendRow([child0, child1])
@@ -2231,7 +2230,6 @@ class edit_cfg_concatenate(QtGui.QWidget):
         """ Iterate over the model and get the data."""
         cfg = ConfigObj(indent_type="    ", list_values=False)
         cfg["level"] = "concatenate"
-        cfg["controlfile_name"] = self.cfg_mod["controlfile_name"]
         model = self.model
         # there must be a way to do this recursively
         for i in range(model.rowCount()):
@@ -2260,7 +2258,7 @@ class edit_cfg_concatenate(QtGui.QWidget):
     def handleItemChanged(self, item):
         """ Handler for when view items are edited."""
         # update the control file contents
-        self.cfg_mod = self.get_data_from_model()
+        self.cfg = self.get_data_from_model()
         # add an asterisk to the tab text to indicate the tab contents have changed
         self.update_tab_text()
 
@@ -2595,7 +2593,7 @@ class edit_cfg_L4(QtGui.QWidget):
 
         super(edit_cfg_L4, self).__init__()
 
-        self.cfg_mod = copy.deepcopy(main_gui.cfg)
+        self.cfg = copy.deepcopy(main_gui.cfg)
 
         self.cfg_changed = False
         self.tabs = main_gui.tabs
@@ -2638,14 +2636,14 @@ class edit_cfg_L4(QtGui.QWidget):
         self.model.itemChanged.connect(self.handleItemChanged)
         # there must be someway outa here, said the Joker to the Thief ...
         self.sections = {}
-        for key1 in self.cfg_mod:
-            if not self.cfg_mod[key1]:
+        for key1 in self.cfg:
+            if not self.cfg[key1]:
                 continue
             if key1 in ["Files", "Global", "Options"]:
                 # sections with only 1 level
                 self.sections[key1] = QtGui.QStandardItem(key1)
-                for key2 in self.cfg_mod[key1]:
-                    val = self.cfg_mod[key1][key2]
+                for key2 in self.cfg[key1]:
+                    val = self.cfg[key1][key2]
                     if ("browse" not in val):
                         val = self.parse_cfg_values(key2, val, ['"', "'"])
                     child0 = QtGui.QStandardItem(key2)
@@ -2656,26 +2654,26 @@ class edit_cfg_L4(QtGui.QWidget):
                 # sections with 4 levels
                 self.sections[key1] = QtGui.QStandardItem(key1)
                 # key2 is the variable name
-                for key2 in self.cfg_mod[key1]:
+                for key2 in self.cfg[key1]:
                     parent2 = QtGui.QStandardItem(key2)
                     # key3 is the gap filling method
-                    for key3 in self.cfg_mod[key1][key2]:
+                    for key3 in self.cfg[key1][key2]:
                         parent3 = QtGui.QStandardItem(key3)
                         if key3 in ["GapFillFromAlternate", "GapFillFromClimatology"]:
                             # key4 is the alternate variable name
-                            for key4 in self.cfg_mod[key1][key2][key3]:
+                            for key4 in self.cfg[key1][key2][key3]:
                                 parent4 = QtGui.QStandardItem(key4)
                                 # key5 is the source of the alternate data
-                                for key5 in self.cfg_mod[key1][key2][key3][key4]:
-                                    val = self.cfg_mod[key1][key2][key3][key4][key5]
+                                for key5 in self.cfg[key1][key2][key3][key4]:
+                                    val = self.cfg[key1][key2][key3][key4][key5]
                                     val = self.parse_cfg_values(key5, val, ['"', "'"])
                                     child0 = QtGui.QStandardItem(key5)
                                     child1 = QtGui.QStandardItem(val)
                                     parent4.appendRow([child0, child1])
                                 parent3.appendRow(parent4)
                         elif key3 in ["MergeSeries", "RangeCheck", "ExcludeDates"]:
-                            for key4 in self.cfg_mod[key1][key2][key3]:
-                                val = self.cfg_mod[key1][key2][key3][key4]
+                            for key4 in self.cfg[key1][key2][key3]:
+                                val = self.cfg[key1][key2][key3][key4]
                                 val = self.parse_cfg_variables_value(key3, val)
                                 child0 = QtGui.QStandardItem(key4)
                                 child1 = QtGui.QStandardItem(val)
@@ -2688,7 +2686,6 @@ class edit_cfg_L4(QtGui.QWidget):
         """ Iterate over the model and get the data."""
         cfg = ConfigObj(indent_type="    ", list_values=False)
         cfg["level"] = "L4"
-        cfg["controlfile_name"] = self.cfg_mod["controlfile_name"]
         model = self.model
         # there must be a way to do this recursively
         for i in range(model.rowCount()):
@@ -2746,7 +2743,7 @@ class edit_cfg_L4(QtGui.QWidget):
     def handleItemChanged(self, item):
         """ Handler for when view items are edited."""
         # update the control file contents
-        self.cfg_mod = self.get_data_from_model()
+        self.cfg = self.get_data_from_model()
         # add an asterisk to the tab text to indicate the tab contents have changed
         self.update_tab_text()
 
@@ -3427,7 +3424,7 @@ class edit_cfg_L5(QtGui.QWidget):
 
         super(edit_cfg_L5, self).__init__()
 
-        self.cfg_mod = copy.deepcopy(main_gui.cfg)
+        self.cfg = copy.deepcopy(main_gui.cfg)
 
         self.cfg_changed = False
         self.altered = []
@@ -3470,14 +3467,14 @@ class edit_cfg_L5(QtGui.QWidget):
         self.model.itemChanged.connect(self.handleItemChanged)
         # there must be someway outa here, said the Joker to the Thief ...
         self.sections = {}
-        for key1 in self.cfg_mod:
-            if not self.cfg_mod[key1]:
+        for key1 in self.cfg:
+            if not self.cfg[key1]:
                 continue
             if key1 in ["Files", "Global", "Options", "ustar_threshold"]:
                 # sections with only 1 level
                 self.sections[key1] = QtGui.QStandardItem(key1)
-                for key2 in self.cfg_mod[key1]:
-                    val = self.cfg_mod[key1][key2]
+                for key2 in self.cfg[key1]:
+                    val = self.cfg[key1][key2]
                     if ((key1 in ["Files"]) and ("browse" not in val)):
                         val = self.parse_cfg_values(key2, val, ["[", "]", "'", '"', " "])
                     elif key1 in ["Global", "Options"]:
@@ -3492,26 +3489,26 @@ class edit_cfg_L5(QtGui.QWidget):
                 # sections with 4 levels
                 self.sections[key1] = QtGui.QStandardItem(key1)
                 # key2 is the variable name
-                for key2 in self.cfg_mod[key1]:
+                for key2 in self.cfg[key1]:
                     parent2 = QtGui.QStandardItem(key2)
                     # key3 is the gap filling method
-                    for key3 in self.cfg_mod[key1][key2]:
+                    for key3 in self.cfg[key1][key2]:
                         parent3 = QtGui.QStandardItem(key3)
                         if key3 in ["GapFillUsingSOLO", "GapFillUsingMDS"]:
                             # key4 is the gap fill variable name
-                            for key4 in self.cfg_mod[key1][key2][key3]:
+                            for key4 in self.cfg[key1][key2][key3]:
                                 parent4 = QtGui.QStandardItem(key4)
                                 # key5 is the source of the alternate data
-                                for key5 in self.cfg_mod[key1][key2][key3][key4]:
-                                    val = self.cfg_mod[key1][key2][key3][key4][key5]
+                                for key5 in self.cfg[key1][key2][key3][key4]:
+                                    val = self.cfg[key1][key2][key3][key4][key5]
                                     val = self.parse_cfg_values(key5, val, ["[", "]", "'", '"', " "])
                                     child0 = QtGui.QStandardItem(key5)
                                     child1 = QtGui.QStandardItem(val)
                                     parent4.appendRow([child0, child1])
                                 parent3.appendRow(parent4)
                         elif key3 in ["MergeSeries", "RangeCheck", "ExcludeDates", "DiurnalCheck", "DependencyCheck"]:
-                            for key4 in self.cfg_mod[key1][key2][key3]:
-                                val = self.cfg_mod[key1][key2][key3][key4]
+                            for key4 in self.cfg[key1][key2][key3]:
+                                val = self.cfg[key1][key2][key3][key4]
                                 val = self.parse_cfg_variables_value(key3, val)
                                 child0 = QtGui.QStandardItem(key4)
                                 child1 = QtGui.QStandardItem(val)
@@ -3524,7 +3521,6 @@ class edit_cfg_L5(QtGui.QWidget):
         """ Iterate over the model and get the data."""
         cfg = ConfigObj(indent_type="    ", list_values=False)
         cfg["level"] = "L5"
-        cfg["controlfile_name"] = self.cfg_mod["controlfile_name"]
         model = self.model
         # there must be a way to do this recursively
         for i in range(model.rowCount()):
@@ -3582,7 +3578,7 @@ class edit_cfg_L5(QtGui.QWidget):
     def handleItemChanged(self, item):
         """ Handler for when view items are edited."""
         # update the control file contents
-        self.cfg_mod = self.get_data_from_model()
+        self.cfg = self.get_data_from_model()
         # update the list of altered series
         self.update_altered_list()
         # add an asterisk to the tab text to indicate the tab contents have changed
@@ -4380,7 +4376,7 @@ class edit_cfg_L6(QtGui.QWidget):
 
         super(edit_cfg_L6, self).__init__()
 
-        self.cfg_mod = copy.deepcopy(main_gui.cfg)
+        self.cfg = copy.deepcopy(main_gui.cfg)
 
         self.cfg_changed = False
         self.tabs = main_gui.tabs
@@ -4422,14 +4418,14 @@ class edit_cfg_L6(QtGui.QWidget):
         self.model.itemChanged.connect(self.handleItemChanged)
         # there must be someway outa here, said the Joker to the Thief ...
         self.sections = {}
-        for key1 in self.cfg_mod:
-            if not self.cfg_mod[key1]:
+        for key1 in self.cfg:
+            if not self.cfg[key1]:
                 continue
             if key1 in ["Files", "Global"]:
                 # sections with only 1 level
                 self.sections[key1] = QtGui.QStandardItem(key1)
-                for key2 in self.cfg_mod[key1]:
-                    val = self.cfg_mod[key1][key2]
+                for key2 in self.cfg[key1]:
+                    val = self.cfg[key1][key2]
                     val = self.parse_cfg_values(key2, val, ["[", "]", "'", '"'])
                     child0 = QtGui.QStandardItem(key2)
                     child1 = QtGui.QStandardItem(val)
@@ -4438,10 +4434,10 @@ class edit_cfg_L6(QtGui.QWidget):
             elif key1 in ["NEE", "GPP"]:
                 # sections with 2 levels
                 self.sections[key1] = QtGui.QStandardItem(key1)
-                for key2 in self.cfg_mod[key1]:
+                for key2 in self.cfg[key1]:
                     parent2 = QtGui.QStandardItem(key2)
-                    for key3 in self.cfg_mod[key1][key2]:
-                        val = self.cfg_mod[key1][key2][key3]
+                    for key3 in self.cfg[key1][key2]:
+                        val = self.cfg[key1][key2][key3]
                         val = self.parse_cfg_nee_gpp_value(key3, val)
                         child0 = QtGui.QStandardItem(key3)
                         child1 = QtGui.QStandardItem(val)
@@ -4451,12 +4447,12 @@ class edit_cfg_L6(QtGui.QWidget):
             elif key1 in ["ER"]:
                 # sections with 3 levels
                 self.sections[key1] = QtGui.QStandardItem(key1)
-                for key2 in self.cfg_mod[key1]:
+                for key2 in self.cfg[key1]:
                     parent2 = QtGui.QStandardItem(key2)
-                    for key3 in self.cfg_mod[key1][key2]:
+                    for key3 in self.cfg[key1][key2]:
                         parent3 = QtGui.QStandardItem(key3)
-                        for key4 in self.cfg_mod[key1][key2][key3]:
-                            val = self.cfg_mod[key1][key2][key3][key4]
+                        for key4 in self.cfg[key1][key2][key3]:
+                            val = self.cfg[key1][key2][key3][key4]
                             val = self.parse_cfg_er_value(key3, val)
                             child0 = QtGui.QStandardItem(key4)
                             child1 = QtGui.QStandardItem(val)
@@ -4469,7 +4465,6 @@ class edit_cfg_L6(QtGui.QWidget):
         """ Iterate over the model and get the data."""
         cfg = ConfigObj(indent_type="    ", list_values=False)
         cfg["level"] = "L6"
-        cfg["controlfile_name"] = self.cfg_mod["controlfile_name"]
         model = self.model
         # there must be a way to do this recursively
         for i in range(model.rowCount()):
@@ -4584,7 +4579,7 @@ class edit_cfg_L6(QtGui.QWidget):
     def handleItemChanged(self, item):
         """ Handler for when view items are edited."""
         # update the control file contents
-        self.cfg_mod = self.get_data_from_model()
+        self.cfg = self.get_data_from_model()
         # add an asterisk to the tab text to indicate the tab contents have changed
         self.update_tab_text()
 
@@ -4793,7 +4788,7 @@ class edit_cfg_nc2csv_ecostress(QtGui.QWidget):
 
         super(edit_cfg_nc2csv_ecostress, self).__init__()
 
-        self.cfg_mod = copy.deepcopy(main_gui.cfg)
+        self.cfg = copy.deepcopy(main_gui.cfg)
 
         self.cfg_changed = False
         self.tabs = main_gui.tabs
@@ -4835,14 +4830,14 @@ class edit_cfg_nc2csv_ecostress(QtGui.QWidget):
         self.model.itemChanged.connect(self.handleItemChanged)
         # there must be someway outa here, said the Joker to the Thief ...
         self.sections = {}
-        for key1 in self.cfg_mod:
-            if not self.cfg_mod[key1]:
+        for key1 in self.cfg:
+            if not self.cfg[key1]:
                 continue
             if key1 in ["Files", "General"]:
                 # sections with only 1 level
                 self.sections[key1] = QtGui.QStandardItem(key1)
-                for key2 in self.cfg_mod[key1]:
-                    val = self.cfg_mod[key1][key2]
+                for key2 in self.cfg[key1]:
+                    val = self.cfg[key1][key2]
                     child0 = QtGui.QStandardItem(key2)
                     child1 = QtGui.QStandardItem(val)
                     self.sections[key1].appendRow([child0, child1])
@@ -4851,11 +4846,11 @@ class edit_cfg_nc2csv_ecostress(QtGui.QWidget):
                 # sections with 2 levels
                 self.sections[key1] = QtGui.QStandardItem(key1)
                 # key2 is the variable name
-                for key2 in self.cfg_mod[key1]:
+                for key2 in self.cfg[key1]:
                     parent2 = QtGui.QStandardItem(key2)
                     # key3 is the variable options
-                    for key3 in self.cfg_mod[key1][key2]:
-                        val = self.cfg_mod[key1][key2][key3]
+                    for key3 in self.cfg[key1][key2]:
+                        val = self.cfg[key1][key2][key3]
                         child0 = QtGui.QStandardItem(key3)
                         child1 = QtGui.QStandardItem(val)
                         parent2.appendRow([child0, child1])
@@ -4866,7 +4861,6 @@ class edit_cfg_nc2csv_ecostress(QtGui.QWidget):
         """ Iterate over the model and get the data."""
         cfg = ConfigObj(indent_type="    ", list_values=False)
         cfg["level"] = "nc2csv_ecostress"
-        cfg["controlfile_name"] = self.cfg_mod["controlfile_name"]
         model = self.model
         # there must be a way to do this recursively
         for i in range(model.rowCount()):
@@ -5070,7 +5064,7 @@ class edit_cfg_nc2csv_ecostress(QtGui.QWidget):
     def handleItemChanged(self, item):
         """ Handler for when view items are edited."""
         # update the control file contents
-        self.cfg_mod = self.get_data_from_model()
+        self.cfg = self.get_data_from_model()
         # add an asterisk to the tab text to indicate the tab contents have changed
         self.update_tab_text()
 
