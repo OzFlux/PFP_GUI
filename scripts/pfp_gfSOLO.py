@@ -47,7 +47,8 @@ def GapFillUsingSOLO(main_gui, cf, dsa, dsb):
                  "file_enddate":enddate.strftime("%Y-%m-%d %H:%M"),
                  "startdate":startdate.strftime("%Y-%m-%d %H:%M"),
                  "enddate":enddate.strftime("%Y-%m-%d %H:%M"),
-                 "called_by": "GapFillingUsingSOLO"}
+                 "called_by": "GapFillingUsingSOLO",
+                 "plot_path": cf["Files"]["plot_path"]}
     # check to see if this is a batch or an interactive run
     call_mode = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "call_mode", default="interactive")
     solo_info["call_mode"]= call_mode
@@ -181,13 +182,6 @@ def gfSOLO_main(dsa,dsb,solo_info,output_list=[]):
     startdate = solo_info["startdate"]
     enddate = solo_info["enddate"]
     logger.info(" Gap filling using SOLO: "+startdate+" to "+enddate)
-    # read the control file again, this allows the contents of the control file to
-    # be changed with the SOLO GUI still displayed
-    cfname = dsb.globalattributes["controlfile_name"]
-    cf = pfp_io.get_controlfilecontents(cfname,mode="quiet")
-    solo_info["plot_path"] = cf["Files"]["plot_path"]
-    # put the control file object in the solo_info dictionary
-    dsb.cf = cf.copy()
     # get some useful things
     site_name = dsa.globalattributes["site_name"]
     # get the time step and a local pointer to the datetime series
@@ -209,7 +203,6 @@ def gfSOLO_main(dsa,dsb,solo_info,output_list=[]):
     else:
         nRecs = ei - si + 1
     # loop over the series to be gap filled using solo
-    #solo_info["min_points"] = int(nRecs*solo_info["min_percent"]/100)
     solo_info["min_points"] = int((ei-si)*solo_info["min_percent"]/100)
     # close any open plot windows
     if len(plt.get_fignums())!=0:
@@ -306,7 +299,6 @@ def gfSOLO_plot(pd,dsa,dsb,driverlist,targetlabel,outputlabel,solo_info,si=0,ei=
     mod_mor = numpy.ma.array(mod,mask=mask)
     if numpy.ma.count_masked(obs)!=0:
         index = numpy.where(numpy.ma.getmaskarray(obs)==False)[0]
-        #index = numpy.ma.where(numpy.ma.getmaskarray(obs)==False)[0]
         # get the diurnal stats of SOLO predictions when observations are present
         Num3,Hr3,Av3,Sd3,Mx3,Mn3=gf_getdiurnalstats(Hdh[index],mod_mor[index],ts)
         ax1.plot(Hr3,Av3,'g-',label="SOLO(obs)")

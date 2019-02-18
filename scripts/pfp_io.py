@@ -2406,10 +2406,8 @@ def xl_check_cf_section(cf, label):
 
 def xl_write_AlternateStats(ds):
     if "alternate" not in dir(ds): return
-    # open an Excel file for the fit statistics
-    cfname = ds.globalattributes["controlfile_name"]
-    cf = get_controlfilecontents(cfname,mode="quiet")
-    out_filename = get_outfilenamefromcf(cf)
+    # get the output file name
+    out_filename = get_outfilenamefromcf(ds.cf)
     # get the Excel file name
     xl_filename = out_filename.replace('.nc','_AlternateStats.xls')
     file_name = os.path.split(xl_filename)
@@ -2452,10 +2450,8 @@ def xl_write_AlternateStats(ds):
 
 def xl_write_SOLOStats(ds):
     if "solo" not in dir(ds): return
-    # open an Excel file for the fit statistics
-    cfname = ds.globalattributes["controlfile_name"]
-    cf = get_controlfilecontents(cfname)
-    out_filename = get_outfilenamefromcf(cf)
+    # get the output file name
+    out_filename = get_outfilenamefromcf(ds.cf)
     # get the Excel file name
     xl_filename = out_filename.replace('.nc','_SOLOStats.xls')
     xl_name = os.path.split(xl_filename)

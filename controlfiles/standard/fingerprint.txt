@@ -22,10 +22,10 @@
     [[Fsu]]
         nc_varname = "Fsu"
         Lower = -10
-        Upper = 400
+        Upper = 750
     [[Fld]]
         nc_varname = "Fld"
-        Lower = 200
+        Lower = 150
         Upper = 600
     [[Flu]]
         nc_varname = "Flu"
