@@ -121,6 +121,7 @@ class edit_cfg_L1(QtGui.QWidget):
         """ Iterate over the model and get the data."""
         cfg = ConfigObj(indent_type="    ", list_values=False)
         cfg["level"] = "L1"
+        cfg["controlfile_name"] = self.cfg_mod["controlfile_name"]
         model = self.model
         # there must be a way to do this recursively
         for i in range(model.rowCount()):
@@ -983,6 +984,7 @@ class edit_cfg_L2(QtGui.QWidget):
         """ Iterate over the model and get the data."""
         cfg = ConfigObj(indent_type="    ", list_values=False)
         cfg["level"] = "L2"
+        cfg["controlfile_name"] = self.cfg_mod["controlfile_name"]
         model = self.model
         # there must be a way to do this recursively
         for i in range(model.rowCount()):
@@ -1881,6 +1883,7 @@ class edit_cfg_L3(QtGui.QWidget):
         """ Iterate over the model and get the data."""
         cfg = ConfigObj(indent_type="    ", list_values=False)
         cfg["level"] = "L3"
+        cfg["controlfile_name"] = self.cfg_mod["controlfile_name"]
         model = self.model
         # there must be a way to do this recursively
         for i in range(model.rowCount()):
@@ -2228,6 +2231,7 @@ class edit_cfg_concatenate(QtGui.QWidget):
         """ Iterate over the model and get the data."""
         cfg = ConfigObj(indent_type="    ", list_values=False)
         cfg["level"] = "concatenate"
+        cfg["controlfile_name"] = self.cfg_mod["controlfile_name"]
         model = self.model
         # there must be a way to do this recursively
         for i in range(model.rowCount()):
@@ -2684,6 +2688,7 @@ class edit_cfg_L4(QtGui.QWidget):
         """ Iterate over the model and get the data."""
         cfg = ConfigObj(indent_type="    ", list_values=False)
         cfg["level"] = "L4"
+        cfg["controlfile_name"] = self.cfg_mod["controlfile_name"]
         model = self.model
         # there must be a way to do this recursively
         for i in range(model.rowCount()):
@@ -3519,6 +3524,7 @@ class edit_cfg_L5(QtGui.QWidget):
         """ Iterate over the model and get the data."""
         cfg = ConfigObj(indent_type="    ", list_values=False)
         cfg["level"] = "L5"
+        cfg["controlfile_name"] = self.cfg_mod["controlfile_name"]
         model = self.model
         # there must be a way to do this recursively
         for i in range(model.rowCount()):
@@ -4462,7 +4468,8 @@ class edit_cfg_L6(QtGui.QWidget):
     def get_data_from_model(self):
         """ Iterate over the model and get the data."""
         cfg = ConfigObj(indent_type="    ", list_values=False)
-        cfg["level"] = "L5"
+        cfg["level"] = "L6"
+        cfg["controlfile_name"] = self.cfg_mod["controlfile_name"]
         model = self.model
         # there must be a way to do this recursively
         for i in range(model.rowCount()):
@@ -4859,6 +4866,7 @@ class edit_cfg_nc2csv_ecostress(QtGui.QWidget):
         """ Iterate over the model and get the data."""
         cfg = ConfigObj(indent_type="    ", list_values=False)
         cfg["level"] = "nc2csv_ecostress"
+        cfg["controlfile_name"] = self.cfg_mod["controlfile_name"]
         model = self.model
         # there must be a way to do this recursively
         for i in range(model.rowCount()):
