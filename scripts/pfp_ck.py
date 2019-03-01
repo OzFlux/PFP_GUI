@@ -568,7 +568,7 @@ def do_excludedates(cf,ds,section,series,code=6):
         ds.series[series]['Data'][si:ei] = numpy.float64(c.missing_value)
         ds.series[series]['Flag'][si:ei] = numpy.int32(code)
         ds.series[series]['Attr']['ExcludeDates_'+str(i)] = cf[section][series]['ExcludeDates'][str(i)]
-        return
+    return
 
 def do_excludehours(cf,ds,section,series,code=7):
     if 'ExcludeHours' not in cf[section][series].keys(): return
