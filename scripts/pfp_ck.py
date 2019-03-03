@@ -479,31 +479,51 @@ def do_EC155check(cf,ds):
         logger.warning(msg)
         return
     # seems OK to continue
-    logger.info(' Doing the EC155 check')
+    irga_type = str(ds.globalattributes["irga_type"])
+    msg = " Doing the " + irga_type+" check"
+    logger.info(msg)
     # list of series that depend on IRGA data quality
     EC155_list = ['H2O_IRGA_Av','CO2_IRGA_Av','H2O_IRGA_Sd','CO2_IRGA_Sd','H2O_IRGA_Vr','CO2_IRGA_Vr',
                  'UzA','UxA','UyA','UzH','UxH','UyH','UzC','UxC','UyC']
     idx = numpy.where(ds.series['Diag_IRGA']['Flag']!=0)
     logger.info('  EC155Check: Diag_IRGA rejects ' + str(numpy.size(idx)))
+    used_Signal = False
+    used_H2O = False
+    used_CO2 = False
     EC155_dependents = []
     for item in ['Signal_H2O','Signal_CO2','H2O_IRGA_Sd','CO2_IRGA_Sd']:
         if item in ds.series.keys():
+            if ("Signal_H2O" in item) or ("Signal_CO2" in item):
+                used_Signal = True
+            if ("H2O" in item) or ("Ah" in label):
+                used_H2O = True
+            if ("CO2" in item) or ("Cc" in label):
+                used_CO2 = True
             EC155_dependents.append(item)
+    if not used_Signal:
+        msg = " Signal_H2O or Signal_CO2 value not used in QC (not in data)"
+        logger.warning(msg)
+    if not used_H2O:
+        msg = " H2O stdev or var not used in QC (not in data)"
+        logger.warning(msg)
+    if not used_CO2:
+        msg = " CO2 stdev or var not used in QC (not in data)"
+        logger.warning(msg)
     flag = numpy.copy(ds.series['Diag_IRGA']['Flag'])
     for item in EC155_dependents:
         idx = numpy.where(ds.series[item]['Flag'] != 0)[0]
-        logger.info('  EC155Check: '+item+' rejected '+str(numpy.size(idx))+' points')
+        msg = "  " + irga_type+"Check: "+item+" rejected "+str(numpy.size(idx))+" points"
+        logger.info(msg)
         flag[idx] = numpy.int32(1)
     idx = numpy.where(flag !=0 )[0]
-    logger.info('  EC155Check: Total rejected ' + str(numpy.size(idx)))
+    msg = "  "+irga_type+"Check: Total rejected " + str(numpy.size(idx))
+    logger.info(msg)
     for ThisOne in EC155_list:
         if ThisOne in ds.series.keys():
             ds.series[ThisOne]['Data'][idx] = numpy.float64(c.missing_value)
             ds.series[ThisOne]['Flag'][idx] = numpy.int32(4)
         else:
             logger.warning(' do_EC155check: series '+str(ThisOne)+' in EC155 list not found in data structure')
-    if 'EC155Check' not in ds.globalattributes['Functions']:
-        ds.globalattributes['Functions'] = ds.globalattributes['Functions']+',EC155Check'
 
 def do_EPQCFlagCheck(cf,ds,section,series,code=9):
     """
@@ -611,7 +631,11 @@ def do_IRGAcheck(cf,ds):
     """
     irga_list = ["li7500","li7500a","li7500rs","ec150","ec155","irgason"]
     # get the IRGA type from the control file
-    irga_type = pfp_utils.get_keyvaluefromcf(cf,["Options"],"irga_type", default="li7500")
+    irga_type = pfp_utils.get_keyvaluefromcf(cf,["Options"],"irga_type", default="not found")
+    if irga_type == "not found":
+        msg = " IRGA type not specified in Options section, using default (Li-7500)"
+        logger.warning(msg)
+        irga_type = "li7500"
     # remove any hyphens or spaces
     for item in ["-"," "]:
         if item in irga_type: irga_type = irga_type.replace(item,"")
@@ -692,11 +716,29 @@ def do_li7500check(cf, ds, code=4):
         if (std in irga_dependents) and (var in irga_dependents):
             irga_dependents_nodups.remove(var)
     # now we can do the business
+    used_AGC = False
+    used_H2O = False
+    used_CO2 = False
     flag = numpy.copy(ds.series["Diag_IRGA"]["Flag"])
     for label in irga_dependents_nodups:
+        if "AGC" in label:
+            used_AGC = True
+        if ("H2O" in label) or ("Ah" in label):
+            used_H2O = True
+        if ("CO2" in label) or ("Cc" in label):
+            used_CO2 = True
         idx = numpy.where(ds.series[label]["Flag"] != 0)
         logger.info("  IRGACheck: "+label+" rejected "+str(numpy.size(idx))+" points")
         flag[idx] = numpy.int32(1)
+    if not used_AGC:
+        msg = " AGC value not used in QC (not in data)"
+        logger.warning(msg)
+    if not used_H2O:
+        msg = " H2O stdev or var not used in QC (not in data)"
+        logger.warning(msg)
+    if not used_CO2:
+        msg = " CO2 stdev or var not used in QC (not in data)"
+        logger.warning(msg)
     idx = numpy.where(flag != 0)[0]
     msg = "  IRGACheck: Total rejected is " + str(numpy.size(idx))
     percent = float(100)*numpy.size(idx)/numpy.size(flag)
@@ -722,14 +764,33 @@ def do_li7500acheck(cf,ds):
                 'UzA','UxA','UyA','UzC','UxC','UyC']
     idx = numpy.where(ds.series['Diag_IRGA']['Flag']!=0)[0]
     logger.info('  7500ACheck: Diag_IRGA ' + str(numpy.size(idx)))
+    # initialise logicals to track which QC data used
+    used_Signal = False
+    used_H2O = False
+    used_CO2 = False
     LI75_dependents = []
     for item in ['Signal_H2O','Signal_CO2','H2O_IRGA_Sd','CO2_IRGA_Sd','H2O_IRGA_Vr','CO2_IRGA_Vr']:
         if item in ds.series.keys():
+            if ("Signal_H2O" in item) or ("Signal_CO2" in item):
+                used_Signal = True
+            if ("H2O" in item) or ("Ah" in label):
+                used_H2O = True
+            if ("CO2" in item) or ("Cc" in label):
+                used_CO2 = True
             LI75_dependents.append(item)
     if "H2O_IRGA_Sd" and "H2O_IRGA_Vr" in LI75_dependents:
         LI75_dependents.remove("H2O_IRGA_Vr")
     if "CO2_IRGA_Sd" and "CO2_IRGA_Vr" in LI75_dependents:
         LI75_dependents.remove("CO2_IRGA_Vr")
+    if not used_Signal:
+        msg = " Signal_H2O or Signal_CO2 value not used in QC (not in data)"
+        logger.warning(msg)
+    if not used_H2O:
+        msg = " H2O stdev or var not used in QC (not in data)"
+        logger.warning(msg)
+    if not used_CO2:
+        msg = " CO2 stdev or var not used in QC (not in data)"
+        logger.warning(msg)
     flag = numpy.copy(ds.series['Diag_IRGA']['Flag'])
     for item in LI75_dependents:
         if item in ds.series.keys():

@@ -555,6 +555,18 @@ class edit_cfg_L2(QtGui.QWidget):
         selected_item.appendRow([child0, child1])
         self.update_tab_text()
 
+    def add_options_section(self):
+        """ Add an Options section."""
+        self.sections["Options"] = QtGui.QStandardItem("Options")
+        new_options = {"irga_type": "Li-7500A"}
+        for key in new_options:
+            value = new_options[key]
+            child0 = QtGui.QStandardItem(key)
+            child1 = QtGui.QStandardItem(value)
+            self.sections["Options"].appendRow([child0, child1])
+        self.model.insertRow(self.section_headings.index("Variables"), self.sections["Options"])
+        self.update_tab_text()
+
     def add_out_filename(self):
         """ Add out_filename to the 'Files' section."""
         # get the index of the selected item
@@ -783,8 +795,22 @@ class edit_cfg_L2(QtGui.QWidget):
         # get the level of the selected item
         level = self.get_level_selected_item()
         if level == 0:
+            add_separator = False
             selected_text = str(idx.data())
+            self.section_headings = []
+            root = self.model.invisibleRootItem()
+            for i in range(root.rowCount()):
+                self.section_headings.append(str(root.child(i).text()))
+            if "Options" not in self.section_headings and selected_text == "Files":
+                self.context_menu.actionAddOptionsSection = QtGui.QAction(self)
+                self.context_menu.actionAddOptionsSection.setText("Add Options section")
+                self.context_menu.addAction(self.context_menu.actionAddOptionsSection)
+                self.context_menu.actionAddOptionsSection.triggered.connect(self.add_options_section)
+                add_separator = True
             if selected_text == "Files":
+                if add_separator:
+                    self.context_menu.addSeparator()
+                    add_separator = False
                 existing_entries = self.get_existing_entries()
                 if "file_path" not in existing_entries:
                     self.context_menu.actionAddfile_path = QtGui.QAction(self)
@@ -806,6 +832,11 @@ class edit_cfg_L2(QtGui.QWidget):
                     self.context_menu.actionAddplot_path.setText("Add plot_path")
                     self.context_menu.addAction(self.context_menu.actionAddplot_path)
                     self.context_menu.actionAddplot_path.triggered.connect(self.add_plot_path)
+            elif selected_text == "Options":
+                self.context_menu.actionRemoveOptionsSection = QtGui.QAction(self)
+                self.context_menu.actionRemoveOptionsSection.setText("Remove section")
+                self.context_menu.addAction(self.context_menu.actionRemoveOptionsSection)
+                self.context_menu.actionRemoveOptionsSection.triggered.connect(self.remove_section)
             elif selected_text == "Variables":
                 self.context_menu.actionAddVariable = QtGui.QAction(self)
                 self.context_menu.actionAddVariable.setText("Add variable")
@@ -848,6 +879,10 @@ class edit_cfg_L2(QtGui.QWidget):
                     self.context_menu.actionBrowsePlotPath.triggered.connect(self.browse_plot_path)
                 else:
                     pass
+            elif (str(parent.text()) == "Options") and (selected_item.column() == 1):
+                key = str(parent.child(selected_item.row(),0).text())
+                if key == "irga_type":
+                    existing_entry = str(parent.child(selected_item.row(),1).text())
             elif str(parent.text()) == "Variables":
                 # get a list of existing entries
                 existing_entries = self.get_existing_entries()
@@ -1204,6 +1239,18 @@ class edit_cfg_L2(QtGui.QWidget):
             parent = selected_item.parent()
             # remove the row
             parent.removeRow(selected_item.row())
+        self.update_tab_text()
+
+    def remove_section(self):
+        """ Remove a section from the view."""
+        # loop over selected items in the tree
+        idx = self.view.selectedIndexes()[0]
+        # get the selected item from the index
+        selected_item = idx.model().itemFromIndex(idx)
+        # get the root
+        root = self.model.invisibleRootItem()
+        # remove the row
+        root.removeRow(selected_item.row())
         self.update_tab_text()
 
     def update_tab_text(self):
