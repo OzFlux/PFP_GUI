@@ -485,8 +485,9 @@ def do_EC155check(cf,ds):
     # list of series that depend on IRGA data quality
     EC155_list = ['H2O_IRGA_Av','CO2_IRGA_Av','H2O_IRGA_Sd','CO2_IRGA_Sd','H2O_IRGA_Vr','CO2_IRGA_Vr',
                  'UzA','UxA','UyA','UzH','UxH','UyH','UzC','UxC','UyC']
-    idx = numpy.where(ds.series['Diag_IRGA']['Flag']!=0)
-    logger.info('  EC155Check: Diag_IRGA rejects ' + str(numpy.size(idx)))
+    idx = numpy.where(ds.series['Diag_IRGA']['Flag'] !=0 )
+    msg = "  "+irga_type+"Check: Diag_IRGA rejects " + str(numpy.size(idx))
+    logger.info(msg)
     used_Signal = False
     used_H2O = False
     used_CO2 = False
@@ -495,9 +496,9 @@ def do_EC155check(cf,ds):
         if item in ds.series.keys():
             if ("Signal_H2O" in item) or ("Signal_CO2" in item):
                 used_Signal = True
-            if ("H2O" in item) or ("Ah" in label):
+            if ("H2O" in item) or ("Ah" in item):
                 used_H2O = True
-            if ("CO2" in item) or ("Cc" in label):
+            if ("CO2" in item) or ("Cc" in item):
                 used_CO2 = True
             EC155_dependents.append(item)
     if not used_Signal:
@@ -522,8 +523,8 @@ def do_EC155check(cf,ds):
         if ThisOne in ds.series.keys():
             ds.series[ThisOne]['Data'][idx] = numpy.float64(c.missing_value)
             ds.series[ThisOne]['Flag'][idx] = numpy.int32(4)
-        else:
-            logger.warning(' do_EC155check: series '+str(ThisOne)+' in EC155 list not found in data structure')
+        #else:
+            #logger.warning(' do_EC155check: series '+str(ThisOne)+' in EC155 list not found in data structure')
 
 def do_EPQCFlagCheck(cf,ds,section,series,code=9):
     """

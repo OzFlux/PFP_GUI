@@ -883,6 +883,41 @@ class edit_cfg_L2(QtGui.QWidget):
                 key = str(parent.child(selected_item.row(),0).text())
                 if key == "irga_type":
                     existing_entry = str(parent.child(selected_item.row(),1).text())
+                    if existing_entry != "Li-7500":
+                        self.context_menu.actionSetIRGATypeLi7500 = QtGui.QAction(self)
+                        self.context_menu.actionSetIRGATypeLi7500.setText("Li-7500")
+                        self.context_menu.addAction(self.context_menu.actionSetIRGATypeLi7500)
+                        self.context_menu.actionSetIRGATypeLi7500.triggered.connect(self.set_irga_li7500)
+                    if existing_entry != "Li-7500A":
+                        self.context_menu.actionSetIRGATypeLi7500A = QtGui.QAction(self)
+                        self.context_menu.actionSetIRGATypeLi7500A.setText("Li-7500A")
+                        self.context_menu.addAction(self.context_menu.actionSetIRGATypeLi7500A)
+                        self.context_menu.actionSetIRGATypeLi7500A.triggered.connect(self.set_irga_li7500a)
+                    if existing_entry != "Li-7500RS":
+                        self.context_menu.actionSetIRGATypeLi7500RS = QtGui.QAction(self)
+                        self.context_menu.actionSetIRGATypeLi7500RS.setText("Li-7500RS")
+                        self.context_menu.addAction(self.context_menu.actionSetIRGATypeLi7500RS)
+                        self.context_menu.actionSetIRGATypeLi7500RS.triggered.connect(self.set_irga_li7500rs)
+                    if existing_entry != "Li-7200":
+                        self.context_menu.actionSetIRGATypeLi7200 = QtGui.QAction(self)
+                        self.context_menu.actionSetIRGATypeLi7200.setText("Li-7200")
+                        self.context_menu.addAction(self.context_menu.actionSetIRGATypeLi7200)
+                        self.context_menu.actionSetIRGATypeLi7200.triggered.connect(self.set_irga_li7200)
+                    if existing_entry != "EC150":
+                        self.context_menu.actionSetIRGATypeEC150 = QtGui.QAction(self)
+                        self.context_menu.actionSetIRGATypeEC150.setText("EC150")
+                        self.context_menu.addAction(self.context_menu.actionSetIRGATypeEC150)
+                        self.context_menu.actionSetIRGATypeEC150.triggered.connect(self.set_irga_ec150)
+                    if existing_entry != "EC155":
+                        self.context_menu.actionSetIRGATypeEC155 = QtGui.QAction(self)
+                        self.context_menu.actionSetIRGATypeEC155.setText("EC155")
+                        self.context_menu.addAction(self.context_menu.actionSetIRGATypeEC155)
+                        self.context_menu.actionSetIRGATypeEC155.triggered.connect(self.set_irga_ec155)
+                    if existing_entry != "IRGASON":
+                        self.context_menu.actionSetIRGATypeIRGASON = QtGui.QAction(self)
+                        self.context_menu.actionSetIRGATypeIRGASON.setText("IRGASON")
+                        self.context_menu.addAction(self.context_menu.actionSetIRGATypeIRGASON)
+                        self.context_menu.actionSetIRGATypeIRGASON.triggered.connect(self.set_irga_irgason)
             elif str(parent.text()) == "Variables":
                 # get a list of existing entries
                 existing_entries = self.get_existing_entries()
@@ -1024,7 +1059,7 @@ class edit_cfg_L2(QtGui.QWidget):
             section = model.item(i)
             key1 = str(section.text())
             cfg[key1] = {}
-            if key1 in ["Files"]:
+            if key1 in ["Files", "Options"]:
                 for j in range(section.rowCount()):
                     key2 = str(section.child(j, 0).text())
                     val2 = str(section.child(j, 1).text())
@@ -1100,7 +1135,7 @@ class edit_cfg_L2(QtGui.QWidget):
         for key1 in self.cfg:
             if not self.cfg[key1]:
                 continue
-            if key1 in ["Files"]:
+            if key1 in ["Files", "Options"]:
                 # sections with only 1 level
                 self.sections[key1] = QtGui.QStandardItem(key1)
                 for val in self.cfg[key1]:
@@ -1252,6 +1287,55 @@ class edit_cfg_L2(QtGui.QWidget):
         # remove the row
         root.removeRow(selected_item.row())
         self.update_tab_text()
+
+    def set_irga_li7500(self):
+        """ Set the IRGA type to Li-7500."""
+        idx = self.view.selectedIndexes()[0]
+        selected_item = idx.model().itemFromIndex(idx)
+        parent = selected_item.parent()
+        parent.child(selected_item.row(), 1).setText("Li-7500")
+
+    def set_irga_li7500a(self):
+        """ Set the IRGA type to Li-7500A."""
+        idx = self.view.selectedIndexes()[0]
+        selected_item = idx.model().itemFromIndex(idx)
+        parent = selected_item.parent()
+        parent.child(selected_item.row(), 1).setText("Li-7500A")
+
+    def set_irga_li7500rs(self):
+        """ Set the IRGA type to Li-7500RS."""
+        idx = self.view.selectedIndexes()[0]
+        selected_item = idx.model().itemFromIndex(idx)
+        parent = selected_item.parent()
+        parent.child(selected_item.row(), 1).setText("Li-7500RS")
+
+    def set_irga_li7200(self):
+        """ Set the IRGA type to Li-7200."""
+        idx = self.view.selectedIndexes()[0]
+        selected_item = idx.model().itemFromIndex(idx)
+        parent = selected_item.parent()
+        parent.child(selected_item.row(), 1).setText("Li-7200")
+
+    def set_irga_ec150(self):
+        """ Set the IRGA type to EC150."""
+        idx = self.view.selectedIndexes()[0]
+        selected_item = idx.model().itemFromIndex(idx)
+        parent = selected_item.parent()
+        parent.child(selected_item.row(), 1).setText("EC150")
+
+    def set_irga_ec155(self):
+        """ Set the IRGA type to EC155."""
+        idx = self.view.selectedIndexes()[0]
+        selected_item = idx.model().itemFromIndex(idx)
+        parent = selected_item.parent()
+        parent.child(selected_item.row(), 1).setText("EC155")
+
+    def set_irga_irgason(self):
+        """ Set the IRGA type to IRGASON."""
+        idx = self.view.selectedIndexes()[0]
+        selected_item = idx.model().itemFromIndex(idx)
+        parent = selected_item.parent()
+        parent.child(selected_item.row(), 1).setText("IRGASON")
 
     def update_tab_text(self):
         """ Add an asterisk to the tab title text to indicate tab contents have changed."""
