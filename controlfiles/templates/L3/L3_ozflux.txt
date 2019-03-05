@@ -3,27 +3,21 @@ level = L3
     file_path = Right click to browse
     in_filename = Right click to browse
     out_filename = Right click to browse
-
 [Options]
     zms = <height>
     CO2Units = umol/mol
     FcUnits = umol/m2/s
-
-[Output]
-
 [Soil]
     FgDepth = <depth>
     BulkDensity = <bulk_density>
     OrganicContent = <organic_content>
     SwsDefault = <default_soil_moisture>
     SwsSeries = Sws
-
 [Massman]
     zmd = <height_above_displacement_plane>
     z0 = <roughness_length>
     north_separation = <north_separation>
     east_separation = <east_separation>
-
 [Variables]
     [[Fn]]
         [[[MergeSeries]]]
@@ -99,7 +93,6 @@ level = L3
         [[[RangeCheck]]]
             Lower = 0
             Upper = 60
-
 [Plots]
     [[Radiative fluxes]]
         Variables = Fsd,Fsu,Fld,Flu,Fn

@@ -1,2 +1,3 @@
 source activate pfp_gui
+wait
 python PyFluxPro.py
