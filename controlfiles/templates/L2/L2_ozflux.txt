@@ -4,7 +4,8 @@ level = L2
     in_filename = Right click to browse (*.nc)
     out_filename = Right click to browse (*.nc)
 
-[Output]
+[Options]
+    irga_type = Li-7500
 
 [Variables]
     [[Fn_NR]]

@@ -42,6 +42,15 @@ logger = logging.getLogger("pfp_log")
 logfmt = logging.Formatter('%(asctime)s %(levelname)s %(message)s','%H:%M:%S')
 logger.setLevel(logging.DEBUG)
 
+class myMessageBox(QtGui.QMessageBox):
+    def __init__(self, msg, title="Information", parent=None):
+        super(myMessageBox, self).__init__(parent)
+        self.setIcon(QtGui.QMessageBox.Information)
+        self.setText(msg)
+        self.setWindowTitle(title)
+        self.setStandardButtons(QtGui.QMessageBox.Ok)
+        self.exec_()
+
 class QPlainTextEditLogger(logging.Handler):
     def __init__(self, parent):
         super(QPlainTextEditLogger, self).__init__()
@@ -293,6 +302,7 @@ class pfp_main_ui(QtGui.QWidget, QPlainTextEditLogger):
         if len(str(cfgpath)) == 0:
             return
         # read the contents of the control file
+        logger.info(" Opening "+cfgpath)
         self.cfg = ConfigObj(cfgpath, indent_type="    ", list_values=False)
         self.cfg["level"] = self.get_cf_level()
         # create a QtTreeView to edit the control file
@@ -508,11 +518,27 @@ class pfp_main_ui(QtGui.QWidget, QPlainTextEditLogger):
         """ Save the current tab as a control file."""
         # get the current tab index
         tab_index_current = self.tabs.tab_index_current
+        # get the control file name
+        cfg_filename = self.tabs.cfg_dict[tab_index_current]["controlfile_name"]
         # get the updated control file data
         cfg = self.tabs.tab_dict[tab_index_current].get_data_from_model()
-        # set the control file name
-        cfg.filename = self.cfg.filename
+        # check to make sure we are not overwriting the template version
+        if "template" not in cfg_filename:
+            # set the control file name
+            cfg.filename = cfg_filename
+        else:
+            msg = " You are trying to write to the template folder.\n"
+            msg = msg + "Please save this control file to a different location."
+            msgbox = myMessageBox(msg)
+            # put up a "Save as ..." dialog
+            cfg_filename = QtGui.QFileDialog.getSaveFileName(self, "Save as ...")
+            # return without doing anything if cancel used
+            if len(str(cfg_filename)) == 0:
+                return
+            # set the control file name
+            cfg.filename = str(cfg_filename)
         # write the control file
+        logger.info(" Saving "+cfg.filename)
         cfg.write()
         # remove the asterisk in the tab text
         tab_text = str(self.tabs.tabText(tab_index_current))
@@ -534,6 +560,7 @@ class pfp_main_ui(QtGui.QWidget, QPlainTextEditLogger):
         # set the control file name
         cfg.filename = str(cfgpath)
         # write the control file
+        logger.info(" Saving "+cfg.filename)        
         cfg.write()
         # update the tab text
         self.tabs.setTabText(tab_index_current, os.path.basename(str(cfgpath)))
