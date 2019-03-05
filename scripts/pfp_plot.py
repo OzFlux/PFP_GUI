@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 import meteorologicalfunctions as pfp_mf
 import numpy
 import os
+from scipy import stats
 import statsmodels.api as sm
 import sys
 import pfp_ck
@@ -107,6 +108,128 @@ def get_yaxislimitsfromcf(cf,nFig,maxkey,minkey,nSer,YArray):
         YAxMax = YAxMax + YAxDelta
         YAxMin = YAxMin - YAxDelta
     return YAxMax,YAxMin
+
+def plot_fcvsustar(ds):
+    """
+    Purpose:
+     Plots Fc versus u* for each year and for each season
+     (summer=DJF, autumn=MAM, winter=JJA, spring=SON) in
+     each year.
+    """
+    site_name = ds.globalattributes["site_name"]
+    nrecs = int(ds.globalattributes["nc_nrecs"])
+    ts = int(ds.globalattributes["time_step"])
+    ldt = pfp_utils.GetVariable(ds, "DateTime")
+    nbins = 20
+    # plot each year
+    plt.ion()
+    start_year = ldt["Data"][0].year
+    end_year = ldt["Data"][-1].year
+    logger.info(" Doing annual Fc versus u* plots")
+    for year in range(start_year, end_year+1):
+        # get the start and end datetimes
+        start = datetime.datetime(year, 1, 1, 0, 30, 0)
+        end = datetime.datetime(year+1, 1, 1, 0, 0, 0)
+        # get the variables from the data structure
+        Fc = pfp_utils.GetVariable(ds, "Fc", start=start, end=end)
+        Fsd = pfp_utils.GetVariable(ds, "Fsd", start=start, end=end)
+        ustar = pfp_utils.GetVariable(ds, "ustar", start=start, end=end)
+        # get the observations and night time filters
+        obs = (Fc["Flag"] == 0) & (ustar["Flag"] == 0)
+        night = (Fsd["Data"] <= 10)
+        obs_night_filter = obs & night
+        # mask anything that is not an observation and at night
+        ustar["Data"] = numpy.ma.masked_where(obs_night_filter == False, ustar["Data"])
+        Fc["Data"] = numpy.ma.masked_where(obs_night_filter == False, Fc["Data"])
+        # get mask when either ustar or Fc masked
+        mask = numpy.ma.mask_or(numpy.ma.getmaskarray(ustar["Data"]), numpy.ma.getmaskarray(Fc["Data"]))
+        # apply mask
+        ustar["Data"] = numpy.ma.masked_where(mask == True, ustar["Data"])
+        Fc["Data"] = numpy.ma.masked_where(mask == True, Fc["Data"])
+        # remove masked elements
+        ustar["Data"] = numpy.ma.compressed(ustar["Data"])
+        Fc["Data"] = numpy.ma.compressed(Fc["Data"])
+        # get the binned statistics
+        count, edges, numbers = stats.binned_statistic(ustar["Data"],Fc["Data"], statistic='count', bins=nbins)
+        means, edges, numbers = stats.binned_statistic(ustar["Data"],Fc["Data"], statistic='mean', bins=nbins)
+        stdevs, edges, numbers = stats.binned_statistic(ustar["Data"],Fc["Data"], statistic='std', bins=nbins)
+        mids = (edges[:-1]+edges[1:])/2
+        # drop bins with less than 10 counts
+        mids = numpy.array(mids[count >= 10])
+        means = numpy.array(means[count >= 10])
+        stdevs = numpy.array(stdevs[count >= 10])
+        # do the plot
+        fig = plt.figure()
+        fig.canvas.set_window_title("Fc versus u*: "+str(year))
+        plt.plot(ustar["Data"], Fc["Data"], 'b.', alpha=0.25)
+        plt.errorbar(mids, means, yerr=stdevs, fmt='ro')
+        plt.xlabel("u* ("+ustar["Attr"]["units"]+")")
+        plt.ylabel("Fc ("+Fc["Attr"]["units"]+")")
+        plt.title(site_name+": "+str(year))
+        plt.draw()
+    # plot 4 seasons for each year
+    logger.info(" Doing seasonal Fc versus u* plots")
+    seasons = {"summer":[12, 1, 2], "autumn":[3, 4, 5], "winter":[6, 7, 8], "spring":[9, 10, 11]}
+    nrows = 2
+    ncols = 2
+    for year in range(start_year, end_year+1):
+        fig, axs = plt.subplots(nrows=nrows, ncols=ncols)
+        fig.canvas.set_window_title("Fc versus u*: "+str(year))
+        for n, season in enumerate(["Summer", "Autumn", "Winter", "Spring"]):
+            col = numpy.mod(n, ncols)
+            row = n/ncols
+            if season == "Summer":
+                start = datetime.datetime(year-1, 12, 1, 0, 0, 0) + datetime.timedelta(minutes=ts)
+                end = datetime.datetime(year, 3, 1, 0, 0, 0)
+            elif season == "Autumn":
+                start = datetime.datetime(year, 3, 1, 0, 0, 0) + datetime.timedelta(minutes=ts)
+                end = datetime.datetime(year, 6, 1, 0, 0, 0)
+            elif season == "Winter":
+                start = datetime.datetime(year, 6, 1, 0, 0, 0) + datetime.timedelta(minutes=ts)
+                end = datetime.datetime(year, 9, 1, 0, 0, 0)
+            elif season == "Spring":
+                start = datetime.datetime(year, 9, 1, 0, 0, 0) + datetime.timedelta(minutes=ts)
+                end = datetime.datetime(year, 12, 1, 0, 0, 0)
+            if end < ldt["Data"][0] or start > ldt["Data"][-1]:
+                fig.delaxes(axs[row, col])
+                continue
+            # get the variables from the data structure
+            Fc = pfp_utils.GetVariable(ds, "Fc", start=start, end=end)
+            Fsd = pfp_utils.GetVariable(ds, "Fsd", start=start, end=end)
+            ustar = pfp_utils.GetVariable(ds, "ustar", start=start, end=end)
+            # get the observations and night time filters
+            obs = (Fc["Flag"] == 0) & (ustar["Flag"] == 0)
+            night = (Fsd["Data"] <= 10)
+            obs_night_filter = obs & night
+            # mask anything that is not an observation and at night
+            ustar["Data"] = numpy.ma.masked_where(obs_night_filter == False, ustar["Data"])
+            Fc["Data"] = numpy.ma.masked_where(obs_night_filter == False, Fc["Data"])
+            # get mask when either ustar or Fc masked
+            mask = numpy.ma.mask_or(numpy.ma.getmaskarray(ustar["Data"]), numpy.ma.getmaskarray(Fc["Data"]))
+            # apply mask
+            ustar["Data"] = numpy.ma.masked_where(mask == True, ustar["Data"])
+            Fc["Data"] = numpy.ma.masked_where(mask == True, Fc["Data"])
+            # remove masked elements
+            ustar["Data"] = numpy.ma.compressed(ustar["Data"])
+            Fc["Data"] = numpy.ma.compressed(Fc["Data"])
+            # get the binned statistics
+            count, edges, numbers = stats.binned_statistic(ustar["Data"],Fc["Data"], statistic='count', bins=nbins)
+            means, edges, numbers = stats.binned_statistic(ustar["Data"],Fc["Data"], statistic='mean', bins=nbins)
+            stdevs, edges, numbers = stats.binned_statistic(ustar["Data"],Fc["Data"], statistic='std', bins=nbins)
+            mids = (edges[:-1]+edges[1:])/2
+            # drop bins with less than 10 counts
+            mids = numpy.array(mids[count >= 10])
+            means = numpy.array(means[count >= 10])
+            stdevs = numpy.array(stdevs[count >= 10])
+            axs[row, col].plot(ustar["Data"], Fc["Data"], 'b.', alpha=0.25)
+            axs[row, col].errorbar(mids, means, yerr=stdevs, fmt='ro')
+            axs[row, col].set_title(site_name+": "+str(year)+" "+season)
+            axs[row, col].set_xlabel("u* ("+ustar["Attr"]["units"]+")")
+            axs[row, col].set_ylabel("Fc ("+Fc["Attr"]["units"]+")")
+        fig.tight_layout()
+        plt.draw()
+    plt.ioff()    
+    return
 
 def pltfingerprint_createdict(cf,ds):
     fp_info = {}

@@ -428,6 +428,31 @@ def do_plot_l5():
 def do_plot_l6():
     logger.warning("L6 plotting not implemented yet")
     return
+def do_plot_fcvsustar():
+    """
+    Purpose:
+     Plot Fc versus u*.
+    Usage:
+     pfp_top_level.do_plot_fcvsustar()
+    Side effects:
+     Annual and seasonal plots of Fc versus u* to the screen and creates .PNG
+     hardcopies of the plots.
+    Author: PRI
+    Date: Back in the day
+    Mods:
+     December 2017: rewrite for use with new GUI
+    """
+    logger.info("Starting Fc versus u* plots")
+    file_path = pfp_io.get_filename_dialog(file_path="../Sites",title="Choose a netCDF file")
+    if len(file_path) == 0 or not os.path.isfile(file_path):
+        return
+    # read the netCDF file
+    ds = pfp_io.nc_read_series(file_path)
+    logger.info(" Plotting Fc versus u* ...")
+    pfp_plot.plot_fcvsustar(ds)
+    logger.info("Finished plotting Fc versus u*")
+    logger.info("")
+    return
 def do_plot_fingerprints():
     """
     Purpose:
