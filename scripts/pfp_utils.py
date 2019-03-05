@@ -1810,7 +1810,11 @@ def GetVariable(ds, label, start=0, end=-1, mode="truncate", out_type="ma"):
     ei = get_end_index(ldt, end)
     data,flag,attr = GetSeries(ds, label, si=si, ei=ei, mode=mode)
     if isinstance(data, numpy.ndarray) and out_type == "ma":
+        # convert to a masked array
         data, WasND = SeriestoMA(data)
+    elif isinstance(data, numpy.ndarray) and out_type == "nan":
+        # leave as ndarray, convert c.missing_value to NaN
+        data = numpy.where(data == c.missing_value, numpy.nan, data)
     variable = {"Label":label,"Data":data,"Flag":flag,"Attr":attr,
                 "DateTime":ldt[si:ei+1],"time_step":ts}
     return variable
