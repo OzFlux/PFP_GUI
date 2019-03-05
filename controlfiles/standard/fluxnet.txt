@@ -19,8 +19,8 @@
         AltVarName = "Ah"
     [[RH]]
         AltVarName = "RH"
-    [[Cc]]
-        AltVarName = "Cc"
+    [[CO2]]
+        AltVarName = "CO2"
     [[Ts]]
         AltVarName = "Ts"
     [[Fg]]
