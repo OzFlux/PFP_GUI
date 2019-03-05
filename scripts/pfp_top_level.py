@@ -484,7 +484,7 @@ def do_plot_fingerprints():
     logger.info("Loaded control file ...")
     if "Options" not in cf: cf["Options"]={}
     cf["Options"]["call_mode"] = "interactive"
-    logger.info("Plotting fingerprint ...")
+    logger.info(" Plotting fingerprint ...")
     pfp_plot.plot_fingerprint(cf)
     logger.info("Finished plotting fingerprint")
     logger.info("")
@@ -493,7 +493,40 @@ def do_plot_quickcheck():
     logger.warning("Quick check plotting not implemented yet")
     return
 def do_plot_timeseries():
-    logger.warning("Time series plotting not implemented yet")
+    """
+    Purpose:
+     Plot time series of data, usually L3 and above.
+    Usage:
+     pfp_top_level.do_plot_timeseries()
+    Side effects:
+     Plots timeseries to the screen and creates .PNG hardcopies of
+     the plots.
+    Author: PRI
+    Date: Back in the day
+    Mods:
+     December 2017: rewrite for use with new GUI
+    """
+    logger.info("Starting timeseries plot")
+    stdname = "controlfiles/standard/fluxnet.txt"
+    if os.path.exists(stdname):
+        cf = pfp_io.get_controlfilecontents(stdname)
+        filename = pfp_io.get_filename_dialog(file_path="../Sites",title="Choose a netCDF file")
+        if len(filename)==0:
+            return
+        if "Files" not in dir(cf): cf["Files"] = {}
+        cf["Files"]["file_path"] = os.path.split(filename)[0]+"/"
+        cf["Files"]["in_filename"] = os.path.split(filename)[1]
+    else:
+        cf = pfp_io.load_controlfile(path="controlfiles")
+        if len(cf)==0:
+            return
+    logger.info("Loaded control file ...")
+    if "Options" not in cf: cf["Options"]={}
+    cf["Options"]["call_mode"] = "interactive"
+    logger.info(" Plotting time series ...")
+    pfp_plot.plot_fluxnet(cf)
+    logger.info("Finished plotting fingerprint")
+    logger.info("")
     return
 def do_plot_closeplots():
     """
