@@ -207,7 +207,7 @@ def DateTimeFromExcelDateAndTime(ds, dt_out, xlDate, xlTime):
     xldate = ds.series[xlDate]
     xltime = ds.series[xlTime]
     nrecs = len(xldate["Data"])
-    xldatetime = pfp_utils.create_empty_variable("xlDateTime", nrecs)
+    xldatetime = pfp_utils.CreateEmptyVariable("xlDateTime", nrecs)
     xldatetime["Data"] = xldate["Data"] + xltime["Data"]
     xldatetime["Attr"]["long_name"] = "Date/time in Excel format"
     xldatetime["Attr"]["units"] = "days since 1899-12-31 00:00:00"

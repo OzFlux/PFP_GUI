@@ -136,7 +136,7 @@ class pfp_main_ui(QtGui.QWidget, QPlainTextEditLogger):
         self.actionPlotFingerprints = QtGui.QAction(self)
         self.actionPlotFingerprints.setText("Fingerprints")
         self.actionPlotQuickCheck = QtGui.QAction(self)
-        self.actionPlotQuickCheck.setText("Quick check")
+        self.actionPlotQuickCheck.setText("Summary")
         self.actionPlotTimeSeries = QtGui.QAction(self)
         self.actionPlotTimeSeries.setText("Time series")
         self.actionPlotClosePlots = QtGui.QAction(self)
@@ -347,8 +347,8 @@ class pfp_main_ui(QtGui.QWidget, QPlainTextEditLogger):
         try:
             cfg_sections = self.cfg.keys()
             # remove the common sections
-            common_sections = ["controlfile_name", "Files", "Global", "Output", "Plots",
-                               "General", "Options", "Soil", "Massman", "GUI"]
+            common_sections = ["level", "controlfile_name", "Files", "Global", "Output",
+                               "Plots", "General", "Options", "Soil", "Massman", "GUI"]
             for section in list(self.cfg.keys()):
                 if section in common_sections:
                     cfg_sections.remove(section)

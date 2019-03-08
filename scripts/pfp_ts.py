@@ -765,7 +765,7 @@ def CalculateMoninObukhovLength(ds):
     # create a variable dictionary for L
     nrecs = int(ds.globalattributes["nc_nrecs"])
     ldt = pfp_utils.GetVariable(ds, "DateTime")
-    L = pfp_utils.create_empty_variable("L", nrecs, datetime=ldt["Data"])
+    L = pfp_utils.CreateEmptyVariable("L", nrecs, datetime=ldt["Data"])
     # create QC flags
     zeros = numpy.zeros(nrecs, dtype=numpy.int32)
     ones = numpy.ones(nrecs, dtype=numpy.int32)
