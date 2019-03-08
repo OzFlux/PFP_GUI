@@ -570,641 +570,403 @@ def plottimeseries(cf, nFig, dsa, dsb):
     fname = os.path.join(plot_path, SiteName.replace(' ','')+'_'+Level+'_'+p['PlotDescription'].replace(' ','')+'.png')
     fig.savefig(fname,format='png')
 
+def plot_quickcheck_seb(nFig, plot_title, figure_name, data, daily):
+    logger.info(" Doing surface energy balance plots")
+    Fa_30min = data["Fa"]["Data"]
+    Fh_30min = data["Fh"]["Data"]
+    Fe_30min = data["Fe"]["Data"]
+    mask = numpy.ma.mask_or(Fa_30min.mask, Fe_30min.mask)
+    mask = numpy.ma.mask_or(mask, Fh_30min.mask)
+    Fa_SEB = numpy.ma.array(Fa_30min, mask=mask)     # apply the mask
+    FhpFe_SEB = numpy.ma.array(Fh_30min, mask=mask) + numpy.ma.array(Fe_30min, mask=mask)
+    plt.ion()
+    fig = plt.figure(nFig, figsize=(8, 8))
+    fig.canvas.set_window_title("Surface Energy Balance")
+    plt.figtext(0.5, 0.95, plot_title, horizontalalignment='center', size=16)
+    xyplot(Fa_SEB, FhpFe_SEB, sub=[2,2,1], regr=1, title="All hours", xlabel='Fa (W/m2)', ylabel='Fh+Fe (W/m2)')
+    # scatter plot of (Fh+Fe) versus Fa, 24 hour averages
+    mask = numpy.ma.mask_or(daily["Fa"]["Data"].mask, daily["Fe"]["Data"].mask)
+    mask = numpy.ma.mask_or(mask, daily["Fh"]["Data"].mask)
+    Fa_daily = numpy.ma.array(daily["Fa"]["Data"], mask=mask)         # apply the mask
+    Fe_daily = numpy.ma.array(daily["Fe"]["Data"], mask=mask)
+    Fh_daily = numpy.ma.array(daily["Fh"]["Data"], mask=mask)
+    Fa_daily_avg = numpy.ma.average(Fa_daily, axis=1)      # get the daily average
+    Fe_daily_avg = numpy.ma.average(Fe_daily, axis=1)
+    Fh_daily_avg = numpy.ma.average(Fh_daily, axis=1)
+    FhpFe_daily_avg = Fh_daily_avg + Fe_daily_avg
+    xyplot(Fa_daily_avg, FhpFe_daily_avg, sub=[2,2,2], regr=1, thru0=1,
+           title="Daily Average", xlabel="Fa (W/m2)", ylabel="Fh+Fe (W/m2)")
+    # scatter plot of (Fh+Fe) versus Fa, day time
+    day_mask = (data["Fsd"]["Data"] >= 10)
+    Fa_day = numpy.ma.masked_where(day_mask == False, Fa_30min)
+    Fe_day = numpy.ma.masked_where(day_mask == False, Fe_30min)
+    Fh_day = numpy.ma.masked_where(day_mask == False, Fh_30min)
+    mask = numpy.ma.mask_or(Fa_day.mask, Fe_day.mask)
+    mask = numpy.ma.mask_or(mask, Fh_day.mask)
+    Fa_day = numpy.ma.array(Fa_day, mask=mask)         # apply the mask
+    Fe_day = numpy.ma.array(Fe_day, mask=mask)
+    Fh_day = numpy.ma.array(Fh_day, mask=mask)
+    FhpFe_day = Fh_day + Fe_day
+    xyplot(Fa_day, FhpFe_day, sub=[2,2,3], regr=1, title="Day", xlabel="Fa (W/m2)", ylabel="Fh+Fe (W/m2)")
+    # scatter plot of (Fh+Fe) versus Fa, night time
+    night_mask = (data["Fsd"]["Data"] < 10)
+    Fa_night = numpy.ma.masked_where(night_mask==False, Fa_30min)
+    Fe_night = numpy.ma.masked_where(night_mask==False, Fe_30min)
+    Fh_night = numpy.ma.masked_where(night_mask==False, Fh_30min)
+    mask = numpy.ma.mask_or(Fa_night.mask, Fe_night.mask)
+    mask = numpy.ma.mask_or(mask, Fh_night.mask)
+    Fa_night = numpy.ma.array(Fa_night, mask=mask)         # apply the mask
+    Fe_night = numpy.ma.array(Fe_night, mask=mask)
+    Fh_night = numpy.ma.array(Fh_night, mask=mask)
+    FhpFe_night = Fh_night + Fe_night
+    xyplot(Fa_night, FhpFe_night, sub=[2,2,4], regr=1, title="Night", xlabel="Fa (W/m2)", ylabel="Fh+Fe (W/m2)")
+    # hard copy of plot
+    fig.savefig(figure_name, format='png')
+    # draw the plot on the screen
+    plt.draw()
+    plt.ioff()
+
+def plot_quickcheck_get_seb(daily):
+    # get the SEB ratio
+    # get the daytime data, defined by Fsd>10 W/m2
+    nm = daily["night_mask"]["Data"]
+    Fa_daily = daily["Fa"]["Data"]
+    Fe_daily = daily["Fe"]["Data"]
+    Fh_daily = daily["Fh"]["Data"]
+    Fa_day = numpy.ma.masked_where(nm == True, Fa_daily)
+    Fe_day = numpy.ma.masked_where(nm == True, Fe_daily)
+    Fh_day = numpy.ma.masked_where(nm == True, Fh_daily)
+    # mask based on dependencies, set all to missing if any missing
+    mask = numpy.ma.mask_or(Fa_day.mask, Fe_day.mask)
+    mask = numpy.ma.mask_or(mask, Fh_day.mask)
+    # apply the mask
+    Fa_day = numpy.ma.array(Fa_day, mask=mask)
+    Fe_day = numpy.ma.array(Fe_day, mask=mask)
+    Fh_day = numpy.ma.array(Fh_day, mask=mask)
+    # get the daily averages
+    Fa_day_avg = numpy.ma.average(Fa_day, axis=1)
+    Fe_day_avg = numpy.ma.average(Fe_day, axis=1)
+    Fh_day_avg = numpy.ma.average(Fh_day, axis=1)
+    SEB = {"label": "(Fh+Fe)/Fa"}
+    # get the number of values in the daily average
+    SEB["Count"] = numpy.ma.count(Fh_day, axis=1)
+    # get the SEB ratio
+    SEB["Avg"] = (Fe_day_avg + Fh_day_avg)/Fa_day_avg
+    SEB["Avg"] = numpy.ma.masked_where(SEB["Count"] <= 5, SEB["Avg"])
+    idx = numpy.where(numpy.ma.getmaskarray(SEB["Avg"]) == True)[0]
+    SEB["Count"][idx] = 0
+    return SEB
+
+def plot_quickcheck_get_ef(daily):
+    # get the EF
+    # get the daytime data, defined by Fsd>10 W/m2
+    nm = daily["night_mask"]["Data"]
+    Fa_daily = daily["Fa"]["Data"]
+    Fe_daily = daily["Fe"]["Data"]
+    Fa_day = numpy.ma.masked_where(nm == True, Fa_daily)
+    Fe_day = numpy.ma.masked_where(nm == True, Fe_daily)
+    # mask based on dependencies, set all to missing if any missing
+    mask = numpy.ma.mask_or(Fa_day.mask, Fe_day.mask)
+    # apply the mask
+    Fa_day = numpy.ma.array(Fa_day, mask=mask)
+    Fe_day = numpy.ma.array(Fe_day, mask=mask)
+    # get the daily averages
+    Fa_day_avg = numpy.ma.average(Fa_day, axis=1)
+    Fe_day_avg = numpy.ma.average(Fe_day, axis=1)
+    # get the number of values in the daily average
+    EF = {"label": "EF=Fe/Fa"}
+    EF["Count"] = numpy.ma.count(Fe_day, axis=1)
+    # get the EF ratio
+    EF["Avg"] = Fe_day_avg/Fa_day_avg
+    EF["Avg"] = numpy.ma.masked_where(EF["Count"] <= 5, EF["Avg"])
+    idx = numpy.where(numpy.ma.getmaskarray(EF["Avg"]) == True)[0]
+    EF["Count"][idx] = 0
+    return EF
+
+def plot_quickcheck_get_br(daily):
+    # get the BR
+    # get the daytime data, defined by Fsd>10 W/m2
+    nm = daily["night_mask"]["Data"]
+    Fh_daily = daily["Fh"]["Data"]
+    Fe_daily = daily["Fe"]["Data"]
+    Fe_day = numpy.ma.masked_where(nm == True, Fe_daily)
+    Fh_day = numpy.ma.masked_where(nm == True, Fh_daily)
+    # mask based on dependencies, set all to missing if any missing
+    mask = numpy.ma.mask_or(Fe_day.mask, Fh_day.mask)
+    # apply the mask
+    Fe_day = numpy.ma.array(Fe_day, mask=mask)
+    Fh_day = numpy.ma.array(Fh_day, mask=mask)
+    # get the daily averages
+    Fe_day_avg = numpy.ma.average(Fe_day, axis=1)
+    Fh_day_avg = numpy.ma.average(Fh_day, axis=1)
+    # get the number of values in the daily average
+    BR = {"label": "BR=Fh/Fe"}
+    BR["Count"] = numpy.ma.count(Fh_day, axis=1)
+    # get the BR ratio
+    BR["Avg"] = Fh_day_avg/Fe_day_avg
+    BR["Avg"] = numpy.ma.masked_where(BR["Count"] <= 5, BR["Avg"])
+    idx = numpy.where(numpy.ma.getmaskarray(BR["Avg"]) == True)[0]
+    BR["Count"][idx] = 0
+    return BR
+
+def plot_quickcheck_get_wue(daily):
+    # get the Wue
+    # get the daytime data, defined by Fsd>10 W/m2
+    nm = daily["night_mask"]["Data"]
+    Fc_daily = daily["Fc"]["Data"]
+    Fe_daily = daily["Fe"]["Data"]
+    Fe_day = numpy.ma.masked_where(nm == True, Fe_daily)
+    Fc_day = numpy.ma.masked_where(nm == True, Fc_daily)
+    # mask based on dependencies, set all to missing if any missing
+    mask = numpy.ma.mask_or(Fe_day.mask, Fc_day.mask)
+    # apply the mask
+    Fe_day = numpy.ma.array(Fe_day,mask=mask)
+    Fc_day = numpy.ma.array(Fc_day,mask=mask)
+    # get the daily averages
+    Fe_day_avg = numpy.ma.average(Fe_day, axis=1)
+    Fc_day_avg = numpy.ma.average(Fc_day, axis=1)
+    # get the number of values in the daily average
+    WUE = {"label": "WUE=Fc/Fe"}
+    WUE["Count"] = numpy.ma.count(Fc_day, axis=1)
+    WUE["Avg"] = Fc_day_avg/Fe_day_avg
+    WUE["Avg"] = numpy.ma.masked_where(WUE["Count"] <= 5, WUE["Avg"])
+    idx = numpy.where(numpy.ma.getmaskarray(WUE["Avg"]) == True)[0]
+    WUE["Avg"][idx] = 0
+    return WUE
+
+def plot_quickcheck_get_avg(daily, label, filter_type=None):
+    """
+    Purpose:
+     Apply a day time or night time filter to data, if reuested, and return
+     the daily average of the (filtered) data and the number of data points
+     used to provide the average.
+    Usage:
+     avg, count = pfp_plot.plot_quickcheck_get_avg(daily, label, filter_type="day")
+     where;
+      daily is a dictionary of data as 2D arrays (axis 0 is hour of the day, axis 1 is the day)
+      label is the label of the data
+      filter_type is the type of filter to apply ("day", "night" or None)
+     and
+      avg is the daily average
+      count is the number of points used in the average
+    Author: PRI
+    Date: March 2019
+    """
+    if filter_type is None:
+        data = daily[label]["Data"]
+    elif filter_type.lower() == "day":
+        dm = daily["day_mask"]["Data"]
+        data = numpy.ma.masked_where(dm == False, daily[label]["Data"])
+    elif filter_type.lower() == "night":
+        nm = daily["night_mask"]["Data"]
+        data = numpy.ma.masked_where(nm == False, daily[label]["Data"])
+    else:
+        msg = "plot_quickcheck_get_avg: unrecognised filter type (" + filter_type + ")"
+        logger.warning(msg)
+        msg = "plot_quickcheck_get_avg: no filter applied"
+        logger.warning(msg)
+    avg = numpy.ma.average(data, axis=1)
+    count = numpy.ma.count(data, axis=1)
+    return avg, count
+
 def plot_quickcheck(cf):
     nFig = 0
     # get the netCDF filename
     ncfilename = pfp_io.get_infilenamefromcf(cf)
-    # get the plot width and height
-    PlotWidth_landscape = float(13)
-    PlotHeight_landscape = float(8)
-    PlotWidth_portrait = float(5)
-    PlotHeight_portrait = float(8)
     # read the netCDF file and return the data structure "ds"
-    logger.info(' Opening and reading netCDF file '+ncfilename)
     ds = pfp_io.nc_read_series(ncfilename)
-    if len(ds.series.keys())==0: logger.error(' netCDF file '+ncfilename+' not found'); sys.exit()
+    series_list = ds.series.keys()
     # get the time step
-    ts = int(ds.globalattributes['time_step'])
+    ts = int(ds.globalattributes["time_step"])
     # get the site name
-    SiteName = ds.globalattributes['site_name']
+    site_name = ds.globalattributes["site_name"]
+    level = ds.globalattributes["nc_level"]
     # get the datetime series
-    DateTime = ds.series['DateTime']['Data']
+    DateTime = ds.series["DateTime"]["Data"]
     # get the initial start and end dates
     StartDate = str(DateTime[0])
     EndDate = str(DateTime[-1])
     # find the start index of the first whole day (time=00:30)
-    si = pfp_utils.GetDateIndex(DateTime,StartDate,ts=ts,default=0,match='startnextday')
+    si = pfp_utils.GetDateIndex(DateTime, StartDate, ts=ts, default=0, match="startnextday")
     # find the end index of the last whole day (time=00:00)
-    ei = pfp_utils.GetDateIndex(DateTime,EndDate,ts=ts,default=-1,match='endpreviousday')
+    ei = pfp_utils.GetDateIndex(DateTime, EndDate, ts=ts, default=-1, match="endpreviousday")
     DateTime = DateTime[si:ei+1]
-    PlotTitle = SiteName + ': ' + str(DateTime[0]) + ' to ' + str(DateTime[-1])
+    nrecs = len(DateTime)
+    plot_title = site_name + ": " + DateTime[0].strftime("%Y-%m-%d") + " to " + DateTime[-1].strftime("%Y-%m-%d")
     # get the final start and end dates
     StartDate = str(DateTime[0])
     EndDate = str(DateTime[-1])
     # get the 30 minute data from the data structure
-    logger.info(' Getting data from data structure ')
-    #  radiation first ...
-    Mnth_30min,flag,attr = pfp_utils.GetSeriesasMA(ds,pfp_utils.GetAltName(cf,ds,'Month'),si=si,ei=ei)
-    Hour_30min,flag,attr = pfp_utils.GetSeriesasMA(ds,pfp_utils.GetAltName(cf,ds,'Hour'),si=si,ei=ei)
-    Mnit_30min,flag,attr = pfp_utils.GetSeriesasMA(ds,pfp_utils.GetAltName(cf,ds,'Minute'),si=si,ei=ei)
-    Fsd,flag,attr = pfp_utils.GetSeriesasMA(ds,pfp_utils.GetAltName(cf,ds,'Fsd'),si=si,ei=ei)
-    if 'Fsd_syn' in ds.series.keys():
-        Fsd_syn,flag,attr = pfp_utils.GetSeriesasMA(ds,'Fsd_syn',si=si,ei=ei)
-        index = numpy.where(numpy.ma.getmaskarray(Fsd)==True)[0]
-        #index = numpy.ma.where(numpy.ma.getmaskarray(Fsd)==True)[0]
-        Fsd[index] = Fsd_syn[index]
-    night_mask = (Fsd<10)
-    day_mask = (Fsd>=10)
-    Fsd_30min,flag,attr = pfp_utils.GetSeriesasMA(ds,pfp_utils.GetAltName(cf,ds,'Fsd'),si=si,ei=ei)
-    Fsu_30min,flag,attr = pfp_utils.GetSeriesasMA(ds,pfp_utils.GetAltName(cf,ds,'Fsu'),si=si,ei=ei)
-    Fld_30min,flag,attr = pfp_utils.GetSeriesasMA(ds,pfp_utils.GetAltName(cf,ds,'Fld'),si=si,ei=ei)
-    Flu_30min,flag,attr = pfp_utils.GetSeriesasMA(ds,pfp_utils.GetAltName(cf,ds,'Flu'),si=si,ei=ei)
-    Fn_30min,flag,attr = pfp_utils.GetSeriesasMA(ds,pfp_utils.GetAltName(cf,ds,'Fn'),si=si,ei=ei)
-    #  then fluxes ...
-    Fg_30min,flag,attr = pfp_utils.GetSeriesasMA(ds,pfp_utils.GetAltName(cf,ds,'Fg'),si=si,ei=ei)
-    Fa2_30min = Fn_30min - Fg_30min
-    Fa_30min,flag,attr = pfp_utils.GetSeriesasMA(ds,pfp_utils.GetAltName(cf,ds,'Fa'),si=si,ei=ei)
-    index = numpy.where((numpy.ma.getmaskarray(Fa_30min)==True)&(numpy.ma.getmaskarray(Fa2_30min)==False))[0]
-    Fa_30min[index] = Fa2_30min[index]
-    Fe_30min,flag,attr = pfp_utils.GetSeriesasMA(ds,pfp_utils.GetAltName(cf,ds,'Fe'),si=si,ei=ei)
-    Fh_30min,flag,attr = pfp_utils.GetSeriesasMA(ds,pfp_utils.GetAltName(cf,ds,'Fh'),si=si,ei=ei)
-    Fc_30min,flag,attr = pfp_utils.GetSeriesasMA(ds,pfp_utils.GetAltName(cf,ds,'Fc'),si=si,ei=ei)
-    Fc_units = ds.series[pfp_utils.GetAltName(cf,ds,'Fc')]['Attr']['units']
-    us_30min,flag,attr = pfp_utils.GetSeriesasMA(ds,pfp_utils.GetAltName(cf,ds,'ustar'),si=si,ei=ei)
-    #  then meteorology ...
-    Ta_30min,flag,attr = pfp_utils.GetSeriesasMA(ds,pfp_utils.GetAltName(cf,ds,'Ta'),si=si,ei=ei)
-    H2O_30min,flag,attr = pfp_utils.GetSeriesasMA(ds,pfp_utils.GetAltName(cf,ds,'H2O'),si=si,ei=ei)
-    H2O_units = ds.series[pfp_utils.GetAltName(cf,ds,'H2O')]['Attr']['units']
-    CO2_30min,flag,attr = pfp_utils.GetSeriesasMA(ds,pfp_utils.GetAltName(cf,ds,'CO2'),si=si,ei=ei)
-    CO2_units = ds.series[pfp_utils.GetAltName(cf,ds,'CO2')]['Attr']['units']
-    Rain_30min,flag,attr = pfp_utils.GetSeriesasMA(ds,pfp_utils.GetAltName(cf,ds,'Precip'),si=si,ei=ei)
-    Ws_30min,flag,attr = pfp_utils.GetSeriesasMA(ds,pfp_utils.GetAltName(cf,ds,'Ws'),si=si,ei=ei)
-    #  then soil ...
-    Sws_30min,flag,attr = pfp_utils.GetSeriesasMA(ds,pfp_utils.GetAltName(cf,ds,'Sws'),si=si,ei=ei)
-    Ts_30min,flag,attr = pfp_utils.GetSeriesasMA(ds,pfp_utils.GetAltName(cf,ds,'Ts'),si=si,ei=ei)
-
+    logger.info(" Getting data from data structure")
+    data_list = ["Month", "Hour", "Minute",
+                 "Fsd", "Fsu", "Fld", "Flu", "Fn",
+                 "Fg", "Fa", "Fe", "Fh", "Fc", "ustar",
+                 "Ta", "H2O", "CO2", "Precip", "Ws",
+                 "Sws", "Ts"]
+    data = {}
+    for label in data_list:
+        if label in series_list:
+            data[label] = pfp_utils.GetVariable(ds, label, start=si, end=ei)
+        else:
+            data[label] = pfp_utils.CreateEmptyVariable(label, nrecs, datetime=DateTime)
     # get the number of days in the data set
     ntsInDay = float(24.0*60.0/float(ts))
-    if math.modf(ntsInDay)[0]!=0:
-        print 'quickcheck: Time step is not a sub-multiple of 60 minutes ', ts
-        sys.exit
+    if math.modf(ntsInDay)[0] != 0:
+        msg = " Time step (" + str(ts) + ") is not a sub-multiple of 60 minutes "
+        logger.error(msg)
+        return
     ntsInDay = int(ntsInDay)
     nDays = float(len(DateTime))/ntsInDay
-    if math.modf(nDays)[0]!=0:
-        print 'quickcheck: Not a whole number of days ', nDays
-        sys.exit
+    if math.modf(nDays)[0] != 0:
+        msg = "Not a whole number of days (" + str(nDays) +")"
+        logger.error(msg)
+        return
     nDays = int(nDays)
-
-    # *** start of section based on 30 minute data ***
-    # scatter plot of (Fh+Fe) versys Fa, all data
-    logger.info(' Doing surface energy balance plots ')
-    mask = numpy.ma.mask_or(Fa_30min.mask,Fe_30min.mask)
-    mask = numpy.ma.mask_or(mask,Fh_30min.mask)
-    Fa_SEB = numpy.ma.array(Fa_30min,mask=mask)     # apply the mask
-    FhpFe_SEB = numpy.ma.array(Fh_30min,mask=mask) + numpy.ma.array(Fe_30min,mask=mask)
-    nFig = nFig + 1
-    plt.ion()
-    fig = plt.figure(nFig,figsize=(8,8))
-    fig.canvas.set_window_title("Surface Energy Balance")
-    plt.figtext(0.5,0.95,PlotTitle,horizontalalignment='center',size=16)
-    xyplot(Fa_SEB,FhpFe_SEB,sub=[2,2,1],regr=1,title="All hours",xlabel='Fa (W/m2)',ylabel='Fh+Fe (W/m2)')
-    # scatter plot of (Fh+Fe) versus Fa, 24 hour averages
-    Fa_daily = Fa_30min.reshape(nDays,ntsInDay)
-    Fe_daily = Fe_30min.reshape(nDays,ntsInDay)
-    Fh_daily = Fh_30min.reshape(nDays,ntsInDay)
-    mask = numpy.ma.mask_or(Fa_daily.mask,Fe_daily.mask)
-    mask = numpy.ma.mask_or(mask,Fh_daily.mask)
-    Fa_daily = numpy.ma.array(Fa_daily,mask=mask)         # apply the mask
-    Fe_daily = numpy.ma.array(Fe_daily,mask=mask)
-    Fh_daily = numpy.ma.array(Fh_daily,mask=mask)
-    Fa_daily_avg = numpy.ma.average(Fa_daily,axis=1)      # get the daily average
-    Fe_daily_avg = numpy.ma.average(Fe_daily,axis=1)
-    Fh_daily_avg = numpy.ma.average(Fh_daily,axis=1)
-    FhpFe_daily_avg = Fh_daily_avg + Fe_daily_avg
-    xyplot(Fa_daily_avg,FhpFe_daily_avg,sub=[2,2,2],regr=1,thru0=1,title="Daily Average",xlabel='Fa (W/m2)',ylabel='Fh+Fe (W/m2)')
-    # scatter plot of (Fh+Fe) versus Fa, day time
-    Fa_day = numpy.ma.masked_where(day_mask==False,Fa_30min)
-    Fe_day = numpy.ma.masked_where(day_mask==False,Fe_30min)
-    Fh_day = numpy.ma.masked_where(day_mask==False,Fh_30min)
-    mask = numpy.ma.mask_or(Fa_day.mask,Fe_day.mask)
-    mask = numpy.ma.mask_or(mask,Fh_day.mask)
-    Fa_day = numpy.ma.array(Fa_day,mask=mask)         # apply the mask
-    Fe_day = numpy.ma.array(Fe_day,mask=mask)
-    Fh_day = numpy.ma.array(Fh_day,mask=mask)
-    FhpFe_day = Fh_day + Fe_day
-    xyplot(Fa_day,FhpFe_day,sub=[2,2,3],regr=1,title="Day",xlabel='Fa (W/m2)',ylabel='Fh+Fe (W/m2)')
-    # scatter plot of (Fh+Fe) versus Fa, night time
-    Fa_night = numpy.ma.masked_where(night_mask==False,Fa_30min)
-    Fe_night = numpy.ma.masked_where(night_mask==False,Fe_30min)
-    Fh_night = numpy.ma.masked_where(night_mask==False,Fh_30min)
-    mask = numpy.ma.mask_or(Fa_night.mask,Fe_night.mask)
-    mask = numpy.ma.mask_or(mask,Fh_night.mask)
-    Fa_night = numpy.ma.array(Fa_night,mask=mask)         # apply the mask
-    Fe_night = numpy.ma.array(Fe_night,mask=mask)
-    Fh_night = numpy.ma.array(Fh_night,mask=mask)
-    FhpFe_night = Fh_night + Fe_night
-    xyplot(Fa_night,FhpFe_night,sub=[2,2,4],regr=1,title="Night",xlabel='Fa (W/m2)',ylabel='Fh+Fe (W/m2)')
-    figname='plots/'+ds.globalattributes['site_name'].replace(' ','')+'_'+ds.globalattributes['nc_level']+'_QC_'+'SEB_30minutes.png'
-    fig.savefig(figname,format='png')
-    # draw the plot on the screen
-    plt.draw()
-    # *** start of section based on daily averages ***
-    logger.info(' Getting daily averages from 30 minute data ')
-    MTFmt = mdt.DateFormatter('%m/%Y')
+    logger.info(" Getting daily averages from 30 minute data")
     # reshape the 1D array of 30 minute data into a 2D array of (nDays,ntsInDay)
     DT_daily = DateTime[0::ntsInDay]
-    Mnth_daily = Mnth_30min.reshape(nDays,ntsInDay)
-    Hour_daily = Hour_30min.reshape(nDays,ntsInDay)
-    Mnit_daily = Mnit_30min.reshape(nDays,ntsInDay)
-    dm_daily = day_mask.reshape(nDays,ntsInDay)
-    nm_daily = night_mask.reshape(nDays,ntsInDay)
-    Fn_daily = Fn_30min.reshape(nDays,ntsInDay)
-    Fa_daily = Fa_30min.reshape(nDays,ntsInDay)
-    Fe_daily = Fe_30min.reshape(nDays,ntsInDay)
-    Fh_daily = Fh_30min.reshape(nDays,ntsInDay)
-    Fc_daily = Fc_30min.reshape(nDays,ntsInDay)
-    Rain_daily = Rain_30min.reshape(nDays,ntsInDay)
-    Sws_daily = Sws_30min.reshape(nDays,ntsInDay)
-    Ts_daily = Ts_30min.reshape(nDays,ntsInDay)
-    us_daily = us_30min.reshape(nDays,ntsInDay)
-
-    # get the SEB ratio
-    # get the daytime data, defined by Fsd>10 W/m2
-    Fa_day = numpy.ma.masked_where(nm_daily==True,Fa_daily)
-    Fe_day = numpy.ma.masked_where(nm_daily==True,Fe_daily)
-    Fh_day = numpy.ma.masked_where(nm_daily==True,Fh_daily)
-    mask = numpy.ma.mask_or(Fa_day.mask,Fe_day.mask)  # mask based on dependencies, set all to missing if any missing
-    mask = numpy.ma.mask_or(mask,Fh_day.mask)
-    Fa_day = numpy.ma.array(Fa_day,mask=mask)         # apply the mask
-    Fe_day = numpy.ma.array(Fe_day,mask=mask)
-    Fh_day = numpy.ma.array(Fh_day,mask=mask)
-    Fa_day_avg = numpy.ma.average(Fa_day,axis=1)      # get the daily average
-    Fe_day_avg = numpy.ma.average(Fe_day,axis=1)
-    Fh_day_avg = numpy.ma.average(Fh_day,axis=1)      # get the number of values in the daily average
-    SEB_day_num = numpy.ma.count(Fh_day,axis=1)       # get the SEB ratio
-    SEB_day_avg = (Fe_day_avg+Fh_day_avg)/Fa_day_avg
-    SEB_day_avg = numpy.ma.masked_where(SEB_day_num<=5,SEB_day_avg)
-    index = numpy.where(numpy.ma.getmaskarray(SEB_day_avg)==True)[0]
-    #index = numpy.ma.where(numpy.ma.getmaskarray(SEB_day_avg)==True)[0]
-    SEB_day_num[index] = 0
-
-    # get the EF
-    # get the daytime data, defined by Fsd>10 W/m2
-    Fa_day = numpy.ma.masked_where(nm_daily==True,Fa_daily)
-    Fe_day = numpy.ma.masked_where(nm_daily==True,Fe_daily)
-    mask = numpy.ma.mask_or(Fa_day.mask,Fe_day.mask)  # mask based on dependencies, set all to missing if any missing
-    Fa_day = numpy.ma.array(Fa_day,mask=mask)         # apply the mask
-    Fe_day = numpy.ma.array(Fe_day,mask=mask)
-    Fa_day_avg = numpy.ma.average(Fa_day,axis=1)      # get the daily average
-    Fe_day_avg = numpy.ma.average(Fe_day,axis=1)
-    EF_day_num = numpy.ma.count(Fe_day,axis=1)        # get the number of values in the daily average
-    EF_day_avg = Fe_day_avg/Fa_day_avg                # get the EF ratio
-    EF_day_avg = numpy.ma.masked_where(EF_day_num<=5,EF_day_avg)
-    index = numpy.where(numpy.ma.getmaskarray(EF_day_avg)==True)[0]
-    #index = numpy.ma.where(numpy.ma.getmaskarray(EF_day_avg)==True)[0]
-    EF_day_num[index] = 0
-
-    # get the BR
-    # get the daytime data, defined by Fsd>10 W/m2
-    Fe_day = numpy.ma.masked_where(nm_daily==True,Fe_daily)
-    Fh_day = numpy.ma.masked_where(nm_daily==True,Fh_daily)
-    mask = numpy.ma.mask_or(Fe_day.mask,Fh_day.mask)  # mask based on dependencies, set all to missing if any missing
-    Fe_day = numpy.ma.array(Fe_day,mask=mask)         # apply the mask
-    Fh_day = numpy.ma.array(Fh_day,mask=mask)
-    Fe_day_avg = numpy.ma.average(Fe_day,axis=1)      # get the daily average
-    Fh_day_avg = numpy.ma.average(Fh_day,axis=1)
-    BR_day_num = numpy.ma.count(Fh_day,axis=1)        # get the number of values in the daily average
-    BR_day_avg = Fh_day_avg/Fe_day_avg                # get the BR ratio
-    BR_day_avg = numpy.ma.masked_where(BR_day_num<=5,BR_day_avg)
-    index = numpy.where(numpy.ma.getmaskarray(BR_day_avg)==True)[0]
-    #index = numpy.ma.where(numpy.ma.getmaskarray(BR_day_avg)==True)[0]
-    BR_day_num[index] = 0
-
-    # get the Wue
-    # get the daytime data, defined by Fsd>10 W/m2
-    Fe_day = numpy.ma.masked_where(nm_daily==True,Fe_daily)
-    Fc_day = numpy.ma.masked_where(nm_daily==True,Fc_daily)
-    mask = numpy.ma.mask_or(Fe_day.mask,Fc_day.mask)  # mask based on dependencies, set all to missing if any missing
-    Fe_day = numpy.ma.array(Fe_day,mask=mask)         # apply the mask
-    Fc_day = numpy.ma.array(Fc_day,mask=mask)
-    Fe_day_avg = numpy.ma.average(Fe_day,axis=1)      # get the daily average
-    Fc_day_avg = numpy.ma.average(Fc_day,axis=1)
-    WUE_day_num = numpy.ma.count(Fc_day,axis=1)       # get the number of values in the daily average
-    WUE_day_avg = Fc_day_avg/Fe_day_avg
-    WUE_day_avg = numpy.ma.masked_where(WUE_day_num<=5,WUE_day_avg)
-    index = numpy.where(numpy.ma.getmaskarray(WUE_day_avg)==True)[0]
-    #index = numpy.ma.where(numpy.ma.getmaskarray(WUE_day_avg)==True)[0]
-    WUE_day_num[index] = 0
-    # get the soil moisture
-    Sws_daily_avg = numpy.ma.average(Sws_daily,axis=1)
-    Sws_daily_num = numpy.ma.count(Sws_daily,axis=1)
-    # get the rainfall
-    Rain_daily_sum = numpy.ma.sum(Rain_daily,axis=1)
-    Rain_daily_num = numpy.ma.count(Rain_daily,axis=1)
-    # plot the SEB, EF and Wue
-    logger.info(' Doing the daily ratios plot ')
+    daily = {}
+    for label in list(data.keys()):
+        daily[label] = {"label": label}
+        daily[label]["Data"] = data[label]["Data"].reshape(nDays, ntsInDay)
+        daily[label]["Attr"] = data[label]["Attr"]
+    # add the day and night masks
+    daily["day_mask"] = {"Data": (data["Fsd"]["Data"] >= 10).reshape(nDays, ntsInDay)}
+    daily["night_mask"] = {"Data": (data["Fsd"]["Data"] < 10).reshape(nDays, ntsInDay)}
+    # get the daily ratios
+    daily["SEB"] = plot_quickcheck_get_seb(daily)
+    daily["EF"] = plot_quickcheck_get_ef(daily)
+    daily["BR"] = plot_quickcheck_get_br(daily)
+    daily["WUE"] = plot_quickcheck_get_wue(daily)
+    daily["Sws"]["Avg"], daily["Sws"]["Count"] = plot_quickcheck_get_avg(daily, "Sws")
+    daily["Precip"]["Avg"], daily["Precip"]["Count"] = plot_quickcheck_get_avg(daily, "Precip")
+    # scatter plot of (Fh+Fe) versys Fa, all data
+    nFig = nFig + 1    
+    file_name = site_name.replace(" ", "") + "_" + level + "_QC_SEB_30minutes.png"
+    figure_name = os.path.join("plots", file_name)
+    plot_quickcheck_seb(nFig, plot_title, figure_name, data, daily)
+    # plot the daily ratios
+    logger.info(" Doing the daily ratios plot")
+    plt.ion()
     nFig = nFig + 1
-    fig = plt.figure(nFig,figsize=(PlotWidth_landscape,PlotHeight_landscape))
+    fig = plt.figure(nFig, figsize=(9, 6))
     fig.canvas.set_window_title("Daily Average Ratios")
-    plt.figtext(0.5,0.95,PlotTitle,horizontalalignment='center',size=16)
-    tsplot(DT_daily,SEB_day_avg,sub=[6,1,1],colours=SEB_day_num,ylabel='(Fh+Fe)/Fa',lineat=1)
-    tsplot(DT_daily,EF_day_avg,sub=[6,1,2],colours=EF_day_num,ylabel='EF=Fe/Fa')
-    tsplot(DT_daily,BR_day_avg,sub=[6,1,3],colours=BR_day_num,ylabel='BR=Fh/Fe')
-    tsplot(DT_daily,WUE_day_avg,sub=[6,1,4],colours=WUE_day_num,ylabel='WUE=Fc/Fe',lineat=0)
-    tsplot(DT_daily,Sws_daily_avg,sub=[6,1,5],colours=Sws_daily_num,ylabel='Sws')
-    tsplot(DT_daily,Rain_daily_sum,sub=[6,1,6],colours=Rain_daily_num,ylabel='Rain')
-    #fig.show()
-    figname='plots/'+ds.globalattributes['site_name'].replace(' ','')+'_'+ds.globalattributes['nc_level']+'_QC_'+'DailyRatios.png'
-    fig.savefig(figname,format='png')
-    # draw the plot on the screen
+    plt.figtext(0.5, 0.95, plot_title, horizontalalignment="center", size=16)
+    tsplot1_list = ["SEB", "EF", "BR", "WUE", "Sws", "Precip"]
+    nplots = len(tsplot1_list)
+    for nrow, label in enumerate(tsplot1_list):
+        tsplot(DT_daily, daily[label]["Avg"], sub=[nplots, 1, nrow+1], colours=daily[label]["Count"],
+               ylabel=daily[label]["label"])
+    file_name = site_name.replace(" ", "") + "_" + level + "_QC_DailyRatios.png"
+    figure_name = os.path.join("plots", file_name)
+    fig.savefig(figure_name, format="png")
     plt.draw()
-    # now we do the daily averages of the fluxes and the meteorology
-    # get the 1D array of 30 minute data into a 2D array with a dimension for
-    #  the day number and a dimension for the time of day
-    Fsd_daily = Fsd_30min.reshape(nDays,ntsInDay)
-    Fsu_daily = Fsu_30min.reshape(nDays,ntsInDay)
-    Fld_daily = Fld_30min.reshape(nDays,ntsInDay)
-    Flu_daily = Flu_30min.reshape(nDays,ntsInDay)
-    Fn_daily = Fn_30min.reshape(nDays,ntsInDay)
-    Fg_daily = Fg_30min.reshape(nDays,ntsInDay)
-    Fsd_day = numpy.ma.masked_where(nm_daily==True,Fsd_daily)
-    Fsu_day = numpy.ma.masked_where(nm_daily==True,Fsu_daily)
-    Fld_day = numpy.ma.masked_where(nm_daily==True,Fld_daily)
-    Flu_day = numpy.ma.masked_where(nm_daily==True,Flu_daily)
-    Fn_day = numpy.ma.masked_where(nm_daily==True,Fn_daily)
-    Fg_day = numpy.ma.masked_where(nm_daily==True,Fg_daily)
-    Fsd_day_avg = numpy.ma.average(Fsd_day,axis=1)
-    Fsu_day_avg = numpy.ma.average(Fsu_day,axis=1)
-    Fld_day_avg = numpy.ma.average(Fld_day,axis=1)
-    Flu_day_avg = numpy.ma.average(Flu_day,axis=1)
-    Fn_day_avg = numpy.ma.average(Fn_day,axis=1)
-    Fg_day_avg = numpy.ma.average(Fg_day,axis=1)
-    Fsd_day_num = numpy.ma.count(Fsd_day,axis=1)
-    Fsu_day_num = numpy.ma.count(Fsu_day,axis=1)
-    Fld_day_num = numpy.ma.count(Fld_day,axis=1)
-    Flu_day_num = numpy.ma.count(Flu_day,axis=1)
-    Fn_day_num = numpy.ma.count(Fn_day,axis=1)
-    Fg_day_num = numpy.ma.count(Fg_day,axis=1)
-    logger.info(' Doing the daily radiation plot ')
+    # plot the daily average radiation
     nFig = nFig + 1
-    fig = plt.figure(nFig,figsize=(PlotWidth_landscape,PlotHeight_landscape))
+    fig = plt.figure(nFig, figsize=(9, 6))
     fig.canvas.set_window_title("Daily Average Radiation")
-    plt.figtext(0.5,0.95,PlotTitle,horizontalalignment='center',size=16)
-    tsplot(DT_daily,Fsd_day_avg,sub=[6,1,1],colours=Fsd_day_num,ylabel='Fsd (W/m2)')
-    tsplot(DT_daily,Fsu_day_avg,sub=[6,1,2],colours=Fsu_day_num,ylabel='Fsu (W/m2)')
-    tsplot(DT_daily,Fld_day_avg,sub=[6,1,3],colours=Fld_day_num,ylabel='Fld (W/m2)')
-    tsplot(DT_daily,Flu_day_avg,sub=[6,1,4],colours=Flu_day_num,ylabel='Flu (W/m2)')
-    tsplot(DT_daily,Fn_day_avg,sub=[6,1,5],colours=Fn_day_num,ylabel='Fn (W/m2)')
-    tsplot(DT_daily,Fg_day_avg,sub=[6,1,6],colours=Fg_day_num,ylabel='Fg (W/m2)')
-    #fig.show()
-    figname='plots/'+ds.globalattributes['site_name'].replace(' ','')+'_'+ds.globalattributes['nc_level']+'_QC_'+'DailyRadn.png'
-    fig.savefig(figname,format='png')
-    # draw the plot on the screen
+    plt.figtext(0.5, 0.95, plot_title, horizontalalignment="center", size=16)
+    tsplot2_list = ["Fsd", "Fsu", "Fld", "Flu", "Fn", "Fg"]
+    nplots = len(tsplot2_list)
+    for nrow, label in enumerate(tsplot2_list):
+        daily[label]["Avg"], daily[label]["Count"] = plot_quickcheck_get_avg(daily, label)
+        tsplot(DT_daily, daily[label]["Avg"], sub=[nplots, 1, nrow+1], colours=daily[label]["Count"],
+               ylabel=daily[label]["label"])
+    file_name = site_name.replace(" ", "") + "_" + level +"_QC_DailyRadn.png"
+    figure_name = os.path.join("plots", file_name)
+    fig.savefig(figure_name, format="png")
     plt.draw()
-    Fsd_daily = Fsd_30min.reshape(nDays,ntsInDay)
-    Fa_daily = Fa_30min.reshape(nDays,ntsInDay)
-    Fe_daily = Fe_30min.reshape(nDays,ntsInDay)
-    Fh_daily = Fh_30min.reshape(nDays,ntsInDay)
-    Fc_daily = Fc_30min.reshape(nDays,ntsInDay)
-    # ... then get the day time values only (defined by Fsd>10 W/m2)
-    Fsd_day = numpy.ma.masked_where(nm_daily==True,Fsd_daily)
-    Fa_day = numpy.ma.masked_where(nm_daily==True,Fa_daily)
-    Fe_day = numpy.ma.masked_where(nm_daily==True,Fe_daily)
-    Fh_day = numpy.ma.masked_where(nm_daily==True,Fh_daily)
-    Fc_day = numpy.ma.masked_where(nm_daily==True,Fc_daily)
-    Fc_night = numpy.ma.masked_where(nm_daily==True,Fc_daily)
-    # ... then get the daily averages
-    Fsd_day_avg = numpy.ma.average(Fsd_day,axis=1)      # get the daily average
-    Fa_day_avg = numpy.ma.average(Fa_day,axis=1)      # get the daily average
-    Fe_day_avg = numpy.ma.average(Fe_day,axis=1)      # get the daily average
-    Fh_day_avg = numpy.ma.average(Fh_day,axis=1)      # get the daily average
-    Fc_day_avg = numpy.ma.average(Fc_day,axis=1)      # get the daily average
-    Fc_night_avg = numpy.ma.average(Fc_night,axis=1)      # get the daily average
-    # ... then the number of values in each day time block
-    Fsd_day_num = numpy.ma.count(Fsd_day,axis=1)
-    Fa_day_num = numpy.ma.count(Fa_day,axis=1)
-    Fe_day_num = numpy.ma.count(Fe_day,axis=1)
-    Fh_day_num = numpy.ma.count(Fh_day,axis=1)
-    Fc_day_num = numpy.ma.count(Fc_day,axis=1)
-    Fc_night_num = numpy.ma.count(Fc_night,axis=1)
-    # ... now plot the day time averages with the colour of the points controlled
-    #     by the number of values used to get the average
-    logger.info(' Doing the daily fluxes plot ')
+    # plot the daily average fluxes
     nFig = nFig + 1
-    fig = plt.figure(nFig,figsize=(PlotWidth_landscape,PlotHeight_landscape))
+    fig = plt.figure(nFig, figsize=(9, 6))
     fig.canvas.set_window_title("Daily Average Fluxes")
-    plt.figtext(0.5,0.95,PlotTitle,horizontalalignment='center',size=16)
-    tsplot(DT_daily,Fsd_day_avg,sub=[5,1,1],colours=Fsd_day_num,ylabel='Fsd (W/m2)')
-    tsplot(DT_daily,Fa_day_avg,sub=[5,1,2],colours=Fa_day_num,ylabel='Fa (W/m2)')
-    tsplot(DT_daily,Fe_day_avg,sub=[5,1,3],colours=Fe_day_num,ylabel='Fe (W/m2)')
-    tsplot(DT_daily,Fh_day_avg,sub=[5,1,4],colours=Fh_day_num,ylabel='Fh (W/m2)')
-    tsplot(DT_daily,Fc_day_avg,sub=[5,1,5],colours=Fc_day_num,ylabel='Fc ('+Fc_units+')',lineat=0)
-    #fig.show()
-    figname='plots/'+ds.globalattributes['site_name'].replace(' ','')+'_'+ds.globalattributes['nc_level']+'_QC_'+'DailyFluxes.png'
-    fig.savefig(figname,format='png')
-    # draw the plot on the screen
+    plt.figtext(0.5, 0.95, plot_title, horizontalalignment="center", size=16)
+    tsplot3_list = ["Fsd", "Fa", "Fe", "Fh", "Fc"]
+    nplots = len(tsplot3_list)
+    for nrow, label in enumerate(tsplot3_list):
+        daily[label]["Avg"], daily[label]["Count"] = plot_quickcheck_get_avg(daily, label, filter_type="day")
+        tsplot(DT_daily, daily[label]["Avg"], sub=[nplots, 1, nrow+1], colours=daily[label]["Count"],
+               ylabel=daily[label]["label"])
+    file_name = site_name.replace(" ", "") + "_" + level + "_QC_DailyFluxes.png"
+    figure_name = os.path.join("plots", file_name)
+    fig.savefig(figure_name, format="png")
     plt.draw()
-    Ta_daily = Ta_30min.reshape(nDays,ntsInDay)
-    H2O_daily = H2O_30min.reshape(nDays,ntsInDay)
-    CO2_daily = CO2_30min.reshape(nDays,ntsInDay)
-    Ws_daily = Ws_30min.reshape(nDays,ntsInDay)
-    CO2_day = numpy.ma.masked_where(nm_daily==True,CO2_daily)
-    Ta_daily_avg = numpy.ma.average(Ta_daily,axis=1)      # get the daily average
-    Ta_daily_num = numpy.ma.count(Ta_daily,axis=1)
-    H2O_daily_avg = numpy.ma.average(H2O_daily,axis=1)      # get the daily average
-    H2O_daily_num = numpy.ma.count(H2O_daily,axis=1)
-    CO2_day_avg = numpy.ma.average(CO2_day,axis=1)          # get the daily average
-    CO2_day_num = numpy.ma.count(CO2_day,axis=1)
-    Ws_daily_avg = numpy.ma.average(Ws_daily,axis=1)      # get the daily average
-    Ws_daily_num = numpy.ma.count(Ws_daily,axis=1)
-    logger.info(' Doing the daily meteorology plot ')
+    # plot the daily average meteorology
     nFig = nFig + 1
-    fig = plt.figure(nFig,figsize=(PlotWidth_landscape,PlotHeight_landscape))
+    fig = plt.figure(nFig, figsize=(9, 6))
     fig.canvas.set_window_title("Daily Average Meteorology")
-    plt.figtext(0.5,0.95,PlotTitle,horizontalalignment='center',size=16)
-    tsplot(DT_daily,Ta_daily_avg,sub=[5,1,1],colours=Ta_daily_num,ylabel='Ta (C)')
-    tsplot(DT_daily,H2O_daily_avg,sub=[5,1,2],colours=H2O_daily_num,ylabel='H2O ('+H2O_units+')')
-    tsplot(DT_daily,CO2_day_avg,sub=[5,1,3],colours=CO2_day_num,ylabel='CO2 ('+CO2_units+')')
-    tsplot(DT_daily,Ws_daily_avg,sub=[5,1,4],colours=Ws_daily_num,ylabel='WS (m/s)')
-    tsplot(DT_daily,Rain_daily_sum,sub=[5,1,5],colours=Rain_daily_num,ylabel='Rain (mm)')
-    #fig.show()
-    figname='plots/'+ds.globalattributes['site_name'].replace(' ','')+'_'+ds.globalattributes['nc_level']+'_QC_'+'DailyMet.png'
-    fig.savefig(figname,format='png')
-    # draw the plot on the screen
+    plt.figtext(0.5, 0.95, plot_title, horizontalalignment="center", size=16)
+    tsplot4_list = ["Ta", "H2O", "CO2", "Ws", "Precip"]
+    nplots = len(tsplot4_list)
+    for nrow, label in enumerate(tsplot4_list):
+        daily[label]["Avg"], daily[label]["Count"] = plot_quickcheck_get_avg(daily, label)
+        tsplot(DT_daily, daily[label]["Avg"], sub=[nplots, 1, nrow+1], colours=daily[label]["Count"],
+               ylabel=daily[label]["label"])
+    file_name = site_name.replace(" ", "") + "_" + level + "_QC_DailyMet.png"
+    figure_name = os.path.join("plots", file_name)
+    fig.savefig(figure_name, format="png")
     plt.draw()
-    Ta_daily = Ta_30min.reshape(nDays,ntsInDay)
-    Ts_daily = Ts_30min.reshape(nDays,ntsInDay)
-    Sws_daily = Sws_30min.reshape(nDays,ntsInDay)
-    Fg_daily = Fg_30min.reshape(nDays,ntsInDay)
-    Rain_daily = Rain_30min.reshape(nDays,ntsInDay)
-    Ta_daily_avg = numpy.ma.average(Ta_daily,axis=1)      # get the daily average
-    Ta_daily_num = numpy.ma.count(Ta_daily,axis=1)
-    Ts_daily_avg = numpy.ma.average(Ts_daily,axis=1)      # get the daily average
-    Ts_daily_num = numpy.ma.count(Ts_daily,axis=1)
-    Sws_day_avg = numpy.ma.average(Sws_daily,axis=1)          # get the daily average
-    Sws_day_num = numpy.ma.count(Sws_daily,axis=1)
-    Fg_daily_avg = numpy.ma.average(Fg_daily,axis=1)      # get the daily average
-    Fg_daily_num = numpy.ma.count(Fg_daily,axis=1)
-    Fg_daily_avg = numpy.ma.average(Fg_daily,axis=1)      # get the daily average
-    Rain_daily_sum = numpy.ma.sum(Rain_daily,axis=1)
-    Rain_daily_num = numpy.ma.count(Rain_daily,axis=1)
-    logger.info(' Doing the daily soil data plot ')
+    # plot the daily average soil data
     nFig = nFig + 1
-    fig = plt.figure(nFig,figsize=(PlotWidth_landscape,PlotHeight_landscape))
-    fig.canvas.set_window_title("Daily Average Soil")
-    plt.figtext(0.5,0.95,PlotTitle,horizontalalignment='center',size=16)
-    tsplot(DT_daily,Ta_daily_avg,sub=[5,1,1],colours=Ta_daily_num,ylabel='Ta (C)')
-    tsplot(DT_daily,Ts_daily_avg,sub=[5,1,2],colours=Ts_daily_num,ylabel='Ts (C)')
-    tsplot(DT_daily,Sws_day_avg,sub=[5,1,3],colours=Sws_day_num,ylabel='Sws (frac)')
-    tsplot(DT_daily,Fg_daily_avg,sub=[5,1,4],colours=Fg_daily_num,ylabel='Fg (W/m2)')
-    tsplot(DT_daily,Rain_daily_sum,sub=[5,1,5],colours=Rain_daily_num,ylabel='Rain (mm)')
-    figname='plots/'+ds.globalattributes['site_name'].replace(' ','')+'_'+ds.globalattributes['nc_level']+'_QC_'+'DailySoil.png'
-    fig.savefig(figname,format='png')
-    # draw the plot on the screen
+    fig = plt.figure(nFig, figsize=(9, 6))
+    fig.canvas.set_window_title("Daily Average Soil Data")
+    plt.figtext(0.5, 0.95, plot_title, horizontalalignment="center", size=16)
+    tsplot5_list = ["Ta", "Ts", "Sws", "Fg", "Precip"]
+    nplots = len(tsplot5_list)
+    for nrow, label in enumerate(tsplot5_list):
+        daily[label]["Avg"], daily[label]["Count"] = plot_quickcheck_get_avg(daily, label)
+        tsplot(DT_daily, daily[label]["Avg"], sub=[nplots, 1, nrow+1], colours=daily[label]["Count"],
+               ylabel=daily[label]["label"])
+    file_name = site_name.replace(" ", "") + "_" + level + "_QC_DailySoil.png"
+    figure_name = os.path.join("plots", file_name)
+    fig.savefig(figure_name, format="png")
     plt.draw()
     # *** end of section for time series of daily averages
     # *** start of section for diurnal plots by month ***
-    MnthList = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
-    # plot Fsd
-    logger.info(' Doing the diurnal Fsd by month plot ')
-    nFig = nFig + 1
-    fig = plt.figure(nFig,figsize=(PlotWidth_portrait,PlotHeight_portrait))
-    fig.canvas.set_window_title("Diurnal Fsd")
-    plt.figtext(0.5,0.95,PlotTitle,horizontalalignment='center',size=16)
-    j = 0
-    for i in [12,1,2,3,4,5,6,7,8,9,10,11]:
-        j = j + 1
-        index = numpy.where(Mnth_daily==i)[0]
-        if len(index)!=0:
-            hr = Hour_daily[index]+Mnit_daily[index]/float(60)
-            Fsd_hr_avg = numpy.ma.average(Fsd_daily[index],axis=0)
-            Fsd_hr_num = numpy.ma.count(Fsd_daily[index],axis=0)
-            if j in [1,2,3,4,5,6,7,8,9]:
+    month_list = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+    diurnal_list = ["Fsd", "Fsu", "Fa", "Fn", "Fg", "Ta", "Ts", "Fh", "Fe", "Fc"]
+    # plot diurnals
+    for label in diurnal_list:
+        if label not in series_list:
+            continue
+        msg = " Doing the monthly diurnal plots for " + label
+        logger.info(msg)
+        nFig = nFig + 1
+        fig = plt.figure(nFig, figsize=(6, 9))
+        window_title = "Diurnal " + label
+        fig.canvas.set_window_title(window_title)
+        plt.figtext(0.5, 0.95, plot_title, horizontalalignment="center", size=16)
+        j = 0
+        for i in [12, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]:
+            j = j + 1
+            idx = numpy.where(daily["Month"]["Data"] == i)[0]
+            if len(idx) == 0:
+                continue
+            hr = daily["Hour"]["Data"][idx] + daily["Minute"]["Data"][idx]/float(60)
+            avg = numpy.ma.average(daily[label]["Data"][idx], axis=0)
+            num = numpy.ma.count(daily[label]["Data"][idx], axis=0)
+            if j in [1, 2, 3, 4, 5, 6, 7, 8, 9]:
                 xlabel = None
+                show_xtick_labels = False
             else:
-                xlabel = 'Hour'
-            if j in [2,3,5,6,8,9,11,12]:
+                xlabel = "Hour"
+                show_xtick_labels = True
+            if j in [2, 3, 5, 6, 8, 9, 11, 12]:
                 ylabel = None
             else:
-                ylabel = 'Fsd (W/m2)'
-            hrplot(hr[0],Fsd_hr_avg,sub=[4,3,j],
-                   title=MnthList[i-1],xlabel=xlabel,ylabel=ylabel,
-                   colours=Fsd_hr_num)
-    # save the plot to file
-    figname='plots/'+ds.globalattributes['site_name'].replace(' ','')+'_'+ds.globalattributes['nc_level']+'_QC_'+'DiurnalFsdByMonth.png'
-    fig.savefig(figname,format='png')
-    # draw the plot on the screen
-    plt.draw()
-    # plot Fa
-    logger.info(' Doing the diurnal Fa by month plot ')
-    nFig = nFig + 1
-    fig = plt.figure(nFig,figsize=(PlotWidth_portrait,PlotHeight_portrait))
-    fig.canvas.set_window_title("Diurnal Fa")
-    plt.figtext(0.5,0.95,PlotTitle,horizontalalignment='center',size=16)
-    j = 0
-    for i in [12,1,2,3,4,5,6,7,8,9,10,11]:
-        j = j + 1
-        index = numpy.where(Mnth_daily==i)[0]
-        if len(index)!=0:
-            hr = Hour_daily[index]+Mnit_daily[index]/float(60)
-            Fa_hr_avg = numpy.ma.average(Fa_daily[index],axis=0)
-            Fa_hr_num = numpy.ma.count(Fa_daily[index],axis=0)
-            if j in [1,2,3,4,5,6,7,8,9]:
-                xlabel = None
-            else:
-                xlabel = 'Hour'
-            if j in [2,3,5,6,8,9,11,12]:
-                ylabel = None
-            else:
-                ylabel = 'Fa (W/m2)'
-            hrplot(hr[0],Fa_hr_avg,sub=[4,3,j],
-                   title=MnthList[i-1],xlabel=xlabel,ylabel=ylabel,
-                   colours=Fa_hr_num)
-    # save the plot to file
-    figname='plots/'+ds.globalattributes['site_name'].replace(' ','')+'_'+ds.globalattributes['nc_level']+'_QC_'+'DiurnalFaByMonth.png'
-    fig.savefig(figname,format='png')
-    # draw the plot on the screen
-    plt.draw()
-    # plot Fn
-    logger.info(' Doing the diurnal Fn by month plot ')
-    nFig = nFig + 1
-    fig = plt.figure(nFig,figsize=(PlotWidth_portrait,PlotHeight_portrait))
-    fig.canvas.set_window_title("Diurnal Fn")
-    plt.figtext(0.5,0.95,PlotTitle,horizontalalignment='center',size=16)
-    j = 0
-    for i in [12,1,2,3,4,5,6,7,8,9,10,11]:
-        j = j + 1
-        index = numpy.where(Mnth_daily==i)[0]
-        if len(index)!=0:
-            hr = Hour_daily[index]+Mnit_daily[index]/float(60)
-            Fn_hr_avg = numpy.ma.average(Fn_daily[index],axis=0)
-            Fn_hr_num = numpy.ma.count(Fn_daily[index],axis=0)
-            if j in [1,2,3,4,5,6,7,8,9]:
-                xlabel = None
-            else:
-                xlabel = 'Hour'
-            if j in [2,3,5,6,8,9,11,12]:
-                ylabel = None
-            else:
-                ylabel = 'Fn (W/m2)'
-            hrplot(hr[0],Fn_hr_avg,sub=[4,3,j],
-                   title=MnthList[i-1],xlabel=xlabel,ylabel=ylabel,
-                   colours=Fn_hr_num)
-    # save the plot to file
-    figname='plots/'+ds.globalattributes['site_name'].replace(' ','')+'_'+ds.globalattributes['nc_level']+'_QC_'+'DiurnalFnByMonth.png'
-    fig.savefig(figname,format='png')
-    # draw the plot on the screen
-    plt.draw()
-    # plot Fg
-    logger.info(' Doing the diurnal Fg by month plot ')
-    nFig = nFig + 1
-    fig = plt.figure(nFig,figsize=(PlotWidth_portrait,PlotHeight_portrait))
-    fig.canvas.set_window_title("Diurnal Fg")
-    plt.figtext(0.5,0.95,PlotTitle,horizontalalignment='center',size=16)
-    j = 0
-    for i in [12,1,2,3,4,5,6,7,8,9,10,11]:
-        j = j + 1
-        index = numpy.where(Mnth_daily==i)[0]
-        if len(index)!=0:
-            hr = Hour_daily[index]+Mnit_daily[index]/float(60)
-            Fg_hr_avg = numpy.ma.average(Fg_daily[index],axis=0)
-            Fg_hr_num = numpy.ma.count(Fg_daily[index],axis=0)
-            if j in [1,2,3,4,5,6,7,8,9]:
-                xlabel = None
-            else:
-                xlabel = 'Hour'
-            if j in [2,3,5,6,8,9,11,12]:
-                ylabel = None
-            else:
-                ylabel = 'Fg (W/m2)'
-            hrplot(hr[0],Fg_hr_avg,sub=[4,3,j],
-                   title=MnthList[i-1],xlabel=xlabel,ylabel=ylabel,
-                   colours=Fg_hr_num)
-    # save the plot to file
-    figname='plots/'+ds.globalattributes['site_name'].replace(' ','')+'_'+ds.globalattributes['nc_level']+'_QC_'+'DiurnalFgByMonth.png'
-    fig.savefig(figname,format='png')
-    # draw the plot on the screen
-    plt.draw()
-    # plot Ts
-    logger.info(' Doing the diurnal Ts by month plot ')
-    nFig = nFig + 1
-    fig = plt.figure(nFig,figsize=(PlotWidth_portrait,PlotHeight_portrait))
-    fig.canvas.set_window_title("Diurnal Ts")
-    plt.figtext(0.5,0.95,PlotTitle,horizontalalignment='center',size=16)
-    j = 0
-    for i in [12,1,2,3,4,5,6,7,8,9,10,11]:
-        j = j + 1
-        index = numpy.where(Mnth_daily==i)[0]
-        if len(index)!=0:
-            hr = Hour_daily[index]+Mnit_daily[index]/float(60)
-            Ts_hr_avg = numpy.ma.average(Ts_daily[index],axis=0)
-            Ts_hr_num = numpy.ma.count(Ts_daily[index],axis=0)
-            if j in [1,2,3,4,5,6,7,8,9]:
-                xlabel = None
-            else:
-                xlabel = 'Hour'
-            if j in [2,3,5,6,8,9,11,12]:
-                ylabel = None
-            else:
-                ylabel = 'Ts (C)'
-            hrplot(hr[0],Ts_hr_avg,sub=[4,3,j],
-                   title=MnthList[i-1],xlabel=xlabel,ylabel=ylabel,
-                   colours=Fg_hr_num)
-    # save the plot to file
-    figname='plots/'+ds.globalattributes['site_name'].replace(' ','')+'_'+ds.globalattributes['nc_level']+'_QC_'+'DiurnalTsByMonth.png'
-    fig.savefig(figname,format='png')
-    # draw the plot on the screen
-    plt.draw()
-    # plot Fh
-    logger.info(' Doing the diurnal Fh by month plot ')
-    nFig = nFig + 1
-    fig = plt.figure(nFig,figsize=(PlotWidth_portrait,PlotHeight_portrait))
-    fig.canvas.set_window_title("Diurnal Fh")
-    plt.figtext(0.5,0.95,PlotTitle,horizontalalignment='center',size=16)
-    j = 0
-    for i in [12,1,2,3,4,5,6,7,8,9,10,11]:
-        j = j + 1
-        index = numpy.where(Mnth_daily==i)[0]
-        if len(index)!=0:
-            hr = Hour_daily[index]+Mnit_daily[index]/float(60)
-            Fh_hr_avg = numpy.ma.average(Fh_daily[index],axis=0)
-            Fh_hr_num = numpy.ma.count(Fh_daily[index],axis=0)
-            if j in [1,2,3,4,5,6,7,8,9]:
-                xlabel = None
-            else:
-                xlabel = 'Hour'
-            if j in [2,3,5,6,8,9,11,12]:
-                ylabel = None
-            else:
-                ylabel = 'Fh (W/m2)'
-            hrplot(hr[0],Fh_hr_avg,sub=[4,3,j],
-                   title=MnthList[i-1],xlabel=xlabel,ylabel=ylabel,
-                   colours=Fh_hr_num)
-    # save the plot to file
-    figname='plots/'+ds.globalattributes['site_name'].replace(' ','')+'_'+ds.globalattributes['nc_level']+'_QC_'+'DiurnalFhByMonth.png'
-    fig.savefig(figname,format='png')
-    # draw the plot on the screen
-    plt.draw()
-    # plot Fe
-    logger.info(' Doing the diurnal Fe by month plot ')
-    nFig = nFig + 1
-    fig = plt.figure(nFig,figsize=(PlotWidth_portrait,PlotHeight_portrait))
-    fig.canvas.set_window_title("Diurnal Fe")
-    plt.figtext(0.5,0.95,PlotTitle,horizontalalignment='center',size=16)
-    j = 0
-    for i in [12,1,2,3,4,5,6,7,8,9,10,11]:
-        j = j + 1
-        index = numpy.where(Mnth_daily==i)[0]
-        if len(index)!=0:
-            hr = Hour_daily[index]+Mnit_daily[index]/float(60)
-            Fe_hr_avg = numpy.ma.average(Fe_daily[index],axis=0)
-            Fe_hr_num = numpy.ma.count(Fe_daily[index],axis=0)
-            if j in [1,2,3,4,5,6,7,8,9]:
-                xlabel = None
-            else:
-                xlabel = 'Hour'
-            if j in [2,3,5,6,8,9,11,12]:
-                ylabel = None
-            else:
-                ylabel = 'Fe (W/m2)'
-            hrplot(hr[0],Fe_hr_avg,sub=[4,3,j],
-                   title=MnthList[i-1],xlabel=xlabel,ylabel=ylabel,
-                   colours=Fe_hr_num)
-    # save the plot to file
-    figname='plots/'+ds.globalattributes['site_name'].replace(' ','')+'_'+ds.globalattributes['nc_level']+'_QC_'+'DiurnalFeByMonth.png'
-    fig.savefig(figname,format='png')
-    # draw the plot on the screen
-    plt.draw()
-    # plot Fc
-    logger.info(' Doing the diurnal Fc by month plot ')
-    nFig = nFig + 1
-    fig = plt.figure(nFig,figsize=(PlotWidth_portrait,PlotHeight_portrait))
-    fig.canvas.set_window_title("Diurnal Fc")
-    plt.figtext(0.5,0.95,PlotTitle,horizontalalignment='center',size=16)
-    j = 0
-    for i in [12,1,2,3,4,5,6,7,8,9,10,11]:
-        j = j + 1
-        index = numpy.where(Mnth_daily==i)[0]
-        if len(index)!=0:
-            hr = Hour_daily[index]+Mnit_daily[index]/float(60)
-            Fc_hr_avg = numpy.ma.average(Fc_daily[index],axis=0)
-            Fc_hr_num = numpy.ma.count(Fc_daily[index],axis=0)
-            if j in [1,2,3,4,5,6,7,8,9]:
-                xlabel = None
-            else:
-                xlabel = 'Hour'
-            if j in [2,3,5,6,8,9,11,12]:
-                ylabel = None
-            else:
-                ylabel = 'Fc ('+Fc_units+')'
-            hrplot(hr[0],Fc_hr_avg,sub=[4,3,j],
-                   title=MnthList[i-1],xlabel=xlabel,ylabel=ylabel,
-                   colours=Fc_hr_num)
-    # save the plot to file
-    figname='plots/'+ds.globalattributes['site_name'].replace(' ','')+'_'+ds.globalattributes['nc_level']+'_QC_'+'DiurnalFcByMonth.png'
-    fig.savefig(figname,format='png')
-    # draw the plot on the screen
-    plt.draw()
+                ylabel = label + " (" + daily[label]["Attr"]["units"] + ")"
+            hrplot(hr[0], avg, sub=[4, 3, j], colours=num,
+                   title=month_list[i-1], xlabel=xlabel, ylabel=ylabel,
+                   show_xtick_labels=show_xtick_labels)
+        # save the plot to file
+        level = ds.globalattributes["nc_level"]
+        file_name = site_name.replace(" ", "") + "_" + level + "_QC_Diurnal" + label + "ByMonth.png"
+        figure_name = os.path.join("plots", file_name)
+        fig.savefig(figure_name, format="png")
+        # draw the plot on the screen
+        plt.draw()
+    plt.ioff()
+    return
 
 def plot_setup(cf, title):
     p = {}
@@ -1370,8 +1132,8 @@ def xyplot(x,y,sub=[1,1,1],regr=0,thru0=0,title=None,xlabel=None,ylabel=None,fna
     '''Generic XY scatter plot routine'''
     wspace = 0.0
     hspace = 0.0
-    plt.subplot(sub[0],sub[1],sub[2])
-    plt.plot(x,y,'b.')
+    plt.subplot(sub[0], sub[1], sub[2])
+    plt.plot(x, y, 'b.')
     ax = plt.gca()
     if xlabel is not None:
         plt.xlabel(xlabel)
@@ -1382,6 +1144,9 @@ def xyplot(x,y,sub=[1,1,1],regr=0,thru0=0,title=None,xlabel=None,ylabel=None,fna
     if title is not None:
         plt.title(title)
         hspace = 0.3
+    plt.subplots_adjust(wspace=wspace, hspace=hspace)
+    if (numpy.ma.count(x) == 0) or (numpy.ma.count(y) == 0):
+        return
     if regr==1:
         coefs = numpy.ma.polyfit(numpy.ma.copy(x),numpy.ma.copy(y),1)
         xfit = numpy.ma.array([numpy.ma.minimum(x),numpy.ma.maximum(x)])
@@ -1416,9 +1181,9 @@ def xyplot(x,y,sub=[1,1,1],regr=0,thru0=0,title=None,xlabel=None,ylabel=None,fna
         a, _, _, _ = numpy.linalg.lstsq(x, y)
         eqnstr = 'y = %.3fx'%(a)
         plt.text(0.5,0.875,eqnstr,fontsize=8,horizontalalignment='center',transform=ax.transAxes)
-    plt.subplots_adjust(wspace=wspace,hspace=hspace)
+    return
 
-def hrplot(x,y,sub=[1,1,1],title=None,xlabel=None,ylabel=None,colours=None):
+def hrplot(x,y,sub=[1,1,1],title=None,xlabel=None,ylabel=None,colours=None,show_xtick_labels=True):
     plt.subplot(sub[0],sub[1],sub[2])
     if (y.all() is numpy.ma.masked):
         y = numpy.ma.zeros(len(y))
@@ -1434,6 +1199,9 @@ def hrplot(x,y,sub=[1,1,1],title=None,xlabel=None,ylabel=None,colours=None):
         plt.ylabel(ylabel)
     if xlabel is not None:
         plt.xlabel(xlabel)
+    if not show_xtick_labels:
+        ax = plt.gca()
+        ax.tick_params(labelbottom=False)
 
 def tsplot(x,y,sub=[1,1,1],title=None,xlabel=None,ylabel=None,colours=None,lineat=None):
     plt.subplot(sub[0],sub[1],sub[2])
@@ -1455,3 +1223,6 @@ def tsplot(x,y,sub=[1,1,1],title=None,xlabel=None,ylabel=None,colours=None,linea
         ax.yaxis.set_label_text(ylabel)
     if xlabel is not None:
         ax.xaxis.set_label_text(xlabel)
+    if sub[2] != sub[0]:
+        ax.set_xlabel('',visible=False)
+        ax.tick_params(labelbottom=False)

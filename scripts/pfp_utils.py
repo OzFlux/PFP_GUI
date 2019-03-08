@@ -938,8 +938,8 @@ def convert_WSWDtoUV(WS, WD):
     f0 = numpy.zeros(nrecs, dtype=numpy.int32)
     f1 = numpy.ones(nrecs, dtype=numpy.int32)
     # create empty variables for U and V
-    U = create_empty_variable("u", nrecs)
-    V = create_empty_variable("v", nrecs)
+    U = CreateEmptyVariable("u", nrecs)
+    V = CreateEmptyVariable("v", nrecs)
     # get the components from the wind speed and direction
     U["Data"] = -WS["Data"]*numpy.sin(numpy.radians(WD["Data"]))
     V["Data"] = -WS["Data"]*numpy.cos(numpy.radians(WD["Data"]))
@@ -981,8 +981,8 @@ def convert_UVtoWSWD(U, V):
     f0 = numpy.zeros(nrecs)
     f1 = numpy.ones(nrecs)
     # create empty variables for WS and WD
-    WS = create_empty_variable("Ws", nrecs)
-    WD = create_empty_variable("Wd", nrecs)
+    WS = CreateEmptyVariable("Ws", nrecs)
+    WD = CreateEmptyVariable("Wd", nrecs)
     # get the wind speed and direction from the components
     WD["Data"] = float(270) - (numpy.degrees(numpy.ma.arctan2(V["Data"], U["Data"])))
     WD["Data"] = numpy.ma.mod(WD["Data"], 360)
@@ -1088,19 +1088,21 @@ def CreateDatetimeRange(start,stop,step=datetime.timedelta(minutes=30)):
         start = start + step
     return result
 
-def create_empty_variable(label, nrecs, datetime=[]):
+def CreateEmptyVariable(label, nrecs, datetime=[], out_type="ma"):
     """
     Purpose:
      Returns an empty variable.  Data values are set to -9999, flag values are set to 1
      and default values for the attributes.
     Usage:
-     variable = pfp_utils.create_empty_variable(label, nrecs)
+     variable = pfp_utils.CreateEmptyVariable(label, nrecs)
      where label is the variable label
            nrecs is the number of elements in the variable data
     Author: PRI
     Date: December 2016
     """
     data = numpy.ones(nrecs, dtype=numpy.float64)*float(c.missing_value)
+    if out_type == "ma":
+        data = numpy.ma.array(data, mask=True)
     flag = numpy.ones(nrecs, dtype=numpy.int32)
     attr = make_attribute_dictionary()
     variable = {"Label":label, "Data":data, "Flag":flag, "Attr":attr}
