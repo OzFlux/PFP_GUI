@@ -1,0 +1,19 @@
+level = L3
+[Files]
+    file_path = ../Sites/Loxton/Data/Processed/all/
+    in_filename = Loxton_2008_to_2009_L3.nc
+    plot_path = ../Sites/Loxton/Plots/
+[Imports]
+    [[Habl]]
+        file_name = ../Sites/Loxton/Data/ERAI/Loxton_ERAI.nc
+        var_name = Habl
+[Options]
+    Climatology = Hourly
+    StartDate = 2009-02-07 00:30
+    EndDate = 2009-02-08 00:00
+    Cumulative = Yes
+    AreaOfInterest = Yes
+    iplot = 2
+    PlotWidth = 5.0
+    PlotHeight = 5.0
+    OzFlux_area_image = ../Sites/Loxton/images/loxton_ndvi_500x500.png

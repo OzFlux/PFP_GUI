@@ -90,6 +90,9 @@ class pfp_main_ui(QtGui.QWidget, QPlainTextEditLogger):
         # Utilities menu
         self.menuUtilities = QtGui.QMenu(self.menubar)
         self.menuUtilities.setTitle("Utilities")
+        # Utilities/FootPrint submenu
+        self.menuUtilitiesFootPrint = QtGui.QMenu(self.menuUtilities)
+        self.menuUtilitiesFootPrint.setTitle("FootPrint")
         # Help menu
         self.menuHelp = QtGui.QMenu(self.menubar)
         self.menuHelp.setTitle("Help")
@@ -139,6 +142,8 @@ class pfp_main_ui(QtGui.QWidget, QPlainTextEditLogger):
         self.actionPlotQuickCheck.setText("Summary")
         self.actionPlotTimeSeries = QtGui.QAction(self)
         self.actionPlotTimeSeries.setText("Time series")
+        self.actionPlotWindRose = QtGui.QAction(self)
+        self.actionPlotWindRose.setText("WindRose")
         self.actionPlotClosePlots = QtGui.QAction(self)
         self.actionPlotClosePlots.setText("Close plots")
         # Utilities menu
@@ -148,6 +153,13 @@ class pfp_main_ui(QtGui.QWidget, QPlainTextEditLogger):
         self.actionUtilitiesUstarCPD.setText("u* threshold (CPD)")
         self.actionUtilitiesUstarMPT = QtGui.QAction(self)
         self.actionUtilitiesUstarMPT.setText("u* threshold (MPT)")
+        # Utilities/Footprint submenu
+        self.actionUtilitiesFootPrintNK = QtGui.QAction(self)
+        self.actionUtilitiesFootPrintNK.setText("Kljun et al., 2015")
+        self.actionUtilitiesFootPrintKM = QtGui.QAction(self)
+        self.actionUtilitiesFootPrintKM.setText("Kormann & Meixner, 2001")
+        self.actionUtilitiesFootPrintNN = QtGui.QAction(self)
+        self.actionUtilitiesFootPrintNN.setText("NN")
         # add the actions to the menus
         # File/Convert submenu
         self.menuFileConvert.addAction(self.actionFileConvertnc2xls)
@@ -176,11 +188,18 @@ class pfp_main_ui(QtGui.QWidget, QPlainTextEditLogger):
         self.menuPlot.addAction(self.actionPlotQuickCheck)
         self.menuPlot.addAction(self.actionPlotTimeSeries)
         self.menuPlot.addSeparator()
+        self.menuPlot.addAction(self.actionPlotWindRose)
+        self.menuPlot.addSeparator()
         self.menuPlot.addAction(self.actionPlotClosePlots)
         # Utilities menu
         self.menuUtilities.addAction(self.actionUtilitiesClimatology)
         self.menuUtilities.addAction(self.actionUtilitiesUstarCPD)
         self.menuUtilities.addAction(self.actionUtilitiesUstarMPT)
+        self.menuUtilities.addAction(self.menuUtilitiesFootPrint.menuAction())
+        # Utilities/FootPrint submenu
+        self.menuUtilitiesFootPrint.addAction(self.actionUtilitiesFootPrintNK)
+        self.menuUtilitiesFootPrint.addAction(self.actionUtilitiesFootPrintKM)
+        self.menuUtilitiesFootPrint.addAction(self.actionUtilitiesFootPrintNN)
         # add individual menus to menu bar
         self.menubar.addAction(self.menuFile.menuAction())
         self.menubar.addAction(self.menuEdit.menuAction())
@@ -238,11 +257,15 @@ class pfp_main_ui(QtGui.QWidget, QPlainTextEditLogger):
         self.actionPlotFingerprints.triggered.connect(pfp_top_level.do_plot_fingerprints)
         self.actionPlotQuickCheck.triggered.connect(pfp_top_level.do_plot_quickcheck)
         self.actionPlotTimeSeries.triggered.connect(pfp_top_level.do_plot_timeseries)
+        self.actionPlotWindRose.triggered.connect(pfp_top_level.do_plot_windrose)
         self.actionPlotClosePlots.triggered.connect(pfp_top_level.do_plot_closeplots)
         # Utilities menu actions
         self.actionUtilitiesClimatology.triggered.connect(lambda:pfp_top_level.do_utilities_climatology(mode="standard"))
         self.actionUtilitiesUstarCPD.triggered.connect(lambda:pfp_top_level.do_utilities_ustar_cpd(mode="standard"))
         self.actionUtilitiesUstarMPT.triggered.connect(lambda:pfp_top_level.do_utilities_ustar_mpt(mode="standard"))
+        self.actionUtilitiesFootPrintNK.triggered.connect(lambda:pfp_top_level.do_utilities_footprint(mode="kljun"))
+        self.actionUtilitiesFootPrintKM.triggered.connect(lambda:pfp_top_level.do_utilities_footprint(mode="kormei"))
+        self.actionUtilitiesFootPrintNN.triggered.connect(lambda:pfp_top_level.do_utilities_footprint(mode="nn"))
         # add the L4 GUI
         self.l4_ui = pfp_gui.pfp_l4_ui(self)
         # add the L5 GUI
@@ -290,6 +313,10 @@ class pfp_main_ui(QtGui.QWidget, QPlainTextEditLogger):
             self.tabs.cfg_dict[self.tabs.tab_index_all]["controlfile_name"] = cfgpath
         elif self.cfg["level"] in ["nc2csv_ecostress"]:
             self.tabs.tab_dict[self.tabs.tab_index_all] = pfp_gui.edit_cfg_nc2csv_ecostress(self)
+            self.tabs.cfg_dict[self.tabs.tab_index_all] = self.tabs.tab_dict[self.tabs.tab_index_all].get_data_from_model()
+            self.tabs.cfg_dict[self.tabs.tab_index_all]["controlfile_name"] = cfgpath
+        elif self.cfg["level"] in ["footprint"]:
+            self.tabs.tab_dict[self.tabs.tab_index_all] = pfp_gui.edit_cfg_footprint(self)
             self.tabs.cfg_dict[self.tabs.tab_index_all] = self.tabs.tab_dict[self.tabs.tab_index_all].get_data_from_model()
             self.tabs.cfg_dict[self.tabs.tab_index_all]["controlfile_name"] = cfgpath
         else:
@@ -557,6 +584,8 @@ class pfp_main_ui(QtGui.QWidget, QPlainTextEditLogger):
             pfp_top_level.do_run_l6(self, cfg=cfg)
         elif self.tabs.cfg_dict[tab_index_current]["level"] == "nc2csv_ecostress":
             pfp_top_level.do_file_convert_nc2ecostress(cfg=cfg)
+        elif self.tabs.cfg_dict[tab_index_current]["level"] == "footprint":
+            pfp_top_level.do_utilities_footprint(cfg=cfg)
         else:
             logger.error("Level not implemented yet ...")
 

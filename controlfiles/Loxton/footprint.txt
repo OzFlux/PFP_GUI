@@ -1,0 +1,81 @@
+# AAHYWEH
+# Control file for footprint calculation for Kljun et al  2015 approach (calc_footprint_FFP_climatology).
+#
+#  To convert this template to a version that works for data output by the standard OzFlux
+#  data logger program:
+#   1) Replace the following place holders with values for your site:
+#      <site_name> - the name of the site
+#      <year>      - the year of the data
+#      <height>    - the height of the measurement (above ground), m
+#   2) Fill out the global and variable attributes
+#
+# [Files] - contains paths, file names and location of data in file
+# ========================================================================================================
+
+[Files]
+    file_path = ../Sites/Loxton/Data/Processed/all/
+    in_filename  = Loxton_2008_to_2009_L3.nc
+    plot_path = ../Sites/Loxton/Plots/
+
+[Imports]
+    [[Habl]]
+        source = "ERAI"
+        file_name = ../Sites/Loxton/Data/ERAI/Loxton_ERAI.nc
+        var_name = "Habl"
+
+[Tower]
+    tower_height   = 10
+    canopy_height  = 5.5
+    footprint_size = 500  # length in m of a square around the tower
+    num_cells      = 250  # number of cells per length ==> footprint_size / num_cells = grid_resolution
+
+[Options]
+    # ====================================================================================================
+    # "Options" specifies the climatology of the footprints. Only one of the parameters, daily, 
+    # monthly, annual, special or single can be set to Yes. Single and Special require Start and End-date,
+    # otherwise the climatolgy for the whole data-set is calculated.
+    # If 'Daily' is set to 'yes', a climatology is calculated for every single day of the data in the 
+    # nc-file (Warning: if large files are processed the output nc-file is huge, one year of daily data 
+    # for a grid of 250x250 produces about 200 MB of output).
+    # If 'Monthly' is set the file is divided into monthly data and a climatology is calculated.
+    # If 'Annual', then individual climatologies for each year in the data file are prodiced.
+    # Length of time for the climatology
+    # ====================================================================================================
+    Climatology    = 'Hourly' #'Monthly' #'Special' #'Single' #'Monthly' #'Daily' #'Annual' #
+    StartDate      = '2009-02-07 00:30'
+    EndDate        = '2009-02-08 00:00'
+    Cumulative     = 'Yes' # (default = 'No')
+    AreaOfInterest = 'Yes' # (default is 'No')
+
+[AreaOfInterest]
+    # ====================================================================================================
+    # Up to a maximum of 10 rectangles can be specified as AreaOfInterest; 
+    # defined in x,y coordinate system: 
+    #                Coordinate_ID x1_coord y1_coord x2_coord y2_coord x3_coord y3_coord x4_coord y4_coord
+    # ====================================================================================================
+    #[[all]]
+    #  area = -500, -500, 500, -500, 500, 500, -500, 500
+    #[[F6s]]
+    #  area = -300, 111, -100, 111, -100, 386, -300, 386
+    #[[F7]]
+    #  area = -100, 111, 100, 111, 100, 464, -100, 464
+    #[[H6n]]
+    #  area = -300, -150, -100, -150, -100, 111, -300, 111
+    [[H7n]]
+      area = -100, -150, 100, -150, 100, 111, -100, 111
+    #[[H6s]]
+    #  area = -300, -415, -100, -415, -100, -150, -300, -150
+    #[[H7s]]
+    #  area = -100, -415, 100, -415, 100, -150, -100, -150
+    #[[F6n1]]
+    #  area = -200, 386, -100, 386, -100, 448, -200, 448
+    #[[F&H]]
+    #  #area = -100, 111, -100, 464, 100, 464, 100, -415, -300, 111, -200, 448, -100, 448
+    #  area = 100, -415, -300, -415, -300, 386, -100, 386, -100, 464, 100, 464
+
+[General]
+    iplot = 2   # 1 / jpg plot on screen; 2 / png plot into kml
+    #idaytime = 0
+    PlotWidth  = 5.0 #10.9
+    PlotHeight = 5.0 # 7.5
+    OzFlux_area_image = "../Sites/Loxton/images/loxton_ndvi_500x500.png" # None #

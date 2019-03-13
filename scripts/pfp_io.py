@@ -111,8 +111,8 @@ def copy_datastructure(cf,ds_in):
             sd_out = str(dt_out[0])
             ed_out = str(dt_out[-1])
             # get the start and end indices based on the start and end dates
-            si = pfp_utils.GetDateIndex(dt_out,sd_file,ts=ts,default=0,match='exact')
-            ei = pfp_utils.GetDateIndex(dt_out,ed_file,ts=ts,default=-1,match='exact')
+            si = pfp_utils.pfp_utils.GetDateIndex(dt_out,sd_file,ts=ts,default=0,match='exact')
+            ei = pfp_utils.pfp_utils.GetDateIndex(dt_out,ed_file,ts=ts,default=-1,match='exact')
             # now replace parts of ds_out with the data read from file
             for ThisOne in ds_file.series.keys():
                 # check to see if the L4 series exists in the L3 data
@@ -416,8 +416,8 @@ def reddyproc_write_csv(cf):
     # get the start and end indices for whole days
     start_date = dt[0]
     end_date = dt[-1]
-    si = pfp_utils.GetDateIndex(dt,str(start_date),ts=ts,default=0,match='startnextday')
-    ei = pfp_utils.GetDateIndex(dt,str(end_date),ts=ts,default=len(dt)-1,match='endpreviousday')
+    si = pfp_utils.pfp_utils.GetDateIndex(dt,str(start_date),ts=ts,default=0,match='startnextday')
+    ei = pfp_utils.pfp_utils.GetDateIndex(dt,str(end_date),ts=ts,default=len(dt)-1,match='endpreviousday')
     # get the date and time data
     Year,flag,attr = pfp_utils.GetSeries(ds,'Year',si=si,ei=ei)
     Ddd,flag,attr = pfp_utils.GetSeries(ds,'Ddd',si=si,ei=ei)

@@ -13,6 +13,8 @@ import pfp_io
 import pfp_levels
 import pfp_plot
 import pfp_utils
+import pfp_footprint
+import pfp_windrose
 
 logger = logging.getLogger("pfp_log")
 # top level routines for the File menu
@@ -561,6 +563,42 @@ def do_plot_timeseries():
     logger.info("Finished plotting fingerprint")
     logger.info("")
     return
+def do_plot_windrose():
+    """
+    Purpose:
+     Plot windrose of data, usually L3 and above.
+    Usage:
+     pfp_top_level.do_plot_windrose()
+    Side effects:
+     Plots windrose to the screen and creates .PNG hardcopies of
+     the plots.
+    Author: CME
+    Date: a while ago
+    Mods:
+     March 2019: rewrite for use with new GUI
+    """
+    logger.info("Starting windrose plot")
+    stdname = "controlfiles/standard/windrose.txt"
+    if os.path.exists(stdname):
+        cf = pfp_io.get_controlfilecontents(stdname)
+        filename = pfp_io.get_filename_dialog(file_path="../Sites",title="Choose a netCDF file")
+        if len(filename)==0:
+            return
+        if "Files" not in dir(cf): cf["Files"] = {}
+        cf["Files"]["file_path"] = os.path.split(filename)[0]+"/"
+        cf["Files"]["in_filename"] = os.path.split(filename)[1]
+    else:
+        cf = pfp_io.load_controlfile(path="controlfiles")
+        if len(cf)==0:
+            return
+    logger.info("Loaded control file ...")
+    if "Options" not in cf: cf["Options"]={}
+    cf["Options"]["call_mode"] = "interactive"
+    logger.info(" Plotting windrose ...")
+    pfp_windrose.windrose_main(cf)
+    logger.info("Finished plotting windrose")
+    logger.info("")
+    return
 def do_plot_closeplots():
     """
     Close plot windows.
@@ -664,5 +702,43 @@ def do_utilities_ustar_mpt(mode="standard"):
     cf["Options"]["call_mode"] = "interactive"
     pfp_mpt.mpt_main(cf)
     logger.info(" Finished u* threshold detection (MPT)")
+    logger.info("")
+    return
+
+def do_utilities_footprint(mode="standard"):
+    """
+    Calls pfp_footprint.footprint_main
+    Calculate the footprint using either Natasha Kljun's 2015 or Kormann and Meixner 2001 method.
+    """
+    logger.info(" Starting footprint calculation")
+    if mode == "standard":
+        stdname = "controlfiles/standard/footprint.txt"
+        if os.path.exists(stdname):
+            cf = pfp_io.get_controlfilecontents(stdname)
+            filename = pfp_io.get_filename_dialog(file_path='../Sites', title="Choose a netCDF file")
+            if not os.path.exists(filename):
+                logger.info( " FootPrint: no input file chosen")
+                return
+            if "Files" not in dir(cf):
+                cf["Files"] = {}
+            cf["Files"]["file_path"] = os.path.join(os.path.split(filename)[0], "")
+            in_filename = os.path.split(filename)[1]
+            cf["Files"]["in_filename"] = in_filename
+            cf["Files"]["out_filename"] = in_filename.replace(".nc", "_FP.xls")
+        else:
+            cf = pfp_io.load_controlfile(path="controlfiles")
+            if len(cf) == 0:
+                return
+    else:
+        logger.info("Loading control file ...")
+        cf = pfp_io.load_controlfile(path="controlfiles")
+        if len(cf) == 0:
+            return
+    logger.info(" Doing footprint calculation")
+    if "Options" not in cf:
+        cf["Options"] = {}
+    cf["Options"]["call_mode"] = "interactive"
+    pfp_footprint.footprint_main(cf,mode)
+    logger.info(" Finished footprint calculation")
     logger.info("")
     return
