@@ -32,8 +32,8 @@
 
 [Options]
     Climatology = 'Special' #'Annual' #'Monthly' #'Daily' #'Single'
-    #StartDate = '2009-02-07 00:30'
-    #EndDate   = '2009-02-08 00:00'
+    StartDate = '2009-02-07 00:30'
+    EndDate   = '2009-02-08 00:00'
 
 [General]
     iplot = 1
