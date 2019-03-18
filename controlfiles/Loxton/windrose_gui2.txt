@@ -1,0 +1,43 @@
+# AAHYWEH
+# Control file for footprint calculation for Kljun et al  2015 approach (calc_footprint_FFP_climatology).
+#
+#  To convert this template to a version that works for data output by the standard OzFlux
+#  data logger program:
+#   1) Replace the following place holders with values for your site:
+#      <site_name> - the name of the site
+#      <year>      - the year of the data
+#      <height>    - the height of the measurement (above ground), m
+#   2) Fill out the global and variable attributes
+#
+# [Files] - contains paths, file names and location of data in file
+# ========================================================================================================
+
+[Files]
+    #file_path = ../Sites/Calperum/Data/Processed/all/
+    #in_filename  = Calperum_2010_to_2017_L3.nc
+    #file_path = ../Sites/Calperum/Data/Processed/2011/
+    #in_filename  = Calperum_2011_L3.nc
+    file_path = ../Sites/Loxton/Data/Processed/all/
+    in_filename  = Loxton_2008_to_2009_L3.nc
+    #file_path = ../Sites/Loxton/Data/Processed/2009/
+    #in_filename  = Loxton_2009_L3.nc
+    #out_filename = <file_name>.nc
+    plot_path = ../Sites/Loxton/Plots/
+
+#[Tower]
+#    tower_height   = 20
+#    canopy_height  = 4.0
+#    footprint_size = 500  # length in m of a square around the tower
+#    num_cells      = 250  # number of cells per length
+
+[Options]
+    Climatology = 'Special' #'Annual' #'Monthly' #'Daily' #'Single'
+    #StartDate = '2009-02-07 00:30'
+    #EndDate   = '2009-02-08 00:00'
+
+[General]
+    iplot = 1
+    #idaytime = 0
+    PlotWidth = 8.0
+    PlotHeight = 8.0
+    OzFlux_area_image = None #"../Sites/Loxton/images/loxton_ndvi_500x500.png"

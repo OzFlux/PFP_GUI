@@ -16,4 +16,14 @@ level = L3
     iplot = 2
     PlotWidth = 5.0
     PlotHeight = 5.0
+    # Tower specific information
     OzFlux_area_image = ../Sites/Loxton/images/loxton_ndvi_500x500.png
+    tower_height   = 10
+    canopy_height  = 5.5
+    footprint_size = 500  # length in m of a square around the tower
+    num_cells      = 250  # number of cells per length ==> footprint_size / num_cells = grid_resolution
+    # Area of Interest for footprint attribution, polygon
+    [[AOI]]
+        [[[H7n]]]
+          area = -100, -150, 100, -150, 100, 111, -100, 111
+

@@ -23,12 +23,6 @@
         file_name = ../Sites/Loxton/Data/ERAI/Loxton_ERAI.nc
         var_name = "Habl"
 
-[Tower]
-    tower_height   = 10
-    canopy_height  = 5.5
-    footprint_size = 500  # length in m of a square around the tower
-    num_cells      = 250  # number of cells per length ==> footprint_size / num_cells = grid_resolution
-
 [Options]
     # ====================================================================================================
     # "Options" specifies the climatology of the footprints. Only one of the parameters, daily, 
@@ -46,8 +40,12 @@
     EndDate        = '2009-02-08 00:00'
     Cumulative     = 'Yes' # (default = 'No')
     AreaOfInterest = 'Yes' # (default is 'No')
+    tower_height   = 10
+    canopy_height  = 5.5
+    footprint_size = 500  # length in m of a square around the tower
+    num_cells      = 250  # number of cells per length ==> footprint_size / num_cells = grid_resolution
 
-[AreaOfInterest]
+[AOI]
     # ====================================================================================================
     # Up to a maximum of 10 rectangles can be specified as AreaOfInterest; 
     # defined in x,y coordinate system: 

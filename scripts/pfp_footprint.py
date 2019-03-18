@@ -284,9 +284,9 @@ def get_footprint_cfg(cf, ds):
     results_path = cf['Files']['file_path']
     if not os.path.isdir(results_path): os.makedirs(results_path)
 
-    d["tower_height"]   = float(cf["Tower"]["tower_height"])
-    d["canopy_height"]  = float(cf["Tower"]["canopy_height"])
-    d["footprint_size"] = int(cf["Tower"]["footprint_size"])
+    d["tower_height"]   = float(cf["Options"]["tower_height"])
+    d["canopy_height"]  = float(cf["Options"]["canopy_height"])
+    d["footprint_size"] = int(cf["Options"]["footprint_size"])
     d["zm_d"]           = d["tower_height"]-(2.0/3.0*d["canopy_height"])
     d["xTower"]         = 0 #int(cf['Tower']['xTower'])
     d["yTower"]         = 0 #int(cf['Tower']['yTower'])
@@ -294,17 +294,17 @@ def get_footprint_cfg(cf, ds):
     d["xmax"]           =  0.5*d["footprint_size"]
     d["ymin"]           = -0.5*d["footprint_size"]
     d["ymax"]           =  0.5*d["footprint_size"]
-    d["nx"]             = int(cf["Tower"]["num_cells"])
+    d["nx"]             = int(cf["Options"]["num_cells"])
 
     d["flux_period"] = int(ds.globalattributes["time_step"])
     #d["timezone"] = int(ds.globalattributes["timezone"])
     d["site_name"] = ds.globalattributes["site_name"]
-    if "Latitude" in cf["Tower"]:
-        d["latitude"] = cf["Tower"]["Latitude"]
+    if "Latitude" in cf["Options"]:
+        d["latitude"] = cf["Options"]["Latitude"]
     else:
         d["latitude"] = ds.globalattributes["latitude"]
-    if "Longitude" in cf["Tower"]:
-        d["longitude"] = cf["Tower"]["Longitude"]
+    if "Longitude" in cf["Options"]:
+        d["longitude"] = cf["Options"]["Longitude"]
     else:
         d["longitude"] = ds.globalattributes["longitude"]
 
@@ -376,13 +376,13 @@ def get_footprint_data_in(cf, mode):
             roughness_length = float(ds.globalattributes["roughness_length"])
             z0["Data"] = numpy.ma.array(numpy.full(nrecs, roughness_length))
             z0["Attr"]["long_name"] = "Roughness length from global attributes"
-        elif "roughness_length" in cf["Tower"]:
-            roughness_length = float(cf["Tower"]["roughness_length"])
+        elif "roughness_length" in cf["Options"]:
+            roughness_length = float(cf["Options"]["roughness_length"])
             z0["Data"] = numpy.ma.array(numpy.full(nrecs, roughness_length))
             z0["Attr"]["long_name"] = "Roughness length from footprint control file"
         else:
-            zT = float(cf["Tower"]["tower_height"])
-            zC = float(cf["Tower"]["canopy_height"])
+            zT = float(cf["Options"]["tower_height"])
+            zC = float(cf["Options"]["canopy_height"])
             zm = zT-(2.0/3.0)*zC
             L = pfp_utils.GetVariable(ds, "L")
             ustar = pfp_utils.GetVariable(ds, "ustar")
@@ -407,11 +407,11 @@ def kml_initialise(d,fi,mode):
     fi.write('  <LookAt>\n')
     fi.write('    <longitude>'+str(d["longitude"])+'</longitude>\n')
     fi.write('    <latitude>'+str(d["latitude"])+'</latitude>\n')
-    fi.write('    <altitude>'+str(d["footprint_size"])+'</altitude>\n')
+    fi.write('    <footprintitude>'+str(d["footprint_size"])+'</footprintitude>\n')
     fi.write('    <range>'+str(d["footprint_size"])+'</range>\n')
     fi.write('    <tilt>0</tilt>\n')
     fi.write('    <heading>0</heading>\n')
-    fi.write('    <altitudeMode>relativeToGround</altitudeMode>\n')
+    fi.write('    <footprintitudeMode>relativeToGround</footprintitudeMode>\n')
     fi.write('  </LookAt>\n')
     # Define the legend in a screen overlay
     fi.write('  <ScreenOverlay>\n')
@@ -423,7 +423,7 @@ def kml_initialise(d,fi,mode):
     fi.write('    <size x="0" y="0" xunits="pixels" yunits="pixels"/>\n')
     fi.write('  </ScreenOverlay>\n')
     # Adding our own icon for the placemark
-    #fi.write('  <Style id="tower">\n')
+    #fi.write('  <Style id="Options">\n')
     #fi.write('    <IconStyle>\n')
     #fi.write('      <scale>1.5</scale>\n')
     #fi.write('      <Icon>\n')
@@ -488,8 +488,8 @@ def kml_write(lon, lat, zt1, zt2, data, station, mode, clevs, fi, plot_path,i_cu
     fi.write('    <begin>'+zt1.strftime("%Y-%m-%dT%H:%M")+'</begin>\n')
     fi.write('    <end>'+zt2.strftime("%Y-%m-%dT%H:%M")+'</end>\n')
     fi.write('  </TimeSpan>\n')
-    fi.write('  <altitude>0.0</altitude>\n')
-    fi.write('  <altitudeMode>clampToGround</altitudeMode>\n')
+    fi.write('  <footprintitude>0.0</footprintitude>\n')
+    fi.write('  <footprintitudeMode>clampToGround</footprintitudeMode>\n')
     fi.write('  <LatLonBox>\n')
     fi.write('    <north>'+str(lat2)+'</north>\n')
     fi.write('    <south>'+str(lat1)+'</south>\n')
@@ -601,8 +601,8 @@ def PolygonContribution(cf,x,y,fm,start,finish,paoi):
     sum_fm = fm.sum()
     #paoi = open('aoi_result.txt', 'w') # open output file
     #paoi.write("Start time, Field number, Percent of total\n")
-    for ID in cf["AreaOfInterest"].keys():
-        area = pfp_utils.get_keyvaluefromcf(cf,["AreaOfInterest",ID],"area",default="")
+    for ID in cf["AOI"].keys():
+        area = pfp_utils.get_keyvaluefromcf(cf,["AOI",ID],"area",default="")
         area = [float(i) for i in area]
         vertices = numpy.reshape(area,(-1,2))
         polygon = Path(vertices)
@@ -804,3 +804,171 @@ def create_index_list(cf, d, date):
                 list_StDate.append(test_is+1)
                 list_EnDate.append(test_ie)
     return list_StDate,list_EnDate
+#
+# Footprint GUI section
+#
+def footprint_run_gui(footprint_gui):
+    """ Run the GapFillFromfootprint GUI."""
+    ds_tower = footprint_gui.ds4
+    ds_footprint = footprint_gui.ds_footprint
+    footprint_info = footprint_gui.footprint_info
+    # populate the footprint_info dictionary with things that will be useful
+    if str(footprint_gui.radioButtons.checkedButton().text()) == "Manual":
+        footprint_info["peropt"] = 1
+    elif str(footprint_gui.radioButtons.checkedButton().text()) == "Months":
+        footprint_info["peropt"] = 2
+    elif str(footprint_gui.radioButtons.checkedButton().text()) == "Days":
+        footprint_info["peropt"] = 3
+
+    footprint_info["overwrite"] = footprint_gui.checkBox_Overwrite.isChecked()
+    footprint_info["show_plots"] = footprint_gui.checkBox_ShowPlots.isChecked()
+    footprint_info["show_all"] = footprint_gui.checkBox_PlotAll.isChecked()
+    footprint_info["auto_complete"] = footprint_gui.checkBox_AutoComplete.isChecked()
+    footprint_info["autoforce"] = False
+    footprint_info["min_percent"] = max(int(str(footprint_gui.lineEdit_MinPercent.text())),1)
+
+    footprint_info["site_name"] = ds_tower.globalattributes["site_name"]
+    footprint_info["time_step"] = int(ds_tower.globalattributes["time_step"])
+    footprint_info["nperhr"] = int(float(60)/footprint_info["time_step"]+0.5)
+    footprint_info["nperday"] = int(float(24)*footprint_info["nperhr"]+0.5)
+    footprint_info["max_lags"] = int(float(12)*footprint_info["nperhr"]+0.5)
+    footprint_info["Options"] = {}
+    footprint_info["footprint"] = {}
+    series_list = [ds_tower.footprint[item]["label_tower"] for item in ds_tower.footprint.keys()]
+    footprint_info["series_list"] = series_list
+    #footprint_info["series_list"] = ["Ah","Ta"]
+    logger.info(" Gap filling %s using footprint data", str(list(set(series_list))))
+    if footprint_info["peropt"]==1:
+        logger.info("Starting manual run ...")
+        #footprint_progress(footprint_gui,"Starting manual run ...")
+        # get the start and end datetimes entered in the footprint GUI
+        if len(str(footprint_gui.lineEdit_StartDate.text())) != 0:
+            footprint_info["startdate"] = str(footprint_gui.lineEdit_StartDate.text())
+        if len(str(footprint_gui.lineEdit_EndDate.text())) != 0:
+            footprint_info["enddate"] = str(footprint_gui.lineEdit_EndDate.text())
+        footprint_main(ds_tower, ds_footprint, footprint_info)
+        footprint_plotcoveragelines(ds_tower)
+        #footprint_progress(footprint_gui,"Finished manual run ...")
+        logger.info("Finished manual run ...")
+        # get the start and end datetime of the tower data
+        ldt_tower = ds_tower.series["DateTime"]["Data"]
+        startdate = ldt_tower[0]
+        enddate = ldt_tower[-1]
+        # create the footprint_info dictionary, this will hold much useful information
+        footprint_info = {"overlap_startdate":startdate.strftime("%Y-%m-%d %H:%M"),
+                          "overlap_enddate":enddate.strftime("%Y-%m-%d %H:%M"),
+                          "startdate":startdate.strftime("%Y-%m-%d %H:%M"),
+                          "enddate":enddate.strftime("%Y-%m-%d %H:%M")}
+    elif footprint_info["peropt"]==2:
+        logger.info("Starting auto (months) run ...")
+        #footprint_progress(footprint_gui,"Starting auto (monthly) run ...")
+        # get the start datetime entered in the footprint GUI
+        nMonths = int(footprint_gui.lineEdit_NumberMonths.text())
+        if len(str(footprint_gui.lineEdit_StartDate.text()))!=0:
+            footprint_info["startdate"] = str(footprint_gui.lineEdit_StartDate.text())
+        if len(str(footprint_gui.lineEdit_EndDate.text())) != 0:
+            footprint_info["enddate"] = str(footprint_gui.lineEdit_EndDate.text())
+        footprint_info["gui_startdate"] = footprint_info["startdate"]
+        footprint_info["gui_enddate"] = footprint_info["enddate"]
+        startdate = dateutil.parser.parse(footprint_info["startdate"])
+        overlap_enddate = dateutil.parser.parse(footprint_info["overlap_enddate"])
+        enddate = startdate+dateutil.relativedelta.relativedelta(months=nMonths)
+        enddate = min([overlap_enddate,enddate])
+        footprint_info["enddate"] = datetime.datetime.strftime(enddate,"%Y-%m-%d %H:%M")
+        while startdate<overlap_enddate:
+            footprint_main(ds_tower, ds_footprint, footprint_info)
+            footprint_plotcoveragelines(ds_tower)
+            startdate = enddate
+            enddate = startdate+dateutil.relativedelta.relativedelta(months=nMonths)
+            footprint_info["startdate"] = startdate.strftime("%Y-%m-%d %H:%M")
+            enddate = min([enddate,overlap_enddate])
+            footprint_info["enddate"] = enddate.strftime("%Y-%m-%d %H:%M")
+        footprint_autocomplete(ds_tower,ds_footprint,footprint_info)
+        #footprint_progress(footprint_gui,"Finished auto (monthly) run ...")
+        logger.info("Finished auto (months) run ...")
+        # get the start and end datetime of the tower data
+        ldt_tower = ds_tower.series["DateTime"]["Data"]
+        startdate = ldt_tower[0]
+        enddate = ldt_tower[-1]
+        # create the footprint_info dictionary, this will hold much useful information
+        footprint_info = {"overlap_startdate":startdate.strftime("%Y-%m-%d %H:%M"),
+                          "overlap_enddate":enddate.strftime("%Y-%m-%d %H:%M"),
+                          "startdate":startdate.strftime("%Y-%m-%d %H:%M"),
+                          "enddate":enddate.strftime("%Y-%m-%d %H:%M")}
+    elif footprint_info["peropt"]==3:
+        logger.info("Starting auto (days) run ...")
+        #footprint_progress(footprint_gui,"Starting auto (days) run ...")
+        # get the start datetime entered in the footprint GUI
+        nDays = int(footprint_gui.lineEdit_NumberDays.text())
+        if len(str(footprint_gui.lineEdit_StartDate.text())) != 0:
+            footprint_info["startdate"] = str(footprint_gui.lineEdit_StartDate.text())
+        if len(str(footprint_gui.lineEdit_EndDate.text())) != 0:
+            footprint_info["enddate"] = str(footprint_gui.lineEdit_EndDate.text())
+        footprint_info["gui_startdate"] = footprint_info["startdate"]
+        footprint_info["gui_enddate"] = footprint_info["enddate"]
+        startdate = dateutil.parser.parse(footprint_info["startdate"])
+        gui_enddate = dateutil.parser.parse(footprint_info["gui_enddate"])
+        overlap_enddate = dateutil.parser.parse(footprint_info["overlap_enddate"])
+        enddate = startdate+dateutil.relativedelta.relativedelta(days=nDays)
+        enddate = min([overlap_enddate,enddate,gui_enddate])
+        footprint_info["enddate"] = datetime.datetime.strftime(enddate,"%Y-%m-%d %H:%M")
+        footprint_info["startdate"] = datetime.datetime.strftime(startdate,"%Y-%m-%d %H:%M")
+        stopdate = min([overlap_enddate,gui_enddate])
+        while startdate<stopdate:
+            footprint_main(ds_tower, ds_footprint, footprint_info)
+            footprint_plotcoveragelines(ds_tower)
+            startdate = enddate
+            enddate = startdate+dateutil.relativedelta.relativedelta(days=nDays)
+            run_enddate = min([stopdate,enddate])
+            footprint_info["startdate"] = startdate.strftime("%Y-%m-%d %H:%M")
+            footprint_info["enddate"] = run_enddate.strftime("%Y-%m-%d %H:%M")
+        footprint_autocomplete(ds_tower,ds_footprint,footprint_info)
+        #footprint_progress(footprint_gui,"Finished auto (days) run ...")
+        logger.info("Finished auto (days) run ...")
+        # get the start and end datetime of the tower data
+        ldt_tower = ds_tower.series["DateTime"]["Data"]
+        startdate = ldt_tower[0]
+        enddate = ldt_tower[-1]
+        # create the footprint_info dictionary, this will hold much useful information
+        footprint_info = {"overlap_startdate":startdate.strftime("%Y-%m-%d %H:%M"),
+                          "overlap_enddate":enddate.strftime("%Y-%m-%d %H:%M"),
+                          "startdate":startdate.strftime("%Y-%m-%d %H:%M"),
+                          "enddate":enddate.strftime("%Y-%m-%d %H:%M")}
+    else:
+        logger.error("GapFillFromfootprint: unrecognised period option")
+    # write Excel spreadsheet with fit statistics
+    #pfp_io.xl_write_footprintStats(ds_tower)
+
+def footprint_done(footprint_gui):
+    """
+    Purpose:
+     Finishes up after footprint data:
+      - destroy the Footprint GUI
+      - plot the summary statistics
+      - write the summary statistics to an Excel file
+    Usage:
+    Side effects:
+    Author: PRI, modified by CME
+    Date: August 2014; modified March 2019
+    """
+    ds = footprint_gui.ds4
+    # plot the summary statistics
+    #footprint_plotsummary(ds,footprinternate_info)
+    # destroy the footprint GUI
+    footprint_gui.close()
+    if len(plt.get_fignums())!=0:
+        for i in plt.get_fignums():
+            plt.close(i)
+    # write Excel spreadsheet with fit statistics
+    pfp_io.xl_write_footprintStats(ds)
+    # put the return code into ds.footprint
+    ds.returncodes["footprint"] = "normal"
+
+def footprint_quit(footprint_gui):
+    """ Quit the Footprint GUI."""
+    ds = footprint_gui.ds4
+    # destroy the footprint GUI
+    footprint_gui.close()
+    # put the return code into ds.footprint
+    ds.returncodes["footprint"] = "quit"
+

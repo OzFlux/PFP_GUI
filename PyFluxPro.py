@@ -263,6 +263,7 @@ class pfp_main_ui(QtGui.QWidget, QPlainTextEditLogger):
         self.actionUtilitiesClimatology.triggered.connect(lambda:pfp_top_level.do_utilities_climatology(mode="standard"))
         self.actionUtilitiesUstarCPD.triggered.connect(lambda:pfp_top_level.do_utilities_ustar_cpd(mode="standard"))
         self.actionUtilitiesUstarMPT.triggered.connect(lambda:pfp_top_level.do_utilities_ustar_mpt(mode="standard"))
+        # utilities menu footprint actions
         self.actionUtilitiesFootPrintNK.triggered.connect(lambda:pfp_top_level.do_utilities_footprint(mode="kljun"))
         self.actionUtilitiesFootPrintKM.triggered.connect(lambda:pfp_top_level.do_utilities_footprint(mode="kormei"))
         self.actionUtilitiesFootPrintNN.triggered.connect(lambda:pfp_top_level.do_utilities_footprint(mode="nn"))
@@ -270,6 +271,8 @@ class pfp_main_ui(QtGui.QWidget, QPlainTextEditLogger):
         self.l4_ui = pfp_gui.pfp_l4_ui(self)
         # add the L5 GUI
         self.l5_ui = pfp_gui.pfp_l5_ui(self)
+        # add the footprint gui
+        #self.footprint_ui = pfp_gui.pfp_footprint_ui(self)
 
     def open_controlfile(self):
         # get the control file path
