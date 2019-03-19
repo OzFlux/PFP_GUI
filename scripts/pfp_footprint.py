@@ -222,7 +222,7 @@ def footprint_main(cf, mode):
                 plotphifield(x, y, ldt[si], ldt[ei], f, d["site_name"], mode, clevs, imagename,i_cum)
             elif iplot == 2:
                 # plot on screen, in jpg and write kml (google earth) file
-                #plotphifield(x, y, ldt[si], ldt[ei], f, d["site_name"], mode, clevs, imagename)
+                plotphifield(x, y, ldt[si], ldt[ei], f, d["site_name"], mode, clevs, imagename,i_cum)
                 kml_write(lon, lat, ldt[si], ldt[ei], f, d["site_name"], mode, clevs, fi, d["plot_path"],i_cum)
             plot_num = plt.gcf().number
             if  plot_num > 20:
@@ -445,14 +445,15 @@ def kml_write(lon, lat, zt1, zt2, data, station, mode, clevs, fi, plot_path,i_cu
     plotname=plot_path + plot_in
     width = 5
     height = width * data.shape[0]/data.shape[1]
-    plt.ioff()
-    plt.figure(figsize=(width,height))
+    #plt.ioff()
+    plt.figure(2,figsize=(width,height))
     cs = plt.contourf(data,clevs,cmap=plt.get_cmap('hsv'),alpha=0.5)
     plt.axis('off')
     plt.savefig(plotname,transparent=True)
     #plt.clf()
-    fn = plt.gcf().number
-    plt.close(fn)
+    #fn = plt.gcf().number
+    #plt.close(fn)
+    plt.close(2)
     # draw a new figure and replot the colorbar there
     fig,ax = plt.subplots(figsize=(width,height))
     cbar = plt.colorbar(cs,ax=ax)
@@ -468,10 +469,11 @@ def kml_write(lon, lat, zt1, zt2, data, station, mode, clevs, fi, plot_path,i_cu
     #cbar.set_label('Flux footprint contribution in fraction')
     ax.remove()
     plt.savefig(plot_path+'cbar.png',bbox_inches='tight') #, transparent=True)
-    fn = plt.gcf().number
-    #plt.clf()
-    plt.close(fn)
-    plt.ion()
+    plt.close()
+    #fn = plt.gcf().number
+    plt.clf()
+    #plt.close(fn)
+    #plt.ion()
     # get the lat/lon bounds of the area
     lon1 = lon[0]
     lon2 = lon[-1]
@@ -531,8 +533,8 @@ def plotphifield(x, y, zt1, zt2, data, station, mode, clevs, imagename,i_cum):
     y_ll = y[0,0]   #yllcorner #-250
     y_ur = y[-1,-1] #yurcorner # 250
     # create figure and axes instances
-    plt.ion()
-    fig = plt.figure(figsize=(10,10))
+    #plt.ion()
+    fig = plt.figure(1,figsize=(10,10))
     ax = fig.add_axes([0.1,0.1,0.8,0.8])
     cs = plt.contourf(x,y,data,clevs,cmap=plt.get_cmap('hsv'))
     cbar = plt.colorbar(cs,location='right',pad=0.04,fraction=0.046)
@@ -551,7 +553,8 @@ def plotphifield(x, y, zt1, zt2, data, station, mode, clevs, imagename,i_cum):
     plt.savefig(plotname)
     plt.draw()
     plt.pause(1e-9)
-    plt.ioff()
+    plt.clf()
+    #plt.ioff()
 
 def calc_cumulative(f, f_min,f_step):
     # ------------------------------------------------------------------------------------

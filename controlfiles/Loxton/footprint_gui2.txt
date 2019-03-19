@@ -72,7 +72,7 @@
     #  area = 100, -415, -300, -415, -300, 386, -100, 386, -100, 464, 100, 464
 
 [General]
-    iplot = 1   # 1 / jpg plot on screen; 2 / png plot into kml
+    iplot = 2   # 1 / jpg plot on screen; 2 / png plot into kml
     #idaytime = 0
     PlotWidth  = 5.0 #10.9
     PlotHeight = 5.0 # 7.5
