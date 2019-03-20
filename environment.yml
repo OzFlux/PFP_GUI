@@ -8,12 +8,12 @@ dependencies:
   - matplotlib
   - netcdf4
   - numpy
-  - pandas=0.21
+  - pandas
   - pyqt=4
   - pytz
   - scipy
   - statsmodels
-  - timezonefinder=3.3.0
+  - timezonefinder=3.4.0
   - xlwt
   - xlrd
   - xlsxwriter
