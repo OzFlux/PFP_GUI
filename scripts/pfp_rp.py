@@ -1413,7 +1413,8 @@ def L6_summary_daily(ds, series_dict):
     # create the datetime variable
     daily_dict["variables"]["DateTime"] = {"data":ldt_daily,
                                            "flag":f0,
-                                           "attr":{"units":"Days","format":"dd/mm/yyyy"}}
+                                           "attr":{"units":"Days","format":"dd/mm/yyyy",
+                                                   "time_step":"Daily"}}
     series_list = series_dict["daily"].keys()
     series_list.sort()
     for item in series_list:
@@ -1511,7 +1512,8 @@ def L6_summary_monthly(ds,series_dict):
     monthly_dict["globalattributes"] = copy.deepcopy(ds.globalattributes)
     monthly_dict["variables"]["DateTime"] = {"data":[],
                                              "flag":numpy.array([]),
-                                             "attr":{"units":"Months", "format":"dd/mm/yyyy"}}
+                                             "attr":{"units":"Months", "format":"dd/mm/yyyy",
+                                                     "time_step":"Monthly"}}
     # create arrays in monthly_dict
     series_list = series_dict["monthly"].keys()
     series_list.sort()
@@ -1582,7 +1584,8 @@ def L6_summary_annual(ds, series_dict):
     annual_dict["globalattributes"] = copy.deepcopy(ds.globalattributes)
     annual_dict["variables"]["DateTime"] = {"data":[datetime.datetime(yr,1,1) for yr in year_list],
                                             "flag":numpy.zeros(nYears, dtype=numpy.int32),
-                                            "attr":{"units":"Years", "format":"dd/mm/yyyy"}}
+                                            "attr":{"units":"Years", "format":"dd/mm/yyyy",
+                                                    "time_step":"Annual"}}
     annual_dict["variables"]["nDays"] = {"data":numpy.full(nYears, c.missing_value, dtype=numpy.float64),
                                          "flag":numpy.zeros(nYears, dtype=numpy.int32),
                                          "attr":{"units":"Number of days","format":"0"}}
@@ -1660,7 +1663,8 @@ def L6_summary_cumulative(ds, series_dict):
         ldt = dt[si:ei+1]
         f0 = numpy.zeros(len(ldt), dtype=numpy.int32)
         cdyr["variables"]["DateTime"] = {"data":ldt,"flag":f0,
-                                         "attr":{"units":"Year","format":"dd/mm/yyyy HH:MM"}}
+                                         "attr":{"units":"Year","format":"dd/mm/yyyy HH:MM",
+                                                 "time_step":str(ts)}}
         for item in series_list:
             cdyr["variables"][item] = {"data":[],"attr":{}}
             variable = pfp_utils.GetVariable(ds, item, start=si, end=ei)
