@@ -1936,6 +1936,9 @@ def nc_write_data(nc_obj, data_dict):
     setattr(nc_var, "standard_name", "time")
     setattr(nc_var, "units", nc_time_units)
     setattr(nc_var, "calendar", "gregorian")
+    if "time_step" in data_dict["variables"]["DateTime"]["attr"]:
+        time_step = data_dict["variables"]["DateTime"]["attr"]["time_step"]
+        setattr(nc_var, "time_step", time_step)
     # write the latitude and longitude variables to the group
     nc_var = nc_obj.createVariable("latitude", "d", ("latitude",))
     nc_var[:] = float(data_dict["globalattributes"]["latitude"])
