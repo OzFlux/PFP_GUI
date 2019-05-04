@@ -209,15 +209,15 @@ def ApplyTurbulenceFilter_checks(cf,ds):
         opt["OK"] = False
         return opt
     # get the value of the TurbulenceFilter key in the Options section
-    opt["turbulence_filter"] = pfp_utils.get_keyvaluefromcf(cf,["Options"],"TurbulenceFilter",default="None")
+    opt["turbulence_filter"] = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "TurbulenceFilter", default="ustar")
     # return if turbulence filter disabled
-    if opt["turbulence_filter"].lower()=="none":
+    if opt["turbulence_filter"].lower() == "none":
         msg = " Turbulence filter disabled in control file at "+ds.globalattributes["nc_level"]
         logger.info(msg)
         opt["OK"] = False
         return opt
     # check to see if filter type can be handled
-    if opt["turbulence_filter"].lower() not in ["ustar","ustar_evg","l"]:
+    if opt["turbulence_filter"].lower() not in ["ustar", "ustar_evg", "l"]:
         msg = " Unrecognised turbulence filter option ("
         msg = msg+opt["turbulence_filter"]+"), no filter applied"
         logger.error(msg)
@@ -243,17 +243,17 @@ def ApplyTurbulenceFilter_checks(cf,ds):
         opt["OK"] = False
         return opt
     # get the value of the DayNightFilter key in the Options section
-    opt["daynight_filter"] = pfp_utils.get_keyvaluefromcf(cf,["Options"],"DayNightFilter",default="None")
+    opt["daynight_filter"] = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "DayNightFilter", default="Fsd")
     # check to see if filter type can be handled
-    if opt["daynight_filter"].lower() not in ["fsd","sa","none"]:
+    if opt["daynight_filter"].lower() not in ["fsd", "sa", "none"]:
         msg = " Unrecognised day/night filter option ("
         msg = msg+opt["daynight_filter"]+"), no filter applied"
         logger.error(msg)
         opt["OK"] = False
         return opt
     # check to see if all day time values are to be accepted
-    opt["accept_day_times"] = pfp_utils.get_keyvaluefromcf(cf,["Options"],"AcceptDayTimes",default="Yes")
-    opt["use_evening_filter"] = pfp_utils.get_keyvaluefromcf(cf,["Options"],"UseEveningFilter",default="Yes")
+    opt["accept_day_times"] = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "AcceptDayTimes", default="Yes")
+    opt["use_evening_filter"] = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "UseEveningFilter", default="No")
 
     return opt
 

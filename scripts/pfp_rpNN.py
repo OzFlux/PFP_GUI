@@ -445,7 +445,7 @@ def rpSOLO_run_gui(solo_gui):
     #log.info(" Estimating ER using SOLO")
     if solo_info["peropt"] == 1:
         # manual run using start and end datetime entered via GUI
-        logger.info("Starting manual run ...")
+        logger.info(" Starting manual run ...")
         # get the start and end datetimes entered in the SOLO GUI
         if len(str(solo_gui.lineEdit_StartDate.text())) != 0:
             solo_info["startdate"] = str(solo_gui.lineEdit_StartDate.text())

@@ -3616,6 +3616,18 @@ class edit_cfg_L5(QtGui.QWidget):
                     child1 = QtGui.QStandardItem(val)
                     self.sections[key1].appendRow([child0, child1])
                 self.model.appendRow(self.sections[key1])
+            elif  key1 in ["Imports"]:
+                self.sections[key1] = QtGui.QStandardItem(key1)
+                for key2 in self.cfg[key1]:
+                    parent2 = QtGui.QStandardItem(key2)
+                    for key3 in self.cfg[key1][key2]:
+                        val = self.cfg[key1][key2][key3]
+                        val = self.parse_cfg_values(key3, val, ["[", "]", "'", '"', " "])
+                        child0 = QtGui.QStandardItem(key3)
+                        child1 = QtGui.QStandardItem(val)
+                        parent2.appendRow([child0, child1])
+                    self.sections[key1].appendRow(parent2)
+                self.model.appendRow(self.sections[key1])
             elif key1 in ["Fluxes", "Variables"]:
                 # sections with 4 levels
                 self.sections[key1] = QtGui.QStandardItem(key1)
@@ -3664,7 +3676,7 @@ class edit_cfg_L5(QtGui.QWidget):
                     key2 = str(section.child(j, 0).text())
                     val2 = str(section.child(j, 1).text())
                     cfg[key1][key2] = val2
-            elif key1 in ["Plots"]:
+            elif key1 in ["Imports"]:
                 # sections with 2 levels
                 for j in range(section.rowCount()):
                     subsection = section.child(j)
@@ -3741,6 +3753,11 @@ class edit_cfg_L5(QtGui.QWidget):
                 self.context_menu.actionAddUstarThreshold.setText("Add u* threshold section")
                 self.context_menu.addAction(self.context_menu.actionAddUstarThreshold)
                 self.context_menu.actionAddUstarThreshold.triggered.connect(self.add_ustar_threshold_section)
+            if "Imports" not in section_headings:
+                self.context_menu.actionAddImports = QtGui.QAction(self)
+                self.context_menu.actionAddImports.setText("Add Imports section")
+                self.context_menu.addAction(self.context_menu.actionAddImports)
+                self.context_menu.actionAddImports.triggered.connect(self.add_imports_section)
             if selected_text == "Files":
                 self.context_menu.actionAddFileEntry = QtGui.QAction(self)
                 self.context_menu.actionAddFileEntry.setText("Add item")
@@ -3802,6 +3819,11 @@ class edit_cfg_L5(QtGui.QWidget):
                     self.context_menu.actionAddsa_threshold.setText("sa_threshold")
                     self.context_menu.addAction(self.context_menu.actionAddsa_threshold)
                     self.context_menu.actionAddsa_threshold.triggered.connect(self.add_sathreshold)
+                if "TruncateToImports" not in existing_entries:
+                    self.context_menu.actionAddTruncateToImports = QtGui.QAction(self)
+                    self.context_menu.actionAddTruncateToImports.setText("TruncateToImports")
+                    self.context_menu.addAction(self.context_menu.actionAddTruncateToImports)
+                    self.context_menu.actionAddTruncateToImports.triggered.connect(self.add_truncatetoimports)
             elif selected_text in ["Fluxes", "Variables"]:
                 self.context_menu.actionAddVariable = QtGui.QAction(self)
                 self.context_menu.actionAddVariable.setText("Add variable")
@@ -3817,6 +3839,16 @@ class edit_cfg_L5(QtGui.QWidget):
                 self.context_menu.actionRemoveUstarThreshold.setText("Remove section")
                 self.context_menu.addAction(self.context_menu.actionRemoveUstarThreshold)
                 self.context_menu.actionRemoveUstarThreshold.triggered.connect(self.remove_section)
+            elif selected_text in ["Imports"]:
+                self.context_menu.actionAddImportsVariable = QtGui.QAction(self)
+                self.context_menu.actionAddImportsVariable.setText("Add variable")
+                self.context_menu.addAction(self.context_menu.actionAddImportsVariable)
+                self.context_menu.actionAddImportsVariable.triggered.connect(self.add_imports_variable)
+                self.context_menu.addSeparator()
+                self.context_menu.actionRemoveImportsSection = QtGui.QAction(self)
+                self.context_menu.actionRemoveImportsSection.setText("Remove section")
+                self.context_menu.addAction(self.context_menu.actionRemoveImportsSection)
+                self.context_menu.actionRemoveImportsSection.triggered.connect(self.remove_section)
         elif level == 1:
             # sections with 2 levels
             # get the parent of the selected item
@@ -3936,8 +3968,15 @@ class edit_cfg_L5(QtGui.QWidget):
                 self.context_menu.actionRemoveDateRange.setText("Remove date range")
                 self.context_menu.addAction(self.context_menu.actionRemoveDateRange)
                 self.context_menu.actionRemoveDateRange.triggered.connect(self.remove_daterange)
+            elif (str(parent.text()) == "Imports"):
+                self.context_menu.actionRemoveImportsVariable = QtGui.QAction(self)
+                self.context_menu.actionRemoveImportsVariable.setText("Remove variable")
+                self.context_menu.addAction(self.context_menu.actionRemoveImportsVariable)
+                self.context_menu.actionRemoveImportsVariable.triggered.connect(self.remove_item)
         elif level == 2:
             # sections with 3 levels
+            parent = selected_item.parent()
+            grand_parent = selected_item.parent().parent()
             subsubsection_name = str(idx.data())
             if subsubsection_name in ["RangeCheck", "DependencyCheck", "DiurnalCheck"]:
                 self.context_menu.actionRemoveQCCheck = QtGui.QAction(self)
@@ -3959,6 +3998,13 @@ class edit_cfg_L5(QtGui.QWidget):
                 self.context_menu.actionRemoveGFMethod.setText("Remove method")
                 self.context_menu.addAction(self.context_menu.actionRemoveGFMethod)
                 self.context_menu.actionRemoveGFMethod.triggered.connect(self.remove_item)
+            if str(grand_parent.text() == "Imports"):
+                key = str(parent.child(selected_item.row(),0).text())
+                if (key == "file_name") and (selected_item.column() == 1):
+                    self.context_menu.actionBrowseImportsFile = QtGui.QAction(self)
+                    self.context_menu.actionBrowseImportsFile.setText("Browse...")
+                    self.context_menu.addAction(self.context_menu.actionBrowseImportsFile)
+                    self.context_menu.actionBrowseImportsFile.triggered.connect(self.browse_imports_file)
         elif level == 3:
             existing_entries = self.get_existing_entries()
             # sections with 4 levels
@@ -4058,6 +4104,26 @@ class edit_cfg_L5(QtGui.QWidget):
         # add the subsection
         self.add_subsection(dict_to_add)
 
+    def add_imports_section(self):
+        """ Add an Imports section."""
+        self.sections["Imports"] = QtGui.QStandardItem("Imports")
+        self.add_imports_variable()
+        self.model.appendRow(self.sections["Imports"])
+        self.update_tab_text()
+
+    def add_imports_variable(self):
+        """ Add a new variable to the 'Imports' section."""
+        new_import = {"source": "", "file_name": "Right click to browse",
+                      "var_name": ""}
+        parent = QtGui.QStandardItem("New variable")
+        for key in new_import:
+            value = new_import[key]
+            child0 = QtGui.QStandardItem(key)
+            child1 = QtGui.QStandardItem(str(value))
+            parent.appendRow([child0, child1])
+        self.sections["Imports"].appendRow(parent)
+        self.update_tab_text()
+
     def add_interpolatetype(self):
         """ Add InterpolateType to the [Options] section."""
         dict_to_add = {"InterpolateType": "Akima"}
@@ -4129,7 +4195,7 @@ class edit_cfg_L5(QtGui.QWidget):
 
     def add_eveningfilterlength(self):
         """ Add EveningFilterLength to the [Options] section."""
-        dict_to_add = {"EveningFilterLength": "3"}
+        dict_to_add = {"EveningFilterLength": "0"}
         # add the subsection
         self.add_subsection(dict_to_add)
 
@@ -4142,6 +4208,12 @@ class edit_cfg_L5(QtGui.QWidget):
     def add_sathreshold(self):
         """ Add sa_threshold to the [Options] section."""
         dict_to_add = {"sa_threshold": "-5"}
+        # add the subsection
+        self.add_subsection(dict_to_add)
+
+    def add_truncatetoimports(self):
+        """ Add TruncateToImports to the [Options] section."""
+        dict_to_add = {"TruncateToImports": "Yes"}
         # add the subsection
         self.add_subsection(dict_to_add)
 
@@ -4314,6 +4386,26 @@ class edit_cfg_L5(QtGui.QWidget):
             new_dir = os.path.join(str(new_dir), "")
             # update the model
             parent.child(selected_item.row(), 1).setText(new_dir)
+
+    def browse_imports_file(self):
+        """ Browse for the imports file path."""
+        # get the index of the selected item
+        idx = self.view.selectedIndexes()[0]
+        # get the selected item from the index
+        selected_item = idx.model().itemFromIndex(idx)
+        # get the parent of the selected item
+        parent = selected_item.parent()
+        # set the file filter
+        file_filter = "*.nc"
+        # get the file path from the selected item
+        file_path = os.path.split(str(idx.data()))[0]
+        file_path = os.path.join(file_path,"")
+        # dialog for open file
+        new_file = QtGui.QFileDialog.getOpenFileName(caption="Choose an Imports file ...",
+                                                     directory=file_path, filter=file_filter)
+        # update the model
+        if len(str(new_file)) > 0:
+            parent.child(selected_item.row(), 1).setText(new_file)
 
     def browse_input_file(self):
         """ Browse for the input data file path."""
