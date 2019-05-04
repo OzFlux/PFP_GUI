@@ -63,7 +63,7 @@ def CalculateNEE(cf, ds, info):
     """
     if "nee" not in info: return
     # get the Fsd and ustar thresholds
-    Fsd_threshold = float(pfp_utils.get_keyvaluefromcf(cf,["Params"],"Fsd_threshold",default=10))
+    Fsd_threshold = float(pfp_utils.get_keyvaluefromcf(cf, ["Options"], "Fsd_threshold", default=10))
     # get the incoming shortwave radiation and friction velocity
     Fsd,Fsd_flag,Fsd_attr = pfp_utils.GetSeriesasMA(ds,"Fsd")
     if "Fsd_syn" in ds.series.keys():
@@ -761,10 +761,11 @@ def get_evening_indicator(cf, ds):
     Fsd, f, a = pfp_utils.GetSeriesasMA(ds, "Fsd")
     evening_indicator = {"values":numpy.zeros(len(Fsd), dtype=numpy.int32), "attr":{}}
     attr = evening_indicator["attr"]
-    opt = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "EveningFilterLength", default="0")
+    opt = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "EveningFilterLength", default="3")
     num_hours = int(opt)
     if num_hours <= 0 or num_hours >= 12:
-        evening_indicator = numpy.zeros(len(Fsd))
+        evening_indicator["values"] = numpy.zeros(len(Fsd))
+        evening_indicator["attr"]["evening_filter_length"] = num_hours
         msg = " Evening filter period outside 0 to 12 hours, skipping ..."
         logger.warning(msg)
         return evening_indicator
@@ -1738,7 +1739,7 @@ def PartitionNEE(cf, ds, info):
     """
     if "gpp" not in info: return
     # get the Fsd threshold
-    opt = pfp_utils.get_keyvaluefromcf(cf,["Options"],"Fsd_threshold",default=10)
+    opt = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "Fsd_threshold", default=10)
     Fsd_threshold = float(opt)
     # get the incoming shortwave radiation
     Fsd,Fsd_flag,Fsd_attr = pfp_utils.GetSeriesasMA(ds,"Fsd")

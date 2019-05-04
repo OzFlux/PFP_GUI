@@ -696,6 +696,8 @@ def ImportSeries(cf,ds):
         data = numpy.ma.ones(nRecs)*float(c.missing_value)
         flag = numpy.ma.ones(nRecs)
         data_import, flag_import, attr_import = pfp_utils.GetSeriesasMA(ds_import, var_name, si=si, ei=ei)
+        attr_import["start_date"] = ldt_import[0].strftime("%Y-%m-%d %H:%M")
+        attr_import["end_date"] = ldt_import[-1].strftime("%Y-%m-%d %H:%M")
         ldt_import = ldt_import[si:ei+1]
         #index = pfp_utils.FindIndicesOfBInA(ldt_import,ldt)
         indainb, indbina = pfp_utils.FindMatchingIndices(ldt_import, ldt)

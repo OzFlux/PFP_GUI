@@ -362,10 +362,12 @@ def l5qc(main_gui, cf, ds4):
     pfp_ck.ApplyTurbulenceFilter(cf, ds5)
     # fill short gaps using interpolation
     pfp_gf.GapFillUsingInterpolation(cf, ds5)
+    # check the SOLO drivers for missing data
+    pfp_gfSOLO.CheckDrivers(cf, ds5)
+    if ds5.returncodes["value"] != 0: return ds5
     # do the gap filling using SOLO
     pfp_gfSOLO.GapFillUsingSOLO(main_gui, cf, ds4, ds5)
-    if ds5.returncodes["solo"] == "quit":
-        return ds5
+    if ds5.returncodes["solo"] == "quit": return ds5
     # gap fill using marginal distribution sampling
     pfp_gfMDS.GapFillFluxUsingMDS(cf, ds5)
     # gap fill using climatology

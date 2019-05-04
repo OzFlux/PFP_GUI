@@ -1188,7 +1188,7 @@ def gfalternate_run_gui(alt_gui):
     #alternate_info["series_list"] = ["Ah","Ta"]
     logger.info(" Gap filling %s using alternate data", str(list(set(series_list))))
     if alternate_info["peropt"]==1:
-        logger.info("Starting manual run ...")
+        logger.info(" Starting manual run ...")
         #gfalternate_progress(alt_gui,"Starting manual run ...")
         # get the start and end datetimes entered in the alternate GUI
         if len(str(alt_gui.lineEdit_StartDate.text())) != 0:
