@@ -470,7 +470,7 @@ def rpSOLO_run_gui(solo_gui):
         while startdate<file_enddate:
             rpSOLO_main(ds, solo_info)
             startdate = enddate
-            enddate = startdate+dateutil.relativedelta.relativedelta(months=1)
+            enddate = startdate+dateutil.relativedelta.relativedelta(months=nMonths)
             solo_info["startdate"] = startdate.strftime("%Y-%m-%d")
             solo_info["enddate"] = enddate.strftime("%Y-%m-%d")
         logger.info("Finished auto (monthly) run ...")
