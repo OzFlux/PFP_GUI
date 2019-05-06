@@ -5,6 +5,7 @@ import os
 import logging
 import sys
 # 3rd party modules
+import dateutil
 import numpy
 import matplotlib.dates as mdt
 import xlrd
@@ -16,6 +17,113 @@ import pfp_ts
 import pfp_utils
 
 logger = logging.getLogger("pfp_log")
+
+def CheckDrivers(cf, dsb, gf_type="SOLO"):
+    """
+    Purpose:
+     Check the drivers specified for gap filling using SOLO and warn
+     the user if any contain missing data.
+    Usage:
+    Side effects:
+    Author: PRI
+    Date: May 2019
+    """
+    ts = int(dsb.globalattributes["time_step"])
+    ldt = pfp_utils.GetVariable(dsb, "DateTime")
+    gf_drivers = []
+    if gf_type == "SOLO":
+        for label in dsb.solo.keys():
+            gf_drivers = gf_drivers + dsb.solo[label]["drivers"]
+    elif gf_type == "FFNET":
+        for label in dsb.ffnet.keys():
+            gf_drivers = gf_drivers + dsb.ffnet[label]["drivers"]
+    else:
+        msg = "  Unrecognised gap fill type (" + gf_type + ")"
+        logger.error(msg)
+        return
+    drivers = list(set(gf_drivers))
+    drivers_with_missing = {}
+    # loop over the drivers and check for missing data
+    for label in drivers:
+        var = pfp_utils.GetVariable(dsb, label)
+        if numpy.ma.count_masked(var["Data"]) != 0:
+            # save the number of missing data points and the datetimes when they occur
+            idx = numpy.where(numpy.ma.getmaskarray(var["Data"]))[0]
+            drivers_with_missing[label] = {"count": len(idx),
+                                           "dates": ldt["Data"][idx],
+                                           "end_date":[]}
+    # check to see if any of the drivers have missing data
+    if len(drivers_with_missing.keys()) == 0:
+        msg = "  No missing data found in " + gf_type + " drivers"
+        logger.info(msg)
+        return
+    # deal with drivers that contain missing data points
+    logger.warning("!!!!!")
+    s = ','.join(drivers_with_missing.keys())
+    msg = "!!!!! The following variables contain missing data " + s
+    logger.warning(msg)
+    logger.warning("!!!!!")
+    for label in drivers_with_missing.keys():
+        var = pfp_utils.GetVariable(dsb, label)
+        # check to see if this variable was imported
+        if "end_date" in var["Attr"]:
+            # it was, so perhaps this variable finishes before the tower data
+            drivers_with_missing[label]["end_date"].append(dateutil.parser.parse(var["Attr"]["end_date"]))
+    # check to see if any variables with missing data have an end date
+    dwmwed = [l for l in drivers_with_missing.keys() if "end_date" in drivers_with_missing[l]]
+    if len(dwmwed) == 0:
+        # return with error message if no variables have end date
+        s = ','.join(drivers_with_missing.keys())
+        msg = "  Unable to resolve missing data in variables " + s
+        logger.error(msg)
+        dsb.returncodes["message"] = msg
+        dsb.returncodes["value"] = 1
+        return
+    # check to see if the user wants us to truncate to an end date
+    opt = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "TruncateToImports", default="Yes")
+    if opt.lower() == "no":
+        msg = "  Truncation to imported variable end date disabled in control file"
+        logger.error(msg)
+        dsb.returncodes["message"] = msg
+        dsb.returncodes["value"] = 1
+        return
+    msg = "  Truncating data to end date of imported variable"
+    logger.info(msg)
+    dwmed = [drivers_with_missing[l]["end_date"] for l in drivers_with_missing.keys()]
+    end_date = numpy.min(dwmed)
+    ei = pfp_utils.GetDateIndex(ldt["Data"], end_date, ts=ts)
+    # loop over the variables in the data structure
+    for label in dsb.series.keys():
+        var = pfp_utils.GetVariable(dsb, label, start=0, end=ei)
+        pfp_utils.CreateVariable(dsb, var)
+    # update the global attributes
+    ldt = pfp_utils.GetVariable(dsb, "DateTime")
+    dsb.globalattributes["nc_nrecs"] = len(ldt["Data"])
+    dsb.globalattributes["end_date"] = ldt["Data"][-1].strftime("%Y-%m-%d %H:%M:%S")
+    # ... and check again to see if any drivers have missing data
+    drivers_with_missing = {}
+    for label in drivers:
+        var = pfp_utils.GetVariable(dsb, label)
+        if numpy.ma.count_masked(var["Data"]) != 0:
+            # save the number of missing data points and the datetimes when they occur
+            idx = numpy.where(numpy.ma.getmaskarray(var["Data"]))[0]
+            drivers_with_missing[label] = {"count": len(idx),
+                                           "dates": ldt["Data"][idx],
+                                           "end_date":[]}
+    # check to see if any of the drivers still have missing data
+    if len(drivers_with_missing.keys()) != 0:
+        # return with error message if no variables have end date
+        s = ','.join(drivers_with_missing.keys())
+        msg = "  Unable to resolve missing data in variables " + s
+        logger.error(msg)
+        dsb.returncodes["message"] = msg
+        dsb.returncodes["value"] = 1
+        return
+    else:
+        # else we are all good, job done, so return
+        msg = "  No missing data found in " + gf_type + " drivers"
+        logger.info(msg)
+        return
 
 # GapFillParseControlFile parses the L4 control file
 def GapFillParseControlFile(cf, ds, series, ds_alt):
@@ -30,6 +138,9 @@ def GapFillParseControlFile(cf, ds, series, ds_alt):
     if "GapFillUsingSOLO" in cf[section][series].keys():
         # create the SOLO dictionary in ds
         gfSOLO_createdict(cf, ds, series)
+    if "GapFillUsingFFNET" in cf[section][series].keys():
+        # create the FFNET dictionary in ds
+        gfFFNET_createdict(cf, ds, series)
     if "GapFillUsingMDS" in cf[section][series].keys():
         # create the MDS dictionary in ds
         gfMDS_createdict(cf, ds, series)
@@ -391,6 +502,51 @@ def gfMergeSeries_createdict(cf,ds,series):
     if ds.merge[merge_order][series]["output"] not in ds.series.keys():
         data,flag,attr = pfp_utils.MakeEmptySeries(ds,ds.merge[merge_order][series]["output"])
         pfp_utils.CreateSeries(ds,ds.merge[merge_order][series]["output"],data,flag,attr)
+
+def gfFFNET_createdict(cf, ds, series):
+    """ Creates a dictionary in ds to hold information about the FFNET data used
+        to gap fill the tower data."""
+    # get the section of the control file containing the series
+    section = pfp_utils.get_cfsection(cf, series=series, mode="quiet")
+    # return without doing anything if the series isn't in a control file section
+    if len(section) == 0:
+        logger.error("GapFillUsingFFNET: Series %s not found in control file, skipping ...", series)
+        return
+    # create the ffnet directory in the data structure
+    if "ffnet" not in dir(ds): ds.ffnet = {}
+    # name of FFNET output series in ds
+    output_list = cf[section][series]["GapFillUsingFFNET"].keys()
+    # loop over the outputs listed in the control file
+    for output in output_list:
+        # create the dictionary keys for this series
+        ds.ffnet[output] = {}
+        # get the target
+        if "target" in cf[section][series]["GapFillUsingFFNET"][output]:
+            ds.ffnet[output]["label_tower"] = cf[section][series]["GapFillUsingFFNET"][output]["target"]
+        else:
+            ds.ffnet[output]["label_tower"] = series
+        # site name
+        ds.ffnet[output]["site_name"] = ds.globalattributes["site_name"]
+        # list of drivers
+        drivers_string = cf[section][series]["GapFillUsingFFNET"][output]["drivers"]
+        ds.ffnet[output]["drivers"] = pfp_cfg.cfg_string_to_list(drivers_string)
+        # apply ustar filter
+        opt = pfp_utils.get_keyvaluefromcf(cf, [section, series, "GapFillUsingFFNET", output],
+                                           "turbulence_filter", default="")
+        ds.ffnet[output]["turbulence_filter"] = opt
+        opt = pfp_utils.get_keyvaluefromcf(cf, [section, series, "GapFillUsingFFNET", output],
+                                           "daynight_filter", default="")
+        ds.ffnet[output]["daynight_filter"] = opt
+        # results of best fit for plotting later on
+        ds.ffnet[output]["results"] = {"startdate":[],"enddate":[],"No. points":[],"r":[],
+                                       "Bias":[],"RMSE":[],"Frac Bias":[],"NMSE":[],
+                                       "Avg (obs)":[],"Avg (FFNET)":[],
+                                       "Var (obs)":[],"Var (FFNET)":[],"Var ratio":[],
+                                       "m_ols":[],"b_ols":[]}
+        # create an empty series in ds if the FFNET output series doesn't exist yet
+        if output not in ds.series.keys():
+            data, flag, attr = pfp_utils.MakeEmptySeries(ds, output)
+            pfp_utils.CreateSeries(ds, output, data, flag, attr)
 
 def gfSOLO_createdict(cf,ds,series):
     """ Creates a dictionary in ds to hold information about the SOLO data used

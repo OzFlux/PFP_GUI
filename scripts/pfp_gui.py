@@ -11,6 +11,7 @@ from PyQt4 import QtCore, QtGui
 import pfp_func
 import pfp_utils
 import pfp_gfALT
+import pfp_gfFFNET
 import pfp_gfSOLO
 import pfp_rpNN
 
@@ -3637,7 +3638,7 @@ class edit_cfg_L5(QtGui.QWidget):
                     # key3 is the gap filling method
                     for key3 in self.cfg[key1][key2]:
                         parent3 = QtGui.QStandardItem(key3)
-                        if key3 in ["GapFillUsingSOLO", "GapFillUsingMDS"]:
+                        if key3 in ["GapFillUsingSOLO", "GapFillUsingFFNET", "GapFillUsingMDS"]:
                             # key4 is the gap fill variable name
                             for key4 in self.cfg[key1][key2][key3]:
                                 parent4 = QtGui.QStandardItem(key4)
@@ -3701,7 +3702,7 @@ class edit_cfg_L5(QtGui.QWidget):
                         subsubsection = subsection.child(k)
                         key3 = str(subsubsection.text())
                         cfg[key1][key2][key3] = {}
-                        if key3 in ["GapFillUsingSOLO", "GapFillUsingMDS"]:
+                        if key3 in ["GapFillUsingSOLO", "GapFillUsingFFNET", "GapFillUsingMDS"]:
                             for l in range(subsubsection.rowCount()):
                                 subsubsubsection = subsubsection.child(l)
                                 key4 = str(subsubsubsection.text())
@@ -3917,6 +3918,12 @@ class edit_cfg_L5(QtGui.QWidget):
                     self.context_menu.addAction(self.context_menu.actionAddSOLO)
                     self.context_menu.actionAddSOLO.triggered.connect(self.add_solo)
                     add_separator = True
+                if "GapFillUsingFFNET" not in existing_entries:
+                    self.context_menu.actionAddFFNET = QtGui.QAction(self)
+                    self.context_menu.actionAddFFNET.setText("Add FFNET")
+                    self.context_menu.addAction(self.context_menu.actionAddFFNET)
+                    self.context_menu.actionAddFFNET.triggered.connect(self.add_ffnet)
+                    add_separator = True
                 if "GapFillUsingMDS" not in existing_entries:
                     self.context_menu.actionAddMDS = QtGui.QAction(self)
                     self.context_menu.actionAddMDS.setText("Add MDS")
@@ -3993,7 +4000,7 @@ class edit_cfg_L5(QtGui.QWidget):
                 self.context_menu.actionRemoveQCCheck.setText("Remove QC check")
                 self.context_menu.addAction(self.context_menu.actionRemoveQCCheck)
                 self.context_menu.actionRemoveQCCheck.triggered.connect(self.remove_item)
-            elif subsubsection_name in ["GapFillUsingSOLO", "GapFillUsingMDS", "GapFillFromClimatology"]:
+            elif subsubsection_name in ["GapFillUsingSOLO", "GapFillUsingFFNET", "GapFillUsingMDS", "GapFillFromClimatology"]:
                 self.context_menu.actionRemoveGFMethod = QtGui.QAction(self)
                 self.context_menu.actionRemoveGFMethod.setText("Remove method")
                 self.context_menu.addAction(self.context_menu.actionRemoveGFMethod)
@@ -4040,6 +4047,12 @@ class edit_cfg_L5(QtGui.QWidget):
                 self.context_menu.actionRemoveSOLOSettings.triggered.connect(self.remove_item)
 
         self.context_menu.exec_(self.view.viewport().mapToGlobal(position))
+
+    def add_ffnet(self):
+        """ Add GapFillUsingFFNET to a variable."""
+        dict_to_add = {"GapFillUsingFFNET":{"<var>_FFNET": {"drivers": "['Fn','Fg','q','VPD','Ta','Ts']"}}}
+        # add the subsubsection (GapFillUsingFFNET)
+        self.add_subsubsection(dict_to_add)
 
     def add_solo(self):
         """ Add GapFillUsingSOLO to a variable."""
@@ -4307,10 +4320,12 @@ class edit_cfg_L5(QtGui.QWidget):
     def add_new_variable(self):
         """ Add a new variable."""
         gfSOLO = {"<var>_SOLO": {"drivers": ""}}
+        gfFFNET = {"<var>_FFNET": {"drivers": ""}}
         gfMDS = {"<var>_MDS": {"drivers": "Fsd,Ta,VPD", "tolerances": "(20, 50), 2.5, 0.5"}}
         gfCLIM = {"<var>_cli": {"method": "interpolated daily"}}
         gfMS = {"Source": "<var>,<var>_SOLO,<var>_MDS,<var>_cli"}
         d2a = {"New variable": {"GapFillUsingSOLO": gfSOLO,
+                                "GapFillUsingFFNET": gfFFNET,
                                 "GapFillUsingMDS": gfMDS,
                                 "GapFillFromClimatology": gfCLIM,
                                 "MergeSeries": gfMS}}
@@ -4325,7 +4340,7 @@ class edit_cfg_L5(QtGui.QWidget):
             # key3 is the gap filling method
             for key3 in d2a[key2]:
                 parent3 = QtGui.QStandardItem(key3)
-                if key3 in ["GapFillUsingSOLO", "GapFillUsingMDS", "GapFillFromClimatology"]:
+                if key3 in ["GapFillUsingSOLO", "GapFillUsingFFNET", "GapFillUsingMDS", "GapFillFromClimatology"]:
                     # key4 is the gap fill variable name
                     for key4 in d2a[key2][key3]:
                         parent4 = QtGui.QStandardItem(key4)
@@ -5393,9 +5408,9 @@ class pfp_l4_ui(QtGui.QDialog):
         self.DoneButton.clicked.connect(lambda:pfp_gfALT.gfalternate_done(self))
         self.QuitButton.clicked.connect(lambda:pfp_gfALT.gfalternate_quit(self))
 
-class pfp_l5_ui(QtGui.QDialog):
+class solo_gui(QtGui.QDialog):
     def __init__(self, parent=None):
-        super(pfp_l5_ui, self).__init__(parent)
+        super(solo_gui, self).__init__(parent)
         self.resize(400, 265)
         self.setWindowTitle("Gap fill (SOLO)")
         # component sizes and positions
@@ -5555,3 +5570,160 @@ class pfp_l5_ui(QtGui.QDialog):
             pfp_gfSOLO.gfSOLO_done(self)
         elif self.solo_info["called_by"] == "ERUsingSOLO":
             pfp_rpNN.rpSOLO_done(self)
+
+class ffnet_gui(QtGui.QDialog):
+    def __init__(self, parent=None):
+        super(ffnet_gui, self).__init__(parent)
+        self.resize(400, 265)
+        self.setWindowTitle("Gap fill (FFNET)")
+        # component sizes and positions
+        row_height = 25
+        label_width = 145
+        label_height = 20
+        lineedit_long_width = 160
+        lineedit_short_width = 30
+        lineedit_height = 20
+        radiobutton_width = 110
+        radiobutton_height = 20
+        checkbox_width = 95
+        checkbox_height = 20
+        button_width = 90
+        button_height = 25
+        # first row; Nodes, Training, Nda factor
+        row1_y = 5
+        self.label_Nodes = QtGui.QLabel(self)
+        self.label_Nodes.setGeometry(QtCore.QRect(20, row1_y, 85, label_height))
+        self.label_Nodes.setText("Nodes")
+        self.lineEdit_Nodes = QtGui.QLineEdit(self)
+        self.lineEdit_Nodes.setGeometry(QtCore.QRect(115, row1_y, 60, lineedit_height))
+        self.lineEdit_Nodes.setText("24,16")
+        self.label_Training = QtGui.QLabel(self)
+        self.label_Training.setText("Training")
+        self.label_Training.setGeometry(QtCore.QRect(185, row1_y, 70, label_height))
+        self.lineEdit_Training = QtGui.QLineEdit(self)
+        self.lineEdit_Training.setGeometry(QtCore.QRect(265, row1_y, 80, lineedit_height))
+        self.lineEdit_Training.setText("500")
+        # second row; Learning, Iterations
+        row2_y = row1_y + row_height
+        self.label_TrainingType = QtGui.QLabel(self)
+        self.label_TrainingType.setText("Training type")
+        self.label_TrainingType.setGeometry(QtCore.QRect(20, row2_y, 85, label_height))
+        self.combo_TrainingType = QtGui.QComboBox(self)
+        self.combo_TrainingType.addItems(["TNC","Rprop","BFGS","CG","Genetic","Back"])
+        self.combo_TrainingType.setGeometry(QtCore.QRect(115, row2_y, 60, label_height))
+        self.label_ConnectionType = QtGui.QLabel(self)
+        self.label_ConnectionType.setText("Connection")
+        self.label_ConnectionType.setGeometry(QtCore.QRect(185, row2_y, 70, label_height))
+        self.combo_ConnectionType = QtGui.QComboBox(self)
+        self.combo_ConnectionType.addItems(["Full","Standard"])
+        self.combo_ConnectionType.setGeometry(QtCore.QRect(265, row2_y, 80, label_height))
+        # third row; data start and end date labels
+        row3_y = row2_y + row_height
+        self.label_DataStartDate = QtGui.QLabel(self)
+        self.label_DataStartDate.setGeometry(QtCore.QRect(48, row3_y, label_width, label_height))
+        self.label_DataEndDate = QtGui.QLabel(self)
+        self.label_DataEndDate.setGeometry(QtCore.QRect(244, row3_y, label_width, label_height))
+        # fourth row; data start and end date values
+        row4_y = row3_y + row_height
+        self.label_DataStartDate_value = QtGui.QLabel(self)
+        self.label_DataStartDate_value.setGeometry(QtCore.QRect(33, row4_y, label_width, label_height))
+        self.label_DataEndDate_value = QtGui.QLabel(self)
+        self.label_DataEndDate_value.setGeometry(QtCore.QRect(220, row4_y, label_width, label_height))
+        self.label_DataStartDate.setText("Data start date")
+        self.label_DataEndDate.setText("Data end date")
+        self.label_DataStartDate_value.setText("YYYY-MM-DD HH:mm")
+        self.label_DataEndDate_value.setText("YYYY-MM-DD HH:mm")
+        # fifth row; start date line edit box
+        row5_y = row4_y + row_height
+        self.label_StartDate = QtGui.QLabel(self)
+        self.label_StartDate.setGeometry(QtCore.QRect(30, row5_y, lineedit_long_width, lineedit_height))
+        self.label_StartDate.setText("Start date (YYYY-MM-DD)")
+        self.lineEdit_StartDate = QtGui.QLineEdit(self)
+        self.lineEdit_StartDate.setGeometry(QtCore.QRect(220, row5_y, lineedit_long_width, lineedit_height))
+        # sixth row; end date line edit box
+        row6_y = row5_y + row_height
+        self.label_EndDate = QtGui.QLabel(self)
+        self.label_EndDate.setGeometry(QtCore.QRect(30, row6_y, lineedit_long_width, lineedit_height))
+        self.label_EndDate.setText("End date (YYYY-MM-DD)")
+        self.lineEdit_EndDate = QtGui.QLineEdit(self)
+        self.lineEdit_EndDate.setGeometry(QtCore.QRect(220, row6_y, lineedit_long_width, lineedit_height))
+        # seventh row
+        row7_y = row6_y + row_height
+        self.radioButton_Manual = QtGui.QRadioButton(self)
+        self.radioButton_Manual.setGeometry(QtCore.QRect(20, row7_y, radiobutton_width, radiobutton_height))
+        self.radioButton_Manual.setText("Manual")
+        self.lineEdit_MinPercent = QtGui.QLineEdit(self)
+        self.lineEdit_MinPercent.setGeometry(QtCore.QRect(220, row7_y, 30, lineedit_height))
+        self.lineEdit_MinPercent.setText("25")
+        self.label_MinPercent = QtGui.QLabel(self)
+        self.label_MinPercent.setGeometry(QtCore.QRect(140, row7_y, 80, label_height))
+        self.label_MinPercent.setText("Min pts (%)")
+        # eighth row; Months, Days, Auto-complete
+        row8_y = row7_y + row_height
+        self.radioButton_NumberMonths = QtGui.QRadioButton(self)
+        self.radioButton_NumberMonths.setGeometry(QtCore.QRect(20, row8_y, radiobutton_width, radiobutton_height))
+        self.radioButton_NumberMonths.setText("Months")
+        self.radioButton_NumberMonths.setChecked(True)
+        self.lineEdit_NumberMonths = QtGui.QLineEdit(self)
+        self.lineEdit_NumberMonths.setGeometry(QtCore.QRect(90, row8_y, lineedit_short_width, lineedit_height))
+        self.lineEdit_NumberMonths.setText("2")
+        self.radioButton_NumberDays = QtGui.QRadioButton(self)
+        self.radioButton_NumberDays.setGeometry(QtCore.QRect(150, row8_y, radiobutton_width, radiobutton_height))
+        self.radioButton_NumberDays.setText("Days")
+        self.lineEdit_NumberDays = QtGui.QLineEdit(self)
+        self.lineEdit_NumberDays.setGeometry(QtCore.QRect(220, row8_y, lineedit_short_width, lineedit_height))
+        self.lineEdit_NumberDays.setText("60")
+        self.checkBox_AutoComplete = QtGui.QCheckBox(self)
+        self.checkBox_AutoComplete.setGeometry(QtCore.QRect(270, row8_y, radiobutton_width+10, radiobutton_height))
+        self.checkBox_AutoComplete.setChecked(True)
+        self.checkBox_AutoComplete.setText("Auto complete")
+        # define the radio button group
+        self.radioButtons = QtGui.QButtonGroup(self)
+        self.radioButtons.addButton(self.radioButton_NumberMonths)
+        self.radioButtons.addButton(self.radioButton_NumberDays)
+        self.radioButtons.addButton(self.radioButton_Manual)
+        # ninth row; Show plots, Plot all and Overwrite checkboxes
+        row9_y = row8_y + row_height
+        self.checkBox_ShowPlots = QtGui.QCheckBox(self)
+        self.checkBox_ShowPlots.setGeometry(QtCore.QRect(20, row9_y, checkbox_width, checkbox_height))
+        self.checkBox_ShowPlots.setText("Show plots")
+        self.checkBox_ShowPlots.setChecked(True)
+        self.checkBox_PlotAll = QtGui.QCheckBox(self)
+        self.checkBox_PlotAll.setGeometry(QtCore.QRect(150, row9_y, checkbox_width, checkbox_height))
+        self.checkBox_PlotAll.setText("Plot all")
+        self.checkBox_Overwrite = QtGui.QCheckBox(self)
+        self.checkBox_Overwrite.setGeometry(QtCore.QRect(270, row9_y, checkbox_width, checkbox_height))
+        self.checkBox_Overwrite.setText("Overwrite")
+        # tenth (bottom) row; Run, Done and Quit buttons
+        row10_y = row9_y + row_height
+        self.RunButton = QtGui.QPushButton(self)
+        self.RunButton.setGeometry(QtCore.QRect(20, row10_y, button_width, button_height))
+        self.RunButton.setText("Run")
+        self.DoneButton = QtGui.QPushButton(self)
+        self.DoneButton.setGeometry(QtCore.QRect(150, row10_y, button_width, button_height))
+        self.DoneButton.setText("Done")
+        self.QuitButton = QtGui.QPushButton(self)
+        self.QuitButton.setGeometry(QtCore.QRect(270, row10_y, button_width, button_height))
+        self.QuitButton.setText("Quit")
+        # connect the "Run", "Done" and "Quit" buttons to their slots
+        self.RunButton.clicked.connect(self.call_gui_run)
+        self.DoneButton.clicked.connect(self.call_gui_done)
+        self.QuitButton.clicked.connect(self.call_gui_quit)
+
+    def call_gui_run(self):
+        if self.ffnet_info["called_by"] == "GapFillingUsingFFNET":
+            pfp_gfFFNET.gfFFNET_run_gui(self)
+        elif self.ffnet_info["called_by"] == "ERUsingFFNET":
+            pfp_rpNN.rpFFNET_run_gui(self)
+
+    def call_gui_quit(self):
+        if self.ffnet_info["called_by"] == "GapFillingUsingFFNET":
+            pfp_gfFFNET.gfFFNET_quit(self)
+        elif self.ffnet_info["called_by"] == "ERUsingFFNET":
+            pfp_rpNN.rpFFNET_quit(self)
+
+    def call_gui_done(self):
+        if self.ffnet_info["called_by"] == "GapFillingUsingFFNET":
+            pfp_gfFFNET.gfFFNET_done(self)
+        elif self.ffnet_info["called_by"] == "ERUsingFFNET":
+            pfp_rpNN.rpFFNET_done(self)

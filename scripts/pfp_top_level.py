@@ -358,7 +358,7 @@ def do_run_l5(main_gui, cfg=None):
         cfg["Options"] = {}
     cfg["Options"]["call_mode"] = "interactive"
     ds5 = pfp_levels.l5qc(main_gui, cfg, ds4)
-    if ds5.returncodes["solo"] == "quit":
+    if ds5.returncodes["solo"] == "quit" or ds5.returncodes["ffnet"] == "quit":
         logger.info("Quitting L5: "+sitename)
     else:
         logger.info("Finished L5: "+sitename)

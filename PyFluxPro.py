@@ -245,8 +245,10 @@ class pfp_main_ui(QtGui.QWidget, QPlainTextEditLogger):
         self.actionUtilitiesUstarMPT.triggered.connect(lambda:pfp_top_level.do_utilities_ustar_mpt(mode="standard"))
         # add the L4 GUI
         self.l4_ui = pfp_gui.pfp_l4_ui(self)
-        # add the L5 GUI
-        self.l5_ui = pfp_gui.pfp_l5_ui(self)
+        # add the SOLO L5 GUI
+        self.l5_ui = pfp_gui.solo_gui(self)
+        # add the FFNET GUI
+        self.ffnet_gui = pfp_gui.ffnet_gui(self)
 
     def open_controlfile(self):
         # get the control file path
@@ -514,8 +516,10 @@ class pfp_main_ui(QtGui.QWidget, QPlainTextEditLogger):
         # set the control file name
         cfg.filename = str(cfgpath)
         # write the control file
-        logger.info(" Saving "+cfg.filename)        
+        logger.info(" Saving "+cfg.filename)
         cfg.write()
+        # update the control file name
+        self.tabs.cfg_dict[tab_index_current]["controlfile_name"] = cfg.filename
         # update the tab text
         self.tabs.setTabText(tab_index_current, os.path.basename(str(cfgpath)))
         # reset the cfg changed logical to false

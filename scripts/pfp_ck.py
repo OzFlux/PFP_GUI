@@ -192,6 +192,11 @@ def ApplyTurbulenceFilter(cf,ds,ustar_threshold=None):
         # and write a copy of the filtered datas to the data structure so it
         # will still exist once the gap filling has been done
         pfp_utils.CreateSeries(ds,series+"_filtered",data_filtered,flag_filtered,attr)
+        nnf = numpy.ma.count(data)
+        nf = numpy.ma.count(data_filtered)
+        pc = int(100*(float(nnf-nf)/float(nnf))+0.5)
+        msg = "  " + opt["turbulence_filter"] + " filter removed " + str(pc) + "% from " + series
+        logger.info(msg)
     return
 
 def ApplyTurbulenceFilter_checks(cf,ds):

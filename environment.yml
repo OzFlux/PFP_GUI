@@ -5,6 +5,7 @@ dependencies:
   - python=2.7
   - configobj
   - dateutil
+  - mwojcikowski::ffnet
   - matplotlib
   - netcdf4
   - numpy
