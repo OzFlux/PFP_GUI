@@ -514,8 +514,10 @@ class pfp_main_ui(QtGui.QWidget, QPlainTextEditLogger):
         # set the control file name
         cfg.filename = str(cfgpath)
         # write the control file
-        logger.info(" Saving "+cfg.filename)        
+        logger.info(" Saving "+cfg.filename)
         cfg.write()
+        # update the control file name
+        self.tabs.cfg_dict[tab_index_current]["controlfile_name"] = cfg.filename
         # update the tab text
         self.tabs.setTabText(tab_index_current, os.path.basename(str(cfgpath)))
         # reset the cfg changed logical to false
