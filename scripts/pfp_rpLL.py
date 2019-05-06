@@ -133,7 +133,7 @@ def get_LL_params(ldt,Fsd,D,T,NEE,ER,LT_results,info):
                         last_alpha_OK = False
                 # then alpha
                 if numpy.isnan(alpha) or alpha<0 or alpha>0.22:
-                    if last_alpha_OK==True:
+                    if last_alpha_OK==True and len(LL_results["alpha"]) > 0:
                         alpha = LL_results["alpha"][-1]
                     else:
                         alpha = 0
