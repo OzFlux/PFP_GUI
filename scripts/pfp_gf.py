@@ -138,6 +138,9 @@ def GapFillParseControlFile(cf, ds, series, ds_alt):
     if "GapFillUsingSOLO" in cf[section][series].keys():
         # create the SOLO dictionary in ds
         gfSOLO_createdict(cf, ds, series)
+    if "GapFillUsingFFNET" in cf[section][series].keys():
+        # create the FFNET dictionary in ds
+        gfFFNET_createdict(cf, ds, series)
     if "GapFillUsingMDS" in cf[section][series].keys():
         # create the MDS dictionary in ds
         gfMDS_createdict(cf, ds, series)
@@ -499,6 +502,51 @@ def gfMergeSeries_createdict(cf,ds,series):
     if ds.merge[merge_order][series]["output"] not in ds.series.keys():
         data,flag,attr = pfp_utils.MakeEmptySeries(ds,ds.merge[merge_order][series]["output"])
         pfp_utils.CreateSeries(ds,ds.merge[merge_order][series]["output"],data,flag,attr)
+
+def gfFFNET_createdict(cf, ds, series):
+    """ Creates a dictionary in ds to hold information about the FFNET data used
+        to gap fill the tower data."""
+    # get the section of the control file containing the series
+    section = pfp_utils.get_cfsection(cf, series=series, mode="quiet")
+    # return without doing anything if the series isn't in a control file section
+    if len(section) == 0:
+        logger.error("GapFillUsingFFNET: Series %s not found in control file, skipping ...", series)
+        return
+    # create the ffnet directory in the data structure
+    if "ffnet" not in dir(ds): ds.ffnet = {}
+    # name of FFNET output series in ds
+    output_list = cf[section][series]["GapFillUsingFFNET"].keys()
+    # loop over the outputs listed in the control file
+    for output in output_list:
+        # create the dictionary keys for this series
+        ds.ffnet[output] = {}
+        # get the target
+        if "target" in cf[section][series]["GapFillUsingFFNET"][output]:
+            ds.ffnet[output]["label_tower"] = cf[section][series]["GapFillUsingFFNET"][output]["target"]
+        else:
+            ds.ffnet[output]["label_tower"] = series
+        # site name
+        ds.ffnet[output]["site_name"] = ds.globalattributes["site_name"]
+        # list of drivers
+        drivers_string = cf[section][series]["GapFillUsingFFNET"][output]["drivers"]
+        ds.ffnet[output]["drivers"] = pfp_cfg.cfg_string_to_list(drivers_string)
+        # apply ustar filter
+        opt = pfp_utils.get_keyvaluefromcf(cf, [section, series, "GapFillUsingFFNET", output],
+                                           "turbulence_filter", default="")
+        ds.ffnet[output]["turbulence_filter"] = opt
+        opt = pfp_utils.get_keyvaluefromcf(cf, [section, series, "GapFillUsingFFNET", output],
+                                           "daynight_filter", default="")
+        ds.ffnet[output]["daynight_filter"] = opt
+        # results of best fit for plotting later on
+        ds.ffnet[output]["results"] = {"startdate":[],"enddate":[],"No. points":[],"r":[],
+                                       "Bias":[],"RMSE":[],"Frac Bias":[],"NMSE":[],
+                                       "Avg (obs)":[],"Avg (FFNET)":[],
+                                       "Var (obs)":[],"Var (FFNET)":[],"Var ratio":[],
+                                       "m_ols":[],"b_ols":[]}
+        # create an empty series in ds if the FFNET output series doesn't exist yet
+        if output not in ds.series.keys():
+            data, flag, attr = pfp_utils.MakeEmptySeries(ds, output)
+            pfp_utils.CreateSeries(ds, output, data, flag, attr)
 
 def gfSOLO_createdict(cf,ds,series):
     """ Creates a dictionary in ds to hold information about the SOLO data used

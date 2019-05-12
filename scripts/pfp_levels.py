@@ -14,6 +14,7 @@ import meteorologicalfunctions as pfp_mf
 import pfp_ck
 import pfp_gf
 import pfp_gfALT
+import pfp_gfFFNET
 import pfp_gfMDS
 import pfp_gfSOLO
 import pfp_io
@@ -365,6 +366,9 @@ def l5qc(main_gui, cf, ds4):
     # do the gap filling using SOLO
     pfp_gfSOLO.GapFillUsingSOLO(main_gui, cf, ds4, ds5)
     if ds5.returncodes["solo"] == "quit": return ds5
+    # do the gap filling using FFNET
+    pfp_gfFFNET.GapFillUsingFFNET(main_gui, cf, ds4, ds5)
+    if ds5.returncodes["ffnet"] == "quit": return ds5
     # gap fill using marginal distribution sampling
     pfp_gfMDS.GapFillFluxUsingMDS(cf, ds5)
     # gap fill using climatology
