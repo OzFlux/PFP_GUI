@@ -17,6 +17,7 @@ from PyQt4 import QtGui
 # PFP modules
 import constants as c
 import pfp_ck
+import pfp_gf
 import pfp_io
 import pfp_ts
 import pfp_utils
@@ -37,8 +38,10 @@ def GapFillUsingSOLO(main_gui, cf, dsa, dsb):
     '''
     # set the default return code
     dsb.returncodes["solo"] = "normal"
-    if "solo" not in dir(dsb):
-        return
+    if "solo" not in dir(dsb): return
+    # check the SOLO drivers for missing data
+    pfp_gf.CheckDrivers(cf, dsb, gf_type="SOLO")
+    if dsb.returncodes["value"] != 0: return dsb
     # local pointer to the datetime series
     ldt = dsb.series["DateTime"]["Data"]
     startdate = ldt[0]
@@ -71,106 +74,6 @@ def GapFillUsingSOLO(main_gui, cf, dsa, dsb):
             logger.warning(" No GUI sub-section found in Options section of control file")
             gfSOLO_plotcoveragelines(dsb, solo_info)
             gfSOLO_gui(main_gui, dsa, dsb, solo_info)
-
-def CheckDrivers(cf, dsb):
-    """
-    Purpose:
-     Check the drivers specified for gap filling using SOLO and warn
-     the user if any contain missing data.
-    Usage:
-    Side effects:
-    Author: PRI
-    Date: May 2019
-    """
-    ts = int(dsb.globalattributes["time_step"])
-    ldt = pfp_utils.GetVariable(dsb, "DateTime")
-    gfSOLO_variables = dsb.solo.keys()
-    gfSOLO_drivers = []
-    for label in gfSOLO_variables:
-        gfSOLO_drivers = gfSOLO_drivers + dsb.solo[label]["drivers"]
-    drivers = list(set(gfSOLO_drivers))
-    drivers_with_missing = {}
-    # loop over the drivers and check for missing data
-    for label in drivers:
-        var = pfp_utils.GetVariable(dsb, label)
-        if numpy.ma.count_masked(var["Data"]) != 0:
-            # save the number of missing data points and the datetimes when they occur
-            idx = numpy.where(numpy.ma.getmaskarray(var["Data"]))[0]
-            drivers_with_missing[label] = {"count": len(idx),
-                                           "dates": ldt["Data"][idx],
-                                           "end_date":[]}
-    # check to see if any of the drivers have missing data
-    if len(drivers_with_missing.keys()) == 0:
-        msg = "  No missing data found in SOLO drivers"
-        logger.info(msg)
-        return
-    # deal with drivers that contain missing data points
-    logger.warning("!!!!!")
-    s = ','.join(drivers_with_missing.keys())
-    msg = "!!!!! The following variables contain missing data " + s
-    logger.warning(msg)
-    logger.warning("!!!!!")
-    for label in drivers_with_missing.keys():
-        var = pfp_utils.GetVariable(dsb, label)
-        # check to see if this variable was imported
-        if "end_date" in var["Attr"]:
-            # it was, so perhaps this variable finishes before the tower data
-            drivers_with_missing[label]["end_date"].append(dateutil.parser.parse(var["Attr"]["end_date"]))
-    # check to see if any variables with missing data have an end date
-    dwmwed = [l for l in drivers_with_missing.keys() if "end_date" in drivers_with_missing[l]]
-    if len(dwmwed) == 0:
-        # return with error message if no variables have end date
-        s = ','.join(drivers_with_missing.keys())
-        msg = "  Unable to resolve missing data in variables " + s
-        logger.error(msg)
-        dsb.returncodes["message"] = msg
-        dsb.returncodes["value"] = 1
-        return
-    # check to see if the user wants us to truncate to an end date
-    opt = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "TruncateToImports", default="Yes")
-    if opt.lower() == "no":
-        msg = "  Truncation to imported variable end date disabled in control file"
-        logger.error(msg)
-        dsb.returncodes["message"] = msg
-        dsb.returncodes["value"] = 1
-        return
-    msg = "  Truncating data to end date of imported variable"
-    logger.info(msg)
-    dwmed = [drivers_with_missing[l]["end_date"] for l in drivers_with_missing.keys()]
-    end_date = numpy.min(dwmed)
-    ei = pfp_utils.GetDateIndex(ldt["Data"], end_date, ts=ts)
-    # loop over the variables in the data structure
-    for label in dsb.series.keys():
-        var = pfp_utils.GetVariable(dsb, label, start=0, end=ei)
-        pfp_utils.CreateVariable(dsb, var)
-    # update the global attributes
-    ldt = pfp_utils.GetVariable(dsb, "DateTime")
-    dsb.globalattributes["nc_nrecs"] = len(ldt["Data"])
-    dsb.globalattributes["end_date"] = ldt["Data"][-1].strftime("%Y-%m-%d %H:%M:%S")
-    # ... and check again to see if any drivers have missing data
-    drivers_with_missing = {}
-    for label in drivers:
-        var = pfp_utils.GetVariable(dsb, label)
-        if numpy.ma.count_masked(var["Data"]) != 0:
-            # save the number of missing data points and the datetimes when they occur
-            idx = numpy.where(numpy.ma.getmaskarray(var["Data"]))[0]
-            drivers_with_missing[label] = {"count": len(idx),
-                                           "dates": ldt["Data"][idx],
-                                           "end_date":[]}
-    # check to see if any of the drivers still have missing data
-    if len(drivers_with_missing.keys()) != 0:
-        # return with error message if no variables have end date
-        s = ','.join(drivers_with_missing.keys())
-        msg = "  Unable to resolve missing data in variables " + s
-        logger.error(msg)
-        dsb.returncodes["message"] = msg
-        dsb.returncodes["value"] = 1
-        return
-    else:
-        # else we are all good, job done, so return
-        msg = "  No missing data found in SOLO drivers"
-        logger.info(msg)
-        return
 
 def  gfSOLO_gui(main_gui, dsa, dsb, solo_info):
     """ Display the SOLO GUI and wait for the user to finish."""
@@ -289,8 +192,8 @@ def gfSOLO_main(dsa,dsb,solo_info,output_list=[]):
     ldt = dsb.series["DateTime"]["Data"]
     xldt = dsb.series["xlDateTime"]["Data"]
     # get the start and end datetime indices
-    si = pfp_utils.GetDateIndex(ldt,startdate,ts=ts,default=0,match="exact")
-    ei = pfp_utils.GetDateIndex(ldt,enddate,ts=ts,default=len(ldt)-1,match="exact")
+    si = pfp_utils.GetDateIndex(ldt, startdate, ts=ts, default=0, match="exact")
+    ei = pfp_utils.GetDateIndex(ldt, enddate, ts=ts, default=len(ldt)-1, match="exact")
     # check the start and end indices
     if si >= ei:
         msg = " GapFillUsingSOLO: end datetime index ("+str(ei)+") smaller that start ("+str(si)+")"
@@ -312,13 +215,6 @@ def gfSOLO_main(dsa,dsb,solo_info,output_list=[]):
     for output in output_list:
         # get the target series label
         series = dsb.solo[output]["label_tower"]
-        # check to see if we are gap filling L5 or L4
-        if dsb.globalattributes["nc_level"].lower()=="l4":
-            for driver in dsb.solo[output]["drivers"]:
-                for mlist in dsb.merge.keys():
-                    if driver in dsb.merge[mlist]:
-                        srclist = dsb.merge[mlist][driver]["source"]
-                pfp_ts.do_mergeseries(dsb,driver,srclist,mode="quiet")
         dsb.solo[output]["results"]["startdate"].append(xldt[si])
         dsb.solo[output]["results"]["enddate"].append(xldt[ei])
         d,f,a = pfp_utils.GetSeriesasMA(dsb,series,si=si,ei=ei)
@@ -331,7 +227,8 @@ def gfSOLO_main(dsa,dsb,solo_info,output_list=[]):
             for item in results_list:
                 dsb.solo[output]["results"][item].append(float(c.missing_value))
             continue
-        drivers = dsb.solo[output]["drivers"]
+        drivers = solo_info["drivers"].split(",")
+        dsb.solo[output]["drivers"] = drivers
         if str(solo_info["nodes"]).lower()=="auto":
             solo_info["nodes_target"] = len(drivers)+1
         else:
@@ -503,6 +400,7 @@ def gfSOLO_plot(pd,dsa,dsb,driverlist,targetlabel,outputlabel,solo_info,si=0,ei=
     figname = plot_path+pd["site_name"].replace(" ","")+"_SOLO_"+pd["label"]
     figname = figname+"_"+sdt+"_"+edt+'.png'
     fig.savefig(figname,format='png')
+    # draw the plot on the screen
     if solo_info["show_plots"]:
         plt.draw()
         plt.pause(1)
@@ -704,6 +602,7 @@ def gfSOLO_run_gui(solo_gui):
     solo_info["factor"] = str(solo_gui.lineEdit_NdaFactor.text())
     solo_info["learningrate"] = str(solo_gui.lineEdit_Learning.text())
     solo_info["iterations"] = str(solo_gui.lineEdit_Iterations.text())
+    solo_info["drivers"] = str(solo_gui.lineEdit_Drivers.text())
 
     solo_info["site_name"] = dsb.globalattributes["site_name"]
     solo_info["time_step"] = int(dsb.globalattributes["time_step"])
@@ -725,13 +624,14 @@ def gfSOLO_run_gui(solo_gui):
         # get the control file contents
         cfg = solo_gui.edit_cfg.get_data_from_model()
         # run the QC checks again
-        gfSOLO_qcchecks(cfg, dsa, dsb, mode="quiet")
+        #gfSOLO_qcchecks(cfg, dsa, dsb, mode="quiet")
         # get a list of series altered in GUI
         # if none have been altered, this list will be empty, output_list passed
         # to gfSOLO_main() will be empty and then all series will be done
-        altered = list(set(solo_gui.edit_cfg.altered))
+        #altered = list(set(solo_gui.edit_cfg.altered))
+        #for label in altered:
         output_list = []
-        for label in altered:
+        for label in cfg["Fluxes"].keys():
             output_list += cfg["Fluxes"][label]["GapFillUsingSOLO"].keys()
         # run the main SOLO gap fill routine
         gfSOLO_main(dsa, dsb, solo_info, output_list=output_list)

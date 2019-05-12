@@ -246,7 +246,7 @@ class pfp_main_ui(QtGui.QWidget, QPlainTextEditLogger):
         # add the L4 GUI
         self.l4_ui = pfp_gui.pfp_l4_ui(self)
         # add the L5 GUI
-        self.l5_ui = pfp_gui.pfp_l5_ui(self)
+        self.solo_gui = pfp_gui.solo_ui(self)
 
     def open_controlfile(self):
         # get the control file path

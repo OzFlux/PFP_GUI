@@ -4043,9 +4043,11 @@ class edit_cfg_L5(QtGui.QWidget):
 
     def add_solo(self):
         """ Add GapFillUsingSOLO to a variable."""
-        dict_to_add = {"GapFillUsingSOLO":{"<var>_SOLO": {"drivers": "['Fn','Fg','q','VPD','Ta','Ts']"}}}
+        idx = self.view.selectedIndexes()[0]
+        var_name = str(idx.data()) + "_SOLO"
+        dict_to_add = {"GapFillUsingSOLO":{var_name: {"drivers": "Fn,Fg,q,VPD,Ta,Ts"}}}
         # add the subsubsection (GapFillUsingSOLO)
-        self.add_subsubsection(dict_to_add)
+        self.add_subsubsubsection(dict_to_add)
 
     def add_solo_settings(self):
         """ Add solo_settings to a variable."""
@@ -4243,8 +4245,8 @@ class edit_cfg_L5(QtGui.QWidget):
         """ Add GapFillUsingMDS to a variable."""
         idx = self.view.selectedIndexes()[0]
         var_name = str(idx.data()) + "_MDS"
-        dict_to_add = {"GapFillUsingMDS":{var_name: {"drivers": "['Fsd','Ta','VPD']",
-                                                     "tolerances":"[(20, 50), 2.5, 0.5]"}}}
+        dict_to_add = {"GapFillUsingMDS":{var_name: {"drivers": "Fsd,Ta,VPD",
+                                                     "tolerances":"(20, 50),2.5,0.5"}}}
         # add the subsubsection (GapFillUsingMDS)
         self.add_subsubsubsection(dict_to_add)
 
@@ -4796,6 +4798,23 @@ class edit_cfg_L6(QtGui.QWidget):
                 self.context_menu.actionRemoveGlobalAttribute.setText("Remove attribute")
                 self.context_menu.addAction(self.context_menu.actionRemoveGlobalAttribute)
                 self.context_menu.actionRemoveGlobalAttribute.triggered.connect(self.remove_item)
+            elif (str(parent.text()) == "NEE") and (selected_item.column() == 0):
+                self.context_menu.actionRemoveNEEVariable = QtGui.QAction(self)
+                self.context_menu.actionRemoveNEEVariable.setText("Remove variable")
+                self.context_menu.addAction(self.context_menu.actionRemoveNEEVariable)
+                self.context_menu.actionRemoveNEEVariable.triggered.connect(self.remove_item)
+            elif (str(parent.text()) == "GPP") and (selected_item.column() == 0):
+                self.context_menu.actionRemoveGPPVariable = QtGui.QAction(self)
+                self.context_menu.actionRemoveGPPVariable.setText("Remove variable")
+                self.context_menu.addAction(self.context_menu.actionRemoveGPPVariable)
+                self.context_menu.actionRemoveGPPVariable.triggered.connect(self.remove_item)
+            elif (str(parent.text()) == "ER") and (selected_item.column() == 0):
+                self.context_menu.actionRemoveERVariable = QtGui.QAction(self)
+                self.context_menu.actionRemoveERVariable.setText("Remove variable")
+                self.context_menu.addAction(self.context_menu.actionRemoveERVariable)
+                self.context_menu.actionRemoveERVariable.triggered.connect(self.remove_item)
+        elif level == 2:
+            pass
 
         self.context_menu.exec_(self.view.viewport().mapToGlobal(position))
 
@@ -5393,10 +5412,10 @@ class pfp_l4_ui(QtGui.QDialog):
         self.DoneButton.clicked.connect(lambda:pfp_gfALT.gfalternate_done(self))
         self.QuitButton.clicked.connect(lambda:pfp_gfALT.gfalternate_quit(self))
 
-class pfp_l5_ui(QtGui.QDialog):
+class solo_gui(QtGui.QDialog):
     def __init__(self, parent=None):
-        super(pfp_l5_ui, self).__init__(parent)
-        self.resize(400, 265)
+        super(solo_gui, self).__init__(parent)
+        self.resize(400, 290)
         self.setWindowTitle("Gap fill (SOLO)")
         # component sizes and positions
         row_height = 25
@@ -5411,98 +5430,106 @@ class pfp_l5_ui(QtGui.QDialog):
         checkbox_height = 20
         button_width = 90
         button_height = 25
-        # first row; Nodes, Training, Nda factor
+        # first row; Date start and end headings
         row1_y = 5
-        self.label_Nodes = QtGui.QLabel(self)
-        self.label_Nodes.setGeometry(QtCore.QRect(20, row1_y, 50, label_height))
-        self.label_Nodes.setText("Nodes")
-        self.lineEdit_Nodes = QtGui.QLineEdit(self)
-        self.lineEdit_Nodes.setGeometry(QtCore.QRect(70, row1_y, 50, lineedit_height))
-        self.lineEdit_Nodes.setText("Auto")
-        self.label_Training = QtGui.QLabel(self)
-        self.label_Training.setGeometry(QtCore.QRect(150, row1_y, 50, label_height))
-        self.label_Training.setText("Training")
-        self.lineEdit_Training = QtGui.QLineEdit(self)
-        self.lineEdit_Training.setGeometry(QtCore.QRect(210, row1_y, 50, lineedit_height))
-        self.lineEdit_Training.setText("500")
-        self.label_NdaFactor = QtGui.QLabel(self)
-        self.label_NdaFactor.setGeometry(QtCore.QRect(270, row1_y, 70, label_height))
-        self.label_NdaFactor.setText("Nda factor")
-        self.lineEdit_NdaFactor = QtGui.QLineEdit(self)
-        self.lineEdit_NdaFactor.setGeometry(QtCore.QRect(340, row1_y, 50, lineedit_height))
-        self.lineEdit_NdaFactor.setText("5")
-        # second row; Learning, Iterations
-        row2_y = row1_y + row_height
-        self.label_Learning = QtGui.QLabel(self)
-        self.label_Learning.setGeometry(QtCore.QRect(140, row2_y, 60, label_height))
-        self.label_Learning.setText("Learning")
-        self.lineEdit_Learning = QtGui.QLineEdit(self)
-        self.lineEdit_Learning.setGeometry(QtCore.QRect(210, row2_y, 50, lineedit_height))
-        self.lineEdit_Learning.setText("0.001")
-        self.label_Iterations = QtGui.QLabel(self)
-        self.label_Iterations.setGeometry(QtCore.QRect(270, row2_y, 70, label_height))
-        self.label_Iterations.setText("Iterations")
-        self.lineEdit_Iterations = QtGui.QLineEdit(self)
-        self.lineEdit_Iterations.setGeometry(QtCore.QRect(340, row2_y, 50, lineedit_height))
-        self.lineEdit_Iterations.setText("500")
-        # third row; data start and end date labels
-        row3_y = row2_y + row_height
         self.label_DataStartDate = QtGui.QLabel(self)
-        self.label_DataStartDate.setGeometry(QtCore.QRect(48, row3_y, label_width, label_height))
+        self.label_DataStartDate.setGeometry(QtCore.QRect(48, row1_y, label_width, label_height))
         self.label_DataEndDate = QtGui.QLabel(self)
-        self.label_DataEndDate.setGeometry(QtCore.QRect(244, row3_y, label_width, label_height))
-        # fourth row; data start and end date values
-        row4_y = row3_y + row_height
+        self.label_DataEndDate.setGeometry(QtCore.QRect(244, row1_y, label_width, label_height))
+        # second row; Date start and end values
+        row2_y = row1_y + row_height
         self.label_DataStartDate_value = QtGui.QLabel(self)
-        self.label_DataStartDate_value.setGeometry(QtCore.QRect(33, row4_y, label_width, label_height))
+        self.label_DataStartDate_value.setGeometry(QtCore.QRect(33, row2_y, label_width, label_height))
         self.label_DataEndDate_value = QtGui.QLabel(self)
-        self.label_DataEndDate_value.setGeometry(QtCore.QRect(220, row4_y, label_width, label_height))
+        self.label_DataEndDate_value.setGeometry(QtCore.QRect(220, row2_y, label_width, label_height))
         self.label_DataStartDate.setText("Data start date")
         self.label_DataEndDate.setText("Data end date")
         self.label_DataStartDate_value.setText("YYYY-MM-DD HH:mm")
         self.label_DataEndDate_value.setText("YYYY-MM-DD HH:mm")
+        # third row; Nodes etc
+        row3_y = row2_y + row_height
+        self.label_Nodes = QtGui.QLabel(self)
+        self.label_Nodes.setGeometry(QtCore.QRect(20, row3_y, 60, label_height))
+        self.label_Nodes.setText("Nodes")
+        self.lineEdit_Nodes = QtGui.QLineEdit(self)
+        self.lineEdit_Nodes.setGeometry(QtCore.QRect(80, row3_y, 50, lineedit_height))
+        self.lineEdit_Nodes.setText("10")
+        self.label_Training = QtGui.QLabel(self)
+        self.label_Training.setGeometry(QtCore.QRect(150, row3_y, 50, label_height))
+        self.label_Training.setText("Training")
+        self.lineEdit_Training = QtGui.QLineEdit(self)
+        self.lineEdit_Training.setGeometry(QtCore.QRect(210, row3_y, 50, lineedit_height))
+        self.lineEdit_Training.setText("500")
+        self.label_NdaFactor = QtGui.QLabel(self)
+        self.label_NdaFactor.setGeometry(QtCore.QRect(270, row3_y, 70, label_height))
+        self.label_NdaFactor.setText("Nda factor")
+        self.lineEdit_NdaFactor = QtGui.QLineEdit(self)
+        self.lineEdit_NdaFactor.setGeometry(QtCore.QRect(340, row3_y, 50, lineedit_height))
+        self.lineEdit_NdaFactor.setText("5")
+        # fourth row; Learning, Iterations
+        row4_y = row3_y + row_height
+        self.label_Learning = QtGui.QLabel(self)
+        self.label_Learning.setGeometry(QtCore.QRect(140, row4_y, 60, label_height))
+        self.label_Learning.setText("Learning")
+        self.lineEdit_Learning = QtGui.QLineEdit(self)
+        self.lineEdit_Learning.setGeometry(QtCore.QRect(210, row4_y, 50, lineedit_height))
+        self.lineEdit_Learning.setText("0.001")
+        self.label_Iterations = QtGui.QLabel(self)
+        self.label_Iterations.setGeometry(QtCore.QRect(270, row4_y, 70, label_height))
+        self.label_Iterations.setText("Iterations")
+        self.lineEdit_Iterations = QtGui.QLineEdit(self)
+        self.lineEdit_Iterations.setGeometry(QtCore.QRect(340, row4_y, 50, lineedit_height))
+        self.lineEdit_Iterations.setText("500")
         # fifth row; start date line edit box
         row5_y = row4_y + row_height
+        self.label_Drivers = QtGui.QLabel(self)
+        self.label_Drivers.setGeometry(QtCore.QRect(20, row5_y, 60, label_height))
+        self.label_Drivers.setText("Drivers")
+        self.lineEdit_Drivers = QtGui.QLineEdit(self)
+        self.lineEdit_Drivers.setGeometry(QtCore.QRect(80, row5_y, 200, lineedit_height))
+        self.lineEdit_Drivers.setText("Fn,Fg,q,Ta,Ts,Ws")
+        # sixth row; start date line edit box
+        row6_y = row5_y + row_height
         self.label_StartDate = QtGui.QLabel(self)
-        self.label_StartDate.setGeometry(QtCore.QRect(30, row5_y, lineedit_long_width, lineedit_height))
+        self.label_StartDate.setGeometry(QtCore.QRect(30, row6_y, lineedit_long_width, lineedit_height))
         self.label_StartDate.setText("Start date (YYYY-MM-DD)")
         self.lineEdit_StartDate = QtGui.QLineEdit(self)
-        self.lineEdit_StartDate.setGeometry(QtCore.QRect(220, row5_y, lineedit_long_width, lineedit_height))
-        # sixth row; end date line edit box
-        row6_y = row5_y + row_height
+        self.lineEdit_StartDate.setGeometry(QtCore.QRect(220, row6_y, lineedit_long_width, lineedit_height))
+        # seventh row; end date line edit box
+        row7_y = row6_y + row_height
         self.label_EndDate = QtGui.QLabel(self)
-        self.label_EndDate.setGeometry(QtCore.QRect(30, row6_y, lineedit_long_width, lineedit_height))
+        self.label_EndDate.setGeometry(QtCore.QRect(30, row7_y, lineedit_long_width, lineedit_height))
         self.label_EndDate.setText("End date (YYYY-MM-DD)")
         self.lineEdit_EndDate = QtGui.QLineEdit(self)
-        self.lineEdit_EndDate.setGeometry(QtCore.QRect(220, row6_y, lineedit_long_width, lineedit_height))
-        # seventh row
-        row7_y = row6_y + row_height
+        self.lineEdit_EndDate.setGeometry(QtCore.QRect(220, row7_y, lineedit_long_width, lineedit_height))
+        # eighth row
+        row8_y = row7_y + row_height
         self.radioButton_Manual = QtGui.QRadioButton(self)
-        self.radioButton_Manual.setGeometry(QtCore.QRect(20, row7_y, radiobutton_width, radiobutton_height))
+        self.radioButton_Manual.setGeometry(QtCore.QRect(20, row8_y, radiobutton_width, radiobutton_height))
         self.radioButton_Manual.setText("Manual")
         self.lineEdit_MinPercent = QtGui.QLineEdit(self)
-        self.lineEdit_MinPercent.setGeometry(QtCore.QRect(220, row7_y, 30, lineedit_height))
+        self.lineEdit_MinPercent.setGeometry(QtCore.QRect(220, row8_y, 30, lineedit_height))
         self.lineEdit_MinPercent.setText("25")
         self.label_MinPercent = QtGui.QLabel(self)
-        self.label_MinPercent.setGeometry(QtCore.QRect(140, row7_y, 80, label_height))
+        self.label_MinPercent.setGeometry(QtCore.QRect(140, row8_y, 80, label_height))
         self.label_MinPercent.setText("Min pts (%)")
-        # eighth row; Months, Days, Auto-complete
-        row8_y = row7_y + row_height
+        # ninth row; Months, Days, Auto-complete
+        row9_y = row8_y + row_height
         self.radioButton_NumberMonths = QtGui.QRadioButton(self)
-        self.radioButton_NumberMonths.setGeometry(QtCore.QRect(20, row8_y, radiobutton_width, radiobutton_height))
+        self.radioButton_NumberMonths.setGeometry(QtCore.QRect(20, row9_y, radiobutton_width, radiobutton_height))
         self.radioButton_NumberMonths.setText("Months")
         self.radioButton_NumberMonths.setChecked(True)
         self.lineEdit_NumberMonths = QtGui.QLineEdit(self)
-        self.lineEdit_NumberMonths.setGeometry(QtCore.QRect(90, row8_y, lineedit_short_width, lineedit_height))
+        self.lineEdit_NumberMonths.setGeometry(QtCore.QRect(90, row9_y, lineedit_short_width, lineedit_height))
         self.lineEdit_NumberMonths.setText("2")
         self.radioButton_NumberDays = QtGui.QRadioButton(self)
-        self.radioButton_NumberDays.setGeometry(QtCore.QRect(150, row8_y, radiobutton_width, radiobutton_height))
+        self.radioButton_NumberDays.setGeometry(QtCore.QRect(150, row9_y, radiobutton_width, radiobutton_height))
         self.radioButton_NumberDays.setText("Days")
         self.lineEdit_NumberDays = QtGui.QLineEdit(self)
-        self.lineEdit_NumberDays.setGeometry(QtCore.QRect(220, row8_y, lineedit_short_width, lineedit_height))
+        self.lineEdit_NumberDays.setGeometry(QtCore.QRect(220, row9_y, lineedit_short_width, lineedit_height))
         self.lineEdit_NumberDays.setText("60")
         self.checkBox_AutoComplete = QtGui.QCheckBox(self)
-        self.checkBox_AutoComplete.setGeometry(QtCore.QRect(270, row8_y, radiobutton_width+10, radiobutton_height))
+        self.checkBox_AutoComplete.setGeometry(QtCore.QRect(270, row9_y, radiobutton_width+10, radiobutton_height))
         self.checkBox_AutoComplete.setChecked(True)
         self.checkBox_AutoComplete.setText("Auto complete")
         # define the radio button group
@@ -5510,28 +5537,28 @@ class pfp_l5_ui(QtGui.QDialog):
         self.radioButtons.addButton(self.radioButton_NumberMonths)
         self.radioButtons.addButton(self.radioButton_NumberDays)
         self.radioButtons.addButton(self.radioButton_Manual)
-        # ninth row; Show plots, Plot all and Overwrite checkboxes
-        row9_y = row8_y + row_height
+        # tenth row; Show plots, Plot all and Overwrite checkboxes
+        row10_y = row9_y + row_height
         self.checkBox_ShowPlots = QtGui.QCheckBox(self)
-        self.checkBox_ShowPlots.setGeometry(QtCore.QRect(20, row9_y, checkbox_width, checkbox_height))
+        self.checkBox_ShowPlots.setGeometry(QtCore.QRect(20, row10_y, checkbox_width, checkbox_height))
         self.checkBox_ShowPlots.setText("Show plots")
         self.checkBox_ShowPlots.setChecked(True)
         self.checkBox_PlotAll = QtGui.QCheckBox(self)
-        self.checkBox_PlotAll.setGeometry(QtCore.QRect(150, row9_y, checkbox_width, checkbox_height))
+        self.checkBox_PlotAll.setGeometry(QtCore.QRect(150, row10_y, checkbox_width, checkbox_height))
         self.checkBox_PlotAll.setText("Plot all")
         self.checkBox_Overwrite = QtGui.QCheckBox(self)
-        self.checkBox_Overwrite.setGeometry(QtCore.QRect(270, row9_y, checkbox_width, checkbox_height))
+        self.checkBox_Overwrite.setGeometry(QtCore.QRect(270, row10_y, checkbox_width, checkbox_height))
         self.checkBox_Overwrite.setText("Overwrite")
-        # tenth (bottom) row; Run, Done and Quit buttons
-        row10_y = row9_y + row_height
+        # eleventh (bottom) row; Run, Done and Quit buttons
+        row11_y = row10_y + row_height
         self.RunButton = QtGui.QPushButton(self)
-        self.RunButton.setGeometry(QtCore.QRect(20, row10_y, button_width, button_height))
+        self.RunButton.setGeometry(QtCore.QRect(20, row11_y, button_width, button_height))
         self.RunButton.setText("Run")
         self.DoneButton = QtGui.QPushButton(self)
-        self.DoneButton.setGeometry(QtCore.QRect(150, row10_y, button_width, button_height))
+        self.DoneButton.setGeometry(QtCore.QRect(150, row11_y, button_width, button_height))
         self.DoneButton.setText("Done")
         self.QuitButton = QtGui.QPushButton(self)
-        self.QuitButton.setGeometry(QtCore.QRect(270, row10_y, button_width, button_height))
+        self.QuitButton.setGeometry(QtCore.QRect(270, row11_y, button_width, button_height))
         self.QuitButton.setText("Quit")
         # connect the "Run", "Done" and "Quit" buttons to their slots
         self.RunButton.clicked.connect(self.call_gui_run)
