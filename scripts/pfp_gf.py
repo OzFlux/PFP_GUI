@@ -1,5 +1,6 @@
 # standard modules
 import ast
+import copy
 import datetime
 import os
 import logging
@@ -18,7 +19,7 @@ import pfp_utils
 
 logger = logging.getLogger("pfp_log")
 
-def CheckDrivers(cf, dsb, gf_type="SOLO"):
+def CheckDrivers(l5_info, dsb, gf_type):
     """
     Purpose:
      Check the drivers specified for gap filling using SOLO and warn
@@ -32,11 +33,11 @@ def CheckDrivers(cf, dsb, gf_type="SOLO"):
     ldt = pfp_utils.GetVariable(dsb, "DateTime")
     gf_drivers = []
     if gf_type == "SOLO":
-        for label in dsb.solo.keys():
-            gf_drivers = gf_drivers + dsb.solo[label]["drivers"]
+        for label in l5_info["solo"]["outputs"].keys():
+            gf_drivers = gf_drivers + l5_info["solo"]["outputs"][label]["drivers"]
     elif gf_type == "FFNET":
-        for label in dsb.ffnet.keys():
-            gf_drivers = gf_drivers + dsb.ffnet[label]["drivers"]
+        for label in l5_info["ffnet"]["outputs"].keys():
+            gf_drivers = gf_drivers + l5_info["ffnet"]["outputs"][label]["drivers"]
     else:
         msg = "  Unrecognised gap fill type (" + gf_type + ")"
         logger.error(msg)
@@ -147,6 +148,18 @@ def GapFillParseControlFile(cf, ds, series, ds_alt):
     if "MergeSeries" in cf[section][series].keys():
         # create the merge series dictionary in the data structure
         gfMergeSeries_createdict(cf, ds, series)
+
+def ParseL5ControlFile(cf, ds):
+    l5_info = {}
+    l5_info["cf"] = copy.deepcopy(cf)
+    for target in cf["Fluxes"].keys():
+        if "GapFillUsingSOLO" in cf["Fluxes"][target].keys():
+            gfSOLO_createdict(cf, ds, l5_info, target)
+        if "GapFillUsingMDS" in cf["Fluxes"][target].keys():
+            gfMDS_createdict(cf, ds, l5_info, target)
+        if "MergeSeries" in cf["Fluxes"][target].keys():
+            gfMergeSeries_createdict(cf, ds, l5_info, target)
+    return l5_info
 
 def gfalternate_createdict(cf, ds, series, ds_alt):
     """
@@ -363,200 +376,173 @@ def gfClimatology_createdict(cf, ds, series):
             data, flag, attr = pfp_utils.MakeEmptySeries(ds, output)
             pfp_utils.CreateSeries(ds, output, data, flag, attr)
 
-def gfMDS_createdict(cf, ds, series):
+def gfMDS_createdict(cf, ds, l5_info, label):
     """
     Purpose:
      Create an information dictionary for MDS gap filling from the contents
      of the control file.
     Usage:
-     info["MDS"] = gfMDS_createdict(cf)
+     gfMDS_createdict(cf, ds, l5_info, label)
     Author: PRI
     Date: May 2018
     """
-    # get the section of the control file containing the series
-    section = pfp_utils.get_cfsection(cf, series=series, mode="quiet")
-    # return without doing anything if the series isn't in a control file section
-    if len(section)==0:
-        logger.error("GapFillUsingMDS: Series %s not found in control file, skipping ...", series)
-        return
-    # create the MDS attribute (a dictionary) in ds, this will hold all MDS settings
-    if "mds" not in dir(ds):
-        ds.mds = {}
+    if "mds" not in l5_info:
+        l5_info["mds"] = {"outputs": {}}
     # name of MDS output series in ds
-    output_list = cf[section][series]["GapFillUsingMDS"].keys()
+    outputs = cf["Fluxes"][label]["GapFillUsingMDS"].keys()
     # loop over the outputs listed in the control file
-    for output in output_list:
+    l5mo = l5_info["mds"]["outputs"]
+    for output in outputs:
         # create the dictionary keys for this series
-        ds.mds[output] = {}
+        l5mo[output] = {}
         # get the target
-        if "target" in cf[section][series]["GapFillUsingMDS"][output]:
-            ds.mds[output]["target"] = cf[section][series]["GapFillUsingMDS"][output]["target"]
+        if "target" in cf["Fluxes"][label]["GapFillUsingMDS"][output]:
+            l5mo[output]["target"] = cf["Fluxes"][label]["GapFillUsingMDS"][output]["target"]
         else:
-            ds.mds[output]["target"] = series
-        # site name
-        ds.mds[output]["site_name"] = ds.globalattributes["site_name"]
-        # list of SOLO settings
-        if "mds_settings" in cf[section][series]["GapFillUsingMDS"][output]:
-            mdss_string = cf[section][series]["GapFillUsingMDS"][output]["mds_settings"]
+            l5mo[output]["target"] = label
+        # list of MDS settings
+        if "mds_settings" in cf["Fluxes"][label]["GapFillUsingMDS"][output]:
+            mdss_string = cf["Fluxes"][label]["GapFillUsingMDS"][output]["mds_settings"]
             mdss_string = mdss_string.replace(" ","")
             if "," in mdss_string:
-                ds.mds[output]["mds_settings"] = mdss_string.split(",")
+                l5mo[output]["mds_settings"] = mdss_string.split(",")
             else:
-                ds.mds[output]["mds_settings"] = [mdss_string]
+                l5mo[output]["mds_settings"] = [mdss_string]
         # list of drivers
-        drivers_string = cf[section][series]["GapFillUsingMDS"][output]["drivers"]
+        drivers_string = cf["Fluxes"][label]["GapFillUsingMDS"][output]["drivers"]
         drivers_string = drivers_string.replace(" ","")
         if "," in drivers_string:
             if len(drivers_string.split(",")) == 3:
-                ds.mds[output]["drivers"] = drivers_string.split(",")
+                l5mo[output]["drivers"] = drivers_string.split(",")
             else:
-                msg = " MDS: incorrect number of drivers for " + series + ", skipping ..."
+                msg = " MDS: incorrect number of drivers for " + label + ", skipping ..."
                 logger.error(msg)
                 continue
         else:
-            msg = " MDS: incorrect number of drivers for " + series + ", skipping ..."
+            msg = " MDS: incorrect number of drivers for " + label + ", skipping ..."
             logger.error(msg)
             continue
         # list of tolerances
-        tolerances_string = cf[section][series]["GapFillUsingMDS"][output]["tolerances"]
+        tolerances_string = cf["Fluxes"][label]["GapFillUsingMDS"][output]["tolerances"]
         tolerances_string = tolerances_string.replace(" ","")
         tolerances_string = tolerances_string.replace("(","").replace(")","")
         if "," in tolerances_string:
             if len(tolerances_string.split(",")) == 4:
                 parts = tolerances_string.split(",")
-                ds.mds[output]["tolerances"] = [(parts[0], parts[1]), parts[2], parts[3]]
+                l5mo[output]["tolerances"] = [(parts[0], parts[1]), parts[2], parts[3]]
             else:
-                msg = " MDS: incorrect format for tolerances for " + series + ", skipping ..."
+                msg = " MDS: incorrect format for tolerances for " + label + ", skipping ..."
                 logger.error(msg)
                 continue
         else:
-            msg = " MDS: incorrect format for tolerances for " + series + ", skipping ..."
+            msg = " MDS: incorrect format for tolerances for " + label + ", skipping ..."
             logger.error(msg)
             continue
-        # get the ustar filter option
-        opt = pfp_utils.get_keyvaluefromcf(cf, [section, series, "GapFillUsingMDS", output], "turbulence_filter", default="")
-        ds.mds[output]["turbulence_filter"] = opt
-        # get the day/night filter option
-        opt = pfp_utils.get_keyvaluefromcf(cf, [section, series, "GapFillUsingMDS", output], "daynight_filter", default="")
-        ds.mds[output]["daynight_filter"] = opt
-        # get the include QC option
-        opt = pfp_utils.get_keyvaluefromcf(cf, [section, series, "GapFillUsingMDS", output], "include_qc", default="No")
-        ds.mds[output]["include_qc"] = opt
-
-    # check that all requested targets and drivers have a mapping to
-    # a FluxNet label, remove if they don't
-    fluxnet_label_map = {"Fc":"NEE", "Fe":"LE", "Fh":"H",
-                         "Fsd":"SW_IN", "Ta":"TA", "VPD":"VPD"}
-    for mds_label in ds.mds:
-        ds.mds[mds_label]["mds_label"] = mds_label
-        pfp_target = ds.mds[mds_label]["target"]
-        if pfp_target not in fluxnet_label_map:
-            msg = " Target ("+pfp_target+") not supported for MDS gap filling"
-            logger.warning(msg)
-            del ds.mds[mds_label]
-        else:
-            ds.mds[mds_label]["target_mds"] = fluxnet_label_map[pfp_target]
-        pfp_drivers = ds.mds[mds_label]["drivers"]
-        for pfp_driver in pfp_drivers:
-            if pfp_driver not in fluxnet_label_map:
-                msg = "Driver ("+pfp_driver+") not supported for MDS gap filling"
-                logger.warning(msg)
-                ds.mds[mds_label]["drivers"].remove(pfp_driver)
-            else:
-                if "drivers_mds" not in ds.mds[mds_label]:
-                    ds.mds[mds_label]["drivers_mds"] = []
-                ds.mds[mds_label]["drivers_mds"].append(fluxnet_label_map[pfp_driver])
-        if len(ds.mds[mds_label]["drivers"]) == 0:
-            del ds.mds[mds_label]
+    ## check that all requested targets and drivers have a mapping to
+    ## a FluxNet label, remove if they don't
+    #fluxnet_label_map = {"Fc":"NEE", "Fe":"LE", "Fh":"H",
+                         #"Fsd":"SW_IN", "Ta":"TA", "VPD":"VPD"}
+    #for mds_label in ds.mds:
+        #ds.mds[mds_label]["mds_label"] = mds_label
+        #pfp_target = ds.mds[mds_label]["target"]
+        #if pfp_target not in fluxnet_label_map:
+            #msg = " Target ("+pfp_target+") not supported for MDS gap filling"
+            #logger.warning(msg)
+            #del ds.mds[mds_label]
+        #else:
+            #ds.mds[mds_label]["target_mds"] = fluxnet_label_map[pfp_target]
+        #pfp_drivers = ds.mds[mds_label]["drivers"]
+        #for pfp_driver in pfp_drivers:
+            #if pfp_driver not in fluxnet_label_map:
+                #msg = "Driver ("+pfp_driver+") not supported for MDS gap filling"
+                #logger.warning(msg)
+                #ds.mds[mds_label]["drivers"].remove(pfp_driver)
+            #else:
+                #if "drivers_mds" not in ds.mds[mds_label]:
+                    #ds.mds[mds_label]["drivers_mds"] = []
+                #ds.mds[mds_label]["drivers_mds"].append(fluxnet_label_map[pfp_driver])
+        #if len(ds.mds[mds_label]["drivers"]) == 0:
+            #del ds.mds[mds_label]
     return
 
-def gfMergeSeries_createdict(cf,ds,series):
+def gfMergeSeries_createdict(cf, ds, l5_info, label):
     """ Creates a dictionary in ds to hold information about the merging of gap filled
         and tower data."""
     merge_prereq_list = ["Fsd","Fsu","Fld","Flu","Ts","Sws"]
     # get the section of the control file containing the series
-    section = pfp_utils.get_cfsection(cf,series=series,mode="quiet")
+    section = pfp_utils.get_cfsection(cf,series=label,mode="quiet")
     # create the merge directory in the data structure
-    if "merge" not in dir(ds): ds.merge = {}
+    if "merge" not in l5_info:
+        l5_info["merge"] = {}
     # check to see if this series is in the "merge first" list
     # series in the "merge first" list get merged first so they can be used with existing tower
     # data to re-calculate Fg, Fn and Fa
     merge_order = "standard"
-    if series in merge_prereq_list: merge_order = "prerequisite"
-    if merge_order not in ds.merge.keys(): ds.merge[merge_order] = {}
+    if label in merge_prereq_list:
+        merge_order = "prerequisite"
+    if merge_order not in l5_info["merge"].keys():
+        l5_info["merge"][merge_order] = {}
     # create the dictionary keys for this series
-    ds.merge[merge_order][series] = {}
+    l5_info["merge"][merge_order][label] = {}
     # output series name
-    ds.merge[merge_order][series]["output"] = series
+    l5_info["merge"][merge_order][label]["output"] = label
     # merge source list
-    src_string = cf[section][series]["MergeSeries"]["Source"]
+    src_string = cf[section][label]["MergeSeries"]["Source"]
     if "," in src_string:
         src_list = src_string.split(",")
     else:
         src_list = [src_string]
-    ds.merge[merge_order][series]["source"] = src_list
+    l5_info["merge"][merge_order][label]["source"] = src_list
     # create an empty series in ds if the output series doesn't exist yet
-    if ds.merge[merge_order][series]["output"] not in ds.series.keys():
-        data,flag,attr = pfp_utils.MakeEmptySeries(ds,ds.merge[merge_order][series]["output"])
-        pfp_utils.CreateSeries(ds,ds.merge[merge_order][series]["output"],data,flag,attr)
+    if label not in ds.series.keys():
+        data, flag, attr = pfp_utils.MakeEmptySeries(ds, label)
+        pfp_utils.CreateSeries(ds, label, data, flag, attr)
 
-def gfSOLO_createdict(cf,ds,series):
-    """ Creates a dictionary in ds to hold information about the SOLO data used
-        to gap fill the tower data."""
-    # get the section of the control file containing the series
-    section = pfp_utils.get_cfsection(cf,series=series,mode="quiet")
-    # return without doing anything if the series isn't in a control file section
-    if len(section)==0:
-        logger.error("GapFillUsingSOLO: Series %s not found in control file, skipping ...", series)
-        return
-    # create the solo directory in the data structure
-    if "solo" not in dir(ds): ds.solo = {}
+def gfSOLO_createdict(cf, ds, l5_info, label):
+    """
+    Purpose:
+     Creates a dictionary in ds to hold information about the SOLO data
+     used to gap fill the tower data.
+    """
+    # create the solo settings directory
+    if "solo" not in l5_info:
+        l5_info["solo"] = {"outputs": {}}
     # name of SOLO output series in ds
-    output_list = cf[section][series]["GapFillUsingSOLO"].keys()
+    outputs = cf["Fluxes"][label]["GapFillUsingSOLO"].keys()
     # loop over the outputs listed in the control file
-    for output in output_list:
+    l5so = l5_info["solo"]["outputs"]
+    for output in outputs:
         # create the dictionary keys for this series
-        ds.solo[output] = {}
+        l5so[output] = {}
         # get the target
-        if "target" in cf[section][series]["GapFillUsingSOLO"][output]:
-            ds.solo[output]["label_tower"] = cf[section][series]["GapFillUsingSOLO"][output]["target"]
+        if "target" in cf["Fluxes"][label]["GapFillUsingSOLO"][output]:
+            l5so[output]["target"] = cf["Fluxes"][label]["GapFillUsingSOLO"][output]["target"]
         else:
-            ds.solo[output]["label_tower"] = series
-        # site name
-        ds.solo[output]["site_name"] = ds.globalattributes["site_name"]
+            l5so[output]["target"] = label
         # list of SOLO settings
-        if "solo_settings" in cf[section][series]["GapFillUsingSOLO"][output]:
-            src_string = cf[section][series]["GapFillUsingSOLO"][output]["solo_settings"]
-            if "," in src_string:
-                src_list = src_string.split(",")
-            else:
-                src_list = [src_string]
-            ds.solo[output]["solo_settings"] = {}
-            ds.solo[output]["solo_settings"]["nodes_target"] = int(src_list[0])
-            ds.solo[output]["solo_settings"]["training"] = int(src_list[1])
-            ds.solo[output]["solo_settings"]["factor"] = int(src_list[2])
-            ds.solo[output]["solo_settings"]["learningrate"] = float(src_list[3])
-            ds.solo[output]["solo_settings"]["iterations"] = int(src_list[4])
+        if "solo_settings" in cf["Fluxes"][label]["GapFillUsingSOLO"][output]:
+            src_string = cf["Fluxes"][label]["GapFillUsingSOLO"][output]["solo_settings"]
+            src_list = src_string.split(",")
+            l5so[output]["solo_settings"] = {}
+            l5so[output]["solo_settings"]["nodes_target"] = int(src_list[0])
+            l5so[output]["solo_settings"]["training"] = int(src_list[1])
+            l5so[output]["solo_settings"]["nda_factor"] = int(src_list[2])
+            l5so[output]["solo_settings"]["learning_rate"] = float(src_list[3])
+            l5so[output]["solo_settings"]["iterations"] = int(src_list[4])
         # list of drivers
-        drivers_string = cf[section][series]["GapFillUsingSOLO"][output]["drivers"]
-        ds.solo[output]["drivers"] = pfp_cfg.cfg_string_to_list(drivers_string)
-        # apply ustar filter
-        opt = pfp_utils.get_keyvaluefromcf(cf,[section,series,"GapFillUsingSOLO",output],
-                                         "turbulence_filter",default="")
-        ds.solo[output]["turbulence_filter"] = opt
-        opt = pfp_utils.get_keyvaluefromcf(cf,[section,series,"GapFillUsingSOLO",output],
-                                         "daynight_filter",default="")
-        ds.solo[output]["daynight_filter"] = opt
+        drivers_string = cf["Fluxes"][label]["GapFillUsingSOLO"][output]["drivers"]
+        l5so[output]["drivers"] = pfp_cfg.cfg_string_to_list(drivers_string)
         # results of best fit for plotting later on
-        ds.solo[output]["results"] = {"startdate":[],"enddate":[],"No. points":[],"r":[],
-                                      "Bias":[],"RMSE":[],"Frac Bias":[],"NMSE":[],
-                                      "Avg (obs)":[],"Avg (SOLO)":[],
-                                      "Var (obs)":[],"Var (SOLO)":[],"Var ratio":[],
-                                      "m_ols":[],"b_ols":[]}
+        l5so[output]["results"] = {"startdate":[],"enddate":[],"No. points":[],"r":[],
+                                   "Bias":[],"RMSE":[],"Frac Bias":[],"NMSE":[],
+                                   "Avg (obs)":[],"Avg (SOLO)":[],
+                                   "Var (obs)":[],"Var (SOLO)":[],"Var ratio":[],
+                                   "m_ols":[],"b_ols":[]}
         # create an empty series in ds if the SOLO output series doesn't exist yet
         if output not in ds.series.keys():
-            data,flag,attr = pfp_utils.MakeEmptySeries(ds,output)
-            pfp_utils.CreateSeries(ds,output,data,flag,attr)
+            nrecs = int(ds.globalattributes["nc_nrecs"])
+            variable = pfp_utils.CreateEmptyVariable(output, nrecs)
+            pfp_utils.CreateVariable(ds, variable)
 
 # functions for GapFillUsingMDS: not implemented yet
 def GapFillFluxUsingMDS(cf, ds, series=""):

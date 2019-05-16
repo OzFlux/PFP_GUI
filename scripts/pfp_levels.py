@@ -353,22 +353,18 @@ def l5qc(main_gui, cf, ds4):
     # re-apply the quality control checks (range, diurnal and rules)
     pfp_ck.do_qcchecks(cf, ds5)
     # now do the flux gap filling methods
-    label_list = pfp_utils.get_label_list_from_cf(cf)
-    for label in label_list:
-        # parse the control file for information on how the user wants to do the gap filling
-        pfp_gf.GapFillParseControlFile(cf, ds5, label, ds_alt)
+    # parse the control file for information on how the user wants to do the gap filling
+    l5_info = pfp_gf.ParseL5ControlFile(cf, ds5)
     # *** start of the section that does the gap filling of the fluxes ***
     # apply the turbulence filter (if requested)
     pfp_ck.ApplyTurbulenceFilter(cf, ds5)
     # fill short gaps using interpolation
     pfp_gf.GapFillUsingInterpolation(cf, ds5)
     # do the gap filling using SOLO
-    pfp_gfSOLO.GapFillUsingSOLO(main_gui, cf, ds4, ds5)
+    pfp_gfSOLO.GapFillUsingSOLO(main_gui, ds5, l5_info)
     if ds5.returncodes["solo"] == "quit": return ds5
     # gap fill using marginal distribution sampling
     pfp_gfMDS.GapFillFluxUsingMDS(cf, ds5)
-    # gap fill using climatology
-    pfp_gf.GapFillFromClimatology(ds5)
     # merge the gap filled drivers into a single series
     pfp_ts.MergeSeriesUsingDict(ds5, merge_order="standard")
     # calculate Monin-Obukhov length

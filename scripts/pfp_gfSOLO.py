@@ -26,7 +26,7 @@ warnings.filterwarnings("ignore",".*GUI is implemented.*")
 logger = logging.getLogger("pfp_log")
 
 # functions for GapFillUsingSOLO
-def GapFillUsingSOLO(main_gui, cf, dsa, dsb):
+def GapFillUsingSOLO(main_gui, dsb, l5_info):
     '''
     This is the "Run SOLO" GUI.
     The SOLO GUI is displayed separately from the main OzFluxQC GUI.
@@ -38,42 +38,35 @@ def GapFillUsingSOLO(main_gui, cf, dsa, dsb):
     '''
     # set the default return code
     dsb.returncodes["solo"] = "normal"
-    if "solo" not in dir(dsb): return
+    if "solo" not in l5_info.keys():
+        return dsb
     # check the SOLO drivers for missing data
-    pfp_gf.CheckDrivers(cf, dsb, gf_type="SOLO")
-    if dsb.returncodes["value"] != 0: return dsb
+    pfp_gf.CheckDrivers(l5_info, dsb, "SOLO")
+    if dsb.returncodes["value"] != 0:
+        return dsb
     # local pointer to the datetime series
     ldt = dsb.series["DateTime"]["Data"]
-    startdate = ldt[0]
-    enddate = ldt[-1]
-    solo_info = {"file_startdate":startdate.strftime("%Y-%m-%d %H:%M"),
-                 "file_enddate":enddate.strftime("%Y-%m-%d %H:%M"),
-                 "startdate":startdate.strftime("%Y-%m-%d %H:%M"),
-                 "enddate":enddate.strftime("%Y-%m-%d %H:%M"),
-                 "called_by": "GapFillingUsingSOLO",
-                 "plot_path": cf["Files"]["plot_path"]}
     # check to see if this is a batch or an interactive run
-    call_mode = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "call_mode", default="interactive")
-    solo_info["call_mode"]= call_mode
-    if call_mode.lower()=="interactive":
-        solo_info["show_plots"] = True
-    if call_mode.lower()=="interactive":
+    call_mode = pfp_utils.get_keyvaluefromcf(l5_info["cf"], ["Options"], "call_mode", default="interactive")
+    # add an info section to the l5_info["solo"] dictionary
+    l5is = l5_info["solo"]
+    l5is["info"] = {"file_startdate": ldt[0].strftime("%Y-%m-%d %H:%M"),
+                    "file_enddate": ldt[-1].strftime("%Y-%m-%d %H:%M"),
+                    "startdate": ldt[0].strftime("%Y-%m-%d %H:%M"),
+                    "enddate": ldt[-1].strftime("%Y-%m-%d %H:%M"),
+                    "called_by": "GapFillUsingSOLO",
+                    "plot_path": l5_info["cf"]["Files"]["plot_path"],
+                    "call_mode": call_mode}
+    # add a gui section to the l5_info["solo"] dictionary
+    l5si["gui"] = {}
+    if call_mode.lower() == "interactive":
+        l5si["gui"]["show_plots"] = True
         # put up a plot of the data coverage at L4
-        gfSOLO_plotcoveragelines(dsb, solo_info)
+        gfSOLO_plotcoveragelines(dsb, l5_info)
         # call the GapFillUsingSOLO GUI
-        gfSOLO_gui(main_gui, dsa, dsb, solo_info)
+        gfSOLO_gui(main_gui, dsb, l5_info)
     else:
-        if "GUI" in cf:
-            if "SOLO" in cf["GUI"]:
-                gfSOLO_run_nogui(cf, dsa, dsb, solo_info)
-            else:
-                logger.warning(" No GUI sub-section found in Options section of control file")
-                gfSOLO_plotcoveragelines(dsb, solo_info)
-                gfSOLO_gui(main_gui, dsa, dsb, solo_info)
-        else:
-            logger.warning(" No GUI sub-section found in Options section of control file")
-            gfSOLO_plotcoveragelines(dsb, solo_info)
-            gfSOLO_gui(main_gui, dsa, dsb, solo_info)
+        gfSOLO_run_nogui(dsb, l5_info)
 
 def  gfSOLO_gui(main_gui, dsa, dsb, solo_info):
     """ Display the SOLO GUI and wait for the user to finish."""
