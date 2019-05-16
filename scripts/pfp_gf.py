@@ -29,6 +29,8 @@ def CheckDrivers(l5_info, dsb, gf_type):
     Author: PRI
     Date: May 2019
     """
+    msg = " Checking drivers for missing data"
+    logger.info(msg)
     ts = int(dsb.globalattributes["time_step"])
     ldt = pfp_utils.GetVariable(dsb, "DateTime")
     gf_drivers = []

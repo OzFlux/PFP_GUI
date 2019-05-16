@@ -5566,19 +5566,19 @@ class solo_gui(QtGui.QDialog):
         self.QuitButton.clicked.connect(self.call_gui_quit)
 
     def call_gui_run(self):
-        if self.solo_info["called_by"] == "GapFillingUsingSOLO":
+        if self.l5_info["solo"]["info"]["called_by"] == "GapFillUsingSOLO":
             pfp_gfSOLO.gfSOLO_run_gui(self)
-        elif self.solo_info["called_by"] == "ERUsingSOLO":
+        elif self.l5_info["solo"]["info"]["called_by"] == "ERUsingSOLO":
             pfp_rpNN.rpSOLO_run_gui(self)
 
     def call_gui_quit(self):
-        if self.solo_info["called_by"] == "GapFillingUsingSOLO":
+        if self.l5_info["solo"]["info"]["called_by"] == "GapFillUsingSOLO":
             pfp_gfSOLO.gfSOLO_quit(self)
-        elif self.solo_info["called_by"] == "ERUsingSOLO":
+        elif self.l5_info["solo"]["info"]["called_by"] == "ERUsingSOLO":
             pfp_rpNN.rpSOLO_quit(self)
 
     def call_gui_done(self):
-        if self.solo_info["called_by"] == "GapFillingUsingSOLO":
+        if self.l5_info["solo"]["info"]["called_by"] == "GapFillUsingSOLO":
             pfp_gfSOLO.gfSOLO_done(self)
-        elif self.solo_info["called_by"] == "ERUsingSOLO":
+        elif self.l5_info["solo"]["info"]["called_by"] == "ERUsingSOLO":
             pfp_rpNN.rpSOLO_done(self)

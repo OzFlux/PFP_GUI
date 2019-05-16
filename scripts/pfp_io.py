@@ -2451,47 +2451,49 @@ def xl_write_AlternateStats(ds):
             xlCol = xlCol + 1
     xlfile.save(xl_filename)
 
-def xl_write_SOLOStats(ds):
-    if "solo" not in dir(ds): return
+def xl_write_SOLOStats(ds, l5_info):
+    if "solo" not in l5_info.keys():
+        return
     # get the output file name
-    out_filename = get_outfilenamefromcf(ds.cf)
+    out_filename = get_outfilenamefromcf(l5_info["cf"])
     # get the Excel file name
-    xl_filename = out_filename.replace('.nc','_SOLOStats.xls')
+    xl_filename = out_filename.replace('.nc', '_SOLOStats.xls')
     xl_name = os.path.split(xl_filename)
-    logger.info(' Writing SOLO statistics to '+xl_name[1])
+    logger.info(' Writing SOLO statistics to ' + xl_name[1])
     # open the Excel file
     xlfile = xlwt.Workbook()
     # list of outputs to write to the Excel file
-    date_list = ["startdate","enddate"]
-    output_list = ["n","r_max","bias","rmse","var_obs","var_mod","m_ols","b_ols"]
+    date_list = ["startdate", "enddate"]
     # loop over the series that have been gap filled using ACCESS data
     d_xf = xlwt.easyxf(num_format_str='dd/mm/yyyy hh:mm')
-    label_list = ds.solo.keys()
-    label_list.sort()
-    for label in label_list:
+    outputs = l5_info["solo"]["outputs"].keys()
+    outputs.sort()
+    for output in outputs:
         # get the list of values to output with the start and end dates removed
-        output_list = ds.solo[label]["results"].keys()
+        stats = l5_info["solo"]["outputs"][output]["results"].keys()
         for item in date_list:
-            if item in output_list: output_list.remove(item)
-        # add a sheet with the series label
-        xlResultsSheet = xlfile.add_sheet(label)
+            if item in outputs:
+                outputs.remove(item)
+        # add a sheet with the series output
+        xlResultsSheet = xlfile.add_sheet(output)
         xlRow = 10
         xlCol = 0
         for dt in date_list:
-            xlResultsSheet.write(xlRow,xlCol,dt)
-            for item in ds.solo[label]["results"][dt]:
+            xlResultsSheet.write(xlRow, xlCol, dt)
+            for item in l5_info["solo"]["outputs"][output]["results"][dt]:
                 xlRow = xlRow + 1
-                xlResultsSheet.write(xlRow,xlCol,item,d_xf)
+                xlResultsSheet.write(xlRow, xlCol, item, d_xf)
             xlRow = 10
             xlCol = xlCol + 1
-        for output in output_list:
-            xlResultsSheet.write(xlRow,xlCol,output)
+        for stat in stats:
+            xlResultsSheet.write(xlRow, xlCol, stat)
             # convert masked array to ndarray
-            output_array = numpy.ma.filled(ds.solo[label]["results"][output],float(c.missing_value))
+            output_array = numpy.ma.filled(l5_info["solo"]["outputs"][output]["results"][stat],
+                                           float(c.missing_value))
             for item in output_array:
                 xlRow = xlRow + 1
                 # xlwt under Anaconda seems to only allow float64!
-                xlResultsSheet.write(xlRow,xlCol,numpy.float64(item))
+                xlResultsSheet.write(xlRow, xlCol, numpy.float64(item))
             xlRow = 10
             xlCol = xlCol + 1
     xlfile.save(xl_filename)
