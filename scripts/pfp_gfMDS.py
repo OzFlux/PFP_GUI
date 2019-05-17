@@ -16,7 +16,7 @@ import pfp_utils
 
 logger = logging.getLogger("pfp_log")
 
-def GapFillFluxUsingMDS(cf, ds):
+def GapFillUsingMDS(ds, l5_info):
     """
     Purpose:
      Run the FluxNet C code to implement the MDS gap filling method.
@@ -25,12 +25,15 @@ def GapFillFluxUsingMDS(cf, ds):
     Author: PRI
     Date: May 2018
     """
-    if "mds" not in dir(ds):
+    if "mds" not in l5_info.keys():
         return
+    # local pointer to control file
+    cf = l5_info["cf"]
+    l5im = l5_info["mds"]
     # get the file name
     file_path = cf["Files"]["file_path"]
     file_name = cf["Files"]["in_filename"]
-    nc_full_path = os.path.join(file_path,file_name)
+    nc_full_path = os.path.join(file_path, file_name)
     nc_name = os.path.split(nc_full_path)[1]
     # get some useful metadata
     ts = int(ds.globalattributes["nc_nrecs"])
@@ -60,46 +63,42 @@ def GapFillFluxUsingMDS(cf, ds):
     # open a log file for the MDS C code output
     log_file_path = os.path.join("mds", "log", "mds.log")
     mdslogfile = open(log_file_path, "wb")
-    for fig_num, mds_label in enumerate(ds.mds):
-        logger.info(" Doing MDS gap filling for %s", ds.mds[mds_label]["target"])
-        ds.mds[mds_label]["out_base_path"] = out_base_path
-        ds.mds[mds_label]["time_step"] = ts
+    for fig_num, mds_label in enumerate(l5im["outputs"].keys()):
+        logger.info(" Doing MDS gap filling for %s", l5im["outputs"][mds_label]["target"])
+        l5im["outputs"][mds_label]["out_base_path"] = out_base_path
+        l5im["outputs"][mds_label]["time_step"] = ts
         # make the output file name
         out_name = site_name+"_"+level+"_"+mds_label+"_mds.csv"
         out_file_path = os.path.join(out_base_path, out_name)
         # first, we write the yearly CSV input files
-        ds.mds[mds_label]["in_file_paths"] = []
+        l5im["outputs"][mds_label]["in_file_paths"] = []
         for current_year in range(first_year, last_year+1):
             in_name = nc_name.replace(".nc","_"+str(current_year)+"_MDS.csv")
             #in_name = str(current_year)+".csv"
             in_file_path = os.path.join(in_base_path, in_name)
-            data, header, fmt = gfMDS_make_data_array(ds, current_year, ds.mds[mds_label])
+            data, header, fmt = gfMDS_make_data_array(ds, current_year, l5im["outputs"][mds_label])
             numpy.savetxt(in_file_path, data, header=header, delimiter=",", comments="", fmt=fmt)
-            ds.mds[mds_label]["in_file_paths"].append(in_file_path)
+            l5im["outputs"][mds_label]["in_file_paths"].append(in_file_path)
         # then we construct the MDS C code command options list
-        cmd = gfMDS_make_cmd_string(ds.mds[mds_label])
+        cmd = gfMDS_make_cmd_string(l5im["outputs"][mds_label])
         # then we spawn a subprocess for the MDS C code
         subprocess.call(cmd, stdout=mdslogfile)
         mds_out_file = os.path.join("mds", "output", "mds.csv")
         os.rename(mds_out_file, out_file_path)
-        # and put the MDS results into the data structure
-        include_qc = False
-        if ds.mds[mds_label]["include_qc"] == "Yes":
-            include_qc = True
-        gfMDS_get_mds_output(ds, mds_label, out_file_path, include_qc=include_qc)
+        gfMDS_get_mds_output(ds, mds_label, out_file_path, l5_info)
         # plot the MDS results
-        target = ds.mds[mds_label]["target"]
-        drivers = ds.mds[mds_label]["drivers"]
+        target = l5im["outputs"][mds_label]["target"]
+        drivers = l5im["outputs"][mds_label]["drivers"]
         title = site_name+' : Comparison of tower and MDS data for '+target
         pd = gfMDS_initplot(site_name=site_name, label=target, fig_num=fig_num,
                             title=title, nDrivers=len(drivers), show_plots=True)
-        gfMDS_plot(cf, pd, ds, mds_label)
+        gfMDS_plot(pd, ds, mds_label, l5_info)
 
     # close the log file
     mdslogfile.close()
     return
 
-def gfMDS_get_mds_output(ds, mds_label, out_file_path, include_qc=False):
+def gfMDS_get_mds_output(ds, mds_label, out_file_path, l5_info):
     """
     Purpose:
      Reads the CSV file output by the MDS C code and puts the contents into
@@ -108,9 +107,6 @@ def gfMDS_get_mds_output(ds, mds_label, out_file_path, include_qc=False):
      gfMDS_get_mds_output(ds, out_file_path, first_date, last_date, include_qc=False)
      where ds is a data structure
            out_file_path is the full path to the MDS output file
-           include_qc controls treatment of the MDS QC output
-                      True = include QC output
-                      False = do not include QC output
     Side effects:
      New series are created in the data structure to hold the MDS data.
     Author: PRI
@@ -126,20 +122,14 @@ def gfMDS_get_mds_output(ds, mds_label, out_file_path, include_qc=False):
     # get a list of the names in the data array
     mds_output_names = list(data_mds.dtype.names)
     # strip out the timestamp and the original data
-    for item in ["TIMESTAMP", ds.mds[mds_label]["target_mds"]]:
+    for item in ["TIMESTAMP", l5_info["mds"]["outputs"][mds_label]["target_mds"]]:
         if item in mds_output_names:
             mds_output_names.remove(item)
-    # check to see if the QC outputs have been requested
-    if not include_qc:
-        # if not, then remove them from the list of requested outputs
-        for item in ["HAT","SAMPLE","STDDEV","METHOD","QC_HAT"]:
-            if item in mds_output_names:
-                mds_output_names.remove(item)
     # and now loop over the MDS output series
     for mds_output_name in mds_output_names:
         if mds_output_name == "FILLED":
             # get the gap filled target and write it to the data structure
-            var_in = pfp_utils.GetVariable(ds, ds.mds[mds_label]["target"])
+            var_in = pfp_utils.GetVariable(ds, l5_info["mds"]["outputs"][mds_label]["target"])
             data = data_mds[mds_output_name][si_mds:ei_mds+1]
             idx = numpy.where((numpy.ma.getmaskarray(var_in["Data"]) == True) &
                               (abs(data - c.missing_value) > c.eps))[0]
@@ -151,18 +141,18 @@ def gfMDS_get_mds_output(ds, mds_label, out_file_path, include_qc=False):
             pfp_utils.CreateVariable(ds, var_out)
         elif mds_output_name == "TIMEWINDOW":
             # make the series name for the data structure
-            mds_qc_label = "MDS"+"_"+ds.mds[mds_label]["target"]+"_"+mds_output_name
+            mds_qc_label = "MDS"+"_"+l5_info["mds"]["outputs"][mds_label]["target"]+"_"+mds_output_name
             data = data_mds[mds_output_name][si_mds:ei_mds+1]
             flag = numpy.zeros(len(data))
-            attr = {"long_name":"TIMEWINDOW from MDS gap filling for "+ds.mds[mds_label]["target"]}
+            attr = {"long_name":"TIMEWINDOW from MDS gap filling for "+l5_info["mds"]["outputs"][mds_label]["target"]}
             var_out = {"Label":mds_qc_label, "Data":data, "Flag":flag, "Attr":attr}
             pfp_utils.CreateVariable(ds, var_out)
         else:
             # make the series name for the data structure
-            mds_qc_label = "MDS"+"_"+ds.mds[mds_label]["target"]+"_"+mds_output_name
+            mds_qc_label = "MDS"+"_"+l5_info["mds"]["outputs"][mds_label]["target"]+"_"+mds_output_name
             data = data_mds[mds_output_name][si_mds:ei_mds+1]
             flag = numpy.zeros(len(data))
-            attr = {"long_name":"QC field from MDS gap filling for "+ds.mds[mds_label]["target"]}
+            attr = {"long_name":"QC field from MDS gap filling for "+l5_info["mds"]["outputs"][mds_label]["target"]}
             var_out = {"Label":mds_qc_label, "Data":data, "Flag":flag, "Attr":attr}
             pfp_utils.CreateVariable(ds, var_out)
     return
@@ -262,10 +252,10 @@ def gfMDS_make_data_array(ds, current_year, info):
     data[:,0] = numpy.array([int(xdt.strftime("%Y%m%d%H%M")) for xdt in cdt])
     return data, header, fmt
 
-def gfMDS_plot(cf, pd, ds, mds_label):
+def gfMDS_plot(pd, ds, mds_label, l5_info):
     ts = int(ds.globalattributes["time_step"])
-    drivers = ds.mds[mds_label]["drivers"]
-    target = ds.mds[mds_label]["target"]
+    drivers = l5_info["mds"]["outputs"][mds_label]["drivers"]
+    target = l5_info["mds"]["outputs"][mds_label]["target"]
     Hdh = pfp_utils.GetVariable(ds, "Hdh")
     obs = pfp_utils.GetVariable(ds, target)
     mds = pfp_utils.GetVariable(ds, mds_label)
@@ -354,8 +344,8 @@ def gfMDS_plot(cf, pd, ds, mds_label):
     # save a hard copy
     sdt = obs["DateTime"][0].strftime("%Y%m%d")
     edt = obs["DateTime"][-1].strftime("%Y%m%d")
-    if "plot_path" in cf["Files"]:
-        plot_path = cf["Files"]["plot_path"] + "L5/"
+    if "plot_path" in l5_info["cf"]["Files"]:
+        plot_path = l5_info["cf"]["Files"]["plot_path"] + "L5/"
     else:
         plot_path = "plots/L5"
     if not os.path.exists(plot_path):

@@ -126,18 +126,18 @@ def gfSOLO_autocomplete(dsb, l5_info):
             ei = min([len(ldt)-1, ei_gap])
             l5s["info"]["startdate"] = ldt[si].strftime("%Y-%m-%d %H:%M")
             l5s["info"]["enddate"] = ldt[ei].strftime("%Y-%m-%d %H:%M")
-            gfSOLO_main(dsb, l5_info, output_list=[output])
+            gfSOLO_main(dsb, l5_info, outputs=[output])
             gfSOLO_plotcoveragelines(dsb, l5_info)
 
 def gfSOLO_done(solo_gui):
     ds = solo_gui.dsb
-    solo_info = solo_gui.solo_info
+    l5_info = solo_gui.l5_info
     # plot the summary statistics if gap filling was done manually
-    if solo_info["peropt"] == 1:
+    if l5_info["solo"]["gui"]["period_option"] == 1:
         # write Excel spreadsheet with fit statistics
         pfp_io.xl_write_SOLOStats(ds)
         # plot the summary statistics
-        gfSOLO_plotsummary(ds, solo_info)
+        #gfSOLO_plotsummary(ds, solo_info)
     # destroy the SOLO GUI
     solo_gui.close()
     # remove the solo dictionary from the data structure

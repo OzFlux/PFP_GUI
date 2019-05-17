@@ -2479,20 +2479,11 @@ def MassmanStandard(cf, ds, Ta_in='Ta', Ah_in='Ah', ps_in='ps', u_in="U_SONIC_Av
     # *** Massman_2ndpass ends here ***
     return
 
-def MergeSeriesUsingDict(ds, merge_order=""):
+def MergeSeriesUsingDict(ds, merge, merge_order="standard"):
     """ Merge series as defined in the ds.merge dictionary."""
-    # check that ds has a "merge" attribute
-    if "merge" not in dir(ds):
-        msg = " MergeSeriesUsingDict: No merge dictionary in ds"
-        logger.warning(msg)
-        return
-    if merge_order not in ds.merge.keys():
-        msg = " MergeSeriesUsingDict: merge_order ("+merge_order+") not found in merge dictionary"
-        logger.info(msg)
-        return
     # loop over the entries in ds.merge
-    for target in ds.merge[merge_order].keys():
-        srclist = ds.merge[merge_order][target]["source"]
+    for target in merge[merge_order].keys():
+        srclist = merge[merge_order][target]["source"]
         logger.info(" Merging "+str(srclist)+"==>"+target)
         if srclist[0] not in ds.series.keys():
             logger.error("  MergeSeries: primary input series "+srclist[0]+" not found")
@@ -2520,7 +2511,7 @@ def MergeSeriesUsingDict(ds, merge_order=""):
                 logger.error(" MergeSeries: secondary input series "+label+" not found")
         attr["long_name"] = attr["long_name"]+", merged from " + SeriesNameString
         pfp_utils.CreateSeries(ds, target, data, flag1, attr)
-    del ds.merge[merge_order]
+    return
 
 def MergeHumidities(cf,ds,convert_units=False):
     if "Ah" not in cf["Variables"] and "RH" not in cf["Variables"] and "q" not in cf["Variables"]:

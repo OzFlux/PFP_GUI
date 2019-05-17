@@ -364,9 +364,9 @@ def l5qc(main_gui, cf, ds4):
     pfp_gfSOLO.GapFillUsingSOLO(main_gui, ds5, l5_info)
     if ds5.returncodes["solo"] == "quit": return ds5
     # gap fill using marginal distribution sampling
-    pfp_gfMDS.GapFillFluxUsingMDS(cf, ds5)
+    pfp_gfMDS.GapFillUsingMDS(ds5, l5_info)
     # merge the gap filled drivers into a single series
-    pfp_ts.MergeSeriesUsingDict(ds5, merge_order="standard")
+    pfp_ts.MergeSeriesUsingDict(ds5, l5_info["merge"], merge_order="standard")
     # calculate Monin-Obukhov length
     pfp_ts.CalculateMoninObukhovLength(ds5)
     # write the percentage of good data as a variable attribute

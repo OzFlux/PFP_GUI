@@ -2485,6 +2485,8 @@ def xl_write_SOLOStats(ds, l5_info):
                 xlResultsSheet.write(xlRow, xlCol, item, d_xf)
             xlRow = 10
             xlCol = xlCol + 1
+            # remove startdate and enddate from the list of outputs
+            stats.remove(dt)
         for stat in stats:
             xlResultsSheet.write(xlRow, xlCol, stat)
             # convert masked array to ndarray
