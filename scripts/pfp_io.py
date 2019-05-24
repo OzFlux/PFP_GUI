@@ -2407,25 +2407,25 @@ def xl_check_cf_section(cf, label):
                 result = False
     return result
 
-def xl_write_AlternateStats(ds):
-    if "alternate" not in dir(ds): return
+def xl_write_AlternateStats(ds, l4_info):
+    l4a = l4_info["alternate"]
+    if "alternate" not in l4_info: return
     # get the output file name
-    out_filename = get_outfilenamefromcf(ds.cf)
+    out_filename = get_outfilenamefromcf(l4_info["cf"])
     # get the Excel file name
-    xl_filename = out_filename.replace('.nc','_AlternateStats.xls')
+    xl_filename = out_filename.replace('.nc', '_AlternateStats.xls')
     file_name = os.path.split(xl_filename)
-    logger.info(' Writing alternate fit statistics to '+file_name[1])
+    logger.info(' Writing alternate fit statistics to ' + file_name[1])
     # open the Excel file
     xlfile = xlwt.Workbook()
     # list of outputs to write to the Excel file
-    date_list = ["startdate","enddate"]
+    date_list = ["startdate", "enddate"]
     # loop over the series that have been gap filled using alternate data
     d_xf = xlwt.easyxf(num_format_str='dd/mm/yyyy hh:mm')
-    label_list = ds.alternate.keys()
-    label_list.sort()
+    label_list = sorted(l4a["outputs"].keys())
     for label in label_list:
         # get the list of values to output with the start and end dates removed
-        output_list = ds.alternate[label]["results"].keys()
+        output_list = l4a["outputs"][label]["results"].keys()
         for item in date_list:
             if item in output_list: output_list.remove(item)
         # add a sheet with the series label
@@ -2433,16 +2433,16 @@ def xl_write_AlternateStats(ds):
         xlRow = 9
         xlCol = 0
         for dt in date_list:
-            xlResultsSheet.write(xlRow,xlCol,dt)
-            for item in ds.alternate[label]["results"][dt]:
+            xlResultsSheet.write(xlRow, xlCol, dt)
+            for item in l4a["outputs"][label]["results"][dt]:
                 xlRow = xlRow + 1
-                xlResultsSheet.write(xlRow,xlCol,item,d_xf)
+                xlResultsSheet.write(xlRow, xlCol, item, d_xf)
             xlRow = 9
             xlCol = xlCol + 1
         for output in output_list:
             xlResultsSheet.write(xlRow, xlCol, output)
             # convert masked array to ndarray
-            output_array = numpy.ma.filled(ds.alternate[label]["results"][output], float(c.missing_value))
+            output_array = numpy.ma.filled(l4a["outputs"][label]["results"][output], float(c.missing_value))
             for item in output_array:
                 xlRow = xlRow + 1
                 # xlwt under Anaconda seems to only allow float64!

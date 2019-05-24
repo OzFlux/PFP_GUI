@@ -368,11 +368,10 @@ def ERUsingLloydTaylor(cf, ds, info):
     Author: IMcH, PRI
     Date: October 2015
     """
-    if "rpLT" not in info["er"]: return
+    if "lloydtaylor" not in info["er"]: return
     logger.info("Estimating ER using Lloyd-Taylor")
-    ds.returncodes["solo"] = "normal"
     long_name = "Ecosystem respiration modelled by Lloyd-Taylor"
-    ER_attr = pfp_utils.MakeAttributeDictionary(long_name=long_name,units="umol/m2/s")
+    ER_attr = pfp_utils.MakeAttributeDictionary(long_name=long_name, units="umol/m2/s")
     ts = int(ds.globalattributes["time_step"])
     site_name = ds.globalattributes["site_name"]
     ldt = ds.series["DateTime"]["Data"]
@@ -380,39 +379,42 @@ def ERUsingLloydTaylor(cf, ds, info):
     enddate = ldt[-1]
     nperhr = int(float(60)/ts+0.5)
     nperday = int(float(24)*nperhr+0.5)
-    LT_info = {"file_startdate":startdate.strftime("%Y-%m-%d %H:%M"),
-               "file_enddate":enddate.strftime("%Y-%m-%d %H:%M"),
-               "plot_path":cf["Files"]["plot_path"],
-               "show_plots":False,"time_step":ts,"nperday":nperday,
-               "er":info["er"]["rpLT"]}
-    call_mode = pfp_utils.get_keyvaluefromcf(cf,["Options"],"call_mode",default="interactive")
-    LT_info["call_mode"]= call_mode
-    if call_mode.lower()=="interactive": LT_info["show_plots"] = True
+    iel = info["er"]["lloydtaylor"]
+    iel["info"] = {"file_startdate": startdate.strftime("%Y-%m-%d %H:%M"),
+                   "file_enddate": enddate.strftime("%Y-%m-%d %H:%M"),
+                   "plot_path": cf["Files"]["plot_path"],
+                   "show_plots": False,
+                   "time_step": ts,
+                   "nperday": nperday}
+    call_mode = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "call_mode", default="interactive")
+    iel["info"]["call_mode"]= call_mode
+    if call_mode.lower()=="interactive":
+        iel["info"]["show_plots"] = True
     # set the figure number
-    if len(plt.get_fignums())==0:
+    if len(plt.get_fignums()) = =0:
         fig_num = 0
     else:
         fig_num = plt.get_fignums()[-1]
     # open the Excel file
     nc_name = pfp_io.get_outfilenamefromcf(cf)
-    xl_name = nc_name.replace(".nc","_L&T.xls")
+    xl_name = nc_name.replace(".nc", "_L&T.xls")
     xl_file = pfp_io.xl_open_write(xl_name)
-    if xl_file=='':
-        logger.error("ERUsingLloydTaylor: error opening Excel file "+xl_name)
+    if xl_file == '':
+        logger.error("ERUsingLloydTaylor: error opening Excel file " + xl_name)
         return
     # loop over the series
-    series_list = LT_info["er"].keys()
-    for series in series_list:
+    outputs = iel["outputs"].keys()
+    for output in outputs:
         # create dictionaries for the results
         E0_results = {"variables":{}}
         E0_raw_results = {"variables":{}}
         rb_results = {"variables":{}}
         # add a sheet for this series
-        xl_sheet = xl_file.add_sheet(series)
+        xl_sheet = xl_file.add_sheet(output)
         # get a local copy of the config dictionary
-        configs_dict = LT_info["er"][series]["configs_dict"]
+        configs_dict = iel["outputs"][output]["configs_dict"]
         configs_dict["measurement_interval"] = float(ts)/60.0
-        data_dict = pfp_rpLT.get_data_dict(ds,configs_dict)
+        data_dict = pfp_rpLT.get_data_dict(ds, configs_dict)
         # *** start of code taken from Ian McHugh's Partition_NEE.main ***
         # If user wants individual window plots, check whether output directories
         # are present, and create if not
@@ -551,18 +553,18 @@ def ERUsingLloydTaylor(cf, ds, info):
         ER_LT_flag = numpy.empty(len(ER_LT),dtype=numpy.int32)
         ER_LT_flag.fill(30)
         #ER_LT = pfp_rpLT.ER_LloydTaylor(T,E0,rb)
-        target = str(LT_info["er"][series]["target"])
+        target = str(iel["outputs"][output]["target"])
         #drivers = str(configs_dict["drivers"])
-        drivers = LT_info["er"][series]["drivers"]
+        drivers = iel["outputs"][output]["drivers"]
         output = str(configs_dict["output_label"])
         ER_attr["comment1"] = "Drivers were "+str(drivers)
         pfp_utils.CreateSeries(ds,output,ER_LT,ER_LT_flag,ER_attr)
         # plot the respiration estimated using Lloyd-Taylor
         fig_num = fig_num + 1
-        title = site_name+" : "+series+" estimated using Lloyd-Taylor"
+        title = site_name+" : "+output+" estimated using Lloyd-Taylor"
         pd = pfp_rpLT.rpLT_initplot(site_name=site_name,label=target,fig_num=fig_num,title=title,
                              nDrivers=len(drivers),startdate=str(startdate),enddate=str(enddate))
-        pfp_rpLT.rpLT_plot(pd, ds, series, drivers, target, output, LT_info)
+        pfp_rpLT.rpLT_plot(pd, ds, series, drivers, target, output, info)
     # close the Excel workbook
     xl_file.save(xl_name)
 
@@ -588,12 +590,15 @@ def GetERFromFc(cf, ds, info):
     """
     ldt = ds.series["DateTime"]["Data"]
     ts = int(ds.globalattributes["time_step"])
-    er_type_list = info["er"].keys()
+    er_type_list = []
+    for item in ["solo", "lloydtaylor", "lasslop"]:
+        if item in info["er"]:
+            er_type_list.append(item)
     for er_type in er_type_list:
-        label_list = info["er"][er_type].keys()
+        label_list = info["er"][er_type]["outputs"].keys()
         for label in label_list:
-            source = info["er"][er_type][label]["source"]
-            target = info["er"][er_type][label]["target"]
+            source = info["er"][er_type]["outputs"][label]["source"]
+            target = info["er"][er_type]["outputs"][label]["target"]
             ER = {"Label":target}
             Fc = pfp_utils.GetVariable(ds, source)
             # get a copy of the Fc flag and make the attribute dictionary
@@ -1679,7 +1684,7 @@ def L6_summary_cumulative(ds, series_dict):
             cdyr["variables"][item]["attr"]["units"] = cdyr["variables"][item]["attr"]["units"]+"/year"
     return cumulative_dict
 
-def ParseL6ControlFile(cf,ds):
+def ParseL6ControlFile(cf, ds):
     """
     Purpose:
      Parse the L6 control file.
@@ -1689,38 +1694,29 @@ def ParseL6ControlFile(cf,ds):
     Date: Back in the day
     """
     # start with the repiration section
-    if "Respiration" in cf.keys() and "ER" not in cf.keys(): cf["ER"] = cf["Respiration"]
-    l6_info = {"er":{}}
+    if "Respiration" in cf.keys() and "ER" not in cf.keys():
+        cf["ER"] = cf.pop("Respiration")
+    l6_info = {}
+    l6_info["cf"] = copy.deepcopy(cf)
     if "ER" in cf.keys():
-        for ThisOne in cf["ER"].keys():
-            if "ERUsingSOLO" in cf["ER"][ThisOne].keys():
-                # create the SOLO dictionary in ds
-                if "solo" not in l6_info["er"]:
-                    l6_info["er"]["solo"] = {}
-                l6_info["er"]["solo"][ThisOne] = pfp_rpNN.rpSOLO_createdict(cf,ds,ThisOne)
-            if "ERUsingFFNET" in cf["ER"][ThisOne].keys():
-                # create the FFNET dictionary in ds
-                if "ffnet" not in l6_info["er"]:
-                    l6_info["er"]["ffnet"] = {}
-                l6_info["er"]["ffnet"][ThisOne] = pfp_rpNN.rpFFNET_createdict(cf,ds,ThisOne)
-            if "ERUsingLloydTaylor" in cf["ER"][ThisOne].keys():
-                # create the Lloyd-Taylor dictionary in ds
-                if "rpLT" not in l6_info["er"]:
-                    l6_info["er"]["rpLT"] = {}
-                l6_info["er"]["rpLT"][ThisOne] = pfp_rpLT.rpLT_createdict(cf,ds,ThisOne)
-            if "ERUsingLasslop" in cf["ER"][ThisOne].keys():
-                # create the Lasslop dictionary in ds
-                if "rpLL" not in l6_info["er"]:
-                    l6_info["er"]["rpLL"] = {}
-                l6_info["er"]["rpLL"][ThisOne] = pfp_rpLL.rpLL_createdict(cf,ds,ThisOne)
+        l6_info["er"] = {}
+        for output in cf["ER"].keys():
+            if "ERUsingSOLO" in cf["ER"][output].keys():
+                pfp_rpNN.rpSOLO_createdict(cf, ds, l6_info["er"], output)
+            #if "ERUsingFFNET" in cf["ER"][output].keys():
+                #pfp_rpNN.rpFFNET_createdict(cf, ds, l6_info["er"], output)
+            if "ERUsingLloydTaylor" in cf["ER"][output].keys():
+                pfp_rpLT.rpLT_createdict(cf, ds, l6_info["er"], output)
+            if "ERUsingLasslop" in cf["ER"][output].keys():
+                pfp_rpLL.rpLL_createdict(cf, ds, l6_info["er"], output)
     if "NEE" in cf.keys():
-        for ThisOne in cf["NEE"].keys():
-            if "nee" not in l6_info: l6_info["nee"] = {}
-            l6_info["nee"][ThisOne] = rpNEE_createdict(cf,ds,ThisOne)
+        l6_info["nee"] = {}
+        for output in cf["NEE"].keys():
+            rpNEE_createdict(cf, ds, l6_info["nee"], output)
     if "GPP" in cf.keys():
-        for ThisOne in cf["GPP"].keys():
-            if "gpp" not in l6_info: l6_info["gpp"] = {}
-            l6_info["gpp"][ThisOne] = rpGPP_createdict(cf,ds,ThisOne)
+        l6_info["gpp"] = {}
+        for output in cf["GPP"].keys():
+            rpGPP_createdict(cf, ds, l6_info["gpp"], output)
     return l6_info
 
 def PartitionNEE(cf, ds, info):
@@ -1780,43 +1776,44 @@ def PartitionNEE(cf, ds, info):
         attr["units"] = NEE_attr["units"]
         attr["long_name"] = "Gross Primary Productivity calculated as -1*"+NEE_label+"+"+ER_label
 
-def rpGPP_createdict(cf,ds,series):
+def rpGPP_createdict(cf, ds, info, label):
     """ Creates a dictionary in ds to hold information about calculating GPP."""
     # create the dictionary keys for this series
-    gpp_info = {}
+    info[label] = {}
     # output series name
-    gpp_info["output"] = series
-    # CO2 flux
-    if "NEE" in cf["GPP"][series].keys():
-        gpp_info["NEE"] = cf["GPP"][series]["NEE"]
+    info[label]["output"] = label
+    # net ecosystem exchange
+    opt = pfp_utils.get_keyvaluefromcf(cf, ["GPP", label], "NEE", default="NEE_LT")
+    info[label]["NEE"] = opt
     # ecosystem respiration
-    if "ER" in cf["GPP"][series].keys():
-        gpp_info["ER"] = cf["GPP"][series]["ER"]
+    opt = pfp_utils.get_keyvaluefromcf(cf, ["GPP", label], "ER", default="ER_LT")
+    info[label]["ER"] = opt
     # create an empty series in ds if the output series doesn't exist yet
-    if gpp_info["output"] not in ds.series.keys():
-        data,flag,attr = pfp_utils.MakeEmptySeries(ds,gpp_info["output"])
-        pfp_utils.CreateSeries(ds,gpp_info["output"],data,flag,attr)
-    return gpp_info
+    if info[label]["output"] not in ds.series.keys():
+        data, flag, attr = pfp_utils.MakeEmptySeries(ds, info[label]["output"])
+        pfp_utils.CreateSeries(ds, info[label]["output"], data, flag, attr)
+    return
 
-def rpNEE_createdict(cf, ds, series):
+def rpNEE_createdict(cf, ds, info, label):
     """ Creates a dictionary in ds to hold information about calculating NEE."""
     # create the dictionary keys for this series
-    nee_info = {}
+    info[label] = {}
     # output series name
-    nee_info["output"] = series
+    info[label]["output"] = label
     # CO2 flux
-    if "Fc" in cf["NEE"][series].keys():
-        nee_info["Fc"] = cf["NEE"][series]["Fc"]
+    opt = pfp_utils.get_keyvaluefromcf(cf, ["NEE", label], "Fc", default="Fc")
+    info[label]["Fc"] = opt
     # ecosystem respiration
-    if "ER" in cf["NEE"][series].keys():
-        nee_info["ER"] = cf["NEE"][series]["ER"]
+    opt = pfp_utils.get_keyvaluefromcf(cf, ["NEE", label], "ER", default="ER_LT")
+    info[label]["ER"] = opt
     # create an empty series in ds if the output series doesn't exist yet
-    if nee_info["output"] not in ds.series.keys():
-        data,flag,attr = pfp_utils.MakeEmptySeries(ds,nee_info["output"])
-        pfp_utils.CreateSeries(ds,nee_info["output"],data,flag,attr)
-    return nee_info
+    if info[label]["output"] not in ds.series.keys():
+        data, flag, attr = pfp_utils.MakeEmptySeries(ds, info[label]["output"])
+        pfp_utils.CreateSeries(ds, info[label]["output"], data, flag, attr)
+    return
 
-def rpMerge_createdict(cf,ds,series):
+def rpMerge_createdict(cf, ds, series):
+    # PRI May 2019 ZOMBIE CODE?
     """ Creates a dictionary in ds to hold information about the merging of gap filled
         and tower data."""
     merge_prereq_list = []

@@ -31,59 +31,60 @@ def ERUsingSOLO(main_gui, cf, ds, info):
                  ER estimation routines to allow for multiple sources
                  of ER.
     """
-    if "solo" not in info["er"]: return
+    if "solo" not in info["er"]:
+        return
     # local pointer to the datetime series
     ldt = ds.series["DateTime"]["Data"]
     startdate = ldt[0]
     enddate = ldt[-1]
-    solo_info = {"file_startdate": startdate.strftime("%Y-%m-%d %H:%M"),
-                 "file_enddate": enddate.strftime("%Y-%m-%d %H:%M"),
-                 "startdate": startdate.strftime("%Y-%m-%d %H:%M"),
-                 "enddate": enddate.strftime("%Y-%m-%d %H:%M"),
-                 "plot_path": cf["Files"]["plot_path"],
-                 "er": info["er"]["solo"],
-                 "called_by": "ERUsingSOLO"}
+    info["er"]["solo"]["info"] = {"file_startdate": startdate.strftime("%Y-%m-%d %H:%M"),
+                                  "file_enddate": enddate.strftime("%Y-%m-%d %H:%M"),
+                                  "startdate": startdate.strftime("%Y-%m-%d %H:%M"),
+                                  "enddate": enddate.strftime("%Y-%m-%d %H:%M"),
+                                  "plot_path": cf["Files"]["plot_path"],
+                                  "er": info["er"]["solo"],
+                                  "called_by": "ERUsingSOLO"}
+    # add a gui section to the info["solo"] dictionary
+    info["er"]["solo"]["gui"] = {}
     # check to see if this is a batch or an interactive run
-    call_mode = pfp_utils.get_keyvaluefromcf(cf,["Options"],"call_mode",default="interactive")
-    solo_info["call_mode"]= call_mode
-    #if call_mode.lower()=="interactive": solo_info["show_plots"] = True
-    if call_mode.lower()=="interactive":
+    call_mode = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "call_mode", default="interactive")
+    info["er"]["solo"]["info"]["call_mode"] = call_mode
+    if call_mode.lower() == "interactive":
         # call the ERUsingSOLO GUI
-        rpSOLO_gui(main_gui, cf, ds, solo_info)
+        rpSOLO_gui(main_gui, cf, ds, info["er"])
     else:
         if "GUI" in cf:
             if "SOLO" in cf["GUI"]:
-                rpSOLO_run_nogui(cf, ds, solo_info)
+                rpSOLO_run_nogui(cf, ds, info["er"])
 
-def rpSOLO_gui(main_gui, cf, ds, solo_info):
+def rpSOLO_gui(main_gui, cf, ds, info):
     """ Display the SOLO GUI and wait for the user to finish."""
     # add the data structures (dsa and dsb) and the solo_info dictionary to self
-    main_gui.l5_ui.dsa = ds
-    main_gui.l5_ui.dsb = ds
-    main_gui.l5_ui.solo_info = solo_info
+    main_gui.solo_gui.ds = ds
+    main_gui.solo_gui.info = info
     # put up the start and end dates
-    main_gui.l5_ui.label_DataStartDate_value.setText(solo_info["file_startdate"])
-    main_gui.l5_ui.label_DataEndDate_value.setText(solo_info["file_enddate"])
+    main_gui.solo_gui.label_DataStartDate_value.setText(info["solo"]["info"]["file_startdate"])
+    main_gui.solo_gui.label_DataEndDate_value.setText(info["solo"]["info"]["file_enddate"])
     # set the default period to manual
-    main_gui.l5_ui.radioButton_Manual.setChecked(True)
+    main_gui.solo_gui.radioButton_Manual.setChecked(True)
     # set the default number of nodes
-    main_gui.l5_ui.lineEdit_Nodes.setText("1")
+    main_gui.solo_gui.lineEdit_Nodes.setText("1")
     # set the default minimum percentage of good data
-    main_gui.l5_ui.lineEdit_MinPercent.setText("10")
+    main_gui.solo_gui.lineEdit_MinPercent.setText("10")
     # display the SOLO GUI
-    main_gui.l5_ui.show()
-    main_gui.l5_ui.exec_()
+    main_gui.solo_gui.show()
+    main_gui.solo_gui.exec_()
 
 def rpSOLO_quit(solo_gui):
-    ds = solo_gui.dsb
+    ds = solo_gui.ds
     # destroy the GUI
     solo_gui.close()
     # put the return code in ds.returncodes
     ds.returncodes["solo"] = "quit"
 
-def rp_getdiurnalstats(dt,data,info):
-    ts = info["time_step"]
-    nperday = info["nperday"]
+def rp_getdiurnalstats(dt, data, info):
+    ts = info["solo"]["info"]["time_step"]
+    nperday = info["solo"]["info"]["nperday"]
     si = 0
     while abs(dt[si].hour+float(dt[si].minute)/60-float(ts)/60)>c.eps:
         si = si + 1
@@ -101,69 +102,62 @@ def rp_getdiurnalstats(dt,data,info):
     diel_stats["Mn"] = numpy.ma.min(data_2d,axis=0)
     return diel_stats
 
-def rpSOLO_createdict(cf,ds,series):
+def rpSOLO_createdict(cf, ds, info, label):
     """ Creates a dictionary in ds to hold information about the SOLO data used
         to gap fill the tower data."""
-    # get the section of the control file containing the series
-    section = pfp_utils.get_cfsection(cf,series=series,mode="quiet")
-    # return without doing anything if the series isn't in a control file section
-    if len(section)==0:
-        logger.error("ERUsingSOLO: Series "+series+" not found in control file, skipping ...")
-        return
+    # get the target
+    target = pfp_utils.get_keyvaluefromcf(cf, ["ER", label, "ERUsingSOLO"], "target", default="ER")
     # check that none of the drivers have missing data
-    driver_string = cf[section][series]["ERUsingSOLO"]["drivers"]
-    if "," in driver_string:
-        driver_list = driver_string.split(",")
-    else:
-        driver_list = [driver_string]
-    target = cf[section][series]["ERUsingSOLO"]["target"]
-    for label in driver_list:
-        data,flag,attr = pfp_utils.GetSeriesasMA(ds,label)
-        if numpy.ma.count_masked(data)!=0:
-            logger.error("ERUsingSOLO: driver "+label+" contains missing data, skipping target "+target)
+    opt = pfp_utils.get_keyvaluefromcf(cf, ["ER", label, "ERUsingSOLO"], "drivers", default="Ta,Ts,Sws")
+    drivers = pfp_cfg.cfg_string_to_list(opt)
+    for driver in drivers:
+        data, flag, attr = pfp_utils.GetSeriesasMA(ds, driver)
+        if numpy.ma.count_masked(data) != 0:
+            msg = "ERUsingSOLO: driver " + driver + " contains missing data, skipping target " + target
+            logger.error(msg)
             return
     # create the dictionary keys for this series
-    solo_info = {}
-    # site name
-    solo_info["site_name"] = ds.globalattributes["site_name"]
-    # source series for ER
-    opt = pfp_utils.get_keyvaluefromcf(cf, [section,series,"ERUsingSOLO"], "source", default="Fc")
-    solo_info["source"] = opt
+    if "solo" not in info:
+        info["solo"] = {"outputs": {label: {}}}
+    isol = info["solo"]["outputs"][label]
     # target series name
-    solo_info["target"] = target
+    isol["target"] = target
     # list of drivers
-    solo_info["drivers"] = driver_list
+    isol["drivers"] = drivers
+    # source to use as CO2 flux
+    opt = pfp_utils.get_keyvaluefromcf(cf, ["ER", label, "ERUsingSOLO"], "source", default="Fc")
+    isol["source"] = opt
     # name of SOLO output series in ds
-    solo_info["output"] = cf[section][series]["ERUsingSOLO"]["output"]
+    output = pfp_utils.get_keyvaluefromcf(cf, ["ER", label, "ERUsingSOLO"], "output", default="ER_SOLO_all")
+    isol["output"] = output
     # results of best fit for plotting later on
-    solo_info["results"] = {"startdate":[],"enddate":[],"No. points":[],"r":[],
-                            "Bias":[],"RMSE":[],"Frac Bias":[],"NMSE":[],
-                            "Avg (obs)":[],"Avg (SOLO)":[],
-                            "Var (obs)":[],"Var (SOLO)":[],"Var ratio":[],
-                            "m_ols":[],"b_ols":[]}
+    isol["results"] = {"startdate":[], "enddate":[], "No. points":[], "r":[],
+                       "Bias":[], "RMSE":[], "Frac Bias":[], "NMSE":[],
+                       "Avg (obs)":[], "Avg (SOLO)":[],
+                       "Var (obs)":[], "Var (SOLO)":[], "Var ratio":[],
+                       "m_ols":[], "b_ols":[]}
     # create an empty series in ds if the SOLO output series doesn't exist yet
-    if solo_info["output"] not in ds.series.keys():
-        data,flag,attr = pfp_utils.MakeEmptySeries(ds,solo_info["output"])
-        pfp_utils.CreateSeries(ds,solo_info["output"],data,flag,attr)
-    # create the merge directory in the data structure
-    if "merge" not in dir(ds): ds.merge = {}
-    if "standard" not in ds.merge.keys(): ds.merge["standard"] = {}
+    if isol["output"] not in ds.series.keys():
+        data, flag, attr = pfp_utils.MakeEmptySeries(ds, isol["output"])
+        pfp_utils.CreateSeries(ds, isol["output"], data, flag, attr)
+    # create the merge directory in the info dictionary
+    if "merge" not in info:
+        info["merge"] = {}
+    if "standard" not in info["merge"].keys():
+        info["merge"]["standard"] = {}
     # create the dictionary keys for this series
-    ds.merge["standard"][series] = {}
+    info["merge"]["standard"][label] = {}
     # output series name
-    ds.merge["standard"][series]["output"] = series
+    info["merge"]["standard"][label]["output"] = label
     # source
-    source_string = cf[section][series]["MergeSeries"]["Source"]
-    if "," in source_string:
-        source_list = source_string.split(",")
-    else:
-        source_list = [source_string]
-    ds.merge["standard"][series]["source"] = source_list
+    opt = pfp_utils.get_keyvaluefromcf(cf, ["ER", label, "MergeSeries"], "Source", default="ER,ER_SOLO_all")
+    sources = pfp_cfg.cfg_string_to_list(opt)
+    info["merge"]["standard"][label]["source"] = sources
     # create an empty series in ds if the output series doesn't exist yet
-    if ds.merge["standard"][series]["output"] not in ds.series.keys():
-        data,flag,attr = pfp_utils.MakeEmptySeries(ds,ds.merge["standard"][series]["output"])
-        pfp_utils.CreateSeries(ds,ds.merge["standard"][series]["output"],data,flag,attr)
-    return solo_info
+    if info["merge"]["standard"][label]["output"] not in ds.series.keys():
+        data, flag, attr = pfp_utils.MakeEmptySeries(ds, info["merge"]["standard"][label]["output"])
+        pfp_utils.CreateSeries(ds, info["merge"]["standard"][label]["output"], data, flag, attr)
+    return
 
 def rpSOLO_done(solo_gui):
     # destroy the SOLO GUI
@@ -182,227 +176,237 @@ def rpSOLO_initplot(**kwargs):
     pd["ts_height"] = (1.0 - pd["margin_top"] - pd["ts_bottom"])/float(pd["nDrivers"]+1)
     return pd
 
-def rpSOLO_main(ds, solo_info):
+def rpSOLO_main(ds, info, outputs=[]):
     """
     This is the main routine for running SOLO, an artifical neural network for estimating ER.
     """
-    startdate = solo_info["startdate"]
-    enddate = solo_info["enddate"]
-    logger.info(" Estimating ER using SOLO: "+startdate+" to "+enddate)
-    solo_series = solo_info["er"].keys()
-    ## read the control file again, this allows the contents of the control file to
-    ## be changed with the SOLO GUI still displayed
-    #cfname = ds.globalattributes["controlfile_name"]
-    #cf = pfp_io.get_controlfilecontents(cfname,mode="quiet")
-    #for series in solo_series:
-        #section = pfp_utils.get_cfsection(cf,series=series,mode="quiet")
-        #if len(section)==0: continue
-        #if series not in ds.series.keys(): continue
-        #solo_info["er"][series]["target"] = cf[section][series]["ERUsingSOLO"]["target"]
-        #input_string = cf[section][series]["ERUsingSOLO"]["drivers"]
-        #solo_info["er"][series]["drivers"] = pfp_cfg.cfg_string_to_list(input_string)
-        #solo_info["er"][series]["output"] = cf[section][series]["ERUsingSOLO"]["output"]
+    if len(outputs) == 0:
+        outputs = info["solo"]["outputs"].keys()
+    startdate = info["solo"]["info"]["startdate"]
+    enddate = info["solo"]["info"]["enddate"]
+    logger.info(" Estimating ER using SOLO: " + startdate + " to " + enddate)
     # get some useful things
     site_name = ds.globalattributes["site_name"]
     # get the time step and a local pointer to the datetime series
-    ts = ds.globalattributes["time_step"]
+    ts = int(ds.globalattributes["time_step"])
     ldt = ds.series["DateTime"]["Data"]
-    xldt = ds.series["xlDateTime"]["Data"]
     # get the start and end datetime indices
-    si = pfp_utils.GetDateIndex(ldt,startdate,ts=ts,default=0,match="exact")
-    ei = pfp_utils.GetDateIndex(ldt,enddate,ts=ts,default=-1,match="exact")
+    si = pfp_utils.GetDateIndex(ldt, startdate, ts=ts, default=0, match="exact")
+    ei = pfp_utils.GetDateIndex(ldt, enddate, ts=ts, default=len(ldt)-1, match="exact")
     # check the start and end indices
     if si >= ei:
-        logger.error(" ERUsingSOLO: end datetime index ("+str(ei)+") smaller that start ("+str(si)+")")
+        msg = " ERUsingSOLO: end datetime index ("+str(ei)+") smaller that start ("+str(si)+")"
+        logger.error(msg)
         return
-    if si==0 and ei==-1:
-        logger.error(" ERUsingSOLO: no start and end datetime specified, using all data")
+    if si==0 and ei==len(ldt)-1:
+        msg = " ERUsingSOLO: no start and end datetime specified, using all data"
+        logger.error(msg)
         nRecs = int(ds.globalattributes["nc_nrecs"])
     else:
         nRecs = ei - si + 1
     # get the minimum number of points from the minimum percentage
-    solo_info["min_points"] = int((ei-si)*solo_info["min_percent"]/100)
+    info["solo"]["gui"]["min_points"] = int((ei-si)*info["solo"]["gui"]["min_percent"]/100)
     # get the figure number
-    if len(plt.get_fignums())==0:
-        fig_num = 0
-    else:
-        #fig_nums = plt.get_fignums()
-        #fig_num = fig_nums[-1]
-        fig_num = plt.get_fignums()[-1]
+    fig_num = 0
     # loop over the series to be gap filled using solo
-    for series in solo_series:
-        solo_info["er"][series]["results"]["startdate"].append(xldt[si])
-        solo_info["er"][series]["results"]["enddate"].append(xldt[ei])
-        target = solo_info["er"][series]["target"]
-        d,f,a = pfp_utils.GetSeriesasMA(ds,target,si=si,ei=ei)
-        if numpy.ma.count(d)<solo_info["min_points"]:
-            logger.error("rpSOLO: Less than "+str(solo_info["min_points"])+" points available for series "+target+" ...")
-            solo_info["er"][series]["results"]["No. points"].append(float(0))
-            results_list = solo_info["er"][series]["results"].keys()
-            for item in ["startdate","enddate","No. points"]:
-                if item in results_list: results_list.remove(item)
-            for item in results_list:
-                solo_info["er"][series]["results"][item].append(float(c.missing_value))
+    for output in outputs:
+        # get the target series label
+        target = info["solo"]["outputs"][output]["target"]
+        info["solo"]["outputs"][output]["results"]["startdate"].append(ldt[si])
+        info["solo"]["outputs"][output]["results"]["enddate"].append(ldt[ei])
+        d, f, a = pfp_utils.GetSeriesasMA(ds, target, si=si, ei=ei)
+        if numpy.ma.count(d) < info["solo"]["gui"]["min_points"]:
+            msg = "rpSOLO: Less than " + str(info["solo"]["gui"]["min_points"]) + " points available for series " + target + " ..."
+            logger.error(msg)
+            info["solo"]["outputs"][output]["results"]["No. points"].append(float(0))
+            results = info["solo"]["outputs"][output]["results"].keys()
+            for item in ["startdate", "enddate", "No. points"]:
+                if item in results: results.remove(item)
+            for item in results:
+                info["solo"]["outputs"][output]["results"][item].append(float(c.missing_value))
             continue
-        drivers = solo_info["er"][series]["drivers"]
-        output = solo_info["er"][series]["output"]
-        # set the number of nodes for the inf files
-        #if solo_info["call_mode"].lower()=="interactive":
-            #nodesAuto = rpSOLO_setnodesEntry(SOLO_gui,drivers,default=10)
+        drivers = info["solo"]["gui"]["drivers"].split(",")
+        info["solo"]["outputs"][output]["drivers"] = drivers
+        if str(info["solo"]["gui"]["nodes"]).lower() == "auto":
+            info["solo"]["gui"]["nodes_target"] = len(drivers) + 1
+        else:
+            info["solo"]["gui"]["nodes_target"] = int(info["solo"]["gui"]["nodes"])
+        # overwrite the GUI settings if required
+        if "solo_settings" in info["solo"]["outputs"][output]:
+            info["solo"]["gui"]["nodes_target"] = info["solo"]["outputs"][output]["solo_settings"]["nodes_target"]
+            info["solo"]["gui"]["training"] = info["solo"]["outputs"][output]["solo_settings"]["training"]
+            info["solo"]["gui"]["nda_factor"] = info["solo"]["outputs"][output]["solo_settings"]["nda_factor"]
+            info["solo"]["gui"]["learning_rate"] = info["solo"]["outputs"][output]["solo_settings"]["learning_rate"]
+            info["solo"]["gui"]["iterations"] = info["solo"]["outputs"][output]["solo_settings"]["iterations"]
         # write the inf files for sofm, solo and seqsolo
-        # check this one for SOLO_gui change to solo_info
-        rpSOLO_writeinffiles(solo_info)
+        rpSOLO_writeinffiles(info)
         # run SOFM
-        # check this one for SOLO_gui change to solo_info
-        result = rpSOLO_runsofm(ds,solo_info,drivers,target,nRecs,si=si,ei=ei)
-        if result!=1: return
+        result = rpSOLO_runsofm(ds, drivers, target, nRecs, si=si, ei=ei)
+        if result != 1:
+            return
         # run SOLO
-        result = rpSOLO_runsolo(ds,drivers,target,nRecs,si=si,ei=ei)
-        if result!=1: return
+        result = rpSOLO_runsolo(ds, drivers, target, nRecs, si=si, ei=ei)
+        if result != 1:
+            return
         # run SEQSOLO and put the SOLO data into the data structure
-        result = rpSOLO_runseqsolo(ds,drivers,target,output,nRecs,si=si,ei=ei)
-        if result!=1: return
+        result = rpSOLO_runseqsolo(ds, drivers, target, output, nRecs, si=si, ei=ei)
+        if result != 1:
+            return
         # plot the results
         fig_num = fig_num + 1
-        title = site_name+" : "+series+" estimated using SOLO"
-        pd = rpSOLO_initplot(site_name=site_name,label=target,fig_num=fig_num,title=title,
-                             nDrivers=len(drivers),startdate=startdate,enddate=enddate)
-        rpSOLO_plot(pd,ds,series,drivers,target,output,solo_info,si=si,ei=ei)
-        # reset the nodesEntry in the SOLO_gui
-        #if solo_info["call_mode"].lower()=="interactive":
-            #if nodesAuto: rpSOLO_resetnodesEntry(SOLO_gui)
-    #if 'ERUsingSOLO' not in ds.globalattributes['Functions']:
-        #ds.globalattributes['Functions'] = ds.globalattributes['Functions']+', ERUsingSOLO'
+        title = site_name + " : " + output + " estimated using SOLO"
+        pd = rpSOLO_initplot(site_name=site_name, label=target, fig_num=fig_num,
+                             title=title, nDrivers=len(drivers),
+                             startdate=startdate, enddate=enddate)
+        rpSOLO_plot(pd, ds, drivers, target, output, info, si=si, ei=ei)
 
-def rpSOLO_plot(pd,ds,series,driverlist,targetlabel,outputlabel,solo_info,si=0,ei=-1):
+def rpSOLO_plot(pd, ds, drivers, target, output, info, si=0, ei=-1):
     """ Plot the results of the SOLO run. """
     # get the time step
     ts = int(ds.globalattributes['time_step'])
     # get a local copy of the datetime series
-    dt = ds.series['DateTime']['Data'][si:ei+1]
-    xdt = numpy.array(dt)
-    Hdh,f,a = pfp_utils.GetSeriesasMA(ds,'Hdh',si=si,ei=ei)
+    xdt = ds.series["DateTime"]["Data"][si:ei+1]
+    Hdh, f, a = pfp_utils.GetSeriesasMA(ds, 'Hdh', si=si, ei=ei)
     # get the observed and modelled values
-    obs,f,a = pfp_utils.GetSeriesasMA(ds,targetlabel,si=si,ei=ei)
-    mod,f,a = pfp_utils.GetSeriesasMA(ds,outputlabel,si=si,ei=ei)
+    obs, f, a = pfp_utils.GetSeriesasMA(ds, target, si=si, ei=ei)
+    mod, f, a = pfp_utils.GetSeriesasMA(ds, output, si=si, ei=ei)
     # make the figure
-    if solo_info["show_plots"]:
+    if info["solo"]["gui"]["show_plots"]:
         plt.ion()
     else:
         plt.ioff()
-    fig = plt.figure(pd["fig_num"],figsize=(13,8))
-    fig.clf()
-    fig.canvas.set_window_title(targetlabel+" (SOLO): "+pd["startdate"]+" to "+pd["enddate"])
-    plt.figtext(0.5,0.95,pd["title"],ha='center',size=16)
+    #fig = plt.figure(pd["fig_num"], figsize=(13, 8))
+    if plt.fignum_exists(1):
+        fig = plt.figure(1)
+        plt.clf()
+    else:
+        fig = plt.figure(1, figsize=(13, 8))
+    fig.canvas.set_window_title(target)
+    plt.figtext(0.5, 0.95, pd["title"], ha='center', size=16)
     # XY plot of the diurnal variation
-    rect1 = [0.10,pd["margin_bottom"],pd["xy_width"],pd["xy_height"]]
+    rect1 = [0.10, pd["margin_bottom"], pd["xy_width"], pd["xy_height"]]
     ax1 = plt.axes(rect1)
     # get the diurnal stats of the observations
-    mask = numpy.ma.mask_or(obs.mask,mod.mask)
-    obs_mor = numpy.ma.array(obs,mask=mask)
-    dstats = rp_getdiurnalstats(dt,obs_mor,solo_info)
-    ax1.plot(dstats["Hr"],dstats["Av"],'b-',label="Obs")
+    mask = numpy.ma.mask_or(obs.mask, mod.mask)
+    obs_mor = numpy.ma.array(obs, mask=mask)
+    dstats = rp_getdiurnalstats(xdt, obs_mor, info)
+    ax1.plot(dstats["Hr"], dstats["Av"], 'b-', label="Obs")
     # get the diurnal stats of all SOLO predictions
-    dstats = rp_getdiurnalstats(dt,mod,solo_info)
-    ax1.plot(dstats["Hr"],dstats["Av"],'r-',label="SOLO(all)")
-    mod_mor = numpy.ma.masked_where(numpy.ma.getmaskarray(obs)==True,mod,copy=True)
-    dstats = rp_getdiurnalstats(dt,mod_mor,solo_info)
-    ax1.plot(dstats["Hr"],dstats["Av"],'g-',label="SOLO(obs)")
+    dstats = rp_getdiurnalstats(xdt, mod, info)
+    ax1.plot(dstats["Hr"], dstats["Av"], 'r-', label="SOLO(all)")
+    # get the diurnal stats of SOLO predictions when the obs are present
+    mod_mor = numpy.ma.masked_where(numpy.ma.getmaskarray(obs) == True, mod, copy=True)
+    if numpy.ma.count_masked(obs) != 0:
+        index = numpy.where(numpy.ma.getmaskarray(obs) == False)[0]
+        # get the diurnal stats of SOLO predictions when observations are present
+        dstats = rp_getdiurnalstats(xdt, mod_mor, info)
+        ax1.plot(dstats["Hr"], dstats["Av"], 'g-', label="SOLO(obs)")
     plt.xlim(0,24)
-    plt.xticks([0,6,12,18,24])
-    ax1.set_ylabel(targetlabel)
+    plt.xticks([0, 6, 12, 18, 24])
+    ax1.set_ylabel(target)
     ax1.set_xlabel('Hour')
-    ax1.legend(loc='upper right',frameon=False,prop={'size':8})
+    ax1.legend(loc='upper right', frameon=False, prop={'size':8})
     # XY plot of the 30 minute data
-    rect2 = [0.40,pd["margin_bottom"],pd["xy_width"],pd["xy_height"]]
+    rect2 = [0.40, pd["margin_bottom"], pd["xy_width"], pd["xy_height"]]
     ax2 = plt.axes(rect2)
-    ax2.plot(mod,obs,'b.')
-    ax2.set_ylabel(targetlabel+'_obs')
-    ax2.set_xlabel(targetlabel+'_SOLO')
+    ax2.plot(mod,obs, 'b.')
+    ax2.set_ylabel(target + '_obs')
+    ax2.set_xlabel(target + '_SOLO')
     # plot the best fit line
-    coefs = numpy.ma.polyfit(numpy.ma.copy(mod),numpy.ma.copy(obs),1)
-    xfit = numpy.ma.array([numpy.ma.minimum(mod),numpy.ma.maximum(mod)])
-    yfit = numpy.polyval(coefs,xfit)
-    r = numpy.ma.corrcoef(mod,obs)
-    ax2.plot(xfit,yfit,'r--',linewidth=3)
-    eqnstr = 'y = %.3fx + %.3f, r = %.3f'%(coefs[0],coefs[1],r[0][1])
-    ax2.text(0.5,0.875,eqnstr,fontsize=8,horizontalalignment='center',transform=ax2.transAxes)
+    coefs = numpy.ma.polyfit(numpy.ma.copy(mod), numpy.ma.copy(obs), 1)
+    xfit = numpy.ma.array([numpy.ma.minimum(mod), numpy.ma.maximum(mod)])
+    yfit = numpy.polyval(coefs, xfit)
+    r = numpy.ma.corrcoef(mod, obs)
+    ax2.plot(xfit, yfit, 'r--', linewidth=3)
+    eqnstr = 'y = %.3fx + %.3f, r = %.3f'%(coefs[0], coefs[1], r[0][1])
+    ax2.text(0.5, 0.875, eqnstr, fontsize=8, horizontalalignment='center', transform=ax2.transAxes)
     # write the fit statistics to the plot
-    numpoints = numpy.ma.count(obs)
-    numfilled = numpy.ma.count(mod)-numpy.ma.count(obs)
+    numpoints = trap_masked_constant(numpy.ma.count(obs))
+    numfilled = trap_masked_constant(numpy.ma.count(mod)-numpy.ma.count(obs))
     diff = mod - obs
-    bias = numpy.ma.average(diff)
-    solo_info["er"][series]["results"]["Bias"].append(bias)
+    bias = trap_masked_constant(numpy.ma.average(diff))
+    fractional_bias = trap_masked_constant(bias/(0.5*(numpy.ma.average(obs+mod))))
+    info["solo"]["outputs"][output]["results"]["Bias"].append(bias)
+    info["solo"]["outputs"][output]["results"]["Frac Bias"].append(fractional_bias)
     rmse = numpy.ma.sqrt(numpy.ma.mean((obs-mod)*(obs-mod)))
-    plt.figtext(0.65,0.225,'No. points')
-    plt.figtext(0.75,0.225,str(numpoints))
-    solo_info["er"][series]["results"]["No. points"].append(numpoints)
-    plt.figtext(0.65,0.200,'Nodes')
-    plt.figtext(0.75,0.200,str(solo_info["nodes"]))
-    plt.figtext(0.65,0.175,'Training')
-    plt.figtext(0.75,0.175,str(solo_info["training"]))
-    plt.figtext(0.65,0.150,'Nda factor')
-    plt.figtext(0.75,0.150,str(solo_info["nda_factor"]))
-    plt.figtext(0.65,0.125,'Learning rate')
-    plt.figtext(0.75,0.125,str(solo_info["learningrate"]))
-    plt.figtext(0.65,0.100,'Iterations')
-    plt.figtext(0.75,0.100,str(solo_info["iterations"]))
-    plt.figtext(0.815,0.225,'No. filled')
-    plt.figtext(0.915,0.225,str(numfilled))
-    plt.figtext(0.815,0.200,'Slope')
-    plt.figtext(0.915,0.200,str(pfp_utils.round2sig(coefs[0],sig=4)))
-    solo_info["er"][series]["results"]["m_ols"].append(coefs[0])
-    plt.figtext(0.815,0.175,'Offset')
-    plt.figtext(0.915,0.175,str(pfp_utils.round2sig(coefs[1],sig=4)))
-    solo_info["er"][series]["results"]["b_ols"].append(coefs[1])
-    plt.figtext(0.815,0.150,'r')
-    plt.figtext(0.915,0.150,str(pfp_utils.round2sig(r[0][1],sig=4)))
-    solo_info["er"][series]["results"]["r"].append(r[0][1])
-    plt.figtext(0.815,0.125,'RMSE')
-    plt.figtext(0.915,0.125,str(pfp_utils.round2sig(rmse,sig=4)))
-    solo_info["er"][series]["results"]["RMSE"].append(rmse)
+    mean_mod = numpy.ma.mean(mod)
+    mean_obs = numpy.ma.mean(obs)
+    data_range = numpy.ma.maximum(obs)-numpy.ma.minimum(obs)
+    nmse = rmse/data_range
+    plt.figtext(0.65, 0.225, 'No. points')
+    plt.figtext(0.75, 0.225, str(numpoints))
+    info["solo"]["outputs"][output]["results"]["No. points"].append(numpoints)
+    plt.figtext(0.65, 0.200, 'No. filled')
+    plt.figtext(0.75, 0.200, str(numfilled))
+    plt.figtext(0.65, 0.175, 'Nodes')
+    plt.figtext(0.75, 0.175, str(info["solo"]["gui"]["nodes_target"]))
+    plt.figtext(0.65, 0.150, 'Training')
+    plt.figtext(0.75, 0.150, str(info["solo"]["gui"]["training"]))
+    plt.figtext(0.65, 0.125, 'Nda factor')
+    plt.figtext(0.75, 0.125, str(info["solo"]["gui"]["nda_factor"]))
+    plt.figtext(0.65, 0.100, 'Learning rate')
+    plt.figtext(0.75, 0.100, str(info["solo"]["gui"]["learning_rate"]))
+    plt.figtext(0.65, 0.075, 'Iterations')
+    plt.figtext(0.75, 0.075, str(info["solo"]["gui"]["iterations"]))
+    plt.figtext(0.815, 0.225, 'Slope')
+    plt.figtext(0.915, 0.225, str(pfp_utils.round2sig(coefs[0], sig=4)))
+    info["solo"]["outputs"][output]["results"]["m_ols"].append(trap_masked_constant(coefs[0]))
+    plt.figtext(0.815, 0.200, 'Offset')
+    plt.figtext(0.915, 0.200, str(pfp_utils.round2sig(coefs[1], sig=4)))
+    info["solo"]["outputs"][output]["results"]["b_ols"].append(trap_masked_constant(coefs[1]))
+    plt.figtext(0.815, 0.175, 'r')
+    plt.figtext(0.915, 0.175, str(pfp_utils.round2sig(r[0][1], sig=4)))
+    info["solo"]["outputs"][output]["results"]["r"].append(trap_masked_constant(r[0][1]))
+    plt.figtext(0.815, 0.150, 'RMSE')
+    plt.figtext(0.915, 0.150, str(pfp_utils.round2sig(rmse, sig=4)))
+    info["solo"]["outputs"][output]["results"]["RMSE"].append(trap_masked_constant(rmse))
+    info["solo"]["outputs"][output]["results"]["NMSE"].append(trap_masked_constant(nmse))
     var_obs = numpy.ma.var(obs)
-    solo_info["er"][series]["results"]["Var (obs)"].append(var_obs)
+    plt.figtext(0.815, 0.125, 'Var (obs)')
+    plt.figtext(0.915, 0.125, '%.4g'%(var_obs))
+    info["solo"]["outputs"][output]["results"]["Var (obs)"].append(trap_masked_constant(var_obs))
     var_mod = numpy.ma.var(mod)
-    solo_info["er"][series]["results"]["Var (SOLO)"].append(var_mod)
-    solo_info["er"][series]["results"]["Var ratio"].append(var_obs/var_mod)
-    solo_info["er"][series]["results"]["Avg (obs)"].append(numpy.ma.average(obs))
-    solo_info["er"][series]["results"]["Avg (SOLO)"].append(numpy.ma.average(mod))
+    plt.figtext(0.815, 0.100, 'Var (SOLO)')
+    plt.figtext(0.915, 0.100, '%.4g'%(var_mod))
+    info["solo"]["outputs"][output]["results"]["Var (SOLO)"].append(trap_masked_constant(var_mod))
+    info["solo"]["outputs"][output]["results"]["Var ratio"].append(trap_masked_constant(var_obs/var_mod))
+    info["solo"]["outputs"][output]["results"]["Avg (obs)"].append(trap_masked_constant(numpy.ma.average(obs)))
+    info["solo"]["outputs"][output]["results"]["Avg (SOLO)"].append(trap_masked_constant(numpy.ma.average(mod)))
     # time series of drivers and target
     ts_axes = []
-    rect = [pd["margin_left"],pd["ts_bottom"],pd["ts_width"],pd["ts_height"]]
+    rect = [pd["margin_left"], pd["ts_bottom"], pd["ts_width"], pd["ts_height"]]
     ts_axes.append(plt.axes(rect))
-    #ts_axes[0].plot(xdt,obs,'b.',xdt,mod,'r-')
-    ts_axes[0].scatter(xdt,obs,c=Hdh)
-    ts_axes[0].plot(xdt,mod,'r-')
+    ts_axes[0].scatter(xdt, obs, c=Hdh)
+    ts_axes[0].plot(xdt, mod, 'r-')
     plt.axhline(0)
-    ts_axes[0].set_xlim(xdt[0],xdt[-1])
-    TextStr = targetlabel+'_obs ('+ds.series[targetlabel]['Attr']['units']+')'
-    ts_axes[0].text(0.05,0.85,TextStr,color='b',horizontalalignment='left',transform=ts_axes[0].transAxes)
-    TextStr = outputlabel+'('+ds.series[outputlabel]['Attr']['units']+')'
-    ts_axes[0].text(0.85,0.85,TextStr,color='r',horizontalalignment='right',transform=ts_axes[0].transAxes)
-    for ThisOne,i in zip(driverlist,range(1,pd["nDrivers"]+1)):
+    ts_axes[0].set_xlim(xdt[0], xdt[-1])
+    TextStr = target + '_obs (' + ds.series[target]['Attr']['units'] + ')'
+    ts_axes[0].text(0.05, 0.85, TextStr, color='b', horizontalalignment='left', transform=ts_axes[0].transAxes)
+    TextStr = output + '(' + ds.series[output]['Attr']['units'] + ')'
+    ts_axes[0].text(0.85, 0.85, TextStr, color='r', horizontalalignment='right', transform=ts_axes[0].transAxes)
+    for label, i in zip(drivers, range(1, pd["nDrivers"] + 1)):
         this_bottom = pd["ts_bottom"] + i*pd["ts_height"]
-        rect = [pd["margin_left"],this_bottom,pd["ts_width"],pd["ts_height"]]
-        ts_axes.append(plt.axes(rect,sharex=ts_axes[0]))
-        data,flag,attr = pfp_utils.GetSeriesasMA(ds,ThisOne,si=si,ei=ei)
-        data_notgf = numpy.ma.masked_where(flag!=0,data)
-        data_gf = numpy.ma.masked_where(flag==0,data)
-        ts_axes[i].plot(xdt,data_notgf,'b-')
-        ts_axes[i].plot(xdt,data_gf,'r-')
-        plt.setp(ts_axes[i].get_xticklabels(),visible=False)
-        TextStr = ThisOne+'('+ds.series[ThisOne]['Attr']['units']+')'
-        ts_axes[i].text(0.05,0.85,TextStr,color='b',horizontalalignment='left',transform=ts_axes[i].transAxes)
+        rect = [pd["margin_left"], this_bottom, pd["ts_width"], pd["ts_height"]]
+        ts_axes.append(plt.axes(rect, sharex=ts_axes[0]))
+        data, flag, attr = pfp_utils.GetSeriesasMA(ds, label, si=si, ei=ei)
+        data_notgf = numpy.ma.masked_where(flag != 0, data)
+        data_gf = numpy.ma.masked_where(flag == 0, data)
+        ts_axes[i].plot(xdt, data_notgf, 'b-')
+        ts_axes[i].plot(xdt, data_gf, 'r-', linewidth=2)
+        plt.setp(ts_axes[i].get_xticklabels(), visible=False)
+        TextStr = label + '(' + attr['units'] + ')'
+        ts_axes[i].text(0.05, 0.85, TextStr, color='b', horizontalalignment='left', transform=ts_axes[i].transAxes)
     # save a hard copy of the plot
     sdt = xdt[0].strftime("%Y%m%d")
     edt = xdt[-1].strftime("%Y%m%d")
-    plot_path = solo_info["plot_path"]+"L6/"
-    if not os.path.exists(plot_path): os.makedirs(plot_path)
-    figname = plot_path+pd["site_name"].replace(" ","")+"_SOLO_"+pd["label"]
-    figname = figname+"_"+sdt+"_"+edt+'.png'
-    fig.savefig(figname,format='png')
+    plot_path = os.path.join(info["solo"]["info"]["plot_path"], "L6", "")
+    if not os.path.exists(plot_path):
+        os.makedirs(plot_path)
+    figname = plot_path + pd["site_name"].replace(" ","") + "_SOLO_" + pd["label"]
+    figname = figname + "_" + sdt + "_" + edt + '.png'
+    fig.savefig(figname, format='png')
     # draw the plot on the screen
-    if solo_info["show_plots"]:
+    if info["solo"]["gui"]["show_plots"]:
         plt.draw()
         plt.ioff()
     else:
@@ -410,123 +414,95 @@ def rpSOLO_plot(pd,ds,series,driverlist,targetlabel,outputlabel,solo_info,si=0,e
 
 def rpSOLO_run_gui(solo_gui):
     # local pointers to useful things
-    ds = solo_gui.dsa
-    #dsb = solo_gui.dsb
-    solo_info = solo_gui.solo_info
+    ds = solo_gui.ds
+    info = solo_gui.info
     # populate the solo_info dictionary with more useful things
     if str(solo_gui.radioButtons.checkedButton().text()) == "Manual":
-        solo_info["peropt"] = 1
+        info["solo"]["gui"]["period_option"] = 1
     elif str(solo_gui.radioButtons.checkedButton().text()) == "Months":
-        solo_info["peropt"] = 2
+        info["solo"]["gui"]["period_option"] = 2
     elif str(solo_gui.radioButtons.checkedButton().text()) == "Days":
-        solo_info["peropt"] = 3
+        info["solo"]["gui"]["period_option"] = 3
 
-    solo_info["overwrite"] = solo_gui.checkBox_Overwrite.isChecked()
-    solo_info["show_plots"] = solo_gui.checkBox_ShowPlots.isChecked()
-    solo_info["show_all"] = solo_gui.checkBox_PlotAll.isChecked()
-    solo_info["auto_complete"] = solo_gui.checkBox_AutoComplete.isChecked()
-    solo_info["min_percent"] = max(int(str(solo_gui.lineEdit_MinPercent.text())), 1)
+    info["solo"]["gui"]["overwrite"] = solo_gui.checkBox_Overwrite.isChecked()
+    info["solo"]["gui"]["show_plots"] = solo_gui.checkBox_ShowPlots.isChecked()
+    info["solo"]["gui"]["show_all"] = solo_gui.checkBox_PlotAll.isChecked()
+    info["solo"]["gui"]["auto_complete"] = solo_gui.checkBox_AutoComplete.isChecked()
+    info["solo"]["gui"]["min_percent"] = max(int(str(solo_gui.lineEdit_MinPercent.text())), 1)
 
-    solo_info["nodes"] = str(solo_gui.lineEdit_Nodes.text())
-    solo_info["training"] = str(solo_gui.lineEdit_Training.text())
-    solo_info["nda_factor"] = str(solo_gui.lineEdit_NdaFactor.text())
-    solo_info["learningrate"] = str(solo_gui.lineEdit_Learning.text())
-    solo_info["iterations"] = str(solo_gui.lineEdit_Iterations.text())
-
+    info["solo"]["gui"]["nodes"] = str(solo_gui.lineEdit_Nodes.text())
+    info["solo"]["gui"]["training"] = str(solo_gui.lineEdit_Training.text())
+    info["solo"]["gui"]["nda_factor"] = str(solo_gui.lineEdit_NdaFactor.text())
+    info["solo"]["gui"]["learning_rate"] = str(solo_gui.lineEdit_Learning.text())
+    info["solo"]["gui"]["iterations"] = str(solo_gui.lineEdit_Iterations.text())
+    info["solo"]["gui"]["drivers"] = str(solo_gui.lineEdit_Drivers.text())
 
     # populate the solo_info dictionary with things that will be useful
-    solo_info["site_name"] = ds.globalattributes["site_name"]
-    solo_info["time_step"] = int(ds.globalattributes["time_step"])
-    solo_info["nperhr"] = int(float(60)/solo_info["time_step"]+0.5)
-    solo_info["nperday"] = int(float(24)*solo_info["nperhr"]+0.5)
-    solo_info["maxlags"] = int(float(12)*solo_info["nperhr"]+0.5)
-    solo_info["tower"] = {}
-    solo_info["access"] = {}
+    info["solo"]["info"]["site_name"] = ds.globalattributes["site_name"]
+    info["solo"]["info"]["time_step"] = int(ds.globalattributes["time_step"])
+    info["solo"]["info"]["nperhr"] = int(float(60)/info["solo"]["info"]["time_step"]+0.5)
+    info["solo"]["info"]["nperday"] = int(float(24)*info["solo"]["info"]["nperhr"]+0.5)
+    info["solo"]["info"]["maxlags"] = int(float(12)*info["solo"]["info"]["nperhr"]+0.5)
     #log.info(" Estimating ER using SOLO")
-    if solo_info["peropt"] == 1:
+    if info["solo"]["gui"]["period_option"] == 1:
         # manual run using start and end datetime entered via GUI
         logger.info(" Starting manual run ...")
         # get the start and end datetimes entered in the SOLO GUI
         if len(str(solo_gui.lineEdit_StartDate.text())) != 0:
-            solo_info["startdate"] = str(solo_gui.lineEdit_StartDate.text())
+            info["solo"]["info"]["startdate"] = str(solo_gui.lineEdit_StartDate.text())
         if len(str(solo_gui.lineEdit_EndDate.text())) != 0:
-            solo_info["enddate"] = str(solo_gui.lineEdit_EndDate.text())
-        rpSOLO_main(ds, solo_info)
-        logger.info("Finished manual run ...")
-    elif solo_info["peropt"] == 2:
+            info["solo"]["info"]["enddate"] = str(solo_gui.lineEdit_EndDate.text())
+        rpSOLO_main(ds, info)
+        logger.info(" Finished manual run ...")
+    elif info["solo"]["gui"]["period_option"] == 2:
         # automatic run with monthly datetime periods
-        logger.info("Starting auto (monthly) run ...")
+        logger.info(" Starting auto (monthly) run ...")
         nMonths = int(solo_gui.lineEdit_NumberMonths.text())
         if len(str(solo_gui.lineEdit_StartDate.text())) != 0:
-            solo_info["startdate"] = str(solo_gui.lineEdit_StartDate.text())
+            info["solo"]["info"]["startdate"] = str(solo_gui.lineEdit_StartDate.text())
         if len(str(solo_gui.lineEdit_EndDate.text())) != 0:
-            solo_info["enddate"] = str(solo_gui.lineEdit_EndDate.text())
-        startdate = dateutil.parser.parse(solo_info["startdate"])
-        file_startdate = dateutil.parser.parse(solo_info["file_startdate"])
-        file_enddate = dateutil.parser.parse(solo_info["file_enddate"])
+            info["solo"]["info"]["enddate"] = str(solo_gui.lineEdit_EndDate.text())
+        startdate = dateutil.parser.parse(info["solo"]["info"]["startdate"])
+        file_startdate = dateutil.parser.parse(info["solo"]["info"]["file_startdate"])
+        file_enddate = dateutil.parser.parse(info["solo"]["info"]["file_enddate"])
         enddate = startdate+dateutil.relativedelta.relativedelta(months=nMonths)
         enddate = min([file_enddate, enddate])
-        solo_info["enddate"] = datetime.datetime.strftime(enddate, "%Y-%m-%d %H:%M")
-        while startdate<file_enddate:
-            rpSOLO_main(ds, solo_info)
+        info["solo"]["info"]["enddate"] = datetime.datetime.strftime(enddate, "%Y-%m-%d %H:%M")
+        while startdate < file_enddate:
+            rpSOLO_main(ds, info)
             startdate = enddate
-            enddate = startdate+dateutil.relativedelta.relativedelta(months=nMonths)
-            solo_info["startdate"] = startdate.strftime("%Y-%m-%d")
-            solo_info["enddate"] = enddate.strftime("%Y-%m-%d")
-        logger.info("Finished auto (monthly) run ...")
-    elif solo_info["peropt"] == 3:
+            enddate = startdate + dateutil.relativedelta.relativedelta(months=nMonths)
+            info["solo"]["info"]["startdate"] = startdate.strftime("%Y-%m-%d")
+            info["solo"]["info"]["enddate"] = enddate.strftime("%Y-%m-%d")
+        logger.info(" Finished auto (monthly) run ...")
+    elif info["solo"]["gui"]["period_option"] == 3:
         # automatic run with number of days specified by user via the GUI
-        logger.info("Starting auto (days) run ...")
+        logger.info(" Starting auto (days) run ...")
         # get the start datetime entered in the SOLO GUI
         nDays = int(solo_gui.lineEdit_NumberDays.text())
         if len(str(solo_gui.lineEdit_StartDate.text())) != 0:
-            solo_info["startdate"] = str(solo_gui.lineEdit_StartDate.text())
+            info["solo"]["info"]["startdate"] = str(solo_gui.lineEdit_StartDate.text())
         if len(solo_gui.lineEdit_EndDate.text()) != 0:
-            solo_info["enddate"] = str(solo_gui.lineEdit_EndDate.text())
-        solo_info["gui_startdate"] = solo_info["startdate"]
-        solo_info["gui_enddate"] = solo_info["enddate"]
-        startdate = dateutil.parser.parse(solo_info["startdate"])
-        gui_enddate = dateutil.parser.parse(solo_info["gui_enddate"])
-        file_startdate = dateutil.parser.parse(solo_info["file_startdate"])
-        file_enddate = dateutil.parser.parse(solo_info["file_enddate"])
+            info["solo"]["info"]["enddate"] = str(solo_gui.lineEdit_EndDate.text())
+        info["solo"]["info"]["gui_startdate"] = info["solo"]["info"]["startdate"]
+        info["solo"]["info"]["gui_enddate"] = info["solo"]["info"]["enddate"]
+        startdate = dateutil.parser.parse(info["solo"]["info"]["startdate"])
+        gui_enddate = dateutil.parser.parse(info["solo"]["info"]["gui_enddate"])
+        file_startdate = dateutil.parser.parse(info["solo"]["info"]["file_startdate"])
+        file_enddate = dateutil.parser.parse(info["solo"]["info"]["file_enddate"])
         enddate = startdate+dateutil.relativedelta.relativedelta(days=nDays)
         enddate = min([file_enddate, enddate, gui_enddate])
-        solo_info["enddate"] = datetime.datetime.strftime(enddate, "%Y-%m-%d %H:%M")
-        solo_info["startdate"] = datetime.datetime.strftime(startdate, "%Y-%m-%d %H:%M")
+        info["solo"]["info"]["enddate"] = datetime.datetime.strftime(enddate, "%Y-%m-%d %H:%M")
+        info["solo"]["info"]["startdate"] = datetime.datetime.strftime(startdate, "%Y-%m-%d %H:%M")
         stopdate = min([file_enddate, gui_enddate])
-        while startdate<stopdate:  #file_enddate:
-            rpSOLO_main(ds, solo_info)
+        while startdate < stopdate:  #file_enddate:
+            rpSOLO_main(ds, info)
             startdate = enddate
             enddate = startdate+dateutil.relativedelta.relativedelta(days=nDays)
             run_enddate = min([stopdate,enddate])
-            solo_info["startdate"] = startdate.strftime("%Y-%m-%d")
-            solo_info["enddate"] = run_enddate.strftime("%Y-%m-%d")
-        logger.info("Finished auto (days) run ...")
-    elif solo_info["peropt"] == 4:
-        ## automatic run with yearly datetime periods
-        #rpSOLO_progress(SOLO_gui,"Starting auto (yearly) run ...")
-        ## get the start date
-        #solo_info["startdate"] = SOLO_gui.startEntry.get()
-        #if len(solo_info["startdate"])==0: solo_info["startdate"] = solo_info["file_startdate"]
-        #startdate = dateutil.parser.parse(solo_info["startdate"])
-        ## get the start year
-        #start_year = startdate.year
-        #enddate = dateutil.parser.parse(str(start_year+1)+"-01-01 00:00")
-        ##file_startdate = dateutil.parser.parse(solo_info["file_startdate"])
-        #file_enddate = dateutil.parser.parse(solo_info["file_enddate"])
-        ##enddate = startdate+dateutil.relativedelta.relativedelta(months=1)
-        #enddate = min([file_enddate,enddate])
-        #solo_info["enddate"] = datetime.datetime.strftime(enddate,"%Y-%m-%d")
-        #while startdate<file_enddate:
-            #rpSOLO_main(ds,solo_info,SOLO_gui=SOLO_gui)
-            #startdate = enddate
-            #enddate = startdate+dateutil.relativedelta.relativedelta(years=1)
-            #solo_info["startdate"] = startdate.strftime("%Y-%m-%d")
-            #solo_info["enddate"] = enddate.strftime("%Y-%m-%d")
-        #rpSOLO_progress(SOLO_gui,"Finished auto (yearly) run ...")
-        pass
-    elif SOLO_gui.peropt.get()==5:
-        pass
+            info["solo"]["info"]["startdate"] = startdate.strftime("%Y-%m-%d")
+            info["solo"]["info"]["enddate"] = run_enddate.strftime("%Y-%m-%d")
+        logger.info(" Finished auto (days) run ...")
 
 def rpSOLO_run_nogui(cf,ds,solo_info):
     # populate the solo_info dictionary with things that will be useful
@@ -660,54 +636,55 @@ def rpSOLO_run_nogui(cf,ds,solo_info):
             solo_info["enddate"] = enddate.strftime("%Y-%m-%d")
         logger.info(" Finished auto (yearly) run ...")
 
-def rpSOLO_runseqsolo(ds,driverlist,targetlabel,outputlabel,nRecs,si=0,ei=-1):
+def rpSOLO_runseqsolo(ds, drivers, targetlabel, outputlabel, nRecs, si=0, ei=-1):
     '''
     Run SEQSOLO.
     '''
     # get the number of drivers
-    ndrivers = len(driverlist)
+    ndrivers = len(drivers)
     # add an extra column for the target data
-    seqsoloinputdata = numpy.zeros((nRecs,ndrivers+1))
+    seqsoloinputdata = numpy.zeros((nRecs, ndrivers + 1))
     # now fill the driver data array
     i = 0
-    for TheseOnes in driverlist:
-        driver,flag,attr = pfp_utils.GetSeries(ds,TheseOnes,si=si,ei=ei)
-        seqsoloinputdata[:,i] = driver[:]
+    for label in drivers:
+        driver, flag, attr = pfp_utils.GetSeries(ds, label, si=si, ei=ei)
+        seqsoloinputdata[:, i] = driver[:]
         i = i + 1
     # a clean copy of the target is pulled from the unmodified ds each time
-    target,flag,attr = pfp_utils.GetSeries(ds,targetlabel,si=si,ei=ei)
+    target, flag, attr = pfp_utils.GetSeries(ds, targetlabel, si=si, ei=ei)
     # now load the target data into the data array
-    seqsoloinputdata[:,ndrivers] = target[:]
+    seqsoloinputdata[:, ndrivers] = target[:]
     # now strip out the bad data
     cind = numpy.zeros(nRecs)
     iind = numpy.arange(nRecs)
     # do only the drivers not the target
     for i in range(ndrivers):
-        index = numpy.where(seqsoloinputdata[:,i]==c.missing_value)[0]
-        if len(index!=0): cind[index] = 1
+        index = numpy.where(seqsoloinputdata[:, i] == c.missing_value)[0]
+        if len(index) != 0:
+            cind[index] = 1
     # index of good data
-    index = numpy.where(cind==0)[0]
+    index = numpy.where(cind == 0)[0]
     nRecs_good = len(index)
-    gooddata = numpy.zeros((nRecs_good,ndrivers+1))
-    for i in range(ndrivers+1):
-        gooddata[:,i] = seqsoloinputdata[:,i][index]
+    gooddata = numpy.zeros((nRecs_good, ndrivers+1))
+    for i in range(ndrivers + 1):
+        gooddata[:, i] = seqsoloinputdata[:, i][index]
     # keep track of the good data indices
     goodindex = iind[index]
     # and then write the seqsolo input file
-    seqsolofile = open('solo/input/seqsolo_input.csv','wb')
-    wr = csv.writer(seqsolofile,delimiter=',')
+    seqsolofile = open('solo/input/seqsolo_input.csv', 'wb')
+    wr = csv.writer(seqsolofile, delimiter=',')
     for i in range(gooddata.shape[0]):
-        wr.writerow(gooddata[i,0:ndrivers+1])
+        wr.writerow(gooddata[i, 0:ndrivers + 1])
     seqsolofile.close()
     # if the output file from a previous run exists, delete it
-    if os.path.exists('solo/output/seqOut2.out'): os.remove('solo/output/seqOut2.out')
+    if os.path.exists('solo/output/seqOut2.out'):
+        os.remove('solo/output/seqOut2.out')
     # now run SEQSOLO
-    #log.info(' GapFillUsingSOLO: running SEQSOLO')
-    seqsolologfile = open('solo/log/seqsolo.log','wb')
-    if platform.system()=="Windows":
-        subprocess.call(['./solo/bin/seqsolo.exe','solo/inf/seqsolo.inf'],stdout=seqsolologfile)
+    seqsolologfile = open('solo/log/seqsolo.log', 'wb')
+    if platform.system() == "Windows":
+        subprocess.call(['./solo/bin/seqsolo.exe', 'solo/inf/seqsolo.inf'], stdout=seqsolologfile)
     else:
-        subprocess.call(['./solo/bin/seqsolo','solo/inf/seqsolo.inf'],stdout=seqsolologfile)
+        subprocess.call(['./solo/bin/seqsolo', 'solo/inf/seqsolo.inf'], stdout=seqsolologfile)
     seqsolologfile.close()
     # check to see if the solo output file exists, this is used to indicate that solo ran correctly
     if os.path.exists('solo/output/seqOut2.out'):
@@ -715,125 +692,140 @@ def rpSOLO_runseqsolo(ds,driverlist,targetlabel,outputlabel,nRecs,si=0,ei=-1):
         # seqsolo can be used via the "learning rate" and "Iterations" GUI options
         seqdata = numpy.genfromtxt('solo/output/seqOut2.out')
         # put the SOLO modelled data back into the data series
-        if ei==-1:
-            ds.series[outputlabel]['Data'][si:][goodindex] = seqdata[:,1]
+        if ei == -1:
+            ds.series[outputlabel]['Data'][si:][goodindex] = seqdata[:, 1]
             ds.series[outputlabel]['Flag'][si:][goodindex] = numpy.int32(30)
         else:
-            ds.series[outputlabel]['Data'][si:ei+1][goodindex] = seqdata[:,1]
+            ds.series[outputlabel]['Data'][si:ei+1][goodindex] = seqdata[:, 1]
             ds.series[outputlabel]['Flag'][si:ei+1][goodindex] = numpy.int32(30)
         # set the attributes
         ds.series[outputlabel]["Attr"]["units"] = ds.series[targetlabel]["Attr"]["units"]
         if "modelled by SOLO" not in ds.series[outputlabel]["Attr"]["long_name"]:
             ds.series[outputlabel]["Attr"]["long_name"] = "Ecosystem respiration modelled by SOLO (ANN)"
             ds.series[outputlabel]["Attr"]["comment1"] = "Target was "+str(targetlabel)
-            ds.series[outputlabel]["Attr"]["comment2"] = "Drivers were "+str(driverlist)
+            ds.series[outputlabel]["Attr"]["comment2"] = "Drivers were "+str(drivers)
         return 1
     else:
         logger.error(' SOLO_runseqsolo: SEQSOLO did not run correctly, check the SOLO GUI and the log files')
         return 0
 
-def rpSOLO_runsofm(ds,SOLO_gui,driverlist,targetlabel,nRecs,si=0,ei=-1):
+def rpSOLO_runsofm(ds, drivers, targetlabel, nRecs, si=0, ei=-1):
     """
-    Run sofm, the pre-processor for SOLO.
+    Run SOFM, the pre-processor for SOLO.
     """
     # get the number of drivers
-    ndrivers = len(driverlist)
+    ndrivers = len(drivers)
     # add an extra column for the target data
-    sofminputdata = numpy.zeros((nRecs,ndrivers))
+    sofminputdata = numpy.zeros((nRecs, ndrivers))
     # now fill the driver data array
     i = 0
     badlines = []
-    for TheseOnes in driverlist:
-        driver,flag,attr = pfp_utils.GetSeries(ds,TheseOnes,si=si,ei=ei)
-        index = numpy.where(abs(driver-float(c.missing_value))<c.eps)[0]
-        if len(index)!=0:
-            logger.error(' SOLO_runsofm: c.missing_value found in driver '+TheseOnes+' at lines '+str(index))
+    baddates = []
+    badvalues = []
+    for label in drivers:
+        driver, flag, attr = pfp_utils.GetSeries(ds, label, si=si, ei=ei)
+        index = numpy.where(abs(driver-float(c.missing_value)) < c.eps)[0]
+        if len(index) != 0:
+            msg = " ERUsingSOLO: c.missing_value found in driver " + label + " at lines " + str(index)
+            logger.error(msg)
             badlines = badlines+index.tolist()
+            for n in index:
+                baddates.append(ds.series["DateTime"]["Data"][n])
+                badvalues.append(ds.series[label]["Data"][n])
+            msg = " GapFillUsingSOLO: driver values: " + str(badvalues)
+            logger.error(msg)
+            msg = " GapFillUsingSOLO: datetimes: " + str(baddates)
+            logger.error(msg)
         sofminputdata[:,i] = driver[:]
         i = i + 1
-    if len(badlines)!=0:
+    if len(badlines) != 0:
         nBad = len(badlines)
-        goodlines = [x for x in range(0,nRecs) if x not in badlines]
-        sofminputdata = sofminputdata[goodlines,:]
-        logger.info(' SOLO_runsofm: removed '+str(nBad)+' lines from sofm input file')
+        goodlines = [x for x in range(0, nRecs) if x not in badlines]
+        sofminputdata = sofminputdata[goodlines, :]
+        msg = " ERUsingSOLO: removed " + str(nBad) + " lines from sofm input file"
+        logger.info(msg)
         nRecs = len(goodlines)
     # now write the drivers to the SOFM input file
-    sofmfile = open('solo/input/sofm_input.csv','wb')
-    wr = csv.writer(sofmfile,delimiter=',')
+    sofmfile = open('solo/input/sofm_input.csv', 'wb')
+    wr = csv.writer(sofmfile, delimiter=',')
     for i in range(sofminputdata.shape[0]):
-        wr.writerow(sofminputdata[i,0:ndrivers])
+        wr.writerow(sofminputdata[i, 0:ndrivers])
     sofmfile.close()
     # if the output file from a previous run exists, delete it
-    if os.path.exists('solo/output/sofm_4.out'): os.remove('solo/output/sofm_4.out')
+    if os.path.exists('solo/output/sofm_4.out'):
+        os.remove('solo/output/sofm_4.out')
     # now run SOFM
-    sofmlogfile = open('solo/log/sofm.log','wb')
-    if platform.system()=="Windows":
-        subprocess.call(['./solo/bin/sofm.exe','solo/inf/sofm.inf'],stdout=sofmlogfile)
+    sofmlogfile = open('solo/log/sofm.log', 'wb')
+    if platform.system() == "Windows":
+        subprocess.call(['./solo/bin/sofm.exe', 'solo/inf/sofm.inf'], stdout=sofmlogfile)
     else:
-        subprocess.call(['./solo/bin/sofm','solo/inf/sofm.inf'],stdout=sofmlogfile)
+        subprocess.call(['./solo/bin/sofm', 'solo/inf/sofm.inf'], stdout=sofmlogfile)
     sofmlogfile.close()
     # check to see if the sofm output file exists, this is used to indicate that sofm ran correctly
     if os.path.exists('solo/output/sofm_4.out'):
         return 1
     else:
-        logger.error(' SOLO_runsofm: SOFM did not run correctly, check the GUI and the log files')
+        msg = " ERUsingSOLO SOFM did not run correctly, check the GUI and the log files"
+        logger.error(msg)
         return 0
 
-def rpSOLO_runsolo(ds,driverlist,targetlabel,nRecs,si=0,ei=-1):
+def rpSOLO_runsolo(ds, drivers, targetlabel, nRecs, si=0, ei=-1):
     '''
     Run SOLO.
     '''
-    ndrivers = len(driverlist)
+    ndrivers = len(drivers)
     # add an extra column for the target data
-    soloinputdata = numpy.zeros((nRecs,ndrivers+1))
+    soloinputdata = numpy.zeros((nRecs, ndrivers+1))
     # now fill the driver data array, drivers come from the modified ds
     i = 0
-    for TheseOnes in driverlist:
-        driver,flag,attr = pfp_utils.GetSeries(ds,TheseOnes,si=si,ei=ei)
+    for label in drivers:
+        driver, flag, attr = pfp_utils.GetSeries(ds, label, si=si, ei=ei)
         soloinputdata[:,i] = driver[:]
         i = i + 1
-    # a clean copy of the target is pulled from the ds each time
-    target,flag,attr = pfp_utils.GetSeries(ds,targetlabel,si=si,ei=ei)
+    # get the target data
+    target, flag, attr = pfp_utils.GetSeries(ds, targetlabel, si=si, ei=ei)
     # now load the target data into the data array
-    soloinputdata[:,ndrivers] = target[:]
+    soloinputdata[:, ndrivers] = target[:]
     # now strip out the bad data
     cind = numpy.zeros(nRecs)
     for i in range(ndrivers+1):
-        index = numpy.where(soloinputdata[:,i]==c.missing_value)[0]
-        if len(index!=0): cind[index] = 1
-    index = numpy.where(cind==0)[0]
+        index = numpy.where(soloinputdata[:, i] == c.missing_value)[0]
+        if len(index) != 0:
+            cind[index] = 1
+    index = numpy.where(cind == 0)[0]
     nRecs_good = len(index)
-    gooddata = numpy.zeros((nRecs_good,ndrivers+1))
+    gooddata = numpy.zeros((nRecs_good, ndrivers+1))
     for i in range(ndrivers+1):
-        gooddata[:,i] = soloinputdata[:,i][index]
+        gooddata[:, i] = soloinputdata[:, i][index]
     # and then write the solo input file, the name is assumed by the solo.inf control file
-    solofile = open('solo/input/solo_input.csv','wb')
-    wr = csv.writer(solofile,delimiter=',')
+    solofile = open('solo/input/solo_input.csv', 'wb')
+    wr = csv.writer(solofile, delimiter=',')
     for i in range(gooddata.shape[0]):
-        wr.writerow(gooddata[i,0:ndrivers+1])
+        wr.writerow(gooddata[i, 0:ndrivers + 1])
     solofile.close()
     # if the output file from a previous run exists, delete it
-    if os.path.exists('solo/output/eigenValue.out'): os.remove('solo/output/eigenValue.out')
+    if os.path.exists('solo/output/eigenValue.out'):
+        os.remove('solo/output/eigenValue.out')
     # now run SOLO
-    #log.info(' GapFillUsingSOLO: running SOLO')
-    solologfile = open('solo/log/solo.log','wb')
-    if platform.system()=="Windows":
-        subprocess.call(['./solo/bin/solo.exe','solo/inf/solo.inf'],stdout=solologfile)
+    solologfile = open('solo/log/solo.log', 'wb')
+    if platform.system() == "Windows":
+        subprocess.call(['./solo/bin/solo.exe', 'solo/inf/solo.inf'], stdout=solologfile)
     else:
-        subprocess.call(['./solo/bin/solo','solo/inf/solo.inf'],stdout=solologfile)
+        subprocess.call(['./solo/bin/solo', 'solo/inf/solo.inf'], stdout=solologfile)
     solologfile.close()
     # check to see if the solo output file exists, this is used to indicate that solo ran correctly
     if os.path.exists('solo/output/eigenValue.out'):
         return 1
     else:
-        logger.error(' SOLO_runsolo: SOLO did not run correctly, check the SOLO GUI and the log files')
+        msg = " ERUsingSOLO: SOLO did not run correctly, check the SOLO GUI and the log files"
+        logger.error(msg)
         return 0
 
-def rpSOLO_writeinffiles(solo_info):
+def rpSOLO_writeinffiles(info):
     # sofm inf file
     f = open('solo/inf/sofm.inf','w')
-    f.write(str(solo_info["nodes"])+'\n')
-    f.write(str(solo_info["training"])+'\n')
+    f.write(str(info["solo"]["gui"]["nodes"])+'\n')
+    f.write(str(info["solo"]["gui"]["training"])+'\n')
     f.write(str(20)+'\n')
     f.write(str(0.01)+'\n')
     f.write(str(1234)+'\n')
@@ -858,8 +850,8 @@ def rpSOLO_writeinffiles(solo_info):
     f.close()
     # solo inf file
     f = open('solo/inf/solo.inf','w')
-    f.write(str(solo_info["nodes"])+'\n')
-    f.write(str(solo_info["nda_factor"])+'\n')
+    f.write(str(info["solo"]["gui"]["nodes"])+'\n')
+    f.write(str(info["solo"]["gui"]["nda_factor"])+'\n')
     f.write('solo/output/sofm_4.out'+'\n')
     f.write('solo/input/solo_input.csv'+'\n')
     f.write('training'+'\n')
@@ -888,10 +880,10 @@ def rpSOLO_writeinffiles(solo_info):
     f.close()
     # seqsolo inf file
     f = open('solo/inf/seqsolo.inf','w')
-    f.write(str(solo_info["nodes"])+'\n')
+    f.write(str(info["solo"]["gui"]["nodes"])+'\n')
     f.write(str(0)+'\n')
-    f.write(str(solo_info["learningrate"])+'\n')
-    f.write(str(solo_info["iterations"])+'\n')
+    f.write(str(info["solo"]["gui"]["learning_rate"])+'\n')
+    f.write(str(info["solo"]["gui"]["iterations"])+'\n')
     f.write('solo/output/sofm_4.out'+'\n')
     f.write('solo/input/seqsolo_input.csv'+'\n')
     f.write('simulation'+'\n')
@@ -923,3 +915,8 @@ def rpSOLO_writeinffiles(solo_info):
     f.write('Lines 10 to 21: output files from SEQSOLO with path relative to current directory\n')
     f.write('Line 22: missing data value, default value is c.missing_value.0\n')
     f.close()
+
+def trap_masked_constant(num):
+    if numpy.ma.is_masked(num):
+        num = float(c.missing_value)
+    return num

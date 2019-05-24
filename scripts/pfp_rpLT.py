@@ -1,15 +1,18 @@
-import ast
+""" Routines for estimating ER using Lloyd-Taylor """
+# standard modules
 import calendar
-import constants as c
 import datetime
 import logging
+import os
+import sys
+# 3rd party modules
 import numpy
 import matplotlib.pyplot as plt
-import os
-import pfp_utils
 import scipy
-import sys
-import pdb
+# PFP modules
+import constants as c
+import pfp_cfg
+import pfp_utils
 
 logger = logging.getLogger("pfp_log")
 
@@ -355,7 +358,7 @@ def optimise_annual_Eo(data_dict, params_dict, configs_dict, year_index_dict):
         logger.info(" Eo estimates passed QC for all years")
     return yearsEo_dict, yearsQC_dict, yearsEo_raw_dict, yearsQC_raw_dict, status
 
-def rpLT_createdict(cf,ds,series):
+def rpLT_createdict(cf, ds, info, label):
     """
     Purpose:
      Creates a dictionary in ds to hold information about estimating ecosystem
@@ -364,71 +367,61 @@ def rpLT_createdict(cf,ds,series):
     Author: PRI
     Date October 2015
     """
-    # get the section of the control file containing the series
-    section = pfp_utils.get_cfsection(cf,series=series,mode="quiet")
-    # return without doing anything if the series isn't in a control file section
-    if len(section)==0:
-        logger.error("ERUsingLloydTaylor: Series "+series+" not found in control file, skipping ...")
-        return
+    # get the target
+    target = pfp_utils.get_keyvaluefromcf(cf, ["ER", label, "ERUsingLloydTaylor"], "target", default="ER")
     # check that none of the drivers have missing data
-    #driver_list = ast.literal_eval(cf[section][series]["ERUsingLloydTaylor"]["drivers"])
-    driver_string = cf[section][series]["ERUsingLloydTaylor"]["drivers"]
-    if "," in driver_string:
-        driver_list = driver_string.split(",")
-    else:
-        driver_list = [driver_string]
-    target = cf[section][series]["ERUsingLloydTaylor"]["target"]
-    for label in driver_list:
-        data,flag,attr = pfp_utils.GetSeriesasMA(ds,label)
-        if numpy.ma.count_masked(data)!=0:
-            logger.error("ERUsingLloydTaylor: driver "+label+" contains missing data, skipping target "+target)
+    opt = pfp_utils.get_keyvaluefromcf(cf, ["ER", label, "ERUsingLloydTaylor"], "drivers", default="Ta")
+    drivers = pfp_cfg.cfg_string_to_list(opt)
+    for driver in drivers:
+        data, flag, attr = pfp_utils.GetSeriesasMA(ds, driver)
+        if numpy.ma.count_masked(data) != 0:
+            msg = "ERUsingLloydTaylor: driver " + driver + " contains missing data, skipping target " + target
+            logger.error(msg)
             return
     # create the dictionary keys for this series
-    rpLT_info = {}
-    # site name
-    rpLT_info["site_name"] = ds.globalattributes["site_name"]
-    # source series for ER
-    opt = pfp_utils.get_keyvaluefromcf(cf, [section,series,"ERUsingLloydTaylor"], "source", default="Fc")
-    rpLT_info["source"] = opt
+    if "lloydtaylor" not in info:
+        info["lloydtaylor"] = {"outputs": {label: {}}}
+    ilol = info["lloydtaylor"]["outputs"][label]
     # target series name
-    rpLT_info["target"] = cf[section][series]["ERUsingLloydTaylor"]["target"]
+    ilol["target"] = target
     # list of drivers
-    #rpLT_info["drivers"] = ast.literal_eval(cf[section][series]["ERUsingLloydTaylor"]["drivers"])
-    rpLT_info["drivers"] = driver_list
-    # name of SOLO output series in ds
-    rpLT_info["output"] = cf[section][series]["ERUsingLloydTaylor"]["output"]
+    ilol["drivers"] = drivers
+    # source to use as CO2 flux
+    opt = pfp_utils.get_keyvaluefromcf(cf, ["ER", label, "ERUsingLloydTaylor"], "source", default="Fc")
+    ilol["source"] = opt
+    # name of output series in ds
+    output = pfp_utils.get_keyvaluefromcf(cf, ["ER", label, "ERUsingLloydTaylor"], "output", default="ER_LT_all")
+    ilol["output"] = output
     # results of best fit for plotting later on
-    rpLT_info["results"] = {"startdate":[],"enddate":[],"No. points":[],"r":[],
-                            "Bias":[],"RMSE":[],"Frac Bias":[],"NMSE":[],
-                            "Avg (obs)":[],"Avg (LT)":[],
-                            "Var (obs)":[],"Var (LT)":[],"Var ratio":[],
-                            "m_ols":[],"b_ols":[]}
+    ilol["results"] = {"startdate":[], "enddate":[], "No. points":[], "r":[],
+                       "Bias":[], "RMSE":[], "Frac Bias":[], "NMSE":[],
+                       "Avg (obs)":[], "Avg (LT)":[],
+                       "Var (obs)":[], "Var (LT)":[], "Var ratio":[],
+                       "m_ols":[], "b_ols":[]}
     # create the configuration dictionary
-    rpLT_info["configs_dict"] = get_configs_dict(cf,ds)
+    ilol["configs_dict"] = get_configs_dict(cf, ds)
     # create an empty series in ds if the output series doesn't exist yet
-    if rpLT_info["output"] not in ds.series.keys():
-        data,flag,attr = pfp_utils.MakeEmptySeries(ds,rpLT_info["output"])
-        pfp_utils.CreateSeries(ds,rpLT_info["output"],data,flag,attr)
-    # create the merge directory in the data structure
-    if "merge" not in dir(ds): ds.merge = {}
-    if "standard" not in ds.merge.keys(): ds.merge["standard"] = {}
+    if ilol["output"] not in ds.series.keys():
+        data, flag, attr = pfp_utils.MakeEmptySeries(ds, ilol["output"])
+        pfp_utils.CreateSeries(ds, ilol["output"], data, flag, attr)
+    # create the merge directory in the info dictionary
+    if "merge" not in info:
+        info["merge"] = {}
+    if "standard" not in info["merge"].keys():
+        info["merge"]["standard"] = {}
     # create the dictionary keys for this series
-    ds.merge["standard"][series] = {}
+    info["merge"]["standard"][label] = {}
     # output series name
-    ds.merge["standard"][series]["output"] = series
+    info["merge"]["standard"][label]["output"] = label
     # source
-    #ds.merge["standard"][series]["source"] = ast.literal_eval(cf[section][series]["MergeSeries"]["Source"])
-    source_string = cf[section][series]["MergeSeries"]["Source"]
-    if "," in source_string:
-        source_list = source_string.split(",")
-    else:
-        source_list = [source_string]
-    ds.merge["standard"][series]["source"] = source_list
+    opt = pfp_utils.get_keyvaluefromcf(cf, ["ER", label, "MergeSeries"], "Source", default="ER,ER_LT_all")
+    sources = pfp_cfg.cfg_string_to_list(opt)
+    info["merge"]["standard"][label]["source"] = sources
     # create an empty series in ds if the output series doesn't exist yet
-    if ds.merge["standard"][series]["output"] not in ds.series.keys():
-        data,flag,attr = pfp_utils.MakeEmptySeries(ds,ds.merge["standard"][series]["output"])
-        pfp_utils.CreateSeries(ds,ds.merge["standard"][series]["output"],data,flag,attr)
-    return rpLT_info
+    if info["merge"]["standard"][label]["output"] not in ds.series.keys():
+        data, flag, attr = pfp_utils.MakeEmptySeries(ds, info["merge"]["standard"][label]["output"])
+        pfp_utils.CreateSeries(ds, info["merge"]["standard"][label]["output"], data, flag, attr)
+    return
 
 def rpLT_initplot(**kwargs):
     # set the margins, heights, widths etc
@@ -443,10 +436,13 @@ def rpLT_initplot(**kwargs):
     pd["ts_height"] = (1.0 - pd["margin_top"] - pd["ts_bottom"])/float(pd["nDrivers"]+1)
     return pd
 
-def rpLT_plot(pd,ds,series,driverlist,targetlabel,outputlabel,LT_info,si=0,ei=-1):
+def rpLT_plot(pd,ds,series,driverlist,targetlabel,outputlabel,info,si=0,ei=-1):
     """ Plot the results of the Lloyd-Taylor run. """
+    ielo = info["er"]["lloydtaylor"]["outputs"]
     # get the time step
     ts = int(ds.globalattributes['time_step'])
+    nperhr = int(float(60)/ts)
+    nperday = int(float(24)*nperhr)
     # get a local copy of the datetime series
     if ei==-1:
         dt = ds.series['DateTime']['Data'][si:]
@@ -458,11 +454,11 @@ def rpLT_plot(pd,ds,series,driverlist,targetlabel,outputlabel,LT_info,si=0,ei=-1
     obs,f,a = pfp_utils.GetSeriesasMA(ds,targetlabel,si=si,ei=ei)
     mod,f,a = pfp_utils.GetSeriesasMA(ds,outputlabel,si=si,ei=ei)
     # make the figure
-    if LT_info["show_plots"]:
+    if ielo[outputlabel]["configs_dict"]["show_plots"]:
         plt.ion()
     else:
         plt.ioff()
-    fig = plt.figure(pd["fig_num"],figsize=(13,8))
+    fig = plt.figure(pd["fig_num"], figsize=(13, 8))
     fig.clf()
     fig.canvas.set_window_title(targetlabel+" (LT): "+pd["startdate"]+" to "+pd["enddate"])
     plt.figtext(0.5,0.95,pd["title"],ha='center',size=16)

@@ -25,7 +25,7 @@ warnings.filterwarnings("ignore",".*GUI is implemented.*")
 logger = logging.getLogger("pfp_log")
 
 # functions for GapFillFromAlternate
-def GapFillFromAlternate(main_gui, cf, ds4, ds_alt):
+def GapFillFromAlternate(main_gui, ds4, ds_alt, l4_info):
     '''
     This is the gap fill from alternate data GUI.
     The alternate data gap fill GUI is displayed separately from the main OzFluxQC GUI.
@@ -35,49 +35,45 @@ def GapFillFromAlternate(main_gui, cf, ds4, ds_alt):
     the GUI when we are done.  On exit, the OzFluxQC main GUI continues
     and eventually writes the gap filled data to file.
     '''
+    # local point to the control file
+    cf = l4_info["cf"]
     # set the default return code
     ds4.returncodes["alternate"] = "normal"
-    if "alternate" not in dir(ds4):
+    if "alternate" not in l4_info.keys():
         return
     # get a local pointer to the tower datetime series
     ldt_tower = ds4.series["DateTime"]["Data"]
     # get the start and end datetime of the tower data
     startdate = ldt_tower[0]
     enddate = ldt_tower[-1]
-    # create the alternate_info dictionary, this will hold much useful information
-    alternate_info = {"overlap_startdate":startdate.strftime("%Y-%m-%d %H:%M"),
-                      "overlap_enddate":enddate.strftime("%Y-%m-%d %H:%M"),
-                      "startdate":startdate.strftime("%Y-%m-%d %H:%M"),
-                      "enddate":enddate.strftime("%Y-%m-%d %H:%M"),
-                      "plot_path": cf["Files"]["plot_path"]}
     # check to see if this is a batch or an interactive run
     call_mode = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "call_mode", default="interactive")
-    alternate_info["call_mode"]= call_mode
-    if call_mode.lower()=="interactive":
-        alternate_info["show_plots"] = True
-    if call_mode.lower()=="interactive":
+    # create the alternate_info dictionary, this will hold much useful information
+    l4a = l4_info["alternate"]
+    l4a["info"] = {"overlap_startdate": startdate.strftime("%Y-%m-%d %H:%M"),
+                   "overlap_enddate": enddate.strftime("%Y-%m-%d %H:%M"),
+                   "startdate": startdate.strftime("%Y-%m-%d %H:%M"),
+                   "enddate": enddate.strftime("%Y-%m-%d %H:%M"),
+                   "plot_path": cf["Files"]["plot_path"],
+                   "call_mode": call_mode,
+                   "time_step": int(ds4.globalattributes["time_step"]),
+                   "site_name": ds4.globalattributes["site_name"]}
+    # add a gui section to the l4_info["alternate"] dictionary
+    l4a["gui"] = {}
+    if call_mode.lower() == "interactive":
+        l4a["gui"]["show_plots"] = True
         # put up a plot of the data coverage at L3
-        gfalternate_plotcoveragelines(ds4)
+        gfalternate_plotcoveragelines(ds4, l4_info)
         # call the GapFillFromAlternate GUI
-        gfalternate_gui(main_gui, ds4, ds_alt, alternate_info)
+        gfalternate_gui(main_gui, ds4, ds_alt, l4_info)
     else:
-        if "GUI" in cf:
-            if "Alternate" in cf["GUI"]:
-                gfalternate_run_nogui(cf, ds4, ds_alt, alternate_info)
-            else:
-                logger.warning(" No GUI sub-section found in Options section of control file")
-                gfalternate_plotcoveragelines(ds4)
-                gfalternate_gui(main_gui, ds4, ds_alt, alternate_info)
-        else:
-            logger.warning(" No GUI sub-section found in Options section of control file")
-            gfalternate_plotcoveragelines(ds4)
-            gfalternate_gui(main_gui, ds4, ds_alt, alternate_info)
+        gfalternate_run_nogui(ds4, ds_alt, l4_info)
 
-def gfalternate_gui(main_gui, ds4, ds_alt, alternate_info):
+def gfalternate_gui(main_gui, ds4, ds_alt, l4_info):
     # put up the start and end dates
     main_gui.l4_ui.ds4 = ds4
     main_gui.l4_ui.ds_alt = ds_alt
-    main_gui.l4_ui.alternate_info = alternate_info
+    main_gui.l4_ui.l4_info = l4_info
     main_gui.l4_ui.edit_cfg = main_gui.tabs.tab_dict[main_gui.tabs.tab_index_running]
     start_date = ds4.series["DateTime"]["Data"][0].strftime("%Y-%m-%d %H:%M")
     end_date = ds4.series["DateTime"]["Data"][-1].strftime("%Y-%m-%d %H:%M")
@@ -86,7 +82,7 @@ def gfalternate_gui(main_gui, ds4, ds_alt, alternate_info):
     main_gui.l4_ui.show()
     main_gui.l4_ui.exec_()
 
-def gfalternate_autocomplete(ds_tower,ds_alt,alternate_info,mode="verbose"):
+def gfalternate_autocomplete(ds_tower, ds_alt, l4_info, mode="verbose"):
     """
     Purpose:
      Gap fill using alternate data with gaps identified automatically.
@@ -112,113 +108,114 @@ def gfalternate_autocomplete(ds_tower,ds_alt,alternate_info,mode="verbose"):
     #   gfalternate_main
     # - there are logical inconsistencies between this routine and
     #   gfalternate_main
+    l4a = l4_info["alternate"]
     mode = "quiet" #"verbose" #"quiet"
-    if not alternate_info["auto_complete"]: return
+    if not l4a["gui"]["auto_complete"]: return
     dt_tower = ds_tower.series["DateTime"]["Data"]
     nRecs = len(dt_tower)
-    ts = alternate_info["time_step"]
-    si_tower = pfp_utils.GetDateIndex(dt_tower,alternate_info["gui_startdate"],ts=ts,default=0)
-    ei_tower = pfp_utils.GetDateIndex(dt_tower,alternate_info["gui_enddate"],ts=ts,default=nRecs-1)
-    ldt_tower = dt_tower[si_tower:ei_tower+1]
+    ts = int(ds_tower.globalattributes["time_step"])
+    si_tower = pfp_utils.GetDateIndex(dt_tower, l4a["info"]["gui_startdate"], ts=ts, default=0)
+    ei_tower = pfp_utils.GetDateIndex(dt_tower, l4a["info"]["gui_enddate"], ts=ts, default=nRecs-1)
+    ldt_tower = dt_tower[si_tower: ei_tower + 1]
     nRecs_gui = len(ldt_tower)
-    label_tower_list = list(set(alternate_info["series_list"]))
+    label_tower_list = l4a["gui"]["series_list"]
     for label_tower in label_tower_list:
         data_all = {}
-        label_composite = label_tower+"_composite"
+        label_composite = label_tower + "_composite"
         not_enough_points = False
         data_composite, _, _ = pfp_utils.GetSeriesasMA(ds_tower, label_composite, si=si_tower, ei=ei_tower)
         data_tower, _, _ = pfp_utils.GetSeriesasMA(ds_tower, label_tower, si=si_tower, ei=ei_tower)
         mask_composite = numpy.ma.getmaskarray(data_composite)
         gapstartend = pfp_utils.contiguous_regions(mask_composite)
-        if len(gapstartend)==0:
-            if mode.lower()!="quiet":
-                msg = " autocomplete: composite "+label_composite+" has no gaps to fill, skipping ..."
+        if len(gapstartend) == 0:
+            if mode.lower() != "quiet":
+                msg = " autocomplete: composite " + label_composite + " has no gaps to fill, skipping ..."
                 logger.info(msg)
             continue
         # now check all of the alternate data sources to see if they have anything to contribute
         gotdataforgap = [False]*len(gapstartend)
-        label_output_list = gfalternate_getlabeloutputlist(ds_tower,label_tower)
+        label_output_list = gfalternate_getlabeloutputlist(l4_info, label_tower)
         for label_output in label_output_list:
-            alt_filename = ds_tower.alternate[label_output]["file_name"]
+            alt_filename = l4a["outputs"][label_output]["file_name"]
             ds_alternate = ds_alt[alt_filename]
             dt_alternate = ds_alternate.series["DateTime"]["Data"]
-            si_alternate = pfp_utils.GetDateIndex(dt_alternate,alternate_info["gui_startdate"],ts=ts,default=0)
-            ei_alternate = pfp_utils.GetDateIndex(dt_alternate,alternate_info["gui_enddate"],ts=ts,default=nRecs-1)
+            si_alternate = pfp_utils.GetDateIndex(dt_alternate, l4a["info"]["gui_startdate"], ts=ts, default=0)
+            ei_alternate = pfp_utils.GetDateIndex(dt_alternate, l4a["info"]["gui_enddate"], ts=ts, default=nRecs-1)
             alt_series_list = [item for item in ds_alternate.series.keys() if "_QCFlag" not in item]
-            alt_series_list = [item for item in alt_series_list if ds_tower.alternate[label_output]["alternate_name"] in item]
+            alt_series_list = [item for item in alt_series_list if l4a["outputs"][label_output]["target"] in item]
             for label_alternate in alt_series_list:
                 data_alt, _, _ = pfp_utils.GetSeriesasMA(ds_alternate, label_alternate, si=si_alternate, ei=ei_alternate)
                 data_all[label_alternate] = data_alt
-                for n,gap in enumerate(gapstartend):
-                    min_points = max([int(((gap[1]-gap[0])+1)*alternate_info["min_percent"]/100),3*alternate_info["nperhr"]])
-                    if numpy.ma.count(data_alt[gap[0]:gap[1]])>=min_points:
-                        if mode.lower()!="quiet":
-                            msg = " autocomplete: "+label_tower,ldt_tower[gap[0]],ldt_tower[gap[1]]," got data to fill gap"
+                for n, gap in enumerate(gapstartend):
+                    min_points = max([int(((gap[1]-gap[0])+1)*l4a["gui"]["min_percent"]/100),3*l4a["gui"]["nperhr"]])
+                    if numpy.ma.count(data_alt[gap[0]: gap[1]]) >= min_points:
+                        if mode.lower() != "quiet":
+                            msg = " autocomplete: " + label_tower + ldt_tower[gap[0]] + ldt_tower[gap[1]] + " got data to fill gap"
                             logger.info(msg)
                         gotdataforgap[n] = True
-                    if numpy.ma.count_masked(data_tower[gap[0]:gap[1]])==0:
-                        if mode.lower()!="quiet":
-                            msg = " autocomplete: "+label_tower,ldt_tower[gap[0]],ldt_tower[gap[1]]," no gap to fill"
+                    if numpy.ma.count_masked(data_tower[gap[0]: gap[1]]) == 0:
+                        if mode.lower() != "quiet":
+                            msg = " autocomplete: "+label_tower + ldt_tower[gap[0]] + ldt_tower[gap[1]] + " no gap to fill"
                             logger.info(msg)
                         gotdataforgap[n] = False
         # finished checking all alternate data sources for data to fill remaining gaps
         if mode.lower() != "quiet":
             logger.info(" autocomplete: variable %s has %s gaps", label_tower, str(len(gapstartend)))
         logger.info(" Auto-complete gap filling for %s (%s gaps)", label_tower, str(gotdataforgap.count(True)))
-        for n,gap in enumerate(gapstartend):
-            alternate_info["autoforce"] = False
+        for n, gap in enumerate(gapstartend):
+            l4a["gui"]["autoforce"] = False
             if not gotdataforgap[n]:
-                if mode.lower()!="quiet":
+                if mode.lower() != "quiet":
                     gap_startdate = ldt_tower[gap[0]].strftime("%Y-%m-%d %H:%M")
                     gap_enddate = ldt_tower[gap[1]].strftime("%Y-%m-%d %H:%M")
-                    msg = " autocomplete: no alternate data for "+gap_startdate+" to "+gap_enddate
+                    msg = " autocomplete: no alternate data for " + gap_startdate + " to " + gap_enddate
                     logger.info(msg)
                 continue
-            si = max([0,gap[0]])
-            ei = min([len(ldt_tower)-1,gap[1]])
+            si = max([0, gap[0]])
+            ei = min([len(ldt_tower) - 1, gap[1]])
             gap_startdate = ldt_tower[si].strftime("%Y-%m-%d %H:%M")
             gap_enddate = ldt_tower[ei].strftime("%Y-%m-%d %H:%M")
-            if mode.lower()!="quiet":
-                msg = " autocomplete: gap is "+gap_startdate+" to "+gap_enddate
+            if mode.lower() != "quiet":
+                msg = " autocomplete: gap is " + gap_startdate + " to " + gap_enddate
                 logger.info(msg)
-            min_points = max([int(((gap[1]-gap[0])+1)*alternate_info["min_percent"]/100),3*alternate_info["nperhr"]])
+            min_points = max([int(((gap[1]-gap[0])+1)*l4a["gui"]["min_percent"]/100), 3*l4a["gui"]["nperhr"]])
             num_good_points = 0
             num_points_list = data_all.keys()
             for label in data_all.keys():
-                if numpy.ma.count(data_all[label][gap[0]:gap[1]])<min_points:
+                if numpy.ma.count(data_all[label][gap[0]:gap[1]]) < min_points:
                     num_points_list.remove(label)
                     continue
-                ngpts = gfalternate_getnumgoodpoints(data_tower[gap[0]:gap[1]],data_all[label][gap[0]:gap[1]])
-                num_good_points = max([num_good_points,ngpts])
-            while num_good_points<min_points:
-                gap[0] = max(0,gap[0] - alternate_info["nperday"])
-                gap[1] = min(nRecs_gui-1,gap[1] + alternate_info["nperday"])
-                if gap[0]==0 and gap[1]==nRecs_gui-1:
-                    msg = " Unable to find enough good points in data set for "+label_tower
+                ngpts = gfalternate_getnumgoodpoints(data_tower[gap[0]:gap[1]], data_all[label][gap[0]:gap[1]])
+                num_good_points = max([num_good_points, ngpts])
+            while num_good_points < min_points:
+                gap[0] = max(0, gap[0] - l4a["gui"]["nperday"])
+                gap[1] = min(nRecs_gui - 1, gap[1] + l4a["gui"]["nperday"])
+                if gap[0] == 0 and gap[1] == nRecs_gui - 1:
+                    msg = " Unable to find enough good points in data set for " + label_tower
                     logger.error(msg)
                     msg = " Replacing missing tower data with unmodified alternate data"
                     logger.error(msg)
                     gap[0] = 0; gap[1] = -1
-                    alternate_info["autoforce"] = True
+                    l4a["gui"]["autoforce"] = True
                     not_enough_points = True
                 if not_enough_points: break
-                min_points = max([int(((gap[1]-gap[0])+1)*alternate_info["min_percent"]/100),3*alternate_info["nperhr"]])
+                min_points = max([int(((gap[1]-gap[0])+1)*l4a["gui"]["min_percent"]/100), 3*l4a["gui"]["nperhr"]])
                 for label in num_points_list:
-                    ngpts = gfalternate_getnumgoodpoints(data_tower[gap[0]:gap[1]+1],data_all[label][gap[0]:gap[1]+1])
-                    if ngpts>num_good_points:
+                    ngpts = gfalternate_getnumgoodpoints(data_tower[gap[0]:gap[1]+1], data_all[label][gap[0]:gap[1]+1])
+                    if ngpts > num_good_points:
                         num_good_points = ngpts
             gapfillperiod_startdate = ldt_tower[gap[0]].strftime("%Y-%m-%d %H:%M")
             gapfillperiod_enddate = ldt_tower[gap[1]].strftime("%Y-%m-%d %H:%M")
-            if mode.lower()!="quiet":
-                msg = " autocomplete: gap fill period is "+gapfillperiod_startdate+" to "+gapfillperiod_enddate
+            if mode.lower() != "quiet":
+                msg = " autocomplete: gap fill period is " + gapfillperiod_startdate + " to " + gapfillperiod_enddate
                 logger.info(msg)
-            alternate_info["startdate"] = ldt_tower[gap[0]].strftime("%Y-%m-%d %H:%M")
-            alternate_info["enddate"] = ldt_tower[gap[1]].strftime("%Y-%m-%d %H:%M")
-            gfalternate_main(ds_tower, ds_alt, alternate_info, label_tower_list=[label_tower])
-            gfalternate_plotcoveragelines(ds_tower)
+            l4a["info"]["startdate"] = ldt_tower[gap[0]].strftime("%Y-%m-%d %H:%M")
+            l4a["info"]["enddate"] = ldt_tower[gap[1]].strftime("%Y-%m-%d %H:%M")
+            gfalternate_main(ds_tower, ds_alt, l4_info, label_tower_list=[label_tower])
+            gfalternate_plotcoveragelines(ds_tower, l4_info)
             if not_enough_points: break
 
-def gfalternate_createdataandstatsdict(ldt_tower,data_tower,attr_tower,alternate_info):
+def gfalternate_createdataandstatsdict(ldt_tower, data_tower, attr_tower, l4_info):
     """
     Purpose:
      Creates the data_dict and stat_dict to hold data and statistics during gap filling from
@@ -230,20 +227,23 @@ def gfalternate_createdataandstatsdict(ldt_tower,data_tower,attr_tower,alternate
     Author: PRI
     Date: May 2015
     """
+    l4a = l4_info["alternate"]
     data_dict = {}
     stat_dict = {}
-    label_tower = alternate_info["label_tower"]
-    label_composite = alternate_info["label_composite"]
-    data_dict["DateTime"] = {"data":ldt_tower}
-    data_dict[label_tower] = {"attr":attr_tower,
-                              "output_list":[label_tower,label_composite],
-                              "data":data_tower}
-    data_dict[label_composite] = {"data":numpy.ma.masked_all_like(data_tower),
-                                  "fitcorr":numpy.ma.masked_all_like(data_tower),
-                                  "attr":attr_tower}
-    stat_dict[label_tower] = {"startdate":alternate_info["startdate"],"enddate":alternate_info["enddate"]}
-    stat_dict[label_composite] = {"startdate":alternate_info["startdate"],"enddate":alternate_info["enddate"]}
-    return data_dict,stat_dict
+    label_tower = l4a["run"]["label_tower"]
+    label_composite = l4a["run"]["label_composite"]
+    data_dict["DateTime"] = {"data": ldt_tower}
+    data_dict[label_tower] = {"attr": attr_tower,
+                              "output_list": [label_tower, label_composite],
+                              "data": data_tower}
+    data_dict[label_composite] = {"data": numpy.ma.masked_all_like(data_tower),
+                                  "fitcorr": numpy.ma.masked_all_like(data_tower),
+                                  "attr": attr_tower}
+    stat_dict[label_tower] = {"startdate": l4a["info"]["startdate"],
+                              "enddate": l4a["info"]["enddate"]}
+    stat_dict[label_composite] = {"startdate": l4a["info"]["startdate"],
+                                  "enddate":l4a["info"]["enddate"]}
+    return data_dict, stat_dict
 
 def gfalternate_done(alt_gui):
     """
@@ -257,64 +257,67 @@ def gfalternate_done(alt_gui):
     Author: PRI
     Date: August 2014
     """
-    ds = alt_gui.ds4
     # plot the summary statistics
     #gfalternate_plotsummary(ds,alternate_info)
-    # destroy the alternate GUI
-    alt_gui.close()
-    if len(plt.get_fignums())!=0:
+    # close any open plots
+    if len(plt.get_fignums()) != 0:
         for i in plt.get_fignums():
             plt.close(i)
+    # destroy the alternate GUI
+    alt_gui.close()
     # write Excel spreadsheet with fit statistics
-    pfp_io.xl_write_AlternateStats(ds)
-    # put the return code into ds.alternate
-    ds.returncodes["alternate"] = "normal"
+    pfp_io.xl_write_AlternateStats(alt_gui.ds4, alt_gui.l4_info)
+    # put the return code into ds.returncodes
+    alt_gui.ds4.returncodes["alternate"] = "normal"
 
-def gfalternate_getalternatevaratmaxr(ds_tower,ds_alternate,alternate_info,mode="verbose"):
+def gfalternate_getalternatevaratmaxr(ds_tower, ds_alternate, l4_info, mode="verbose"):
     """
     Purpose:
-     Get a list of alternate variable names that are sorted based on correlation with the tower data.
+     Get a list of alternate variable names that are sorted based on correlation
+     with the tower data.
     Usage:
     Side effects:
     Author: PRI
     Date: August 2014
     """
+    l4a = l4_info["alternate"]
     # get a list of alternate variables for this tower variable
-    label_tower = alternate_info["label_tower"]
-    label_output = alternate_info["label_output"]
-    startdate = alternate_info["startdate"]
-    enddate = alternate_info["enddate"]
-    ts = alternate_info["time_step"]
+    label_tower = l4a["run"]["label_tower"]
+    label_output = l4a["run"]["label_output"]
+    startdate = l4a["info"]["startdate"]
+    enddate = l4a["info"]["enddate"]
+    ts = int(ds_tower.globalattributes["time_step"])
     ldt_tower = ds_tower.series["DateTime"]["Data"]
-    si_tower = pfp_utils.GetDateIndex(ldt_tower, startdate,ts=ts)
-    ei_tower = pfp_utils.GetDateIndex(ldt_tower, enddate,ts=ts)
+    si_tower = pfp_utils.GetDateIndex(ldt_tower, startdate, ts=ts)
+    ei_tower = pfp_utils.GetDateIndex(ldt_tower, enddate, ts=ts)
     data_tower, _, _ = pfp_utils.GetSeriesasMA(ds_tower, label_tower, si=si_tower, ei=ei_tower)
     # local pointers to the start and end indices
     ldt_alternate = ds_alternate.series["DateTime"]["Data"]
     si_alternate = pfp_utils.GetDateIndex(ldt_alternate, startdate, ts=ts)
     ei_alternate = pfp_utils.GetDateIndex(ldt_alternate, enddate, ts=ts)
     # create an array for the correlations and a list for the alternate variables in order of decreasing correlation
-    if "usevars" not in ds_tower.alternate[label_output]:
-        altvar_list = gfalternate_getalternatevarlist(ds_alternate, alternate_info["alternate_name"])
+    if "usevars" not in l4a["outputs"][label_output]:
+        altvar_list = gfalternate_getalternatevarlist(ds_alternate, l4a["run"]["label_tower"])
     else:
-        altvar_list = ds_tower.alternate[label_output]["usevars"]
+        altvar_list = l4a["outputs"][label_output]["usevars"]
     r = numpy.zeros(len(altvar_list))
     # loop over the variables in the alternate file
-    for idx,var in enumerate(altvar_list):
+    for idx, var in enumerate(altvar_list):
         # get the alternate data
         data_alternate, _, _ = pfp_utils.GetSeriesasMA(ds_alternate, var, si=si_alternate, ei=ei_alternate)
-        alternate_info["gotminpoints_alternate"] = gfalternate_gotminpoints(data_alternate,alternate_info,label_tower,mode="quiet")
-        if numpy.ma.count(data_alternate)>alternate_info["min_points"]:
+        l4a["run"]["gotminpoints_alternate"] = gfalternate_gotminpoints(data_alternate, l4_info,
+                                                                        label_tower, mode="quiet")
+        if numpy.ma.count(data_alternate) > l4a["run"]["min_points"]:
             # check the lengths of the tower and alternate data are the same
-            if len(data_alternate)!=len(data_tower):
-                msg = "gfalternate_getalternatevaratmaxr: alternate data length is "+str(len(data_alternate))
+            if len(data_alternate) != len(data_tower):
+                msg = "gfalternate_getalternatevaratmaxr: alternate data length is " + str(len(data_alternate))
                 logger.info(msg)
-                msg = "gfalternate_getalternatevaratmaxr: tower data length is "+str(len(data_tower))
+                msg = "gfalternate_getalternatevaratmaxr: tower data length is " + str(len(data_tower))
                 logger.info(msg)
                 raise ValueError('gfalternate_getalternatevaratmaxr: data_tower and data_alternate lengths differ')
             # put the correlation into the r array
-            rval = numpy.ma.corrcoef(data_tower,data_alternate)[0,1]
-            if rval=="nan": rval = float(0)
+            rval = numpy.ma.corrcoef(data_tower, data_alternate)[0, 1]
+            if rval == "nan": rval = float(0)
         else:
             if mode!="quiet":
                 msg = " getalternatevaratmaxr: not enough good data in alternate "+var
@@ -322,12 +325,13 @@ def gfalternate_getalternatevaratmaxr(ds_tower,ds_alternate,alternate_info,mode=
             rval = float(0)
         r[idx] = numpy.ma.filled(rval, float(c.missing_value))
     # save the correlation array for later plotting
-    alternate_info["r"] = r
+    l4a["run"]["r"] = r
     # sort the correlation array and the alternate variable list
     idx = numpy.flipud(numpy.argsort(r))
     altvar_list_sorted = [altvar_list[j] for j in list(idx)]
     # return the name of the alternate variable that has the highest correlation with the tower data
-    if ds_tower.alternate[label_output]["source"].lower()=="access": altvar_list_sorted = altvar_list_sorted[0:1]
+    if l4a["outputs"][label_output]["source"].lower() == "access":
+        altvar_list_sorted = altvar_list_sorted[0:1]
     return altvar_list_sorted
 
 def gfalternate_getalternatevarlist(ds_alternate, label):
@@ -349,7 +353,7 @@ def gfalternate_getalternatevarlist(ds_alternate, label):
         logger.error("gfalternate_getalternatevarlist: series %s not in alternate data file", label)
     return alternate_var_list
 
-def gfalternate_getdataas2d(odt, data,alternate_info):
+def gfalternate_getdataas2d(odt, data, l4_info):
     """
     Purpose:
      Return data, a 1D array, as a 2D array with hours along axis=0 and days along
@@ -360,17 +364,18 @@ def gfalternate_getdataas2d(odt, data,alternate_info):
     Author: PRI
     Date: August 2014
     """
-    ts = alternate_info["time_step"]
-    nperday = alternate_info["nperday"]
+    l4a = l4_info["alternate"]
+    ts = l4a["info"]["time_step"]
+    nperday = l4a["gui"]["nperday"]
     si = 0
-    while abs(odt[si].hour+float(odt[si].minute)/60-float(ts)/60)>c.eps:
+    while abs(odt[si].hour + float(odt[si].minute)/60 - float(ts)/60) > c.eps:
         si = si + 1
-    ei = len(odt)-1
-    while abs(odt[ei].hour+float(odt[ei].minute)/60)>c.eps:
+    ei = len(odt) - 1
+    while abs(odt[ei].hour + float(odt[ei].minute)/60) > c.eps:
         ei = ei - 1
-    data_wholedays = data[si:ei+1]
+    data_wholedays = data[si: ei + 1]
     ndays = len(data_wholedays)/nperday
-    return numpy.ma.reshape(data_wholedays,[ndays,nperday])
+    return numpy.ma.reshape(data_wholedays, [ndays, nperday])
 
 def gfalternate_getdateindices(ldt_tower,ldt_alternate,alternate_info,match):
     if match=="exact":
@@ -390,57 +395,62 @@ def gfalternate_getdateindices(ldt_tower,ldt_alternate,alternate_info,match):
     ei_tower = pfp_utils.GetDateIndex(ldt_tower,enddate,ts=ts,match=ei_match,default=len(ldt_tower)-1)
     si_alternate = pfp_utils.GetDateIndex(ldt_alternate,startdate,ts=ts,match=si_match,default=0)
     ei_alternate = pfp_utils.GetDateIndex(ldt_alternate,enddate,ts=ts,match=ei_match,default=len(ldt_alternate)-1)
-    alternate_info["tower"]["si"] = si_tower
-    alternate_info["tower"]["ei"] = ei_tower
-    alternate_info["alternate"]["si"] = si_alternate
-    alternate_info["alternate"]["ei"] = ei_alternate
+    #alternate_info["tower"]["si"] = si_tower
+    #alternate_info["tower"]["ei"] = ei_tower
+    #alternate_info["alternate"]["si"] = si_alternate
+    #alternate_info["alternate"]["ei"] = ei_alternate
 
-def gfalternate_getdielaverage(data_dict,alternate_info):
+def gfalternate_getdielaverage(data_dict, l4_info):
+    l4a = l4_info["alternate"]
     odt = data_dict["DateTime"]["data"]
-    label_tower = alternate_info["label_tower"]
+    label_tower = l4a["run"]["label_tower"]
     output_list = list(data_dict[label_tower]["output_list"])
     diel_avg = {}
     for label_output in output_list:
         diel_avg[label_output] = {}
         if "data" in data_dict[label_output].keys():
-            data_2d = gfalternate_getdataas2d(odt,data_dict[label_output]["data"],alternate_info)
-            diel_avg[label_output]["data"] = numpy.ma.average(data_2d,axis=0)
+            data_2d = gfalternate_getdataas2d(odt, data_dict[label_output]["data"], l4_info)
+            diel_avg[label_output]["data"] = numpy.ma.average(data_2d, axis=0)
         if "fitcorr" in data_dict[label_output].keys():
-            data_2d = gfalternate_getdataas2d(odt,data_dict[label_output]["fitcorr"],alternate_info)
-            diel_avg[label_output]["fitcorr"] = numpy.ma.average(data_2d,axis=0)
+            data_2d = gfalternate_getdataas2d(odt, data_dict[label_output]["fitcorr"], l4_info)
+            diel_avg[label_output]["fitcorr"] = numpy.ma.average(data_2d, axis=0)
     return diel_avg
 
-def gfalternate_getfitcorrecteddata(data_dict,stat_dict,alternate_info):
+def gfalternate_getfitcorrecteddata(data_dict, stat_dict, l4_info):
     """
     Wrapper for the various methods of fitting the alternate data to the tower data.
     """
-    if alternate_info["fit_type"].lower()=="ols":
-        gfalternate_getolscorrecteddata(data_dict,stat_dict,alternate_info)
-    if alternate_info["fit_type"].lower()=="ols_thru0":
-        gfalternate_getolscorrecteddata(data_dict,stat_dict,alternate_info)
-    if alternate_info["fit_type"].lower()=="mrev":
-        gfalternate_getmrevcorrected(data_dict,stat_dict,alternate_info)
-    if alternate_info["fit_type"].lower()=="replace":
-        gfalternate_getreplacedata(data_dict,stat_dict,alternate_info)
-    if alternate_info["fit_type"].lower()=="rma":
-        gfalternate_getrmacorrecteddata(data_dict,stat_dict,alternate_info)
-    if alternate_info["fit_type"].lower()=="odr":
-        gfalternate_getodrcorrecteddata(data_dict,stat_dict,alternate_info)
+    l4a = l4_info["alternate"]
+    if l4a["run"]["fit_type"].lower() == "ols":
+        gfalternate_getolscorrecteddata(data_dict, stat_dict, l4_info)
+    if l4a["run"]["fit_type"].lower() == "ols_thru0":
+        gfalternate_getolscorrecteddata(data_dict, stat_dict, l4_info)
+    if l4a["run"]["fit_type"].lower() == "mrev":
+        gfalternate_getmrevcorrected(data_dict, stat_dict, l4_info)
+    if l4a["run"]["fit_type"].lower() == "replace":
+        gfalternate_getreplacedata(data_dict, stat_dict, l4_info)
+    if l4a["run"]["fit_type"].lower() == "rma":
+        gfalternate_getrmacorrecteddata(data_dict, stat_dict, l4_info)
+    if l4a["run"]["fit_type"].lower() == "odr":
+        gfalternate_getodrcorrecteddata(data_dict, stat_dict, l4_info)
 
-def gfalternate_getlabeloutputlist(ds_tower,label_tower):
-    olist = [item for item in ds_tower.alternate.keys() if ds_tower.alternate[item]["label_tower"]==label_tower]
-    for item in ds_tower.merge.keys():
-        if label_tower in ds_tower.merge[item].keys():
-            mlist = ds_tower.merge[item][label_tower]["source"]
+def gfalternate_getlabeloutputlist(l4_info, label_tower):
+    l4a = l4_info["alternate"]
+    l4m = l4_info["merge"]
+    olist = [item for item in l4a["outputs"].keys() if l4a["outputs"][item]["target"] == label_tower]
+    for item in l4m.keys():
+        if label_tower in l4m[item].keys():
+            mlist = l4m[item][label_tower]["source"]
     label_output_list = []
     for item in mlist:
         if item in olist: label_output_list.append(item)
     return label_output_list
 
-def gfalternate_getcorrecteddata(ds_alternate, data_dict, stat_dict, alternate_info):
-    label_output = alternate_info["label_output"]
-    label_alternate = alternate_info["label_alternate"]
-    if alternate_info["nogaps_tower"]:
+def gfalternate_getcorrecteddata(ds_alternate, data_dict, stat_dict, l4_info):
+    l4a = l4_info["alternate"]
+    label_output = l4a["run"]["label_output"]
+    label_alternate = l4a["run"]["label_alternate"]
+    if l4a["run"]["nogaps_tower"]:
         # tower data has no gaps
         stat_dict[label_output][label_alternate]["nLags"] = int(0)
         data_dict[label_output][label_alternate]["lagcorr"] = numpy.ma.copy(data_dict[label_output][label_alternate]["data"])
@@ -448,15 +458,15 @@ def gfalternate_getcorrecteddata(ds_alternate, data_dict, stat_dict, alternate_i
         stat_dict[label_output][label_alternate]["slope"] = float(0)
         stat_dict[label_output][label_alternate]["offset"] = float(0)
         stat_dict[label_output][label_alternate]["eqnstr"] = "No gaps in tower"
-    elif not alternate_info["nogaps_tower"] and alternate_info["gotminpoints_both"]:
+    elif not l4a["run"]["nogaps_tower"] and l4a["run"]["gotminpoints_both"]:
         # got enough good points common to both data series
-        gfalternate_getlagcorrecteddata(ds_alternate, data_dict,stat_dict,alternate_info)
-        gfalternate_getfitcorrecteddata(data_dict, stat_dict, alternate_info)
-    elif not alternate_info["nogaps_tower"] and not alternate_info["gotminpoints_both"]:
+        gfalternate_getlagcorrecteddata(ds_alternate, data_dict, stat_dict, l4_info)
+        gfalternate_getfitcorrecteddata(data_dict, stat_dict, l4_info)
+    elif not l4a["run"]["nogaps_tower"] and not l4a["run"]["gotminpoints_both"]:
         stat_dict[label_output][label_alternate]["nLags"] = int(0)
         data_dict[label_output][label_alternate]["lagcorr"] = numpy.ma.copy(data_dict[label_output][label_alternate]["data"])
-        if alternate_info["fit_type"].lower()=="replace":
-            gfalternate_getfitcorrecteddata(data_dict, stat_dict, alternate_info)
+        if l4a["run"]["fit_type"].lower() == "replace":
+            gfalternate_getfitcorrecteddata(data_dict, stat_dict, l4_info)
         else:
             data_dict[label_output][label_alternate]["fitcorr"] = numpy.ma.masked_all_like(data_dict[label_output][label_alternate]["data"])
             stat_dict[label_output][label_alternate]["slope"] = float(0)
@@ -466,23 +476,24 @@ def gfalternate_getcorrecteddata(ds_alternate, data_dict, stat_dict, alternate_i
         msg = "getcorrecteddata: Unrecognised combination of logical tests"
         logger.error(msg)
 
-def gfalternate_getlagcorrecteddata(ds_alternate, data_dict, stat_dict, alternate_info):
-    label_tower = alternate_info["label_tower"]
-    label_output = alternate_info["label_output"]
-    label_alternate = alternate_info["label_alternate"]
+def gfalternate_getlagcorrecteddata(ds_alternate, data_dict, stat_dict, l4_info):
+    l4a = l4_info["alternate"]
+    label_tower = l4a["run"]["label_tower"]
+    label_output = l4a["run"]["label_output"]
+    label_alternate = l4a["run"]["label_alternate"]
     data_tower = data_dict[label_tower]["data"]
     data_alternate = data_dict[label_output][label_alternate]["data"]
     ldt_alternate = ds_alternate.series["DateTime"]["Data"]
-    startdate = alternate_info["startdate"]
-    enddate = alternate_info["enddate"]
-    ts = alternate_info["time_step"]
+    startdate = l4a["info"]["startdate"]
+    enddate = l4a["info"]["enddate"]
+    ts = l4a["info"]["time_step"]
     si_alternate = pfp_utils.GetDateIndex(ldt_alternate, startdate, ts=ts)
     ei_alternate = pfp_utils.GetDateIndex(ldt_alternate, enddate, ts=ts)
-    if alternate_info["lag"].lower() == "yes":
-        maxlags = alternate_info["max_lags"]
+    if l4a["run"]["lag"].lower() == "yes":
+        maxlags = l4a["gui"]["max_lags"]
         _, corr = pfp_ts.get_laggedcorrelation(data_tower, data_alternate, maxlags)
-        nLags = numpy.argmax(corr) - alternate_info["max_lags"]
-        if nLags > alternate_info["nperhr"]*6:
+        nLags = numpy.argmax(corr) - l4a["gui"]["max_lags"]
+        if nLags > l4a["gui"]["nperhr"]*6:
             logger.error("getlagcorrecteddata: lag is more than 6 hours for %s", label_tower)
         si_alternate = si_alternate - nLags
         ei_alternate = ei_alternate - nLags
@@ -493,21 +504,22 @@ def gfalternate_getlagcorrecteddata(ds_alternate, data_dict, stat_dict, alternat
         data_dict[label_output][label_alternate]["lagcorr"] = numpy.ma.copy(data_dict[label_output][label_alternate]["data"])
         stat_dict[label_output][label_alternate]["nLags"] = int(0)
 
-def gfalternate_getmrevcorrected(data_dict,stat_dict,alternate_info):
+def gfalternate_getmrevcorrected(data_dict, stat_dict, l4_info):
     """
     Fit alternate data to tower data by replacing means and equalising variance.
     """
+    l4a = l4_info["alternate"]
     odt = data_dict["DateTime"]["data"]
-    label_tower = alternate_info["label_tower"]
-    label_output = alternate_info["label_output"]
-    label_alternate = alternate_info["label_alternate"]
+    label_tower = l4a["run"]["label_tower"]
+    label_output = l4a["run"]["label_output"]
+    label_alternate = l4a["run"]["label_alternate"]
     # local copies of the data
     data_tower = numpy.ma.copy(data_dict[label_tower]["data"])
     data_alternate = numpy.ma.copy(data_dict[label_output][label_alternate]["data"])
-    data_2d = gfalternate_getdataas2d(odt,data_tower,alternate_info)
-    data_twr_hravg = numpy.ma.average(data_2d,axis=0)
-    data_2d = gfalternate_getdataas2d(odt,data_alternate,alternate_info)
-    data_alt_hravg = numpy.ma.average(data_2d,axis=0)
+    data_2d = gfalternate_getdataas2d(odt, data_tower, l4_info)
+    data_twr_hravg = numpy.ma.average(data_2d, axis=0)
+    data_2d = gfalternate_getdataas2d(odt, data_alternate, l4_info)
+    data_alt_hravg = numpy.ma.average(data_2d, axis=0)
     # calculate the means
     mean_tower = numpy.ma.mean(data_tower)
     mean_alternate = numpy.ma.mean(data_alternate)
@@ -521,94 +533,98 @@ def gfalternate_getmrevcorrected(data_dict,stat_dict,alternate_info):
     stat_dict[label_output][label_alternate]["slope"] = float(0)
     stat_dict[label_output][label_alternate]["offset"] = float(0)
 
-def gfalternate_getnumgoodpoints(data_tower,data_alternate):
-    mask = numpy.ma.mask_or(data_tower.mask,data_alternate.mask,copy=True,shrink=False)
-    return len(numpy.where(mask==False)[0])
+def gfalternate_getnumgoodpoints(data_tower, data_alternate):
+    mask = numpy.ma.mask_or(data_tower.mask, data_alternate.mask, copy=True, shrink=False)
+    return len(numpy.where(mask == False)[0])
 
-def gfalternate_getodrcorrecteddata(data_dict,stat_dict,alternate_info):
+def gfalternate_getodrcorrecteddata(data_dict, stat_dict, l4_info):
     """
     Calculate the orthogonal distance regression fit between 2 1D arrays.
     """
-    label_tower = alternate_info["label_tower"]
-    label_output = alternate_info["label_output"]
-    label_alternate = alternate_info["label_alternate"]
+    l4a = l4_info["alternate"]
+    label_tower = l4a["run"]["label_tower"]
+    label_output = l4a["run"]["label_output"]
+    label_alternate = l4a["run"]["label_alternate"]
     y_in = numpy.ma.copy(data_dict[label_tower]["data"])
     x_in = numpy.ma.copy(data_dict[label_output][label_alternate]["lagcorr"])
-    mask = numpy.ma.mask_or(x_in.mask,y_in.mask,copy=True,shrink=False)
-    x = numpy.ma.compressed(numpy.ma.array(x_in,mask=mask,copy=True))
-    y = numpy.ma.compressed(numpy.ma.array(y_in,mask=mask,copy=True))
+    mask = numpy.ma.mask_or(x_in.mask, y_in.mask, copy=True, shrink=False)
+    x = numpy.ma.compressed(numpy.ma.array(x_in ,mask=mask, copy=True))
+    y = numpy.ma.compressed(numpy.ma.array(y_in, mask=mask, copy=True))
     # attempt an ODR fit
     linear = scipy.odr.Model(pfp_utils.linear_function)
-    mydata = scipy.odr.Data(x,y)
-    myodr = scipy.odr.ODR(mydata,linear,beta0=[1,0])
+    mydata = scipy.odr.Data(x, y)
+    myodr = scipy.odr.ODR(mydata, linear, beta0=[1, 0])
     myoutput = myodr.run()
     odr_slope = myoutput.beta[0]
     odr_offset = myoutput.beta[1]
-    data_dict[label_output][label_alternate]["fitcorr"] = odr_slope*x_in+odr_offset
+    data_dict[label_output][label_alternate]["fitcorr"] = odr_slope * x_in + odr_offset
     stat_dict[label_output][label_alternate]["slope"] = odr_slope
     stat_dict[label_output][label_alternate]["offset"] = odr_offset
-    stat_dict[label_output][label_alternate]["eqnstr"] = "y = %.3fx + %.3f"%(odr_slope,odr_offset)
+    stat_dict[label_output][label_alternate]["eqnstr"] = "y = %.3fx + %.3f"%(odr_slope, odr_offset)
 
-def gfalternate_getolscorrecteddata(data_dict,stat_dict,alternate_info):
+def gfalternate_getolscorrecteddata(data_dict, stat_dict, l4_info):
     """
     Calculate the ordinary least squares fit between 2 1D arrays.
     """
-    label_tower = alternate_info["label_tower"]
-    label_output = alternate_info["label_output"]
-    label_alternate = alternate_info["label_alternate"]
+    l4a = l4_info["alternate"]
+    label_tower = l4a["run"]["label_tower"]
+    label_output = l4a["run"]["label_output"]
+    label_alternate = l4a["run"]["label_alternate"]
     y_in = numpy.ma.copy(data_dict[label_tower]["data"])
     x_in = numpy.ma.copy(data_dict[label_output][label_alternate]["lagcorr"])
-    mask = numpy.ma.mask_or(x_in.mask,y_in.mask,copy=True,shrink=False)
-    x = numpy.ma.compressed(numpy.ma.array(x_in,mask=mask,copy=True))
-    y = numpy.ma.compressed(numpy.ma.array(y_in,mask=mask,copy=True))
+    mask = numpy.ma.mask_or(x_in.mask,y_in.mask, copy=True, shrink=False)
+    x = numpy.ma.compressed(numpy.ma.array(x_in, mask=mask, copy=True))
+    y = numpy.ma.compressed(numpy.ma.array(y_in, mask=mask, copy=True))
     # attempt an OLS fit
-    if alternate_info["fit_type"].lower()=="ols_thru0":
-        resols = sm.OLS(y,x).fit()
+    if l4a["run"]["fit_type"].lower() == "ols_thru0":
+        resols = sm.OLS(y, x).fit()
         data_dict[label_output][label_alternate]["fitcorr"] = resols.params[0]*x_in
         stat_dict[label_output][label_alternate]["slope"] = resols.params[0]
         stat_dict[label_output][label_alternate]["offset"] = float(0)
         stat_dict[label_output][label_alternate]["eqnstr"] = "y = %.3fx"%(resols.params[0])
     else:
-        resols = sm.OLS(y,sm.add_constant(x,prepend=False)).fit()
-        if resols.params.shape[0]==2:
+        resols = sm.OLS(y, sm.add_constant(x, prepend=False)).fit()
+        if resols.params.shape[0] == 2:
             data_dict[label_output][label_alternate]["fitcorr"] = resols.params[0]*x_in+resols.params[1]
             stat_dict[label_output][label_alternate]["slope"] = resols.params[0]
             stat_dict[label_output][label_alternate]["offset"] = resols.params[1]
-            stat_dict[label_output][label_alternate]["eqnstr"] = "y = %.3fx + %.3f"%(resols.params[0],resols.params[1])
+            stat_dict[label_output][label_alternate]["eqnstr"] = "y = %.3fx + %.3f"%(resols.params[0], resols.params[1])
         else:
             data_dict[label_output][label_alternate]["fitcorr"] = numpy.ma.copy(x_in)
             stat_dict[label_output][label_alternate]["slope"] = float(0)
             stat_dict[label_output][label_alternate]["offset"] = float(0)
             stat_dict[label_output][label_alternate]["eqnstr"] = "OLS error, replaced"
 
-def gfalternate_getoutputstatistics(data_dict,stat_dict,alternate_info):
-    label_tower = alternate_info["label_tower"]
+def gfalternate_getoutputstatistics(data_dict, stat_dict, l4_info):
+    l4a = l4_info["alternate"]
+    label_tower = l4a["run"]["label_tower"]
     output_list = list(data_dict[label_tower]["output_list"])
-    if label_tower in output_list: output_list.remove(label_tower)
+    if label_tower in output_list:
+        output_list.remove(label_tower)
     for label in output_list:
         # OLS slope and offset
-        if alternate_info["fit_type"]!="replace":
+        if l4a["run"]["fit_type"] != "replace":
             x_in = numpy.ma.copy(data_dict[label]["fitcorr"])
             y_in = numpy.ma.copy(data_dict[label_tower]["data"])
-            mask = numpy.ma.mask_or(x_in.mask,y_in.mask,copy=True,shrink=False)
-            x = numpy.ma.compressed(numpy.ma.array(x_in,mask=mask,copy=True))
-            y = numpy.ma.compressed(numpy.ma.array(y_in,mask=mask,copy=True))
+            mask = numpy.ma.mask_or(x_in.mask, y_in.mask, copy=True, shrink=False)
+            x = numpy.ma.compressed(numpy.ma.array(x_in, mask=mask, copy=True))
+            y = numpy.ma.compressed(numpy.ma.array(y_in, mask=mask, copy=True))
             # get the array lengths
             nx = len(x)
             # attempt an OLS fit
-            if nx>=alternate_info["min_points"]:
-                if alternate_info["fit_type"].lower()=="ols":
-                    resols = sm.OLS(y,sm.add_constant(x,prepend=False)).fit()
-                    if resols.params.shape[0]==2:
+            if nx >= l4a["run"]["min_points"]:
+                if l4a["run"]["fit_type"].lower() == "ols":
+                    resols = sm.OLS(y, sm.add_constant(x, prepend=False)).fit()
+                    if resols.params.shape[0] == 2:
                         stat_dict[label]["slope"] = resols.params[0]
                         stat_dict[label]["offset"] = resols.params[1]
-                        stat_dict[label]["eqnstr"] = "y = %.3fx + %.3f"%(resols.params[0],resols.params[1])
+                        stat_dict[label]["eqnstr"] = "y = %.3fx + %.3f"%(resols.params[0], resols.params[1])
                     else:
                         stat_dict[label]["slope"] = float(0)
                         stat_dict[label]["offset"] = float(0)
                         stat_dict[label]["eqnstr"] = "OLS error"
                 else:
-                    resols = sm.OLS(y,x).fit()
+                    resols = sm.OLS(y, x).fit()
                     stat_dict[label]["slope"] = resols.params[0]
                     stat_dict[label]["offset"] = float(0)
                     stat_dict[label]["eqnstr"] = "y = %.3fx"%(resols.params[0])
@@ -623,10 +639,10 @@ def gfalternate_getoutputstatistics(data_dict,stat_dict,alternate_info):
         # number of points
         stat_dict[label]["No. points"] = len(data_dict[label_tower]["data"])
         num = numpy.ma.count(data_dict[label]["fitcorr"])-numpy.ma.count(data_dict[label_tower]["data"])
-        if num<0: num = 0
+        if num < 0: num = 0
         stat_dict[label]["No. filled"] = trap_masked_constant(num)
         # correlation coefficient
-        r = numpy.ma.corrcoef(data_dict[label_tower]["data"],data_dict[label]["fitcorr"])
+        r = numpy.ma.corrcoef(data_dict[label_tower]["data"], data_dict[label]["fitcorr"])
         stat_dict[label]["r"] = trap_masked_constant(r[0,1])
         # means
         avg = numpy.ma.mean(data_dict[label_tower]["data"])
@@ -654,30 +670,32 @@ def gfalternate_getoutputstatistics(data_dict,stat_dict,alternate_info):
         norm_error = (error)/(0.5*(data_dict[label_tower]["data"]+data_dict[label]["fitcorr"]))
         stat_dict[label]["Frac Bias"] = trap_masked_constant(numpy.ma.average(norm_error))
 
-def gfalternate_getreplacedata(data_dict,stat_dict,alternate_info):
-    label_output = alternate_info["label_output"]
-    label_alternate = alternate_info["label_alternate"]
+def gfalternate_getreplacedata(data_dict, stat_dict, l4_info):
+    l4a = l4_info["alternate"]
+    label_output = l4a["run"]["label_output"]
+    label_alternate = l4a["run"]["label_alternate"]
     data_alternate = data_dict[label_output][label_alternate]["lagcorr"]
     data_dict[label_output][label_alternate]["fitcorr"] = numpy.ma.copy(data_alternate)
     stat_dict[label_output][label_alternate]["slope"] = float(1)
     stat_dict[label_output][label_alternate]["offset"] = float(0)
     stat_dict[label_output][label_alternate]["eqnstr"] = "No OLS, replaced"
 
-def gfalternate_getrmacorrecteddata(data_dict,stat_dict,alternate_info):
+def gfalternate_getrmacorrecteddata(data_dict, stat_dict, l4_info):
     """
     Calculate the ordinary least squares fit between 2 1D arrays.
     """
-    label_tower = alternate_info["label_tower"]
-    label_output = alternate_info["label_output"]
-    label_alternate = alternate_info["label_alternate"]
+    l4a = l4_info["alternate"]
+    label_tower = l4a["run"]["label_tower"]
+    label_output = l4a["run"]["label_output"]
+    label_alternate = l4a["run"]["label_alternate"]
     y_in = numpy.ma.copy(data_dict[label_tower]["data"])
     x_in = numpy.ma.copy(data_dict[label_output][label_alternate]["lagcorr"])
-    mask = numpy.ma.mask_or(x_in.mask,y_in.mask,copy=True,shrink=False)
-    x = numpy.ma.compressed(numpy.ma.array(x_in,mask=mask,copy=True))
-    y = numpy.ma.compressed(numpy.ma.array(y_in,mask=mask,copy=True))
+    mask = numpy.ma.mask_or(x_in.mask, y_in.mask, copy=True, shrink=False)
+    x = numpy.ma.compressed(numpy.ma.array(x_in, mask=mask, copy=True))
+    y = numpy.ma.compressed(numpy.ma.array(y_in, mask=mask, copy=True))
     # attempt an OLS fit
-    if alternate_info["fit_type"].lower()=="ols_thru0":
-        resols = sm.OLS(y,x).fit()
+    if l4a["run"]["fit_type"].lower() == "ols_thru0":
+        resols = sm.OLS(y, x).fit()
         rma_slope = resols.params[0]/numpy.sqrt(resols.rsquared)
         rma_offset = numpy.mean(y) - rma_slope * numpy.mean(x)
         data_dict[label_output][label_alternate]["fitcorr"] = rma_slope*x_in
@@ -685,30 +703,31 @@ def gfalternate_getrmacorrecteddata(data_dict,stat_dict,alternate_info):
         stat_dict[label_output][label_alternate]["offset"] = float(0)
         stat_dict[label_output][label_alternate]["eqnstr"] = "y = %.3fx"%(rma_slope)
     else:
-        resols = sm.OLS(y,sm.add_constant(x,prepend=False)).fit()
-        if resols.params.shape[0]==2:
+        resols = sm.OLS(y, sm.add_constant(x, prepend=False)).fit()
+        if resols.params.shape[0] == 2:
             rma_slope = resols.params[0]/numpy.sqrt(resols.rsquared)
             rma_offset = numpy.mean(y) - rma_slope * numpy.mean(x)
             data_dict[label_output][label_alternate]["fitcorr"] = rma_slope*x_in+rma_offset
             stat_dict[label_output][label_alternate]["slope"] = rma_slope
             stat_dict[label_output][label_alternate]["offset"] = rma_offset
-            stat_dict[label_output][label_alternate]["eqnstr"] = "y = %.3fx + %.3f"%(rma_slope,rma_offset)
+            stat_dict[label_output][label_alternate]["eqnstr"] = "y = %.3fx + %.3f"%(rma_slope, rma_offset)
         else:
             data_dict[label_output][label_alternate]["fitcorr"] = numpy.ma.copy(x_in)
             stat_dict[label_output][label_alternate]["slope"] = float(0)
             stat_dict[label_output][label_alternate]["offset"] = float(0)
             stat_dict[label_output][label_alternate]["eqnstr"] = "RMA error, replaced"
 
-def gfalternate_gotdataforgaps(data,data_alternate,alternate_info,mode="verbose"):
+def gfalternate_gotdataforgaps(data, data_alternate, l4_info, mode="verbose"):
     """
     Returns true if the alternate series has data where the composite series has gaps.
     """
+    l4a = l4_info["alternate"]
     return_code = True
-    ind = numpy.where((numpy.ma.getmaskarray(data)==True)&(numpy.ma.getmaskarray(data_alternate)==False))[0]
-    if len(ind)==0:
-        if mode=="verbose":
-            label_alternate = alternate_info["label_alternate"]
-            msg = " Alternate series "+label_alternate+" has nothing to contribute"
+    ind = numpy.where((numpy.ma.getmaskarray(data) == True) & (numpy.ma.getmaskarray(data_alternate) == False))[0]
+    if len(ind) == 0:
+        if mode == "verbose":
+            label_alternate = l4a["run"]["label_alternate"]
+            msg = " Alternate series " + label_alternate + " has nothing to contribute"
             logger.info(msg)
         return_code = False
     return return_code
@@ -727,327 +746,358 @@ def gfalternate_gotnogaps(data,label,mode="verbose"):
         return_code = False
     return return_code
 
-def gfalternate_gotminpoints(data,alternate_info,label,mode="verbose"):
+def gfalternate_gotminpoints(data, l4_info, label, mode="verbose"):
     """
     Returns true if data contains more than the minimum number of points required
     or data contains less than the minimum number but the fit type is replace.
     """
+    l4a = l4_info["alternate"]
     return_code = True
-    if numpy.ma.count(data)<alternate_info["min_points"]:
-        if mode=="verbose":
-            msg = " Less than "+str(alternate_info["min_percent"])+" % data in series "+label+", skipping ..."
+    if numpy.ma.count(data) < l4a["run"]["min_points"]:
+        if mode == "verbose":
+            msg = " Less than " + str(l4a["gui"]["min_percent"]) + " % data in series "
+            msg = msg + label + ", skipping ..."
             logger.info(msg)
-            msg = "gotminpoints: "+label+" "+str(numpy.ma.count(data))+" "+str(alternate_info["min_points"])
+            msg = "gotminpoints: " + label + " " + str(numpy.ma.count(data))
+            msg = msg + " " + str(l4a["run"]["min_points"])
             logger.info(msg)
         return_code = False
     return return_code
 
-def gfalternate_gotminpointsboth(data_tower,data_alternate,alternate_info,label_tower,label_alternate,mode="verbose"):
+def gfalternate_gotminpointsboth(data_tower, data_alternate, l4_info, label_tower, label_alternate, mode="verbose"):
+    l4a = l4_info["alternate"]
     return_code = True
-    mask = numpy.ma.mask_or(numpy.ma.getmaskarray(data_tower),numpy.ma.getmaskarray(data_alternate),copy=True,shrink=False)
-    if len(numpy.where(mask==False)[0])<alternate_info["min_points"]:
-        if mode!="quiet":
-            msg = " Less than "+str(alternate_info["min_percent"])+" % good data common to both series "
+    mask = numpy.ma.mask_or(numpy.ma.getmaskarray(data_tower), numpy.ma.getmaskarray(data_alternate),
+                            copy=True, shrink=False)
+    if len(numpy.where(mask == False)[0]) < l4a["run"]["min_points"]:
+        if mode != "quiet":
+            msg = " Less than " + str(l4a["run"]["min_percent"]) + " % good data common to both series "
             logger.info(msg)
-            msg = "gotminpointsboth: "+label_tower+" "+str(numpy.ma.count(data_tower))+" "+str(alternate_info["min_points"])
+            msg = "gotminpointsboth: " + label_tower + " " + str(numpy.ma.count(data_tower))
+            msg = msg + " " + str(l4a["run"]["min_points"])
             logger.info(msg)
-            msg = "gotminpointsboth: "+label_alternate+" "+str(numpy.ma.count(data_alternate))+" "+str(alternate_info["min_points"])
+            msg = "gotminpointsboth: " + label_alternate + " " + str(numpy.ma.count(data_alternate))
+            msg = msg + " " + str(l4a["run"]["min_points"])
             logger.info(msg)
         return_code = False
     return return_code
 
-def gfalternate_initplot(data_dict,alternate_info,**kwargs):
-    pd = {"margin_bottom":0.075,"margin_top":0.05,"margin_left":0.075,"margin_right":0.05,
-          "xy_height":0.25,"xy_width":0.20,"xyts_space":0.05,"xyxy_space":0.05,"ts_width":0.9,
-          "text_left":0.675,"num_left":0.825,"row_bottom":0.35,"row_space":0.030}
+def gfalternate_initplot(data_dict, l4_info, **kwargs):
+    l4a = l4_info["alternate"]
+    pd = {"margin_bottom":0.075, "margin_top":0.05, "margin_left":0.075, "margin_right":0.05,
+          "xy_height":0.25, "xy_width":0.20, "xyts_space":0.05, "xyxy_space":0.05, "ts_width":0.9,
+          "text_left":0.675, "num_left":0.825, "row_bottom":0.35, "row_space":0.030}
     # calculate bottom of the first time series and the height of the time series plots
-    label_tower = alternate_info["label_tower"]
-    label_composite = alternate_info["label_composite"]
+    label_tower = l4a["run"]["label_tower"]
+    label_composite = l4a["run"]["label_composite"]
     output_list = list(data_dict[label_tower]["output_list"])
-    for item in [label_tower,label_composite]:
+    for item in [label_tower, label_composite]:
         if item in output_list: output_list.remove(item)
-    nts = len(output_list)+1
-    pd["ts_bottom"] = pd["margin_bottom"]+pd["xy_height"]+pd["xyts_space"]
-    pd["ts_height"] = (1.0-pd["margin_top"]-pd["ts_bottom"])/nts
+    nts = len(output_list) + 1
+    pd["ts_bottom"] = pd["margin_bottom"] + pd["xy_height"] + pd["xyts_space"]
+    pd["ts_height"] = (1.0 - pd["margin_top"] - pd["ts_bottom"])/nts
     for key, value in kwargs.iteritems():
         pd[key] = value
     return pd
 
-def gfalternate_loadoutputdata(ds_tower,data_dict,alternate_info):
+def gfalternate_loadoutputdata(ds_tower, data_dict, l4_info):
+    l4a = l4_info["alternate"]
     ldt_tower = ds_tower.series["DateTime"]["Data"]
-    label_output = alternate_info["label_output"]
-    label_composite = alternate_info["label_composite"]
-    label_alternate = alternate_info["label_alternate"]
-    ts = alternate_info["time_step"]
-    si = pfp_utils.GetDateIndex(ldt_tower,alternate_info["startdate"],ts=ts,default=0)
-    ei = pfp_utils.GetDateIndex(ldt_tower,alternate_info["enddate"],ts=ts,default=len(ldt_tower))
-    if alternate_info["overwrite"]:
-        ind1 = numpy.where(numpy.ma.getmaskarray(data_dict[label_output][label_alternate]["data"])==False)[0]
+    label_output = l4a["run"]["label_output"]
+    label_composite = l4a["run"]["label_composite"]
+    label_alternate = l4a["run"]["label_alternate"]
+    ts = l4a["info"]["time_step"]
+    si = pfp_utils.GetDateIndex(ldt_tower, l4a["info"]["startdate"], ts=ts, default=0)
+    ei = pfp_utils.GetDateIndex(ldt_tower, l4a["info"]["enddate"], ts=ts, default=len(ldt_tower))
+    if l4a["gui"]["overwrite"]:
+        ind1 = numpy.where(numpy.ma.getmaskarray(data_dict[label_output][label_alternate]["data"]) == False)[0]
     else:
-        ind1 = numpy.where((numpy.ma.getmaskarray(data_dict[label_output]["data"])==True)&
-                           (numpy.ma.getmaskarray(data_dict[label_output][label_alternate]["data"])==False))[0]
+        ind1 = numpy.where((numpy.ma.getmaskarray(data_dict[label_output]["data"]) == True)&
+                           (numpy.ma.getmaskarray(data_dict[label_output][label_alternate]["data"]) == False))[0]
     data_dict[label_output]["data"][ind1] = data_dict[label_output][label_alternate]["data"][ind1]
-    if alternate_info["overwrite"]:
-        ind2 = numpy.where(numpy.ma.getmaskarray(data_dict[label_output][label_alternate]["fitcorr"])==False)[0]
+    if l4a["gui"]["overwrite"]:
+        ind2 = numpy.where(numpy.ma.getmaskarray(data_dict[label_output][label_alternate]["fitcorr"]) == False)[0]
     else:
-        ind2 = numpy.where((numpy.ma.getmaskarray(data_dict[label_output]["fitcorr"])==True)&
-                           (numpy.ma.getmaskarray(data_dict[label_output][label_alternate]["fitcorr"])==False))[0]
+        ind2 = numpy.where((numpy.ma.getmaskarray(data_dict[label_output]["fitcorr"]) == True)&
+                           (numpy.ma.getmaskarray(data_dict[label_output][label_alternate]["fitcorr"]) == False))[0]
     data_dict[label_output]["fitcorr"][ind2] = data_dict[label_output][label_alternate]["fitcorr"][ind2]
-    if alternate_info["overwrite"]:
-        ind3 = numpy.where(numpy.ma.getmaskarray(data_dict[label_output][label_alternate]["data"])==False)[0]
+    if l4a["gui"]["overwrite"]:
+        ind3 = numpy.where(numpy.ma.getmaskarray(data_dict[label_output][label_alternate]["data"]) == False)[0]
     else:
-        ind3 = numpy.where((numpy.ma.getmaskarray(data_dict[label_composite]["data"])==True)&
-                           (numpy.ma.getmaskarray(data_dict[label_output][label_alternate]["data"])==False))[0]
+        ind3 = numpy.where((numpy.ma.getmaskarray(data_dict[label_composite]["data"]) == True)&
+                           (numpy.ma.getmaskarray(data_dict[label_output][label_alternate]["data"]) == False))[0]
     data_dict[label_composite]["data"][ind3] = data_dict[label_output][label_alternate]["data"][ind3]
-    if alternate_info["overwrite"]:
-        ind4 = numpy.where(numpy.ma.getmaskarray(data_dict[label_output][label_alternate]["fitcorr"])==False)[0]
+    if l4a["gui"]["overwrite"]:
+        ind4 = numpy.where(numpy.ma.getmaskarray(data_dict[label_output][label_alternate]["fitcorr"]) == False)[0]
     else:
-        ind4 = numpy.where((numpy.ma.getmaskarray(data_dict[label_composite]["fitcorr"])==True)&
-                           (numpy.ma.getmaskarray(data_dict[label_output][label_alternate]["fitcorr"])==False))[0]
+        ind4 = numpy.where((numpy.ma.getmaskarray(data_dict[label_composite]["fitcorr"]) == True)&
+                           (numpy.ma.getmaskarray(data_dict[label_output][label_alternate]["fitcorr"]) == False))[0]
     data_dict[label_composite]["fitcorr"][ind4] = data_dict[label_output][label_alternate]["fitcorr"][ind4]
-    if alternate_info["overwrite"]:
-        ind5 = numpy.where(numpy.ma.getmaskarray(data_dict[label_output][label_alternate]["fitcorr"])==False)[0]
+    if l4a["gui"]["overwrite"]:
+        ind5 = numpy.where(numpy.ma.getmaskarray(data_dict[label_output][label_alternate]["fitcorr"]) == False)[0]
     else:
-        ind5 = numpy.where((abs(ds_tower.series[label_composite]["Data"][si:ei+1]-float(c.missing_value))<c.eps)&
-                           (numpy.ma.getmaskarray(data_dict[label_output][label_alternate]["fitcorr"])==False))[0]
-    ds_tower.series[label_composite]["Data"][si:ei+1][ind5] = numpy.ma.filled(data_dict[label_output][label_alternate]["fitcorr"][ind5],c.missing_value)
+        ind5 = numpy.where((abs(ds_tower.series[label_composite]["Data"][si:ei+1]-float(c.missing_value)) < c.eps)&
+                           (numpy.ma.getmaskarray(data_dict[label_output][label_alternate]["fitcorr"]) == False))[0]
+    ds_tower.series[label_composite]["Data"][si:ei+1][ind5] = numpy.ma.filled(data_dict[label_output][label_alternate]["fitcorr"][ind5], c.missing_value)
     ds_tower.series[label_composite]["Flag"][si:ei+1][ind5] = numpy.int32(20)
-    if alternate_info["overwrite"]:
-        ind6 = numpy.where(numpy.ma.getmaskarray(data_dict[label_output][label_alternate]["fitcorr"])==False)[0]
+    if l4a["gui"]["overwrite"]:
+        ind6 = numpy.where(numpy.ma.getmaskarray(data_dict[label_output][label_alternate]["fitcorr"]) == False)[0]
     else:
-        ind6 = numpy.where((abs(ds_tower.series[label_output]["Data"][si:ei+1]-float(c.missing_value))<c.eps)&
-                           (numpy.ma.getmaskarray(data_dict[label_output][label_alternate]["fitcorr"])==False))[0]
-    ds_tower.series[label_output]["Data"][si:ei+1][ind6] = numpy.ma.filled(data_dict[label_output][label_alternate]["fitcorr"][ind6],c.missing_value)
+        ind6 = numpy.where((abs(ds_tower.series[label_output]["Data"][si:ei+1]-float(c.missing_value)) < c.eps)&
+                           (numpy.ma.getmaskarray(data_dict[label_output][label_alternate]["fitcorr"]) == False))[0]
+    ds_tower.series[label_output]["Data"][si:ei+1][ind6] = numpy.ma.filled(data_dict[label_output][label_alternate]["fitcorr"][ind6], c.missing_value)
     ds_tower.series[label_output]["Flag"][si:ei+1][ind6] = numpy.int32(20)
 
-def gfalternate_main(ds_tower, ds_alt, alternate_info, label_tower_list=[]):
-    '''
+def gfalternate_main(ds_tower, ds_alt, l4_info, label_tower_list=[]):
+    """
     This is the main routine for using alternate data to gap fill drivers.
-    '''
+    """
+    l4a = l4_info["alternate"]
     mode = "quiet" #"quiet"  #"verbose"
-    ts = alternate_info["time_step"]
-    startdate = alternate_info["startdate"]
-    enddate = alternate_info["enddate"]
-    logger.info(" Gap fill with alternate: "+startdate+" to "+enddate)
-    # close any open plot windows
-    if len(plt.get_fignums())!=0:
-        for i in plt.get_fignums():
-            if i!=0: plt.close(i)
+    ts = int(ds_tower.globalattributes["time_step"])
+    startdate = l4a["info"]["startdate"]
+    enddate = l4a["info"]["enddate"]
+    logger.info(" Gap fill with alternate: " + startdate + " to " + enddate)
+    ## close any open plot windows
+    #if len(plt.get_fignums()) != 0:
+        #for i in plt.get_fignums():
+            #if i != 0: plt.close(i)
     # get local pointer to the datetime series
     dt_tower = ds_tower.series["DateTime"]["Data"]
-    si_tower = pfp_utils.GetDateIndex(dt_tower, alternate_info["startdate"], ts=ts, default=0)
-    ei_tower = pfp_utils.GetDateIndex(dt_tower, alternate_info["enddate"], ts=ts, default=len(dt_tower)-1)
-    ldt_tower = dt_tower[si_tower:ei_tower+1]
+    si_tower = pfp_utils.GetDateIndex(dt_tower, startdate, ts=ts, default=0)
+    ei_tower = pfp_utils.GetDateIndex(dt_tower, enddate, ts=ts, default=len(dt_tower)-1)
+    ldt_tower = dt_tower[si_tower:ei_tower + 1]
     # now loop over the variables to be gap filled using the alternate data
-    if len(label_tower_list)==0:
-        label_tower_list = list(set(alternate_info["series_list"]))
-    for fig_num,label_tower in enumerate(label_tower_list):
-        alternate_info["label_tower"] = label_tower
-        label_composite = label_tower+"_composite"
-        alternate_info["label_composite"] = label_composite
+    if len(label_tower_list) == 0:
+        label_tower_list = l4a["gui"]["series_list"]
+    l4a["run"] = {}
+    for fig_num, label_tower in enumerate(label_tower_list):
+        l4a["run"]["label_tower"] = label_tower
+        label_composite = label_tower + "_composite"
+        l4a["run"]["label_composite"] = label_composite
         # read the tower data and check for gaps
-        data_tower, _,attr_tower = pfp_utils.GetSeriesasMA(ds_tower,label_tower,si=si_tower,ei=ei_tower)
-        alternate_info["min_points"] = int(len(data_tower)*alternate_info["min_percent"]/100)
+        data_tower, _, attr_tower = pfp_utils.GetSeriesasMA(ds_tower, label_tower, si=si_tower, ei=ei_tower)
+        l4a["run"]["min_points"] = int(len(data_tower)*l4a["gui"]["min_percent"]/100)
         # check to see if we have any gaps to fill
-        alternate_info["nogaps_tower"] = gfalternate_gotnogaps(data_tower,label_tower,mode=mode)
+        l4a["run"]["nogaps_tower"] = gfalternate_gotnogaps(data_tower, label_tower, mode=mode)
         # check to see if we have more than the minimum number of points
-        alternate_info["gotminpoints_tower"] = gfalternate_gotminpoints(data_tower,alternate_info,label_tower,mode=mode)
+        l4a["run"]["gotminpoints_tower"] = gfalternate_gotminpoints(data_tower, l4_info, label_tower, mode=mode)
         # initialise a dictionary to hold the data
-        data_dict,stat_dict = gfalternate_createdataandstatsdict(ldt_tower,data_tower,attr_tower,alternate_info)
+        data_dict, stat_dict = gfalternate_createdataandstatsdict(ldt_tower, data_tower, attr_tower, l4_info)
         # get a list of the output names for this tower series
-        label_output_list = gfalternate_getlabeloutputlist(ds_tower,label_tower)
+        label_output_list = gfalternate_getlabeloutputlist(l4_info, label_tower)
         # loop over the outputs for this tower series
         for label_output in label_output_list:
-            alternate_info["label_output"] = label_output
-            alternate_info["alternate_name"] = ds_tower.alternate[label_output]["alternate_name"]
+            l4a["run"]["label_output"] = label_output
+            l4a["run"]["alternate_name"] = l4a["outputs"][label_output]["alternate_name"]
             # update the alternate_info dictionary
-            gfalternate_update_alternate_info(ds_tower,alternate_info)
+            gfalternate_update_alternate_info(l4_info)
             # update the dictionaries
-            stat_dict[label_output] = {"startdate":alternate_info["startdate"],"enddate":alternate_info["enddate"]}
-            data_dict[label_output] = {"data":numpy.ma.masked_all_like(data_tower),
-                                       "fitcorr":numpy.ma.masked_all_like(data_tower),
-                                       "attr":attr_tower,"source":ds_tower.alternate[label_output]["source"]}
+            stat_dict[label_output] = {"startdate": l4a["info"]["startdate"],
+                                       "enddate": l4a["info"]["enddate"]}
+            data_dict[label_output] = {"data": numpy.ma.masked_all_like(data_tower),
+                                       "fitcorr": numpy.ma.masked_all_like(data_tower),
+                                       "attr": attr_tower,
+                                       "source": l4a["outputs"][label_output]["source"]}
             # get a local pointer to the alternate data structure
-            ds_alternate = ds_alt[ds_tower.alternate[label_output]["file_name"]]
+            ds_alternate = ds_alt[l4a["outputs"][label_output]["file_name"]]
             ldt_alternate = ds_alternate.series["DateTime"]["Data"]
             # start and end idices for this time range in the alternate data
-            si_alternate = pfp_utils.GetDateIndex(ldt_alternate, alternate_info["startdate"], ts=ts, default=0)
-            ei_alternate = pfp_utils.GetDateIndex(ldt_alternate, alternate_info["enddate"], ts=ts, default=len(ldt_alternate)-1)
+            si_alternate = pfp_utils.GetDateIndex(ldt_alternate, l4a["info"]["startdate"], ts=ts, default=0)
+            ei_alternate = pfp_utils.GetDateIndex(ldt_alternate, l4a["info"]["enddate"], ts=ts, default=len(ldt_alternate)-1)
             # get the alternate series that has the highest correlation with the tower data
-            label_alternate_list = gfalternate_getalternatevaratmaxr(ds_tower,ds_alternate,alternate_info,mode=mode)
+            label_alternate_list = gfalternate_getalternatevaratmaxr(ds_tower, ds_alternate, l4_info, mode=mode)
             # loop over alternate variables
             for label_alternate in label_alternate_list:
-                alternate_info["label_alternate"] = label_alternate
+                l4a["run"]["label_alternate"] = label_alternate
                 # get the raw alternate data
-                data_alternate, _,attr_alternate = pfp_utils.GetSeriesasMA(ds_alternate, label_alternate, si=si_alternate, ei=ei_alternate)
+                data_alternate, _, attr_alternate = pfp_utils.GetSeriesasMA(ds_alternate, label_alternate, si=si_alternate, ei=ei_alternate)
                 # check this alternate variable to see if there are enough points
-                alternate_info["gotminpoints_alternate"] = gfalternate_gotminpoints(data_alternate, alternate_info, label_alternate, mode=mode)
-                alternate_info["gotdataforgaps_alternate"] = gfalternate_gotdataforgaps(data_dict[label_output]["data"], data_alternate,alternate_info, mode=mode)
-                alternate_info["gotminpoints_both"] = gfalternate_gotminpointsboth(data_tower, data_alternate, alternate_info, label_tower, label_alternate, mode=mode)
+                l4a["run"]["gotminpoints_alternate"] = gfalternate_gotminpoints(data_alternate, l4_info, label_alternate, mode=mode)
+                l4a["run"]["gotdataforgaps_alternate"] = gfalternate_gotdataforgaps(data_dict[label_output]["data"], data_alternate, l4_info, mode=mode)
+                l4a["run"]["gotminpoints_both"] = gfalternate_gotminpointsboth(data_tower, data_alternate, l4_info, label_tower, label_alternate, mode=mode)
                 # update the data and sata dictionaries
-                stat_dict[label_output][label_alternate] = {"startdate":alternate_info["startdate"], "enddate":alternate_info["enddate"]}
+                stat_dict[label_output][label_alternate] = {"startdate": l4a["info"]["startdate"],
+                                                            "enddate":l4a["info"]["enddate"]}
                 if label_output not in data_dict[label_tower]["output_list"]:
                     data_dict[label_tower]["output_list"].append(label_output)
-                data_dict[label_output][label_alternate] = {"data":data_alternate, "attr":attr_alternate}
-                gfalternate_getcorrecteddata(ds_alternate, data_dict, stat_dict, alternate_info)
-                gfalternate_loadoutputdata(ds_tower, data_dict, alternate_info)
+                data_dict[label_output][label_alternate] = {"data": data_alternate,
+                                                            "attr": attr_alternate}
+                gfalternate_getcorrecteddata(ds_alternate, data_dict, stat_dict, l4_info)
+                gfalternate_loadoutputdata(ds_tower, data_dict, l4_info)
                 # check to see if we have alternate data for this whole period, if so there is no reason to continue
-                ind_tower = numpy.where(abs(ds_tower.series[label_output]["Data"][si_tower:ei_tower+1]-float(c.missing_value))<c.eps)[0]
-                if len(ind_tower)==0:
+                ind_tower = numpy.where(abs(ds_tower.series[label_output]["Data"][si_tower:ei_tower+1]-float(c.missing_value)) < c.eps)[0]
+                if len(ind_tower) == 0:
                     break
         # we have completed the loop over the alternate data for this output
         # now do the statistics, diurnal average and daily averages for this output
-        gfalternate_getoutputstatistics(data_dict,stat_dict,alternate_info)
+        gfalternate_getoutputstatistics(data_dict, stat_dict, l4_info)
         for label_output in label_output_list:
-            for result in ds_tower.alternate[label_output]["results"]:
-                ds_tower.alternate[label_output]["results"][result].append(stat_dict[label_output][result])
-        if alternate_info["nogaps_tower"]:
-            if alternate_info["show_all"]:
+            for result in l4a["outputs"][label_output]["results"]:
+                l4a["outputs"][label_output]["results"][result].append(stat_dict[label_output][result])
+        if l4a["run"]["nogaps_tower"]:
+            if l4a["gui"]["show_all"]:
                 pass
             else:
                 continue
         # plot the gap filled data
-        #logger.info(" Gap fill with alternate: Plotting ...")
-        pd = gfalternate_initplot(data_dict,alternate_info)
-        diel_avg = gfalternate_getdielaverage(data_dict,alternate_info)
+        pd = gfalternate_initplot(data_dict, l4_info)
+        diel_avg = gfalternate_getdielaverage(data_dict, l4_info)
         # reserve figure number 0 for the coverage lines/progress plot
-        fig_num = fig_num+1
-        gfalternate_plotcomposite(fig_num,data_dict,stat_dict,diel_avg,alternate_info,pd)
-        # reset the logicals in alternate_info
-        #logger.info(" Gap fill with alternate: Finished plotting")
-    # make sure this processing step gets written to the global attribute "Functions"
-    if "GapFillFromalternate" not in ds_tower.globalattributes["Functions"]:
-        ds_tower.globalattributes["Functions"] = ds_tower.globalattributes["Functions"]+", GapFillFromalternate"
+        fig_num = fig_num + 1
+        gfalternate_plotcomposite(fig_num, data_dict, stat_dict, diel_avg, l4_info, pd)
 
-def gfalternate_plotcomposite(nfig,data_dict,stat_dict,diel_avg,alternate_info,pd):
+def gfalternate_plotcomposite(nfig, data_dict, stat_dict, diel_avg, l4_info, pd):
     # set up some local pointers
-    label_tower = alternate_info["label_tower"]
-    label_composite = alternate_info["label_composite"]
-    time_step = alternate_info["time_step"]
-    points_test = numpy.ma.count(data_dict[label_tower]["data"])<alternate_info["min_points"]
-    fit_test = alternate_info["fit_type"]!="replace"
+    l4a = l4_info["alternate"]
+    label_tower = l4a["run"]["label_tower"]
+    label_composite = l4a["run"]["label_composite"]
+    time_step = l4a["info"]["time_step"]
+    points_test = numpy.ma.count(data_dict[label_tower]["data"]) < l4a["run"]["min_points"]
+    fit_test = l4a["run"]["fit_type"] != "replace"
     if points_test and fit_test: return
     # turn on interactive plotting
-    if alternate_info["show_plots"]:
+    if l4a["gui"]["show_plots"]:
         plt.ion()
     else:
         plt.ioff()
     # create the figure canvas
-    fig = plt.figure(nfig,figsize=(13,8))
+    #fig = plt.figure(nfig, figsize=(13,8))
+    if plt.fignum_exists(1):
+        fig = plt.figure(1)
+        plt.clf()
+    else:
+        fig = plt.figure(1, figsize=(13, 8))
     fig.canvas.set_window_title(label_tower)
     # get the plot title string
-    title = alternate_info["site_name"]+" : Comparison of tower and alternate data for "+label_tower
-    plt.figtext(0.5,0.96,title,ha='center',size=16)
+    title = l4a["info"]["site_name"] + " : Comparison of tower and alternate data for " + label_tower
+    plt.figtext(0.5, 0.96, title, ha='center', size=16)
     # bottom row of XY plots: scatter plot of 30 minute data
-    rect1 = [0.10,pd["margin_bottom"],pd["xy_width"],pd["xy_height"]]
+    rect1 = [0.10, pd["margin_bottom"], pd["xy_width"], pd["xy_height"]]
     xyscatter = plt.axes(rect1)
-    xyscatter.set_ylabel("Tower ("+data_dict[label_tower]["attr"]["units"]+")")
-    xyscatter.set_xlabel("Alt ("+data_dict[label_composite]["attr"]["units"]+")")
-    text = str(time_step)+" minutes"
-    xyscatter.text(0.6,0.075,text,fontsize=10,horizontalalignment="left",transform=xyscatter.transAxes)
-    xyscatter.plot(data_dict[label_composite]["fitcorr"],data_dict[label_tower]["data"],'b.')
+    xyscatter.set_ylabel("Tower (" + data_dict[label_tower]["attr"]["units"] + ")")
+    xyscatter.set_xlabel("Alt (" + data_dict[label_composite]["attr"]["units"] + ")")
+    text = str(time_step) + " minutes"
+    xyscatter.text(0.6, 0.075, text, fontsize=10, horizontalalignment="left",
+                   transform=xyscatter.transAxes)
+    xyscatter.plot(data_dict[label_composite]["fitcorr"], data_dict[label_tower]["data"], 'b.')
     xfit = numpy.array([numpy.ma.min(data_dict[label_composite]["fitcorr"]),
                         numpy.ma.max(data_dict[label_composite]["fitcorr"])])
-    yfit = xfit*stat_dict[label_composite]["slope"]+stat_dict[label_composite]["offset"]
-    xyscatter.plot(xfit,yfit,'g--',linewidth=3)
-    xyscatter.text(0.5,0.9,stat_dict[label_composite]["eqnstr"],fontsize=8,horizontalalignment='center',transform=xyscatter.transAxes,color='green')
+    yfit = xfit*stat_dict[label_composite]["slope"] + stat_dict[label_composite]["offset"]
+    xyscatter.plot(xfit, yfit, 'g--', linewidth=3)
+    xyscatter.text(0.5, 0.9, stat_dict[label_composite]["eqnstr"], fontsize=8,
+                   horizontalalignment='center', transform=xyscatter.transAxes, color='green')
     # bottom row of XY plots: scatter plot of diurnal averages
-    ind = numpy.arange(alternate_info["nperday"])/float(alternate_info["nperhr"])
-    rect2 = [0.40,pd["margin_bottom"],pd["xy_width"],pd["xy_height"]]
+    ind = numpy.arange(l4a["gui"]["nperday"])/float(l4a["gui"]["nperhr"])
+    rect2 = [0.40, pd["margin_bottom"], pd["xy_width"], pd["xy_height"]]
     diel_axes = plt.axes(rect2)
-    diel_axes.plot(ind,diel_avg[label_composite]["fitcorr"],'g-',label="Alt (fit)")
-    diel_axes.plot(ind,diel_avg[label_composite]["data"],'b-',label="Alt")
-    diel_axes.set_ylabel(label_tower+" ("+data_dict[label_tower]["attr"]["units"]+")")
-    diel_axes.set_xlim(0,24)
-    diel_axes.xaxis.set_ticks([0,6,12,18,24])
+    diel_axes.plot(ind, diel_avg[label_composite]["fitcorr"], 'g-', label="Alt (fit)")
+    diel_axes.plot(ind, diel_avg[label_composite]["data"], 'b-', label="Alt")
+    diel_axes.set_ylabel(label_tower + " (" + data_dict[label_tower]["attr"]["units"] + ")")
+    diel_axes.set_xlim(0, 24)
+    diel_axes.xaxis.set_ticks([0, 6, 12, 18, 24])
     diel_axes.set_xlabel('Hour')
-    diel_axes.plot(ind,diel_avg[label_tower]["data"],'ro',label="Tower")
-    diel_axes.legend(loc='upper right',frameon=False,prop={'size':8})
+    diel_axes.plot(ind, diel_avg[label_tower]["data"], 'ro', label="Tower")
+    diel_axes.legend(loc='upper right', frameon=False, prop={'size':8})
     # top row: time series
     ts_axes = []
-    rect3 = [pd["margin_left"],pd["ts_bottom"],pd["ts_width"],pd["ts_height"]]
+    rect3 = [pd["margin_left"], pd["ts_bottom"], pd["ts_width"], pd["ts_height"]]
     ts_axes.append(plt.axes(rect3))
-    ts_axes[0].plot(data_dict["DateTime"]["data"],data_dict[label_tower]["data"],'ro',label="Tower")
-    ts_axes[0].plot(data_dict["DateTime"]["data"],data_dict[label_composite]["fitcorr"],'g-',label="Alt (fitted)")
-    ts_axes[0].set_xlim(data_dict["DateTime"]["data"][0],data_dict["DateTime"]["data"][-1])
-    ts_axes[0].legend(loc='upper right',frameon=False,prop={'size':10})
-    ts_axes[0].set_ylabel(label_tower+" ("+data_dict[label_tower]["attr"]["units"]+")")
+    ts_axes[0].plot(data_dict["DateTime"]["data"], data_dict[label_tower]["data"], 'ro', label="Tower")
+    ts_axes[0].plot(data_dict["DateTime"]["data"], data_dict[label_composite]["fitcorr"], 'g-', label="Alt (fitted)")
+    ts_axes[0].set_xlim(data_dict["DateTime"]["data"][0], data_dict["DateTime"]["data"][-1])
+    ts_axes[0].legend(loc='upper right', frameon=False, prop={'size':10})
+    ts_axes[0].set_ylabel(label_tower + " (" + data_dict[label_tower]["attr"]["units"] + ")")
     output_list = list(data_dict[label_tower]["output_list"])
-    for item in [label_tower,label_composite]:
+    for item in [label_tower, label_composite]:
         if item in output_list: output_list.remove(item)
-    for n,label_output in enumerate(output_list):
+    for n, label_output in enumerate(output_list):
         n = n + 1
         source = data_dict[label_output]["source"]
         this_bottom = pd["ts_bottom"] + n*pd["ts_height"]
-        rect = [pd["margin_left"],this_bottom,pd["ts_width"],pd["ts_height"]]
-        ts_axes.append(plt.axes(rect,sharex=ts_axes[0]))
-        ts_axes[n].plot(data_dict["DateTime"]["data"],data_dict[label_output]["data"],'b-',label=source)
-        plt.setp(ts_axes[n].get_xticklabels(),visible=False)
-        ts_axes[n].legend(loc='upper right',frameon=False,prop={'size':10})
-        ts_axes[n].set_ylabel(label_tower+" ("+data_dict[label_tower]["attr"]["units"]+")")
+        rect = [pd["margin_left"], this_bottom, pd["ts_width"], pd["ts_height"]]
+        ts_axes.append(plt.axes(rect, sharex=ts_axes[0]))
+        ts_axes[n].plot(data_dict["DateTime"]["data"], data_dict[label_output]["data"], 'b-', label=source)
+        plt.setp(ts_axes[n].get_xticklabels(), visible=False)
+        ts_axes[n].legend(loc='upper right', frameon=False, prop={'size':10})
+        ts_axes[n].set_ylabel(label_tower + " (" + data_dict[label_tower]["attr"]["units"] + ")")
     # write the comparison statistics
-    stats_list = ["Var (Alt)","Var (Tower)","RMSE","Bias","r","No. filled","No. points"]
-    for n,item in enumerate(stats_list):
+    stats_list = ["Var (Alt)", "Var (Tower)", "RMSE", "Bias", "r", "No. filled", "No. points"]
+    for n, item in enumerate(stats_list):
         row_posn = pd["margin_bottom"] + n*pd["row_space"]
-        plt.figtext(pd["text_left"],row_posn,item)
-        plt.figtext(pd["num_left"],row_posn,'%.4g'%(stat_dict[label_composite][item]))
+        plt.figtext(pd["text_left"], row_posn, item)
+        plt.figtext(pd["num_left"], row_posn, '%.4g'%(stat_dict[label_composite][item]))
     # save a hard copy of the plot
     sdt = data_dict["DateTime"]["data"][0].strftime("%Y%m%d")
     edt = data_dict["DateTime"]["data"][-1].strftime("%Y%m%d")
-    plot_path = os.path.join(alternate_info["plot_path"], "L4", "")
+    plot_path = os.path.join(l4a["info"]["plot_path"], "L4", "")
     if not os.path.exists(plot_path): os.makedirs(plot_path)
-    figname = plot_path+alternate_info["site_name"].replace(" ","")+"_Alternate_"+label_tower
-    figname = figname+"_"+sdt+"_"+edt+'.png'
-    fig.savefig(figname,format='png')
+    figname = plot_path + l4a["info"]["site_name"].replace(" ", "") + "_Alternate_" + label_tower
+    figname = figname + "_" + sdt + "_" + edt + '.png'
+    fig.savefig(figname, format='png')
     # draw the plot on the screen
-    if alternate_info["show_plots"]:
+    if l4a["gui"]["show_plots"]:
         plt.draw()
         plt.pause(1)
         plt.ioff()
     else:
         plt.ion()
 
-def gfalternate_plotcoveragelines(ds_tower):
+def gfalternate_plotcoveragelines(ds_tower, l4_info):
+    """
+    Purpose:
+     Plot a line representing the coverage of variables being gap filled.
+    Usage:
+    Author: PRI
+    Date: Back in the day
+    """
+    # local pointer to l4_info["alternate"]
+    l4ia = l4_info["alternate"]
+    # local pointer to datetime
     ldt = ds_tower.series["DateTime"]["Data"]
+    # get the site name and the start and end date
     site_name = ds_tower.globalattributes["site_name"]
     start_date = ldt[0].strftime("%Y-%m-%d")
     end_date = ldt[-1].strftime("%Y-%m-%d")
-    slist = [ds_tower.alternate[item]["label_tower"] for item in ds_tower.alternate.keys()]
-    series_list = list(set(slist))
-    ylabel_list = [""]+series_list+[""]
+    # list of outputs to plot
+    outputs = l4ia["outputs"].keys()
+    # ist of targets
+    targets = [l4ia["outputs"][output]["target"] for output in l4ia["outputs"].keys()]
+    targets = list(set(targets))
+    ylabel_list = [""] + targets + [""]
     ylabel_right_list = [""]
-    color_list = ["blue", "red", "green", "yellow", "magenta", "black", "cyan", "brown"]
+    colors = ["blue", "red", "green", "yellow", "magenta", "black", "cyan", "brown"]
     xsize = 15.0
-    ysize = max([len(series_list)*0.2, 1])
+    ysize = max([len(targets)*0.2, 1])
     plt.ion()
     if plt.fignum_exists(0):
-        fig=plt.figure(0)
+        fig = plt.figure(0)
         plt.clf()
         ax1 = plt.subplot(111)
     else:
-        fig=plt.figure(0,figsize=(xsize,ysize))
+        fig = plt.figure(0, figsize=(xsize, ysize))
         ax1 = plt.subplot(111)
-    title = "Coverage: "+site_name+" "+start_date+" to "+end_date
+    title = "Coverage: " + site_name + " " + start_date + " to " + end_date
     fig.canvas.set_window_title(title)
-    plt.ylim([0,len(series_list)+1])
-    plt.xlim([ldt[0],ldt[-1]])
-    for series,n in zip(series_list,range(1,len(series_list)+1)):
-        data_series, _, _ = pfp_utils.GetSeriesasMA(ds_tower,series)
+    plt.ylim([0, len(targets) + 1])
+    plt.xlim([ldt[0], ldt[-1]])
+    for label, n in zip(targets, range(1, len(targets) + 1)):
+        data_series, _, _ = pfp_utils.GetSeriesasMA(ds_tower, label)
         percent = 100*numpy.ma.count(data_series)/len(data_series)
         ylabel_right_list.append("{0:.0f}%".format(percent))
         ind_series = numpy.ma.ones(len(data_series))*float(n)
-        ind_series = numpy.ma.masked_where(numpy.ma.getmaskarray(data_series)==True,ind_series)
-        plt.plot(ldt,ind_series,color=color_list[numpy.mod(n,8)],linewidth=1)
-        if series+"_composite" in ds_tower.series.keys():
-            data_composite, _, _ = pfp_utils.GetSeriesasMA(ds_tower,series+"_composite")
+        ind_series = numpy.ma.masked_where(numpy.ma.getmaskarray(data_series) == True, ind_series)
+        plt.plot(ldt, ind_series, color=colors[numpy.mod(n, 8)], linewidth=1)
+        if label+"_composite" in ds_tower.series.keys():
+            data_composite, _, _ = pfp_utils.GetSeriesasMA(ds_tower, label+"_composite")
             ind_composite = numpy.ma.ones(len(data_composite))*float(n)
-            ind_composite = numpy.ma.masked_where(numpy.ma.getmaskarray(data_composite)==True,ind_composite)
-            plt.plot(ldt,ind_composite,color=color_list[numpy.mod(n,8)],linewidth=4)
-    ylabel_posn = range(0,len(series_list)+2)
-    pylab.yticks(ylabel_posn,ylabel_list)
+            ind_composite = numpy.ma.masked_where(numpy.ma.getmaskarray(data_composite) == True, ind_composite)
+            plt.plot(ldt, ind_composite, color=colors[numpy.mod(n,8)], linewidth=4)
+    ylabel_posn = range(0, len(targets)+2)
+    pylab.yticks(ylabel_posn, ylabel_list)
     ylabel_right_list.append("")
     ax2 = ax1.twinx()
-    pylab.yticks(ylabel_posn,ylabel_right_list)
+    pylab.yticks(ylabel_posn, ylabel_right_list)
     fig.tight_layout()
     #fig.canvas.manager.window.attributes('-topmost', 1)
     plt.draw()
@@ -1153,269 +1203,256 @@ def gfalternate_quit(alt_gui):
     ds = alt_gui.ds4
     # destroy the alternate GUI
     alt_gui.close()
-    # put the return code into ds.alternate
+    # put the return code into ds.returncodes
     ds.returncodes["alternate"] = "quit"
 
 def gfalternate_run_gui(alt_gui):
     """ Run the GapFillFromAlternate GUI."""
     ds_tower = alt_gui.ds4
     ds_alt = alt_gui.ds_alt
-    alternate_info = alt_gui.alternate_info
-    # populate the alternate_info dictionary with things that will be useful
+    l4_info = alt_gui.l4_info
+    l4a = l4_info["alternate"]
+    # populate the l4_info dictionary with things that will be useful
     if str(alt_gui.radioButtons.checkedButton().text()) == "Manual":
-        alternate_info["peropt"] = 1
+        l4a["gui"]["period_option"] = 1
     elif str(alt_gui.radioButtons.checkedButton().text()) == "Months":
-        alternate_info["peropt"] = 2
+        l4a["gui"]["period_option"] = 2
     elif str(alt_gui.radioButtons.checkedButton().text()) == "Days":
-        alternate_info["peropt"] = 3
+        l4a["gui"]["period_option"] = 3
 
-    alternate_info["overwrite"] = alt_gui.checkBox_Overwrite.isChecked()
-    alternate_info["show_plots"] = alt_gui.checkBox_ShowPlots.isChecked()
-    alternate_info["show_all"] = alt_gui.checkBox_PlotAll.isChecked()
-    alternate_info["auto_complete"] = alt_gui.checkBox_AutoComplete.isChecked()
-    alternate_info["autoforce"] = False
-    alternate_info["min_percent"] = max(int(str(alt_gui.lineEdit_MinPercent.text())),1)
+    l4a["gui"]["overwrite"] = alt_gui.checkBox_Overwrite.isChecked()
+    l4a["gui"]["show_plots"] = alt_gui.checkBox_ShowPlots.isChecked()
+    l4a["gui"]["show_all"] = alt_gui.checkBox_PlotAll.isChecked()
+    l4a["gui"]["auto_complete"] = alt_gui.checkBox_AutoComplete.isChecked()
+    l4a["gui"]["autoforce"] = False
+    l4a["gui"]["min_percent"] = max(int(str(alt_gui.lineEdit_MinPercent.text())),1)
 
-    alternate_info["site_name"] = ds_tower.globalattributes["site_name"]
-    alternate_info["time_step"] = int(ds_tower.globalattributes["time_step"])
-    alternate_info["nperhr"] = int(float(60)/alternate_info["time_step"]+0.5)
-    alternate_info["nperday"] = int(float(24)*alternate_info["nperhr"]+0.5)
-    alternate_info["max_lags"] = int(float(12)*alternate_info["nperhr"]+0.5)
-    alternate_info["tower"] = {}
-    alternate_info["alternate"] = {}
-    series_list = [ds_tower.alternate[item]["label_tower"] for item in ds_tower.alternate.keys()]
-    alternate_info["series_list"] = series_list
-    #alternate_info["series_list"] = ["Ah","Ta"]
-    logger.info(" Gap filling %s using alternate data", str(list(set(series_list))))
-    if alternate_info["peropt"]==1:
+    ts = int(ds_tower.globalattributes["time_step"])
+    l4a["gui"]["nperhr"] = int(float(60)/ts + 0.5)
+    l4a["gui"]["nperday"] = int(float(24)*l4a["gui"]["nperhr"] + 0.5)
+    l4a["gui"]["max_lags"] = int(float(12)*l4a["gui"]["nperhr"] + 0.5)
+    l4a["gui"]["tower"] = {}
+    l4a["gui"]["alternate"] = {}
+    series_list = [l4a["outputs"][item]["target"] for item in l4a["outputs"].keys()]
+    l4a["gui"]["series_list"] = sorted(list(set(series_list)))
+    logger.info(" Gap filling %s using alternate data", l4a["gui"]["series_list"])
+    if l4a["gui"]["period_option"] == 1:
         logger.info(" Starting manual run ...")
-        #gfalternate_progress(alt_gui,"Starting manual run ...")
         # get the start and end datetimes entered in the alternate GUI
         if len(str(alt_gui.lineEdit_StartDate.text())) != 0:
-            alternate_info["startdate"] = str(alt_gui.lineEdit_StartDate.text())
+            l4a["info"]["startdate"] = str(alt_gui.lineEdit_StartDate.text())
         if len(str(alt_gui.lineEdit_EndDate.text())) != 0:
-            alternate_info["enddate"] = str(alt_gui.lineEdit_EndDate.text())
-        gfalternate_main(ds_tower, ds_alt, alternate_info)
-        gfalternate_plotcoveragelines(ds_tower)
-        #gfalternate_progress(alt_gui,"Finished manual run ...")
-        logger.info("Finished manual run ...")
+            l4a["info"]["enddate"] = str(alt_gui.lineEdit_EndDate.text())
+        gfalternate_main(ds_tower, ds_alt, l4_info)
+        gfalternate_plotcoveragelines(ds_tower, l4_info)
+        logger.info(" Finished manual run ...")
         # get the start and end datetime of the tower data
         ldt_tower = ds_tower.series["DateTime"]["Data"]
         startdate = ldt_tower[0]
         enddate = ldt_tower[-1]
-        # create the alternate_info dictionary, this will hold much useful information
-        alternate_info = {"overlap_startdate":startdate.strftime("%Y-%m-%d %H:%M"),
-                          "overlap_enddate":enddate.strftime("%Y-%m-%d %H:%M"),
-                          "startdate":startdate.strftime("%Y-%m-%d %H:%M"),
-                          "enddate":enddate.strftime("%Y-%m-%d %H:%M")}
-    elif alternate_info["peropt"]==2:
+        # reset entries in l4_info dictionary
+        l4a["info"]["overlap_startdate"] = startdate.strftime("%Y-%m-%d %H:%M")
+        l4a["info"]["overlap_enddate"] = enddate.strftime("%Y-%m-%d %H:%M")
+        l4a["info"]["startdate"] = startdate.strftime("%Y-%m-%d %H:%M")
+        l4a["info"]["enddate"] = enddate.strftime("%Y-%m-%d %H:%M")
+    elif l4a["gui"]["period_option"] == 2:
         logger.info("Starting auto (months) run ...")
-        #gfalternate_progress(alt_gui,"Starting auto (monthly) run ...")
         # get the start datetime entered in the alternate GUI
         nMonths = int(alt_gui.lineEdit_NumberMonths.text())
-        if len(str(alt_gui.lineEdit_StartDate.text()))!=0:
-            alternate_info["startdate"] = str(alt_gui.lineEdit_StartDate.text())
+        if len(str(alt_gui.lineEdit_StartDate.text())) != 0:
+            l4a["info"]["startdate"] = str(alt_gui.lineEdit_StartDate.text())
         if len(str(alt_gui.lineEdit_EndDate.text())) != 0:
-            alternate_info["enddate"] = str(alt_gui.lineEdit_EndDate.text())
-        alternate_info["gui_startdate"] = alternate_info["startdate"]
-        alternate_info["gui_enddate"] = alternate_info["enddate"]
-        startdate = dateutil.parser.parse(alternate_info["startdate"])
-        overlap_enddate = dateutil.parser.parse(alternate_info["overlap_enddate"])
-        enddate = startdate+dateutil.relativedelta.relativedelta(months=nMonths)
-        enddate = min([overlap_enddate,enddate])
-        alternate_info["enddate"] = datetime.datetime.strftime(enddate,"%Y-%m-%d %H:%M")
-        while startdate<overlap_enddate:
-            gfalternate_main(ds_tower, ds_alt, alternate_info)
-            gfalternate_plotcoveragelines(ds_tower)
+            l4a["info"]["enddate"] = str(alt_gui.lineEdit_EndDate.text())
+        l4a["info"]["gui_startdate"] = l4a["info"]["startdate"]
+        l4a["info"]["gui_enddate"] = l4a["info"]["enddate"]
+        startdate = dateutil.parser.parse(l4a["info"]["startdate"])
+        overlap_enddate = dateutil.parser.parse(l4a["info"]["overlap_enddate"])
+        enddate = startdate + dateutil.relativedelta.relativedelta(months=nMonths)
+        enddate = min([overlap_enddate, enddate])
+        l4a["info"]["enddate"] = datetime.datetime.strftime(enddate, "%Y-%m-%d %H:%M")
+        while startdate < overlap_enddate:
+            gfalternate_main(ds_tower, ds_alt, l4_info)
+            gfalternate_plotcoveragelines(ds_tower, l4_info)
             startdate = enddate
-            enddate = startdate+dateutil.relativedelta.relativedelta(months=nMonths)
-            alternate_info["startdate"] = startdate.strftime("%Y-%m-%d %H:%M")
-            enddate = min([enddate,overlap_enddate])
-            alternate_info["enddate"] = enddate.strftime("%Y-%m-%d %H:%M")
-        gfalternate_autocomplete(ds_tower,ds_alt,alternate_info)
-        #gfalternate_progress(alt_gui,"Finished auto (monthly) run ...")
-        logger.info("Finished auto (months) run ...")
+            enddate = startdate + dateutil.relativedelta.relativedelta(months=nMonths)
+            l4a["info"]["startdate"] = startdate.strftime("%Y-%m-%d %H:%M")
+            enddate = min([enddate, overlap_enddate])
+            l4a["info"]["enddate"] = enddate.strftime("%Y-%m-%d %H:%M")
+        gfalternate_autocomplete(ds_tower, ds_alt, l4_info)
+        logger.info(" Finished auto (months) run ...")
         # get the start and end datetime of the tower data
         ldt_tower = ds_tower.series["DateTime"]["Data"]
         startdate = ldt_tower[0]
         enddate = ldt_tower[-1]
-        # create the alternate_info dictionary, this will hold much useful information
-        alternate_info = {"overlap_startdate":startdate.strftime("%Y-%m-%d %H:%M"),
-                          "overlap_enddate":enddate.strftime("%Y-%m-%d %H:%M"),
-                          "startdate":startdate.strftime("%Y-%m-%d %H:%M"),
-                          "enddate":enddate.strftime("%Y-%m-%d %H:%M")}
-    elif alternate_info["peropt"]==3:
+        # reset entries in l4_info dictionary
+        l4a["info"]["overlap_startdate"] = startdate.strftime("%Y-%m-%d %H:%M")
+        l4a["info"]["overlap_enddate"] = enddate.strftime("%Y-%m-%d %H:%M")
+        l4a["info"]["startdate"] = startdate.strftime("%Y-%m-%d %H:%M")
+        l4a["info"]["enddate"] = enddate.strftime("%Y-%m-%d %H:%M")
+    elif l4a["gui"]["period_option"] == 3:
         logger.info("Starting auto (days) run ...")
-        #gfalternate_progress(alt_gui,"Starting auto (days) run ...")
         # get the start datetime entered in the alternate GUI
         nDays = int(alt_gui.lineEdit_NumberDays.text())
         if len(str(alt_gui.lineEdit_StartDate.text())) != 0:
-            alternate_info["startdate"] = str(alt_gui.lineEdit_StartDate.text())
+            l4a["info"]["startdate"] = str(alt_gui.lineEdit_StartDate.text())
         if len(str(alt_gui.lineEdit_EndDate.text())) != 0:
-            alternate_info["enddate"] = str(alt_gui.lineEdit_EndDate.text())
-        alternate_info["gui_startdate"] = alternate_info["startdate"]
-        alternate_info["gui_enddate"] = alternate_info["enddate"]
-        startdate = dateutil.parser.parse(alternate_info["startdate"])
-        gui_enddate = dateutil.parser.parse(alternate_info["gui_enddate"])
-        overlap_enddate = dateutil.parser.parse(alternate_info["overlap_enddate"])
-        enddate = startdate+dateutil.relativedelta.relativedelta(days=nDays)
-        enddate = min([overlap_enddate,enddate,gui_enddate])
-        alternate_info["enddate"] = datetime.datetime.strftime(enddate,"%Y-%m-%d %H:%M")
-        alternate_info["startdate"] = datetime.datetime.strftime(startdate,"%Y-%m-%d %H:%M")
-        stopdate = min([overlap_enddate,gui_enddate])
-        while startdate<stopdate:
-            gfalternate_main(ds_tower, ds_alt, alternate_info)
-            gfalternate_plotcoveragelines(ds_tower)
+            l4a["info"]["enddate"] = str(alt_gui.lineEdit_EndDate.text())
+        l4a["info"]["gui_startdate"] = l4a["info"]["startdate"]
+        l4a["info"]["gui_enddate"] = l4a["info"]["enddate"]
+        startdate = dateutil.parser.parse(l4a["info"]["startdate"])
+        gui_enddate = dateutil.parser.parse(l4a["info"]["gui_enddate"])
+        overlap_enddate = dateutil.parser.parse(l4a["info"]["overlap_enddate"])
+        enddate = startdate + dateutil.relativedelta.relativedelta(days=nDays)
+        enddate = min([overlap_enddate,enddate, gui_enddate])
+        l4a["info"]["enddate"] = datetime.datetime.strftime(enddate, "%Y-%m-%d %H:%M")
+        l4a["info"]["startdate"] = datetime.datetime.strftime(startdate, "%Y-%m-%d %H:%M")
+        stopdate = min([overlap_enddate, gui_enddate])
+        while startdate < stopdate:
+            gfalternate_main(ds_tower, ds_alt, l4_info)
+            gfalternate_plotcoveragelines(ds_tower, l4_info)
             startdate = enddate
-            enddate = startdate+dateutil.relativedelta.relativedelta(days=nDays)
-            run_enddate = min([stopdate,enddate])
-            alternate_info["startdate"] = startdate.strftime("%Y-%m-%d %H:%M")
-            alternate_info["enddate"] = run_enddate.strftime("%Y-%m-%d %H:%M")
-        gfalternate_autocomplete(ds_tower,ds_alt,alternate_info)
-        #gfalternate_progress(alt_gui,"Finished auto (days) run ...")
-        logger.info("Finished auto (days) run ...")
+            enddate = startdate + dateutil.relativedelta.relativedelta(days=nDays)
+            run_enddate = min([stopdate, enddate])
+            l4a["info"]["startdate"] = startdate.strftime("%Y-%m-%d %H:%M")
+            l4a["info"]["enddate"] = run_enddate.strftime("%Y-%m-%d %H:%M")
+        gfalternate_autocomplete(ds_tower, ds_alt, l4_info)
+        logger.info(" Finished auto (days) run ...")
         # get the start and end datetime of the tower data
         ldt_tower = ds_tower.series["DateTime"]["Data"]
         startdate = ldt_tower[0]
         enddate = ldt_tower[-1]
-        # create the alternate_info dictionary, this will hold much useful information
-        alternate_info = {"overlap_startdate":startdate.strftime("%Y-%m-%d %H:%M"),
-                          "overlap_enddate":enddate.strftime("%Y-%m-%d %H:%M"),
-                          "startdate":startdate.strftime("%Y-%m-%d %H:%M"),
-                          "enddate":enddate.strftime("%Y-%m-%d %H:%M")}
+        # reset entries in l4_info dictionary
+        l4a["info"]["overlap_startdate"] = startdate.strftime("%Y-%m-%d %H:%M")
+        l4a["info"]["overlap_enddate"] = enddate.strftime("%Y-%m-%d %H:%M")
+        l4a["info"]["startdate"] = startdate.strftime("%Y-%m-%d %H:%M")
+        l4a["info"]["enddate"] = enddate.strftime("%Y-%m-%d %H:%M")
     else:
         logger.error("GapFillFromAlternate: unrecognised period option")
     # write Excel spreadsheet with fit statistics
     #pfp_io.xl_write_AlternateStats(ds_tower)
 
-def gfalternate_run_nogui(cf,ds_tower,ds_alt,alternate_info):
+def gfalternate_run_nogui(ds_tower, ds_alt, l4_info):
     # populate the alternate_info dictionary with things that will be useful
+    l4a = l4_info["alternate"]
     # autoforce is used by gfalternate_autocomplete
-    alternate_info["autoforce"] = False
+    l4a["gui"]["autoforce"] = False
     # period option
     dt_tower = ds_tower.series["DateTime"]["Data"]
-    opt = pfp_utils.get_keyvaluefromcf(cf,["GUI","Alternate"],"period_option",default="manual",mode="quiet")
-    if opt=="manual":
-        alternate_info["peropt"] = 1
-        sd = pfp_utils.get_keyvaluefromcf(cf,["GUI","Alternate"],"start_date",default="",mode="quiet")
-        alternate_info["startdate"] = dt_tower[0].strftime("%Y-%m-%d %H:%M")
-        if len(sd)!=0: alternate_info["startdate"] = sd
-        ed = pfp_utils.get_keyvaluefromcf(cf,["GUI","Alternate"],"end_date",default="",mode="quiet")
-        alternate_info["enddate"] = dt_tower[-1].strftime("%Y-%m-%d %H:%M")
-        if len(ed)!=0: alternate_info["enddate"] = ed
-    elif opt=="monthly":
-        alternate_info["peropt"] = 2
-        sd = pfp_utils.get_keyvaluefromcf(cf,["GUI","Alternate"],"start_date",default="",mode="quiet")
-        alternate_info["startdate"] = dt_tower[0].strftime("%Y-%m-%d %H:%M")
-        if len(sd)!=0: alternate_info["startdate"] = sd
-    elif opt=="days":
-        alternate_info["peropt"] = 3
-        sd = pfp_utils.get_keyvaluefromcf(cf,["GUI","Alternate"],"start_date",default="",mode="quiet")
-        alternate_info["startdate"] = dt_tower[0].strftime("%Y-%m-%d %H:%M")
-        if len(sd)!=0: alternate_info["startdate"] = sd
-        ed = pfp_utils.get_keyvaluefromcf(cf,["GUI","Alternate"],"end_date",default="",mode="quiet")
-        alternate_info["enddate"] = dt_tower[-1].strftime("%Y-%m-%d %H:%M")
-        if len(ed)!=0: alternate_info["enddate"] = ed
+    opt = pfp_utils.get_keyvaluefromcf(cf, ["GUI", "Alternate"], "period_option", default="manual")
+    if opt == "manual":
+        l4a["gui"]["period_option"] = 1
+    elif opt == "monthly":
+        l4a["gui"]["period_option"] = 2
+    elif opt == "days":
+        l4a["gui"]["period_option"] = 3
+    sd = dt_tower[0].strftime("%Y-%m-%d %H:%M")
+    sd = pfp_utils.get_keyvaluefromcf(cf, ["GUI", "Alternate"], "start_date", default=sd)
+    l4a["info"]["startdate"] = sd
+    ed = dt_tower[-1].strftime("%Y-%m-%d %H:%M")
+    ed = pfp_utils.get_keyvaluefromcf(cf, ["GUI", "Alternate"], "end_date", default=ed)
+    l4a["info"]["enddate"] = ed
     # overwrite option
-    alternate_info["overwrite"] = False
-    opt = pfp_utils.get_keyvaluefromcf(cf,["GUI","Alternate"],"overwrite",default="no",mode="quiet")
-    if opt.lower()=="yes": alternate_info["overwrite"] = True
+    l4a["gui"]["overwrite"] = False
+    opt = pfp_utils.get_keyvaluefromcf(cf, ["GUI", "Alternate"], "overwrite", default="no")
+    if opt.lower() == "yes": l4a["gui"]["overwrite"] = True
     # show plots option
-    alternate_info["show_plots"] = True
-    opt = pfp_utils.get_keyvaluefromcf(cf,["GUI","Alternate"],"show_plots",default="yes",mode="quiet")
-    if opt.lower()=="no": alternate_info["show_plots"] = False
+    l4a["gui"]["show_plots"] = True
+    opt = pfp_utils.get_keyvaluefromcf(cf, ["GUI", "Alternate"], "show_plots", default="yes")
+    if opt.lower() == "no": l4a["gui"]["show_plots"] = False
     # show all plots option
-    alternate_info["show_all"] = False
-    opt = pfp_utils.get_keyvaluefromcf(cf,["GUI","Alternate"],"show_all",default="no",mode="quiet")
-    if opt.lower()=="yes": alternate_info["show_all"] = True
+    l4a["gui"]["show_all"] = False
+    opt = pfp_utils.get_keyvaluefromcf(cf, ["GUI", "Alternate"], "show_all", default="no")
+    if opt.lower() == "yes": l4a["gui"]["show_all"] = True
     # auto-complete option
-    alternate_info["auto_complete"] = True
-    opt = pfp_utils.get_keyvaluefromcf(cf,["GUI","Alternate"],"auto_complete",default="yes",mode="quiet")
-    if opt.lower()=="no": alternate_info["auto_complete"] = False
+    l4a["gui"]["auto_complete"] = True
+    opt = pfp_utils.get_keyvaluefromcf(cf, ["GUI", "Alternate"], "auto_complete", default="yes")
+    if opt.lower() == "no": l4a["gui"]["auto_complete"] = False
     # minimum percentage of good points required
-    opt = pfp_utils.get_keyvaluefromcf(cf,["GUI","Alternate"],"min_percent",default=50,mode="quiet")
-    alternate_info["min_percent"] = max(int(opt),1)
+    opt = pfp_utils.get_keyvaluefromcf(cf, ["GUI", "Alternate"], "min_percent", default=50)
+    l4a["gui"]["min_percent"] = max(int(opt), 1)
+    # number of months
+    opt = pfp_utils.get_keyvaluefromcf(cf, ["GUI", "Alternate"], "number_months", default=3)
+    l4a["gui"]["number_months"] = int(opt)
     # number of days
-    opt = pfp_utils.get_keyvaluefromcf(cf,["GUI","Alternate"],"number_days",default=90,mode="quiet")
-    alternate_info["number_days"] = int(opt)
+    opt = pfp_utils.get_keyvaluefromcf(cf, ["GUI", "Alternate"], "number_days", default=90)
+    l4a["gui"]["number_days"] = int(opt)
     # now set up the rest of the alternate_info dictionary
-    alternate_info["site_name"] = ds_tower.globalattributes["site_name"]
-    alternate_info["time_step"] = int(ds_tower.globalattributes["time_step"])
-    alternate_info["nperhr"] = int(float(60)/alternate_info["time_step"]+0.5)
-    alternate_info["nperday"] = int(float(24)*alternate_info["nperhr"]+0.5)
-    alternate_info["max_lags"] = int(float(12)*alternate_info["nperhr"]+0.5)
-    alternate_info["tower"] = {}
-    alternate_info["alternate"] = {}
-    series_list = [ds_tower.alternate[item]["label_tower"] for item in ds_tower.alternate.keys()]
-    alternate_info["series_list"] = series_list
-    #alternate_info["series_list"] = ["Ah","Ta"]
-    logger.info(" Gap filling %s using alternate data", str(list(set(series_list))))
-    if alternate_info["peropt"]==1:
-        gfalternate_main(ds_tower, ds_alt, alternate_info)
+    l4a["info"]["site_name"] = ds_tower.globalattributes["site_name"]
+    l4a["info"]["time_step"] = int(ds_tower.globalattributes["time_step"])
+    l4a["gui"]["nperhr"] = int(float(60)/l4a["info"]["time_step"] + 0.5)
+    l4a["gui"]["nperday"] = int(float(24)*l4a["gui"]["nperhr"] + 0.5)
+    l4a["gui"]["max_lags"] = int(float(12)*l4a["gui"]["nperhr"] + 0.5)
+    #alternate_info["tower"] = {}
+    #alternate_info["alternate"] = {}
+    series_list = [l4a["outputs"][item]["label_tower"] for item in l4a["outputs"].keys()]
+    l4a["gui"]["series_list"] = sorted(list(set(series_list)))
+    logger.info(" Gap filling %s using alternate data", str(l4a["gui"]["series_list"]))
+    if l4a["gui"]["period_option"] == 1:
+        gfalternate_main(ds_tower, ds_alt, l4_info)
         # get the start and end datetime of the tower data
         startdate = dt_tower[0]
         enddate = dt_tower[-1]
         # create the alternate_info dictionary, this will hold much useful information
-        alternate_info = {"overlap_startdate":startdate.strftime("%Y-%m-%d %H:%M"),
-                          "overlap_enddate":enddate.strftime("%Y-%m-%d %H:%M"),
-                          "startdate":startdate.strftime("%Y-%m-%d %H:%M"),
-                          "enddate":enddate.strftime("%Y-%m-%d %H:%M")}
-    elif alternate_info["peropt"]==2:
-        startdate = dateutil.parser.parse(alternate_info["startdate"])
-        overlap_enddate = dateutil.parser.parse(alternate_info["overlap_enddate"])
-        enddate = startdate+dateutil.relativedelta.relativedelta(months=1)
-        enddate = min([overlap_enddate,enddate])
-        alternate_info["enddate"] = datetime.datetime.strftime(enddate,"%Y-%m-%d %H:%M")
-        while startdate<overlap_enddate:
-            gfalternate_main(ds_tower, ds_alt, alternate_info)
+        l4a["info"]["overlap_startdate"] = startdate.strftime("%Y-%m-%d %H:%M")
+        l4a["info"]["overlap_enddate"] = enddate.strftime("%Y-%m-%d %H:%M")
+        l4a["info"]["startdate"] = startdate.strftime("%Y-%m-%d %H:%M")
+        l4a["info"]["enddate"] = enddate.strftime("%Y-%m-%d %H:%M")
+    elif l4a["gui"]["period_option"] == 2:
+        nMonths = l4a["gui"]["number_months"]
+        startdate = dateutil.parser.parse(l4a["info"]["startdate"])
+        overlap_enddate = dateutil.parser.parse(l4a["info"]["overlap_enddate"])
+        enddate = startdate + dateutil.relativedelta.relativedelta(months=nMonths)
+        enddate = min([overlap_enddate, enddate])
+        l4a["info"]["enddate"] = datetime.datetime.strftime(enddate, "%Y-%m-%d %H:%M")
+        while startdate < overlap_enddate:
+            gfalternate_main(ds_tower, ds_alt, l4_info)
             startdate = enddate
-            enddate = startdate+dateutil.relativedelta.relativedelta(months=1)
-            alternate_info["startdate"] = startdate.strftime("%Y-%m-%d %H:%M")
-            alternate_info["enddate"] = enddate.strftime("%Y-%m-%d %H:%M")
-        gfalternate_autocomplete(ds_tower,ds_alt,alternate_info)
+            enddate = startdate + dateutil.relativedelta.relativedelta(months=nMonths)
+            l4a["info"]["startdate"] = startdate.strftime("%Y-%m-%d %H:%M")
+            l4a["info"]["enddate"] = enddate.strftime("%Y-%m-%d %H:%M")
+        gfalternate_autocomplete(ds_tower, ds_alt, l4_info)
         # get the start and end datetime of the tower data
         ldt_tower = ds_tower.series["DateTime"]["Data"]
         startdate = ldt_tower[0]
         enddate = ldt_tower[-1]
         # create the alternate_info dictionary, this will hold much useful information
-        alternate_info = {"overlap_startdate":startdate.strftime("%Y-%m-%d %H:%M"),
-                          "overlap_enddate":enddate.strftime("%Y-%m-%d %H:%M"),
-                          "startdate":startdate.strftime("%Y-%m-%d %H:%M"),
-                          "enddate":enddate.strftime("%Y-%m-%d %H:%M")}
-    elif alternate_info["peropt"]==3:
-        nDays = alternate_info["number_days"]
-        alternate_info["gui_startdate"] = alternate_info["startdate"]
-        alternate_info["gui_enddate"] = alternate_info["enddate"]
-        startdate = dateutil.parser.parse(alternate_info["startdate"])
-        gui_enddate = dateutil.parser.parse(alternate_info["gui_enddate"])
-        overlap_enddate = dateutil.parser.parse(alternate_info["overlap_enddate"])
-        enddate = startdate+dateutil.relativedelta.relativedelta(days=nDays)
-        enddate = min([overlap_enddate,enddate,gui_enddate])
-        alternate_info["enddate"] = datetime.datetime.strftime(enddate,"%Y-%m-%d %H:%M")
-        alternate_info["startdate"] = datetime.datetime.strftime(startdate,"%Y-%m-%d %H:%M")
-        stopdate = min([overlap_enddate,gui_enddate])
-        while startdate<stopdate:
-            gfalternate_main(ds_tower, ds_alt, alternate_info)
-            #gfalternate_plotcoveragelines(ds_tower)
+        l4a["info"]["overlap_startdate"] = startdate.strftime("%Y-%m-%d %H:%M")
+        l4a["info"]["overlap_enddate"] = enddate.strftime("%Y-%m-%d %H:%M")
+        l4a["info"]["startdate"] = startdate.strftime("%Y-%m-%d %H:%M")
+        l4a["info"]["enddate"] = enddate.strftime("%Y-%m-%d %H:%M")
+    elif l4a["gui"]["period_option"] == 3:
+        nDays = l4a["gui"]["number_days"]
+        l4a["info"]["gui_startdate"] = l4a["info"]["startdate"]
+        l4a["info"]["gui_enddate"] = l4a["info"]["enddate"]
+        startdate = dateutil.parser.parse(l4a["info"]["startdate"])
+        gui_enddate = dateutil.parser.parse(l4a["info"]["gui_enddate"])
+        overlap_enddate = dateutil.parser.parse(l4a["info"]["overlap_enddate"])
+        enddate = startdate + dateutil.relativedelta.relativedelta(days=nDays)
+        enddate = min([overlap_enddate, enddate, gui_enddate])
+        l4a["info"]["enddate"] = datetime.datetime.strftime(enddate, "%Y-%m-%d %H:%M")
+        l4a["info"]["startdate"] = datetime.datetime.strftime(startdate, "%Y-%m-%d %H:%M")
+        stopdate = min([overlap_enddate, gui_enddate])
+        while startdate < stopdate:
+            gfalternate_main(ds_tower, ds_alt, l4_info)
             startdate = enddate
-            enddate = startdate+dateutil.relativedelta.relativedelta(days=nDays)
-            run_enddate = min([stopdate,enddate])
-            alternate_info["startdate"] = startdate.strftime("%Y-%m-%d %H:%M")
-            alternate_info["enddate"] = run_enddate.strftime("%Y-%m-%d %H:%M")
-        gfalternate_autocomplete(ds_tower,ds_alt,alternate_info)
+            enddate = startdate + dateutil.relativedelta.relativedelta(days=nDays)
+            run_enddate = min([stopdate, enddate])
+            l4a["info"]["startdate"] = startdate.strftime("%Y-%m-%d %H:%M")
+            l4a["info"]["enddate"] = run_enddate.strftime("%Y-%m-%d %H:%M")
+        gfalternate_autocomplete(ds_tower, ds_alt, l4_info)
         # get the start and end datetime of the tower data
         ldt_tower = ds_tower.series["DateTime"]["Data"]
         startdate = ldt_tower[0]
         enddate = ldt_tower[-1]
         # create the alternate_info dictionary, this will hold much useful information
-        alternate_info = {"overlap_startdate":startdate.strftime("%Y-%m-%d %H:%M"),
-                          "overlap_enddate":enddate.strftime("%Y-%m-%d %H:%M"),
-                          "startdate":startdate.strftime("%Y-%m-%d %H:%M"),
-                          "enddate":enddate.strftime("%Y-%m-%d %H:%M")}
+        l4a["info"]["overlap_startdate"] = startdate.strftime("%Y-%m-%d %H:%M")
+        l4a["info"]["overlap_enddate"] = enddate.strftime("%Y-%m-%d %H:%M")
+        l4a["info"]["startdate"] = startdate.strftime("%Y-%m-%d %H:%M")
+        l4a["info"]["enddate"] = enddate.strftime("%Y-%m-%d %H:%M")
     else:
         logger.error("GapFillFromAlternate: unrecognised period option")
     # write Excel spreadsheet with fit statistics
-    pfp_io.xl_write_AlternateStats(ds_tower)
+    pfp_io.xl_write_AlternateStats(ds_tower, l4_info)
 
 def gfalternate_updatedict(cf,ds_tower,ds_alt):
     """
@@ -1495,19 +1532,19 @@ def gfalternate_updatedict(cf,ds_tower,ds_alt):
                 data,flag,attr = pfp_utils.MakeEmptySeries(ds_tower,output)
                 pfp_utils.CreateSeries(ds_tower,output,data,flag,attr)
 
-def gfalternate_update_alternate_info(ds_tower,alternate_info):
-    """Update the alternate_info dictionary."""
-    label_output = alternate_info["label_output"]
-    alternate_info["fit_type"] = ds_tower.alternate[label_output]["fit_type"]
-    alternate_info["lag"] = ds_tower.alternate[label_output]["lag"]
-    #alternate_info["thru0"] = ds_tower.alternate[label_output]["thru0"]
+def gfalternate_update_alternate_info(l4_info):
+    """Update the l4_info dictionary."""
+    l4a = l4_info["alternate"]
+    label_output = l4a["run"]["label_output"]
+    l4a["run"]["fit_type"] = l4a["outputs"][label_output]["fit_type"]
+    l4a["run"]["lag"] = l4a["outputs"][label_output]["lag"]
     # autoforce is set true in gfalternate_autocomplete if there is not enough good points
     # in the tower data for the whole time series, in this case we will use the alternate
     # data "as is" by forcing a "replace" with no lag correction.
-    if alternate_info["autoforce"]:
-        alternate_info["min_points"] = 0
-        alternate_info["fit_type"] = "replace"
-        alternate_info["lag"] = "no"
+    if l4a["gui"]["autoforce"]:
+        l4a["run"]["min_points"] = 0
+        l4a["run"]["fit_type"] = "replace"
+        l4a["run"]["lag"] = "no"
 
 def trap_masked_constant(num):
     if numpy.ma.is_masked(num):

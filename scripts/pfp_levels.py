@@ -262,74 +262,50 @@ def l3qc(cf,ds2):
     return ds3
 
 def l4qc(main_gui, cf, ds3):
-
-    # !!! code here to use existing L4 file
-    # logic
-    # if the L4 doesn't exist
-    #  - create ds4 by using copy.deepcopy(ds3)
-    # if the L4 does exist and the "UseExistingL4File" option is False
-    #  - create ds4 by using copy.deepcopy(ds3)
-    # if the L4 does exist and the "UseExistingL4File" option is True
-    #  - read the contents of the L4 netCDF file
-    #  - check the start and end dates of the L3 and L4 data
-    #     - if these are the same then tell the user there is nothing to do
-    #  - copy the L3 data to the L4 data structure
-    #  - replace the L3 data with the L4 data
-    #ds4 = copy.deepcopy(ds3)
     ds4 = pfp_io.copy_datastructure(cf, ds3)
     # ds4 will be empty (logical false) if an error occurs in copy_datastructure
     # return from this routine if this is the case
-    if not ds4: return ds4
+    if not ds4:
+        return ds4
     # set some attributes for this level
     pfp_utils.UpdateGlobalAttributes(cf, ds4, "L4")
-    ds4.cf = cf
-    ## calculate the available energy
-    #if "Fa" not in ds4.series.keys():
-        #pfp_ts.CalculateAvailableEnergy(ds4,Fa_out='Fa',Fn_in='Fn',Fg_in='Fg')
-    # create a dictionary to hold the gap filling data
-    ds_alt = {}
     # check to see if we have any imports
     pfp_gf.ImportSeries(cf, ds4)
     # re-apply the quality control checks (range, diurnal and rules)
     pfp_ck.do_qcchecks(cf, ds4)
     # now do the meteorological driver gap filling
-    for ThisOne in cf["Drivers"].keys():
-        if ThisOne not in ds4.series.keys():
-            logger.warning("Series "+ThisOne+" not in data structure")
-            continue
-        # parse the control file for information on how the user wants to do the gap filling
-        pfp_gf.GapFillParseControlFile(cf, ds4, ThisOne, ds_alt)
+    # parse the control file for information on how the user wants to do the gap filling
+    l4_info = pfp_gf.ParseL4ControlFile(cf, ds4)
     # *** start of the section that does the gap filling of the drivers ***
+    # read the alternate data files
+    ds_alt = pfp_gf.ReadAlternateFiles(ds4, l4_info)
     # fill short gaps using interpolation
     pfp_gf.GapFillUsingInterpolation(cf, ds4)
     # gap fill using climatology
-    pfp_gf.GapFillFromClimatology(ds4)
+    pfp_gf.GapFillFromClimatology(ds4, l4_info)
     # do the gap filling using the ACCESS output
-    pfp_gfALT.GapFillFromAlternate(main_gui, cf, ds4, ds_alt)
-    if ds4.returncodes["alternate"]=="quit": return ds4
-    # gap fill using SOLO
-    #pfp_gfSOLO.GapFillUsingSOLO(cf,ds3,ds4)
-    #if ds4.returncodes["solo"]=="quit": return ds4
+    pfp_gfALT.GapFillFromAlternate(main_gui, ds4, ds_alt, l4_info)
+    if ds4.returncodes["alternate"] == "quit": return ds4
     # merge the first group of gap filled drivers into a single series
-    pfp_ts.MergeSeriesUsingDict(ds4, merge_order="prerequisite")
+    pfp_ts.MergeSeriesUsingDict(ds4, l4_info["merge"], merge_order="prerequisite")
     # re-calculate the ground heat flux but only if requested in control file
     opt = pfp_utils.get_keyvaluefromcf(cf,["Options"], "CorrectFgForStorage", default="No", mode="quiet")
-    if opt.lower()!="no":
+    if opt.lower() != "no":
         pfp_ts.CorrectFgForStorage(cf, ds4, Fg_out='Fg', Fg_in='Fg_Av', Ts_in='Ts', Sws_in='Sws')
     # re-calculate the net radiation
     pfp_ts.CalculateNetRadiation(cf, ds4, Fn_out='Fn', Fsd_in='Fsd', Fsu_in='Fsu', Fld_in='Fld', Flu_in='Flu')
     # re-calculate the available energy
     pfp_ts.CalculateAvailableEnergy(ds4, Fa_out='Fa', Fn_in='Fn', Fg_in='Fg')
     # merge the second group of gap filled drivers into a single series
-    pfp_ts.MergeSeriesUsingDict(ds4, merge_order="standard")
+    pfp_ts.MergeSeriesUsingDict(ds4, l4_info["merge"], merge_order="standard")
     # re-calculate the water vapour concentrations
-    pfp_ts.CalculateHumiditiesAfterGapFill(ds4)
+    pfp_ts.CalculateHumiditiesAfterGapFill(ds4, l4_info)
     # re-calculate the meteorological variables
     pfp_ts.CalculateMeteorologicalVariables(ds4)
     # the Tumba rhumba
     pfp_ts.CalculateComponentsFromWsWd(ds4)
     # check for any missing data
-    pfp_utils.get_missingingapfilledseries(ds4)
+    pfp_utils.get_missingingapfilledseries(ds4, l4_info)
     # write the percentage of good data as a variable attribute
     pfp_utils.get_coverage_individual(ds4)
     # write the percentage of good data for groups
@@ -345,9 +321,6 @@ def l5qc(main_gui, cf, ds4):
         return ds5
     # set some attributes for this level
     pfp_utils.UpdateGlobalAttributes(cf, ds5, "L5")
-    ds5.cf = cf
-    # create a dictionary to hold the gap filling data
-    ds_alt = {}
     # check to see if we have any imports
     pfp_gf.ImportSeries(cf, ds5)
     # re-apply the quality control checks (range, diurnal and rules)

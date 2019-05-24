@@ -304,7 +304,7 @@ def plot_LTparams_ER(ldt,ER,ER_LT,LT_results):
     plt.tight_layout()
     plt.draw()
 
-def rpLL_createdict(cf,ds,series):
+def rpLL_createdict(cf, ds, info, label):
     """
     Purpose:
      Creates a dictionary in ds to hold information about estimating ecosystem
@@ -313,64 +313,64 @@ def rpLL_createdict(cf,ds,series):
     Author: PRI
     Date April 2016
     """
-    # get the section of the control file containing the series
-    section = pfp_utils.get_cfsection(cf,series=series,mode="quiet")
-    # return without doing anything if the series isn't in a control file section
-    if len(section)==0:
-        logger.error("ERUsingLasslop: Series "+series+" not found in control file, skipping ...")
-        return
+    # get the target
+    target = pfp_utils.get_keyvaluefromcf(cf, ["ER", label, "ERUsingLasslop"], "target", default="ER")
     # check that none of the drivers have missing data
-    #driver_list = ast.literal_eval(cf[section][series]["ERUsingLasslop"]["drivers"])
-    driver_list = pfp_cfg.cfg_string_to_list(cf[section][series]["ERUsingLasslop"]["drivers"])
-    target = cf[section][series]["ERUsingLasslop"]["target"]
-    for label in driver_list:
-        data,flag,attr = pfp_utils.GetSeriesasMA(ds,label)
-        if numpy.ma.count_masked(data)!=0:
-            logger.error("ERUsingLasslop: driver "+label+" contains missing data, skipping target "+target)
+    opt = pfp_utils.get_keyvaluefromcf(cf, ["ER", label, "ERUsingLasslop"], "drivers", default="Ta")
+    drivers = pfp_cfg.cfg_string_to_list(opt)
+    for driver in drivers:
+        data, flag, attr = pfp_utils.GetSeriesasMA(ds, driver)
+        if numpy.ma.count_masked(data) != 0:
+            msg = "ERUsingLasslop: driver " + driver + " contains missing data, skipping target " + target
+            logger.error(msg)
             return
     # create the dictionary keys for this series
-    rpLL_info = {}
-    # site name
-    rpLL_info["site_name"] = ds.globalattributes["site_name"]
-    # source series for ER
-    opt = pfp_utils.get_keyvaluefromcf(cf, [section,series,"ERUsingLasslop"], "source", default="Fc")
-    rpLL_info["source"] = opt
+    if "lasslop" not in info:
+        info["lasslop"] = {"outputs": {label: {}}}
+    ilol = info["lasslop"]["outputs"][label]
     # target series name
-    rpLL_info["target"] = cf[section][series]["ERUsingLasslop"]["target"]
+    ilol["target"] = target
     # list of drivers
-    #rpLL_info["drivers"] = ast.literal_eval(cf[section][series]["ERUsingLasslop"]["drivers"])
-    rpLL_info["drivers"] = pfp_cfg.cfg_string_to_list(cf[section][series]["ERUsingLasslop"]["drivers"])
+    ilol["drivers"] = drivers
+    # source to use as CO2 flux
+    opt = pfp_utils.get_keyvaluefromcf(cf, ["ER", label, "ERUsingLasslop"], "source", default="Fc")
+    ilol["source"] = opt
     # name of output series in ds
-    rpLL_info["output"] = cf[section][series]["ERUsingLasslop"]["output"]
+    output = pfp_utils.get_keyvaluefromcf(cf, ["ER", label, "ERUsingLasslop"], "output", default="ER_LL_all")
+    ilol["output"] = output
     # results of best fit for plotting later on
-    rpLL_info["results"] = {"startdate":[],"enddate":[],"No. points":[],"r":[],
-                            "Bias":[],"RMSE":[],"Frac Bias":[],"NMSE":[],
-                            "Avg (obs)":[],"Avg (LT)":[],
-                            "Var (obs)":[],"Var (LT)":[],"Var ratio":[],
-                            "m_ols":[],"b_ols":[]}
+    ilol["results"] = {"startdate":[], "enddate":[], "No. points":[], "r":[],
+                       "Bias":[], "RMSE":[], "Frac Bias":[], "NMSE":[],
+                       "Avg (obs)":[], "Avg (LT)":[],
+                       "Var (obs)":[], "Var (LT)":[], "Var ratio":[],
+                       "m_ols":[], "b_ols":[]}
     # step size
-    rpLL_info["step_size_days"] = int(cf[section][series]["ERUsingLasslop"]["step_size_days"])
+    opt = pfp_utils.get_keyvaluefromcf(cf, ["ER", label, "ERUsingLasslop"], "step_size_days", default=5)
+    ilol["step_size_days"] = int(opt)
     # window size
-    rpLL_info["window_size_days"] = int(cf[section][series]["ERUsingLasslop"]["window_size_days"])
+    opt = pfp_utils.get_keyvaluefromcf(cf, ["ER", label, "ERUsingLasslop"], "window_size_days", default=15)
+    ilol["window_size_days"] = int(opt)
     # create an empty series in ds if the output series doesn't exist yet
-    if rpLL_info["output"] not in ds.series.keys():
-        data,flag,attr = pfp_utils.MakeEmptySeries(ds,rpLL_info["output"])
-        pfp_utils.CreateSeries(ds,rpLL_info["output"],data,flag,attr)
+    if ilol["output"] not in ds.series.keys():
+        data, flag, attr = pfp_utils.MakeEmptySeries(ds, ilol["output"])
+        pfp_utils.CreateSeries(ds, ilol["output"], data, flag, attr)
     # create the merge directory in the data structure
-    if "merge" not in dir(ds): ds.merge = {}
-    if "standard" not in ds.merge.keys(): ds.merge["standard"] = {}
+    if "merge" not in info:
+        info["merge"] = {}
+    if "standard" not in info["merge"].keys():
+        info["merge"]["standard"] = {}
     # create the dictionary keys for this series
-    ds.merge["standard"][series] = {}
+    info["merge"]["standard"][label] = {}
     # output series name
-    ds.merge["standard"][series]["output"] = series
+    info["merge"]["standard"][label]["output"] = label
     # source
-    #ds.merge["standard"][series]["source"] = ast.literal_eval(cf[section][series]["MergeSeries"]["Source"])
-    ds.merge["standard"][series]["source"] = pfp_cfg.cfg_string_to_list(cf[section][series]["MergeSeries"]["Source"])
+    opt = pfp_utils.get_keyvaluefromcf(cf, ["ER", label, "MergeSeries"], "Source", default="ER,ER_LL_all")
+    info["merge"]["standard"][label]["source"] = pfp_cfg.cfg_string_to_list(opt)
     # create an empty series in ds if the output series doesn't exist yet
-    if ds.merge["standard"][series]["output"] not in ds.series.keys():
-        data,flag,attr = pfp_utils.MakeEmptySeries(ds,ds.merge["standard"][series]["output"])
-        pfp_utils.CreateSeries(ds,ds.merge["standard"][series]["output"],data,flag,attr)
-    return rpLL_info
+    if info["merge"]["standard"][label]["output"] not in ds.series.keys():
+        data, flag, attr = pfp_utils.MakeEmptySeries(ds, info["merge"]["standard"][label]["output"])
+        pfp_utils.CreateSeries(ds, info["merge"]["standard"][label]["output"], data, flag, attr)
+    return
 
 def rpLL_initplot(**kwargs):
     # set the margins, heights, widths etc

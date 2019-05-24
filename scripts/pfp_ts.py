@@ -433,14 +433,14 @@ def CalculateHumidities(ds):
         elif "q" in ds.series.keys():
             RelativeHumidityFromq(ds)
 
-def CalculateHumiditiesAfterGapFill(ds):
+def CalculateHumiditiesAfterGapFill(ds, info):
     """
     Purpose:
      Check to see which humidity quantities (Ah, RH or q) have been gap filled
      and, if necessary, calculate the other humidity quantities from the gap
      filled one.
     Usage:
-     pfp_ts.CalculateHumiditiesAfterGapFill(ds)
+     pfp_ts.CalculateHumiditiesAfterGapFill(ds, info)
      where ds is a data structure
     Author: PRI
     Date: April 2015
@@ -448,15 +448,17 @@ def CalculateHumiditiesAfterGapFill(ds):
     # create an empty list
     alt_list = []
     # check to see if there was any gap filling using data from alternate sources
-    if "alternate" in dir(ds):
+    if "alternate" in info.keys():
+        ia = info["alternate"]
         # if so, get a list of the quantities gap filled from alternate sources
-        alt_list = list(set([ds.alternate[item]["label_tower"] for item in ds.alternate.keys()]))
+        alt_list = list(set([ia["outputs"][item]["label_tower"] for item in ia["outputs"].keys()]))
     # create an empty list
     cli_list = []
     # check to see if there was any gap filling from climatology
-    if "climatology" in dir(ds):
+    if "climatology" in info.keys():
+        ic = info["climatology"]
         # if so, get a list of the quantities gap filled using climatology
-        cli_list = list(set([ds.climatology[item]["label_tower"] for item in ds.climatology.keys()]))
+        cli_list = list(set([ic["outputs"][item]["label_tower"] for item in ic["outputs"].keys()]))
     # one list to rule them, one list to bind them ...
     gf_list = list(set(alt_list+cli_list))
     # clear out if there was no gap filling
@@ -2480,8 +2482,8 @@ def MassmanStandard(cf, ds, Ta_in='Ta', Ah_in='Ah', ps_in='ps', u_in="U_SONIC_Av
     return
 
 def MergeSeriesUsingDict(ds, merge, merge_order="standard"):
-    """ Merge series as defined in the ds.merge dictionary."""
-    # loop over the entries in ds.merge
+    """ Merge series as defined in the merge dictionary."""
+    # loop over the entries in merge
     for target in merge[merge_order].keys():
         srclist = merge[merge_order][target]["source"]
         logger.info(" Merging "+str(srclist)+"==>"+target)

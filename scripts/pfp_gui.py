@@ -3616,7 +3616,7 @@ class edit_cfg_L5(QtGui.QWidget):
                     child1 = QtGui.QStandardItem(val)
                     self.sections[key1].appendRow([child0, child1])
                 self.model.appendRow(self.sections[key1])
-            elif  key1 in ["Imports"]:
+            elif  key1 in ["Imports","SummaryPlots"]:
                 self.sections[key1] = QtGui.QStandardItem(key1)
                 for key2 in self.cfg[key1]:
                     parent2 = QtGui.QStandardItem(key2)
@@ -3676,7 +3676,7 @@ class edit_cfg_L5(QtGui.QWidget):
                     key2 = str(section.child(j, 0).text())
                     val2 = str(section.child(j, 1).text())
                     cfg[key1][key2] = val2
-            elif key1 in ["Imports"]:
+            elif key1 in ["Imports", "SummaryPlots"]:
                 # sections with 2 levels
                 for j in range(section.rowCount()):
                     subsection = section.child(j)
@@ -3748,6 +3748,11 @@ class edit_cfg_L5(QtGui.QWidget):
             root = self.model.invisibleRootItem()
             for i in range(root.rowCount()):
                 section_headings.append(str(root.child(i).text()))
+            if "SummaryPlots" not in section_headings:
+                self.context_menu.actionAddSummaryPlots = QtGui.QAction(self)
+                self.context_menu.actionAddSummaryPlots.setText("Add summary plots section")
+                self.context_menu.addAction(self.context_menu.actionAddSummaryPlots)
+                self.context_menu.actionAddSummaryPlots.triggered.connect(self.add_summary_plots_section)
             if "ustar_threshold" not in section_headings:
                 self.context_menu.actionAddUstarThreshold = QtGui.QAction(self)
                 self.context_menu.actionAddUstarThreshold.setText("Add u* threshold section")
@@ -3849,6 +3854,16 @@ class edit_cfg_L5(QtGui.QWidget):
                 self.context_menu.actionRemoveImportsSection.setText("Remove section")
                 self.context_menu.addAction(self.context_menu.actionRemoveImportsSection)
                 self.context_menu.actionRemoveImportsSection.triggered.connect(self.remove_section)
+            elif selected_text in ["SummaryPlots"]:
+                self.context_menu.actionAddSummaryPlot = QtGui.QAction(self)
+                self.context_menu.actionAddSummaryPlot.setText("Add summary plot")
+                self.context_menu.addAction(self.context_menu.actionAddSummaryPlot)
+                self.context_menu.actionAddSummaryPlot.triggered.connect(self.add_summary_plot)
+                self.context_menu.addSeparator()
+                self.context_menu.actionRemoveSummaryPlotSection = QtGui.QAction(self)
+                self.context_menu.actionRemoveSummaryPlotSection.setText("Remove section")
+                self.context_menu.addAction(self.context_menu.actionRemoveSummaryPlotSection)
+                self.context_menu.actionRemoveSummaryPlotSection.triggered.connect(self.remove_section)
         elif level == 1:
             # sections with 2 levels
             # get the parent of the selected item
@@ -3973,6 +3988,11 @@ class edit_cfg_L5(QtGui.QWidget):
                 self.context_menu.actionRemoveImportsVariable.setText("Remove variable")
                 self.context_menu.addAction(self.context_menu.actionRemoveImportsVariable)
                 self.context_menu.actionRemoveImportsVariable.triggered.connect(self.remove_item)
+            elif str(parent.text()) == "SummaryPlots":
+                self.context_menu.actionRemoveSummaryPlot = QtGui.QAction(self)
+                self.context_menu.actionRemoveSummaryPlot.setText("Remove summary plot")
+                self.context_menu.addAction(self.context_menu.actionRemoveSummaryPlot)
+                self.context_menu.actionRemoveSummaryPlot.triggered.connect(self.remove_item)
         elif level == 2:
             # sections with 3 levels
             parent = selected_item.parent()
@@ -4212,6 +4232,32 @@ class edit_cfg_L5(QtGui.QWidget):
         dict_to_add = {"sa_threshold": "-5"}
         # add the subsection
         self.add_subsection(dict_to_add)
+
+    def add_summary_plot(self):
+        """ Add a summary plot to the summary plots section."""
+        new_plot = {"Variables":""}
+        parent = QtGui.QStandardItem("New summary plot")
+        for key in new_plot:
+            val = new_plot[key]
+            child0 = QtGui.QStandardItem(key)
+            child1 = QtGui.QStandardItem(str(val))
+            parent.appendRow([child0, child1])
+        self.sections["SummaryPlots"].appendRow(parent)
+        self.update_tab_text()
+
+    def add_summary_plots_section(self):
+        """ Add a summary plots section."""
+        dict_to_add = {"SOLO": {"Variables": "ustar_SOLO,Fh_SOLO,Fe_SOLO,Fc_SOLO"}}
+        self.sections["SummaryPlots"] = QtGui.QStandardItem("SummaryPlots")
+        for key2 in dict_to_add:
+            subsection = QtGui.QStandardItem(key2)
+            for key3 in dict_to_add[key2]:
+                child0 = QtGui.QStandardItem(key3)
+                child1 = QtGui.QStandardItem(dict_to_add[key2][key3])
+                subsection.appendRow([child0, child1])
+            self.sections["SummaryPlots"].appendRow(subsection)
+        self.model.appendRow(self.sections["SummaryPlots"])
+        self.update_tab_text()
 
     def add_truncatetoimports(self):
         """ Add TruncateToImports to the [Options] section."""
@@ -5566,19 +5612,19 @@ class solo_gui(QtGui.QDialog):
         self.QuitButton.clicked.connect(self.call_gui_quit)
 
     def call_gui_run(self):
-        if self.l5_info["solo"]["info"]["called_by"] == "GapFillUsingSOLO":
+        if self.info["solo"]["info"]["called_by"] == "GapFillUsingSOLO":
             pfp_gfSOLO.gfSOLO_run_gui(self)
-        elif self.l5_info["solo"]["info"]["called_by"] == "ERUsingSOLO":
+        elif self.info["solo"]["info"]["called_by"] == "ERUsingSOLO":
             pfp_rpNN.rpSOLO_run_gui(self)
 
     def call_gui_quit(self):
-        if self.l5_info["solo"]["info"]["called_by"] == "GapFillUsingSOLO":
+        if self.info["solo"]["info"]["called_by"] == "GapFillUsingSOLO":
             pfp_gfSOLO.gfSOLO_quit(self)
-        elif self.l5_info["solo"]["info"]["called_by"] == "ERUsingSOLO":
+        elif self.info["solo"]["info"]["called_by"] == "ERUsingSOLO":
             pfp_rpNN.rpSOLO_quit(self)
 
     def call_gui_done(self):
-        if self.l5_info["solo"]["info"]["called_by"] == "GapFillUsingSOLO":
+        if self.info["solo"]["info"]["called_by"] == "GapFillUsingSOLO":
             pfp_gfSOLO.gfSOLO_done(self)
-        elif self.l5_info["solo"]["info"]["called_by"] == "ERUsingSOLO":
+        elif self.info["solo"]["info"]["called_by"] == "ERUsingSOLO":
             pfp_rpNN.rpSOLO_done(self)
