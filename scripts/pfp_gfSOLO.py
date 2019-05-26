@@ -27,7 +27,7 @@ warnings.filterwarnings("ignore",".*GUI is implemented.*")
 logger = logging.getLogger("pfp_log")
 
 # functions for GapFillUsingSOLO
-def GapFillUsingSOLO(main_gui, ds, info):
+def GapFillUsingSOLO(main_gui, ds, solo):
     '''
     This is the "Run SOLO" GUI.
     The SOLO GUI is displayed separately from the main OzFluxQC GUI.
@@ -37,32 +37,13 @@ def GapFillUsingSOLO(main_gui, ds, info):
     when we are done.  On exit, the OzFluxQC main GUI continues and eventually
     writes the gap filled data to file.
     '''
-    # local pointer to the control file
-    cf = info["cf"]
     # set the default return code
     ds.returncodes["solo"] = "normal"
-    if "solo" not in info.keys():
-        return ds
     # check the SOLO drivers for missing data
-    pfp_gf.CheckDrivers(info, ds, "SOLO")
+    pfp_gf.CheckDrivers(solo, ds)
     if ds.returncodes["value"] != 0:
         return ds
-    # local pointer to the datetime series
-    ldt = ds.series["DateTime"]["Data"]
-    # check to see if this is a batch or an interactive run
-    call_mode = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "call_mode", default="interactive")
-    # add an info section to the info["solo"] dictionary
-    info["solo"]["info"] = {"file_startdate": ldt[0].strftime("%Y-%m-%d %H:%M"),
-                            "file_enddate": ldt[-1].strftime("%Y-%m-%d %H:%M"),
-                            "startdate": ldt[0].strftime("%Y-%m-%d %H:%M"),
-                            "enddate": ldt[-1].strftime("%Y-%m-%d %H:%M"),
-                            "called_by": "GapFillUsingSOLO",
-                            "plot_path": cf["Files"]["plot_path"],
-                            "call_mode": call_mode}
-    # add a gui section to the info["solo"] dictionary
-    info["solo"]["gui"] = {}
-    if call_mode.lower() == "interactive":
-        info["solo"]["gui"]["show_plots"] = True
+    if solo["info"]["call_mode"] == "interactive":
         # put up a plot of the data coverage at L4
         gfSOLO_plotcoveragelines(ds, info)
         # call the GapFillUsingSOLO GUI

@@ -19,7 +19,7 @@ import pfp_utils
 
 logger = logging.getLogger("pfp_log")
 
-def CheckDrivers(l5_info, dsb, gf_type):
+def CheckDrivers(info, ds):
     """
     Purpose:
      Check the drivers specified for gap filling using SOLO and warn
@@ -31,24 +31,16 @@ def CheckDrivers(l5_info, dsb, gf_type):
     """
     msg = " Checking drivers for missing data"
     logger.info(msg)
-    ts = int(dsb.globalattributes["time_step"])
-    ldt = pfp_utils.GetVariable(dsb, "DateTime")
+    ts = int(ds.globalattributes["time_step"])
+    ldt = pfp_utils.GetVariable(ds, "DateTime")
     gf_drivers = []
-    if gf_type == "SOLO":
-        for label in l5_info["solo"]["outputs"].keys():
-            gf_drivers = gf_drivers + l5_info["solo"]["outputs"][label]["drivers"]
-    elif gf_type == "FFNET":
-        for label in l5_info["ffnet"]["outputs"].keys():
-            gf_drivers = gf_drivers + l5_info["ffnet"]["outputs"][label]["drivers"]
-    else:
-        msg = "  Unrecognised gap fill type (" + gf_type + ")"
-        logger.error(msg)
-        return
+    for label in info["outputs"].keys():
+        gf_drivers = gf_drivers + info["outputs"][label]["drivers"]
     drivers = list(set(gf_drivers))
     drivers_with_missing = {}
     # loop over the drivers and check for missing data
     for label in drivers:
-        var = pfp_utils.GetVariable(dsb, label)
+        var = pfp_utils.GetVariable(ds, label)
         if numpy.ma.count_masked(var["Data"]) != 0:
             # save the number of missing data points and the datetimes when they occur
             idx = numpy.where(numpy.ma.getmaskarray(var["Data"]))[0]
@@ -67,7 +59,7 @@ def CheckDrivers(l5_info, dsb, gf_type):
     logger.warning(msg)
     logger.warning("!!!!!")
     for label in drivers_with_missing.keys():
-        var = pfp_utils.GetVariable(dsb, label)
+        var = pfp_utils.GetVariable(ds, label)
         # check to see if this variable was imported
         if "end_date" in var["Attr"]:
             # it was, so perhaps this variable finishes before the tower data
@@ -513,43 +505,71 @@ def gfSOLO_createdict(cf, ds, l5_info, label):
     """
     # create the solo settings directory
     if "solo" not in l5_info:
-        l5_info["solo"] = {"outputs": {}}
-    # name of SOLO output series in ds
+        l5_info["solo"] = {"outputs": {}, "info": {}, "gui": {}}
+    # get the outputs section
+    gfSOLO_createdict_outputs(cf, l5_info["solo"], label)
+    # get the info section
+    gfSOLO_createdict_info(cf, ds, l5_info["solo"])
+    # the gui section is done in pfp_gfSOLO.gfSOLO_run_gui
+    # create an empty series in ds if the SOLO output series doesn't exist yet
     outputs = cf["Fluxes"][label]["GapFillUsingSOLO"].keys()
-    # loop over the outputs listed in the control file
-    l5so = l5_info["solo"]["outputs"]
     for output in outputs:
-        # create the dictionary keys for this series
-        l5so[output] = {}
-        # get the target
-        if "target" in cf["Fluxes"][label]["GapFillUsingSOLO"][output]:
-            l5so[output]["target"] = cf["Fluxes"][label]["GapFillUsingSOLO"][output]["target"]
-        else:
-            l5so[output]["target"] = label
-        # list of SOLO settings
-        if "solo_settings" in cf["Fluxes"][label]["GapFillUsingSOLO"][output]:
-            src_string = cf["Fluxes"][label]["GapFillUsingSOLO"][output]["solo_settings"]
-            src_list = src_string.split(",")
-            l5so[output]["solo_settings"] = {}
-            l5so[output]["solo_settings"]["nodes_target"] = int(src_list[0])
-            l5so[output]["solo_settings"]["training"] = int(src_list[1])
-            l5so[output]["solo_settings"]["nda_factor"] = int(src_list[2])
-            l5so[output]["solo_settings"]["learning_rate"] = float(src_list[3])
-            l5so[output]["solo_settings"]["iterations"] = int(src_list[4])
-        # list of drivers
-        drivers_string = cf["Fluxes"][label]["GapFillUsingSOLO"][output]["drivers"]
-        l5so[output]["drivers"] = pfp_cfg.cfg_string_to_list(drivers_string)
-        # results of best fit for plotting later on
-        l5so[output]["results"] = {"startdate":[],"enddate":[],"No. points":[],"r":[],
-                                   "Bias":[],"RMSE":[],"Frac Bias":[],"NMSE":[],
-                                   "Avg (obs)":[],"Avg (SOLO)":[],
-                                   "Var (obs)":[],"Var (SOLO)":[],"Var ratio":[],
-                                   "m_ols":[],"b_ols":[]}
-        # create an empty series in ds if the SOLO output series doesn't exist yet
         if output not in ds.series.keys():
             nrecs = int(ds.globalattributes["nc_nrecs"])
             variable = pfp_utils.CreateEmptyVariable(output, nrecs)
             pfp_utils.CreateVariable(ds, variable)
+    return
+
+def gfSOLO_createdict_info(cf, ds, solo):
+    # local pointer to the datetime series
+    ldt = ds.series["DateTime"]["Data"]
+    # check to see if this is a batch or an interactive run
+    call_mode = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "call_mode", default="interactive")
+    # get the plot path
+    plot_path = pfp_utils.get_keyvaluefromcf(cf, ["Files"], "plot_path", default="./plots/")
+    # add an info section to the info["solo"] dictionary
+    solo["info"] = {"file_startdate": ldt[0].strftime("%Y-%m-%d %H:%M"),
+                    "file_enddate": ldt[-1].strftime("%Y-%m-%d %H:%M"),
+                    "startdate": ldt[0].strftime("%Y-%m-%d %H:%M"),
+                    "enddate": ldt[-1].strftime("%Y-%m-%d %H:%M"),
+                    "called_by": "GapFillUsingSOLO",
+                    "plot_path": plot_path,
+                    "call_mode": call_mode}
+    return
+
+def gfSOLO_createdict_outputs(cf, solo, label):
+    so = solo["outputs"]
+    # name of SOLO output series in ds
+    outputs = cf["Fluxes"][label]["GapFillUsingSOLO"].keys()
+    # loop over the outputs listed in the control file
+    for output in outputs:
+        # create the dictionary keys for this series
+        so[output] = {}
+        # get the target
+        target = pfp_utils.get_keyvaluefromcf(cf, ["Fluxes", label, "GapFillUsingSOLO", output],
+                                              "target", default=label)
+        so[output]["target"] = target
+        # list of SOLO settings
+        if "solo_settings" in cf["Fluxes"][label]["GapFillUsingSOLO"][output]:
+            src_string = cf["Fluxes"][label]["GapFillUsingSOLO"][output]["solo_settings"]
+            src_list = src_string.split(",")
+            so[output]["solo_settings"] = {}
+            so[output]["solo_settings"]["nodes_target"] = int(src_list[0])
+            so[output]["solo_settings"]["training"] = int(src_list[1])
+            so[output]["solo_settings"]["nda_factor"] = int(src_list[2])
+            so[output]["solo_settings"]["learning_rate"] = float(src_list[3])
+            so[output]["solo_settings"]["iterations"] = int(src_list[4])
+        # list of drivers
+        drivers = pfp_utils.get_keyvaluefromcf(cf, ["Fluxes", label, "GapFillUsingSOLO", output],
+                                               "drivers", default="Fn,Fg,SHD,q,Ta,Ts")
+        so[output]["drivers"] = pfp_cfg.cfg_string_to_list(drivers)
+        # fit statistics for plotting later on
+        so[output]["results"] = {"startdate":[],"enddate":[],"No. points":[],"r":[],
+                                 "Bias":[],"RMSE":[],"Frac Bias":[],"NMSE":[],
+                                 "Avg (obs)":[],"Avg (SOLO)":[],
+                                 "Var (obs)":[],"Var (SOLO)":[],"Var ratio":[],
+                                 "m_ols":[],"b_ols":[]}
+    return
 
 # functions for GapFillUsingMDS: not implemented yet
 def GapFillFluxUsingMDS(cf, ds, series=""):

@@ -333,11 +333,18 @@ def l5qc(main_gui, cf, ds4):
     pfp_ck.ApplyTurbulenceFilter(cf, ds5)
     # fill short gaps using interpolation
     pfp_gf.GapFillUsingInterpolation(cf, ds5)
-    # do the gap filling using SOLO
-    pfp_gfSOLO.GapFillUsingSOLO(main_gui, ds5, l5_info)
-    if ds5.returncodes["solo"] == "quit": return ds5
     # gap fill using marginal distribution sampling
-    pfp_gfMDS.GapFillUsingMDS(ds5, l5_info)
+    if "mds" in l5_info:
+        pfp_gfMDS.GapFillUsingMDS(ds5, l5_info["mds"])
+    # do the gap filling using SOLO
+    if "solo" in l5_info:
+        pfp_gfSOLO.GapFillUsingSOLO(main_gui, ds5, l5_info["solo"])
+        if ds5.returncodes["solo"] == "quit":
+            return ds5
+    # fill long gaps using SOLO
+    if "solo_long" in l5_info:
+        pfp_gfSOLO.GapFillUsingSOLO(main_gui, ds5, l5_info["long"])
+        if ds5.returncodes["solo"] == "quit": return ds5
     # merge the gap filled drivers into a single series
     pfp_ts.MergeSeriesUsingDict(ds5, l5_info, merge_order="standard")
     # calculate Monin-Obukhov length
