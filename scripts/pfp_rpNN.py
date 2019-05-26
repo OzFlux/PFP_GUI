@@ -31,6 +31,9 @@ def ERUsingSOLO(main_gui, cf, ds, info):
                  ER estimation routines to allow for multiple sources
                  of ER.
     """
+    # set the default return code
+    ds.returncodes["solo"] = "normal"
+    # check calculating ER using SOLO has beeen requested
     if "solo" not in info["er"]:
         return
     # local pointer to the datetime series
@@ -105,8 +108,9 @@ def rp_getdiurnalstats(dt, data, info):
 def rpSOLO_createdict(cf, ds, info, label):
     """ Creates a dictionary in ds to hold information about the SOLO data used
         to gap fill the tower data."""
-    # get the target
+    # get the target and output labels
     target = pfp_utils.get_keyvaluefromcf(cf, ["ER", label, "ERUsingSOLO"], "target", default="ER")
+    output = pfp_utils.get_keyvaluefromcf(cf, ["ER", label, "ERUsingSOLO"], "output", default="ER_SOLO_all")
     # check that none of the drivers have missing data
     opt = pfp_utils.get_keyvaluefromcf(cf, ["ER", label, "ERUsingSOLO"], "drivers", default="Ta,Ts,Sws")
     drivers = pfp_cfg.cfg_string_to_list(opt)
@@ -118,8 +122,8 @@ def rpSOLO_createdict(cf, ds, info, label):
             return
     # create the dictionary keys for this series
     if "solo" not in info:
-        info["solo"] = {"outputs": {label: {}}}
-    isol = info["solo"]["outputs"][label]
+        info["solo"] = {"outputs": {output: {}}}
+    isol = info["solo"]["outputs"][output]
     # target series name
     isol["target"] = target
     # list of drivers
@@ -128,7 +132,6 @@ def rpSOLO_createdict(cf, ds, info, label):
     opt = pfp_utils.get_keyvaluefromcf(cf, ["ER", label, "ERUsingSOLO"], "source", default="Fc")
     isol["source"] = opt
     # name of SOLO output series in ds
-    output = pfp_utils.get_keyvaluefromcf(cf, ["ER", label, "ERUsingSOLO"], "output", default="ER_SOLO_all")
     isol["output"] = output
     # results of best fit for plotting later on
     isol["results"] = {"startdate":[], "enddate":[], "No. points":[], "r":[],
@@ -212,6 +215,7 @@ def rpSOLO_main(ds, info, outputs=[]):
     for output in outputs:
         # get the target series label
         target = info["solo"]["outputs"][output]["target"]
+        output_all = info["solo"]["outputs"][output]["output"]
         info["solo"]["outputs"][output]["results"]["startdate"].append(ldt[si])
         info["solo"]["outputs"][output]["results"]["enddate"].append(ldt[ei])
         d, f, a = pfp_utils.GetSeriesasMA(ds, target, si=si, ei=ei)
@@ -225,8 +229,7 @@ def rpSOLO_main(ds, info, outputs=[]):
             for item in results:
                 info["solo"]["outputs"][output]["results"][item].append(float(c.missing_value))
             continue
-        drivers = info["solo"]["gui"]["drivers"].split(",")
-        info["solo"]["outputs"][output]["drivers"] = drivers
+        drivers = info["solo"]["outputs"][output]["drivers"]
         if str(info["solo"]["gui"]["nodes"]).lower() == "auto":
             info["solo"]["gui"]["nodes_target"] = len(drivers) + 1
         else:
@@ -249,7 +252,7 @@ def rpSOLO_main(ds, info, outputs=[]):
         if result != 1:
             return
         # run SEQSOLO and put the SOLO data into the data structure
-        result = rpSOLO_runseqsolo(ds, drivers, target, output, nRecs, si=si, ei=ei)
+        result = rpSOLO_runseqsolo(ds, drivers, target, output_all, nRecs, si=si, ei=ei)
         if result != 1:
             return
         # plot the results
@@ -258,7 +261,7 @@ def rpSOLO_main(ds, info, outputs=[]):
         pd = rpSOLO_initplot(site_name=site_name, label=target, fig_num=fig_num,
                              title=title, nDrivers=len(drivers),
                              startdate=startdate, enddate=enddate)
-        rpSOLO_plot(pd, ds, drivers, target, output, info, si=si, ei=ei)
+        rpSOLO_plot(pd, ds, drivers, target, output_all, info, si=si, ei=ei)
 
 def rpSOLO_plot(pd, ds, drivers, target, output, info, si=0, ei=-1):
     """ Plot the results of the SOLO run. """
@@ -435,7 +438,7 @@ def rpSOLO_run_gui(solo_gui):
     info["solo"]["gui"]["nda_factor"] = str(solo_gui.lineEdit_NdaFactor.text())
     info["solo"]["gui"]["learning_rate"] = str(solo_gui.lineEdit_Learning.text())
     info["solo"]["gui"]["iterations"] = str(solo_gui.lineEdit_Iterations.text())
-    info["solo"]["gui"]["drivers"] = str(solo_gui.lineEdit_Drivers.text())
+    #info["solo"]["gui"]["drivers"] = str(solo_gui.lineEdit_Drivers.text())
 
     # populate the solo_info dictionary with things that will be useful
     info["solo"]["info"]["site_name"] = ds.globalattributes["site_name"]

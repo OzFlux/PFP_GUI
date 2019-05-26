@@ -287,7 +287,7 @@ def l4qc(main_gui, cf, ds3):
     pfp_gfALT.GapFillFromAlternate(main_gui, ds4, ds_alt, l4_info)
     if ds4.returncodes["alternate"] == "quit": return ds4
     # merge the first group of gap filled drivers into a single series
-    pfp_ts.MergeSeriesUsingDict(ds4, l4_info["merge"], merge_order="prerequisite")
+    pfp_ts.MergeSeriesUsingDict(ds4, l4_info, merge_order="prerequisite")
     # re-calculate the ground heat flux but only if requested in control file
     opt = pfp_utils.get_keyvaluefromcf(cf,["Options"], "CorrectFgForStorage", default="No", mode="quiet")
     if opt.lower() != "no":
@@ -297,7 +297,7 @@ def l4qc(main_gui, cf, ds3):
     # re-calculate the available energy
     pfp_ts.CalculateAvailableEnergy(ds4, Fa_out='Fa', Fn_in='Fn', Fg_in='Fg')
     # merge the second group of gap filled drivers into a single series
-    pfp_ts.MergeSeriesUsingDict(ds4, l4_info["merge"], merge_order="standard")
+    pfp_ts.MergeSeriesUsingDict(ds4, l4_info, merge_order="standard")
     # re-calculate the water vapour concentrations
     pfp_ts.CalculateHumiditiesAfterGapFill(ds4, l4_info)
     # re-calculate the meteorological variables
@@ -339,7 +339,7 @@ def l5qc(main_gui, cf, ds4):
     # gap fill using marginal distribution sampling
     pfp_gfMDS.GapFillUsingMDS(ds5, l5_info)
     # merge the gap filled drivers into a single series
-    pfp_ts.MergeSeriesUsingDict(ds5, l5_info["merge"], merge_order="standard")
+    pfp_ts.MergeSeriesUsingDict(ds5, l5_info, merge_order="standard")
     # calculate Monin-Obukhov length
     pfp_ts.CalculateMoninObukhovLength(ds5)
     # write the percentage of good data as a variable attribute
@@ -376,7 +376,7 @@ def l6qc(main_gui, cf, ds5):
     # estimate ER using Lasslop et al
     pfp_rp.ERUsingLasslop(cf, ds6, l6_info)
     # merge the estimates of ER with the observations
-    pfp_ts.MergeSeriesUsingDict(ds6, merge_order="standard")
+    pfp_ts.MergeSeriesUsingDict(ds6, l6_info["er"], merge_order="standard")
     # calculate NEE from Fc and ER
     pfp_rp.CalculateNEE(cf, ds6, l6_info)
     # calculate NEP from NEE
@@ -390,6 +390,6 @@ def l6qc(main_gui, cf, ds5):
     # write the percentage of good data for groups
     pfp_utils.get_coverage_groups(ds6)
     # do the L6 summary
-    pfp_rp.L6_summary(cf,ds6)
+    pfp_rp.L6_summary(cf, ds6)
 
     return ds6

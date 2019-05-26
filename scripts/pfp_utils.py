@@ -1967,6 +1967,11 @@ def get_datetimefromymdhms(ds):
     ds.series["DateTime"]["Attr"]["units"] = "None"
     return
 
+def get_ddoy_from_datetime(dt):
+    """ Return the decimal day of the year from a datetime."""
+    ddoy = dt.timetuple().tm_yday + float(dt.hour+float(dt.minute+float(dt.second)/60)/60)/24
+    return ddoy
+
 def get_diurnalstats(dt,data,info):
     ts = info["time_step"]
     nperday = info["nperday"]
@@ -2331,6 +2336,23 @@ def get_xldatefromdatetime(ds):
     xldt_new = numpy.ma.array(xldate, dtype=numpy.float64)
     # create the Excel datetime series
     CreateSeries(ds,"xlDateTime",xldt_new,flag,xldt_attr)
+
+def get_yearfractionfromdatetime(dt):
+    """
+    Return the fraction of a year from a datetime.
+    From https://stackoverflow.com/questions/6451655/python-how-to-convert-datetime-dates-to-decimal-years
+    """
+    def sinceEpoch(dt):
+        """returns seconds since epoch"""
+        return time.mktime(dt.timetuple())
+    s = sinceEpoch
+    year = dt.year
+    startOfThisYear = datetime.datetime(year=year, month=1, day=1)
+    startOfNextYear = datetime.datetime(year=year+1, month=1, day=1)
+    yearElapsed = s(dt) - s(startOfThisYear)
+    yearDuration = s(startOfNextYear) - s(startOfThisYear)
+    fraction = yearElapsed/yearDuration
+    return year + fraction
 
 def get_ymdhmsfromdatetime(ds):
     '''

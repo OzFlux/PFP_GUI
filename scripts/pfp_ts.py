@@ -451,14 +451,14 @@ def CalculateHumiditiesAfterGapFill(ds, info):
     if "alternate" in info.keys():
         ia = info["alternate"]
         # if so, get a list of the quantities gap filled from alternate sources
-        alt_list = list(set([ia["outputs"][item]["label_tower"] for item in ia["outputs"].keys()]))
+        alt_list = list(set([ia["outputs"][item]["target"] for item in ia["outputs"].keys()]))
     # create an empty list
     cli_list = []
     # check to see if there was any gap filling from climatology
     if "climatology" in info.keys():
         ic = info["climatology"]
         # if so, get a list of the quantities gap filled using climatology
-        cli_list = list(set([ic["outputs"][item]["label_tower"] for item in ic["outputs"].keys()]))
+        cli_list = list(set([ic["outputs"][item]["target"] for item in ic["outputs"].keys()]))
     # one list to rule them, one list to bind them ...
     gf_list = list(set(alt_list+cli_list))
     # clear out if there was no gap filling
@@ -2481,8 +2481,9 @@ def MassmanStandard(cf, ds, Ta_in='Ta', Ah_in='Ah', ps_in='ps', u_in="U_SONIC_Av
     # *** Massman_2ndpass ends here ***
     return
 
-def MergeSeriesUsingDict(ds, merge, merge_order="standard"):
+def MergeSeriesUsingDict(ds, info, merge_order="standard"):
     """ Merge series as defined in the merge dictionary."""
+    merge = info["merge"]
     # loop over the entries in merge
     for target in merge[merge_order].keys():
         srclist = merge[merge_order][target]["source"]

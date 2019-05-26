@@ -1099,7 +1099,6 @@ def gfalternate_plotcoveragelines(ds_tower, l4_info):
     ax2 = ax1.twinx()
     pylab.yticks(ylabel_posn, ylabel_right_list)
     fig.tight_layout()
-    #fig.canvas.manager.window.attributes('-topmost', 1)
     plt.draw()
     plt.ioff()
 

@@ -41,11 +41,11 @@ def CalculateET(ds):
     series_list = ds.series.keys()
     Fe_list = [item for item in series_list if "Fe" in item[0:2]]
     for label in Fe_list:
-        Fe,flag,attr = pfp_utils.GetSeriesasMA(ds,label)
+        Fe, flag, attr = pfp_utils.GetSeriesasMA(ds, label)
         ET = Fe*ts*60/c.Lv
         attr["long_name"] = "Evapo-transpiration calculated from latent heat flux"
         attr["units"] = "mm"
-        pfp_utils.CreateSeries(ds,label.replace("Fe","ET"),ET,flag,attr)
+        pfp_utils.CreateSeries(ds, label.replace("Fe","ET"), ET, flag, attr)
 
 def CalculateNEE(cf, ds, info):
     """
@@ -61,30 +61,31 @@ def CalculateNEE(cf, ds, info):
     Author: PRI
     Date: August 2014
     """
-    if "nee" not in info: return
+    if "nee" not in info:
+        return
     # get the Fsd and ustar thresholds
     Fsd_threshold = float(pfp_utils.get_keyvaluefromcf(cf, ["Options"], "Fsd_threshold", default=10))
     # get the incoming shortwave radiation and friction velocity
-    Fsd,Fsd_flag,Fsd_attr = pfp_utils.GetSeriesasMA(ds,"Fsd")
+    Fsd, Fsd_flag, Fsd_attr = pfp_utils.GetSeriesasMA(ds, "Fsd")
     if "Fsd_syn" in ds.series.keys():
-        Fsd_syn,flag,attr = pfp_utils.GetSeriesasMA(ds,"Fsd_syn")
-        index = numpy.where(numpy.ma.getmaskarray(Fsd)==True)[0]
-        #index = numpy.ma.where(numpy.ma.getmaskarray(Fsd)==True)[0]
+        Fsd_syn, flag, attr = pfp_utils.GetSeriesasMA(ds, "Fsd_syn")
+        index = numpy.where(numpy.ma.getmaskarray(Fsd) == True)[0]
         Fsd[index] = Fsd_syn[index]
-    ustar,ustar_flag,ustar_attr = pfp_utils.GetSeriesasMA(ds,"ustar")
+    ustar, ustar_flag, ustar_attr = pfp_utils.GetSeriesasMA(ds, "ustar")
     for label in info["nee"].keys():
-        if "Fc" not in info["nee"][label] and "ER" not in info["nee"][label]: continue
+        if "Fc" not in info["nee"][label] and "ER" not in info["nee"][label]:
+            continue
         Fc_label = info["nee"][label]["Fc"]
         ER_label = info["nee"][label]["ER"]
         output_label = info["nee"][label]["output"]
-        Fc,Fc_flag,Fc_attr = pfp_utils.GetSeriesasMA(ds,Fc_label)
-        ER,ER_flag,ER_attr = pfp_utils.GetSeriesasMA(ds,ER_label)
+        Fc, Fc_flag, Fc_attr = pfp_utils.GetSeriesasMA(ds, Fc_label)
+        ER, ER_flag, ER_attr = pfp_utils.GetSeriesasMA(ds, ER_label)
         # put the day time Fc into the NEE series
         index = numpy.ma.where(Fsd>=Fsd_threshold)[0]
         ds.series[output_label]["Data"][index] = Fc[index]
         ds.series[output_label]["Flag"][index] = Fc_flag[index]
         # put the night time ER into the NEE series
-        index = numpy.ma.where(Fsd<Fsd_threshold)[0]
+        index = numpy.ma.where(Fsd < Fsd_threshold)[0]
         ds.series[output_label]["Data"][index] = ER[index]
         ds.series[output_label]["Flag"][index] = ER_flag[index]
         # copy the attributes
@@ -100,7 +101,7 @@ def CalculateNEP(cf, ds):
     Purpose:
      Calculate NEP from NEE
     Usage:
-     pfp_rp.CalculateNEP(cf,ds)
+     pfp_rp.CalculateNEP(cf, ds)
       where cf is a control file object
             ds is a data structure
     Side effects:
@@ -109,11 +110,11 @@ def CalculateNEP(cf, ds):
     Date: May 2015
     """
     for nee_name in cf["NEE"].keys():
-        nep_name = nee_name.replace("NEE","NEP")
-        nee,flag,attr = pfp_utils.GetSeriesasMA(ds,nee_name)
+        nep_name = nee_name.replace("NEE", "NEP")
+        nee, flag, attr = pfp_utils.GetSeriesasMA(ds, nee_name)
         nep = float(-1)*nee
         attr["long_name"] = "Net Ecosystem Productivity calculated as -1*"+nee_name
-        pfp_utils.CreateSeries(ds,nep_name,nep,flag,attr)
+        pfp_utils.CreateSeries(ds, nep_name, nep, flag, attr)
 
 def cleanup_ustar_dict(ldt,ustar_dict):
     """
@@ -193,54 +194,67 @@ def ERUsingLasslop(cf, ds, info):
     Author: IMcH, PRI
     Date: Back in the day
     """
-    if "rpLL" not in info["er"]: return
+    if "lasslop" not in info["er"]: return
     logger.info("Estimating ER using Lasslop")
-    # these should be read from the control file
-    series = info["er"]["rpLL"].keys()
-    info = {"window_length":int(info["er"]["rpLL"][series[0]]["window_size_days"]),
-            "window_offset":int(info["er"]["rpLL"][series[0]]["step_size_days"]),
-            "fsd_threshold":10}
+    iel = info["er"]["lasslop"]
+    ielo = iel["outputs"]
+    # get a list of the required outputs
+    outputs = iel["outputs"].keys()
+    # need to loop over more than 1 output
+    output = outputs[0]
+    drivers = ielo[output]["drivers"]
+    target = ielo[output]["target"]
+    output_all = ielo[output]["output"]
+    # get some useful things
     ldt = ds.series["DateTime"]["Data"]
     startdate = ldt[0]
     enddate = ldt[-1]
     ts = int(ds.globalattributes["time_step"])
-    info["ts"] = ts
+    nperhr = int(float(60)/ts+0.5)
+    nperday = int(float(24)*nperhr+0.5)
     site_name = ds.globalattributes["site_name"]
     nrecs = int(ds.globalattributes["nc_nrecs"])
+    # add an info section
+    iel["info"] = {"file_startdate": startdate.strftime("%Y-%m-%d %H:%M"),
+                   "file_enddate": enddate.strftime("%Y-%m-%d %H:%M"),
+                   "plot_path": cf["Files"]["plot_path"],
+                   "show_plots": False,
+                   "time_step": ts,
+                   "nperday": nperday}
+    call_mode = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "call_mode", default="interactive")
+    iel["info"]["call_mode"] = call_mode
+    if call_mode.lower() == "interactive":
+        iel["info"]["show_plots"] = True
     # get the data and synchronise the gaps
     # *** PUT INTO SEPARATE FUNCTION
-    indicator = numpy.ones(nrecs,dtype=numpy.int)
-    Fsd,f,a = pfp_utils.GetSeriesasMA(ds,"Fsd")
-    idx = numpy.where(f!=0)[0]
+    indicator = numpy.ones(nrecs, dtype=numpy.int)
+    Fsd,f,a = pfp_utils.GetSeriesasMA(ds, "Fsd")
+    idx = numpy.where(f != 0)[0]
     indicator[idx] = numpy.int(0)
-    D,f,a = pfp_utils.GetSeriesasMA(ds,"VPD")
-    idx = numpy.where(f!=0)[0]
+    D, f, a = pfp_utils.GetSeriesasMA(ds, "VPD")
+    idx = numpy.where(f != 0)[0]
     indicator[idx] = numpy.int(0)
-    T,f,a = pfp_utils.GetSeriesasMA(ds,"Ta")
-    idx = numpy.where(f!=0)[0]
+    T, f, a = pfp_utils.GetSeriesasMA(ds, "Ta")
+    idx = numpy.where(f != 0)[0]
     indicator[idx] = numpy.int(0)
-    ustar,f,a = pfp_utils.GetSeriesasMA(ds,"ustar")
-    idx = numpy.where(f!=0)[0]
+    ustar, f, a = pfp_utils.GetSeriesasMA(ds, "ustar")
+    idx = numpy.where(f != 0)[0]
     indicator[idx] = numpy.int(0)
-    Fc,f,Fc_attr = pfp_utils.GetSeriesasMA(ds,"Fc")
-    idx = numpy.where(f!=0)[0]
+    Fc, f, Fc_attr = pfp_utils.GetSeriesasMA(ds, "Fc")
+    idx = numpy.where(f != 0)[0]
     indicator[idx] = numpy.int(0)
     indicator_night = numpy.copy(indicator)
     # ***
     # apply a day/night filter
-    idx = numpy.where(Fsd>=10)[0]
+    idx = numpy.where(Fsd >= 10)[0]
     indicator_night[idx] = numpy.int(0)
-    # replace this with a check to see if a turbulence filter has been applied
-    # apply a simple ustar filter
-    #idx = numpy.where(ustar<=0.24)[0]
-    #indicator_night[idx] = numpy.int(0)
     # synchronise the gaps and apply the ustar filter
-    T_night = numpy.ma.masked_where(indicator_night==0,T)
-    ustar_night = numpy.ma.masked_where(indicator_night==0,ustar)
-    ER = numpy.ma.masked_where(indicator_night==0,Fc)
+    T_night = numpy.ma.masked_where(indicator_night == 0, T)
+    ustar_night = numpy.ma.masked_where(indicator_night == 0, ustar)
+    ER = numpy.ma.masked_where(indicator_night == 0, Fc)
     # loop over the windows and get E0
     logger.info(" Estimating the rb and E0 parameters")
-    LT_results = pfp_rpLL.get_LT_params(ldt,ER,T_night,info)
+    LT_results = pfp_rpLL.get_LT_params(ldt, ER, T_night, info, output)
     # interpolate parameters
     # this should have a check to make sure we are not interpolating with a small
     # number of points
@@ -249,14 +263,14 @@ def ERUsingLasslop(cf, ds, info):
     # get series of rb and E0 from LT at the tower stime step
     # *** PUT INTO SEPARATE FUNCTION
     ntsperday = float(24)*float(60)/float(ts)
-    days_at_beginning = float(info["window_length"])/2 - float(info["window_offset"])/2
+    days_at_beginning = float(ielo[output]["window_size_days"])/2 - float(ielo[output]["step_size_days"])/2
     rb_beginning = numpy.ones(int(days_at_beginning*ntsperday+0.5))*LT_results["rb_int"][0]
-    rb_middle = numpy.repeat(LT_results["rb_int"],info["window_offset"]*ntsperday)
+    rb_middle = numpy.repeat(LT_results["rb_int"],ielo[output]["step_size_days"]*ntsperday)
     nend = len(ldt) - (len(rb_beginning)+len(rb_middle))
     rb_end = numpy.ones(nend)*LT_results["rb_int"][-1]
     rb_tts = numpy.concatenate((rb_beginning,rb_middle,rb_end))
     E0_beginning = numpy.ones(int(days_at_beginning*ntsperday+0.5))*LT_results["E0_int"][0]
-    E0_middle = numpy.repeat(LT_results["E0_int"],info["window_offset"]*ntsperday)
+    E0_middle = numpy.repeat(LT_results["E0_int"],ielo[output]["step_size_days"]*ntsperday)
     nend = len(ldt) - (len(E0_beginning)+len(E0_middle))
     E0_end = numpy.ones(nend)*LT_results["E0_int"][-1]
     E0_tts = numpy.concatenate((E0_beginning,E0_middle,E0_end))
@@ -269,7 +283,7 @@ def ERUsingLasslop(cf, ds, info):
     # get a day time indicator
     indicator_day = numpy.copy(indicator)
     # apply a day/night filter
-    idx = numpy.where(Fsd<=info["fsd_threshold"])[0]
+    idx = numpy.where(Fsd <= ielo[output]["fsd_threshold"])[0]
     indicator_day[idx] = numpy.int(0)
     # synchronise the gaps and apply the day/night filter
     Fsd_day = numpy.ma.masked_where(indicator_day==0,Fsd)
@@ -278,7 +292,7 @@ def ERUsingLasslop(cf, ds, info):
     NEE_day = numpy.ma.masked_where(indicator_day==0,Fc)
     # get the Lasslop parameters
     logger.info(" Estimating the Lasslop parameters")
-    LL_results = pfp_rpLL.get_LL_params(ldt,Fsd_day,D_day,T_day,NEE_day,ER,LT_results,info)
+    LL_results = pfp_rpLL.get_LL_params(ldt, Fsd_day, D_day, T_day, NEE_day, ER, LT_results, info, output)
     # interpolate parameters
     LL_results["alpha_int"] = pfp_rpLL.interp_params(LL_results["alpha"])
     LL_results["beta_int"] = pfp_rpLL.interp_params(LL_results["beta"])
@@ -289,12 +303,12 @@ def ERUsingLasslop(cf, ds, info):
     # get the Lasslop parameters at the tower time step
     # *** PUT INTO SEPARATE FUNCTION
     ntsperday = float(24)*float(60)/float(ts)
-    days_at_beginning = float(info["window_length"])/2 - float(info["window_offset"])/2
+    days_at_beginning = float(ielo[output]["window_size_days"])/2 - float(ielo[output]["step_size_days"])/2
     int_list = ["alpha_int","beta_int","k_int","rb_int","E0_int"]
     tts_list = ["alpha_tts","beta_tts","k_tts","rb_tts","E0_tts"]
     for tts_item,int_item in zip(tts_list,int_list):
         beginning = numpy.ones(int(days_at_beginning*ntsperday+0.5))*LL_results[int_item][0]
-        middle = numpy.repeat(LL_results[int_item],info["window_offset"]*ntsperday)
+        middle = numpy.repeat(LL_results[int_item],ielo[output]["step_size_days"]*ntsperday)
         nend = len(ldt) - (len(beginning)+len(middle))
         end = numpy.ones(nend)*LL_results[int_item][-1]
         LL_results[tts_item] = numpy.concatenate((beginning,middle,end))
@@ -318,7 +332,7 @@ def ERUsingLasslop(cf, ds, info):
     units = Fc_attr["units"]
     long_name = "Ecosystem respiration modelled by Lasslop et al (2010)"
     attr = pfp_utils.MakeAttributeDictionary(long_name=long_name,units=units)
-    pfp_utils.CreateSeries(ds,"ER_LL_all",ER_LL,flag,attr)
+    pfp_utils.CreateSeries(ds,output_all,ER_LL,flag,attr)
     # parameters associated with GPP and GPP itself
     alpha = LL_results["alpha_tts"]
     units = "umol/J"
@@ -356,7 +370,7 @@ def ERUsingLasslop(cf, ds, info):
     title = site_name+" : ER estimated using Lasslop et al"
     pd = pfp_rpLL.rpLL_initplot(site_name=site_name,label="ER",fig_num=fig_num,title=title,
                          nDrivers=len(data.keys()),startdate=str(startdate),enddate=str(enddate))
-    #pfp_rpLT.rpLT_plot(pd, ds, series, drivers, target, output, LT_info)
+    pfp_rpLL.rpLL_plot(pd, ds, output, drivers, target, output_all, info)
 
 def ERUsingLloydTaylor(cf, ds, info):
     """
@@ -391,7 +405,7 @@ def ERUsingLloydTaylor(cf, ds, info):
     if call_mode.lower()=="interactive":
         iel["info"]["show_plots"] = True
     # set the figure number
-    if len(plt.get_fignums()) = =0:
+    if len(plt.get_fignums()) == 0:
         fig_num = 0
     else:
         fig_num = plt.get_fignums()[-1]
@@ -553,18 +567,18 @@ def ERUsingLloydTaylor(cf, ds, info):
         ER_LT_flag = numpy.empty(len(ER_LT),dtype=numpy.int32)
         ER_LT_flag.fill(30)
         #ER_LT = pfp_rpLT.ER_LloydTaylor(T,E0,rb)
-        target = str(iel["outputs"][output]["target"])
+        target = iel["outputs"][output]["target"]
         #drivers = str(configs_dict["drivers"])
         drivers = iel["outputs"][output]["drivers"]
-        output = str(configs_dict["output_label"])
+        output_all = iel["outputs"][output]["output"]
         ER_attr["comment1"] = "Drivers were "+str(drivers)
-        pfp_utils.CreateSeries(ds,output,ER_LT,ER_LT_flag,ER_attr)
+        pfp_utils.CreateSeries(ds, output_all, ER_LT, ER_LT_flag, ER_attr)
         # plot the respiration estimated using Lloyd-Taylor
         fig_num = fig_num + 1
         title = site_name+" : "+output+" estimated using Lloyd-Taylor"
-        pd = pfp_rpLT.rpLT_initplot(site_name=site_name,label=target,fig_num=fig_num,title=title,
-                             nDrivers=len(drivers),startdate=str(startdate),enddate=str(enddate))
-        pfp_rpLT.rpLT_plot(pd, ds, series, drivers, target, output, info)
+        pd = pfp_rpLT.rpLT_initplot(site_name=site_name, label=target, fig_num=fig_num, title=title,
+                             nDrivers=len(drivers), startdate=str(startdate), enddate=str(enddate))
+        pfp_rpLT.rpLT_plot(pd, ds, output, drivers, target, output_all, info)
     # close the Excel workbook
     xl_file.save(xl_name)
 
@@ -1219,8 +1233,9 @@ def L6_summary_plotcumulative(cf, ds, cumulative_dict):
     title_str = site_name+": "+year_list[0]+" to "+year_list[-1]
     # get lists of X labels (letter of month) and position
     xlabels = numpy.array(["J", "F", "M", "A", "M", "J", "J", "A", "S", "O", "N", "D"])
-    nperday = int(24*float(60)/float(ts))
-    xlabel_posn = numpy.array([0,31, 59, 89, 120, 150, 181, 212, 242, 273, 303, 334])*nperday
+    #nperday = int(24*float(60)/float(ts))
+    #xlabel_posn = numpy.array([0,31, 59, 89, 120, 150, 181, 212, 242, 273, 303, 334])*nperday
+    xlabel_posn = numpy.array([0,31, 59, 89, 120, 150, 181, 212, 242, 273, 303, 334])/float(366)
     for item in type_list:
         if cf["Options"]["call_mode"].lower()=="interactive":
             plt.ion()
@@ -1231,66 +1246,58 @@ def L6_summary_plotcumulative(cf, ds, cumulative_dict):
         plt.suptitle(title_str)
         plt.subplot(221)
         plt.title("NEE: "+item.replace("_",""),fontsize=12)
-        max_x = 0
         for n,year in enumerate(year_list):
             cdyv = cumulative_dict[year]["variables"]
-            x = numpy.arange(0,len(cdyv["NEE"+item]["data"]))
-            max_x = max([max_x, max(x)])
-            plt.plot(x,cdyv["NEE"+item]["data"],color=color_list[numpy.mod(n,8)],
+            cdyt = cdyv["DateTime"]["data"]
+            cyf = [pfp_utils.get_yearfractionfromdatetime(dt) - int(year) for dt in cdyt]
+            plt.plot(cyf, cdyv["NEE"+item]["data"], color=color_list[numpy.mod(n,8)],
                      label=str(year))
-        plt.xlim([0, max_x])
-        idx = numpy.where(xlabel_posn <= max_x)[0]
-        pylab.xticks(xlabel_posn[idx], xlabels[idx])
+        plt.xlim([0, 1])
+        pylab.xticks(xlabel_posn, xlabels)
         plt.xlabel("Month")
         plt.ylabel(cdyv["NEE"+item]["attr"]["units"])
         plt.legend(loc='lower left',prop={'size':8})
 
         plt.subplot(222)
         plt.title("GPP: "+item.replace("_",""),fontsize=12)
-        max_x = 0
         for n,year in enumerate(year_list):
             cdyv = cumulative_dict[year]["variables"]
-            x = numpy.arange(0,len(cdyv["GPP"+item]["data"]))
-            max_x = max([max_x, max(x)])
-            plt.plot(x,cdyv["GPP"+item]["data"],color=color_list[numpy.mod(n,8)],
+            cdyt = cdyv["DateTime"]["data"]
+            cyf = [pfp_utils.get_yearfractionfromdatetime(dt) - int(year) for dt in cdyt]
+            plt.plot(cyf, cdyv["GPP"+item]["data"],color=color_list[numpy.mod(n,8)],
                      label=str(year))
-        plt.xlim([0, max_x])
-        idx = numpy.where(xlabel_posn <= max_x)[0]
-        pylab.xticks(xlabel_posn[idx], xlabels[idx])
+        plt.xlim([0, 1])
+        pylab.xticks(xlabel_posn, xlabels)
         plt.xlabel("Month")
         plt.ylabel(cdyv["GPP"+item]["attr"]["units"])
         plt.legend(loc='lower right',prop={'size':8})
 
         plt.subplot(223)
         plt.title("ER: "+item.replace("_",""),fontsize=12)
-        max_x = 0
         for n,year in enumerate(year_list):
             cdyv = cumulative_dict[year]["variables"]
-            x = numpy.arange(0,len(cdyv["ER"+item]["data"]))
-            max_x = max([max_x, max(x)])
-            plt.plot(x,cdyv["ER"+item]["data"],color=color_list[numpy.mod(n,8)],
+            cdyt = cdyv["DateTime"]["data"]
+            cyf = [pfp_utils.get_yearfractionfromdatetime(dt) - int(year) for dt in cdyt]
+            plt.plot(cyf, cdyv["ER"+item]["data"],color=color_list[numpy.mod(n,8)],
                      label=str(year))
-        plt.xlim([0, max_x])
-        idx = numpy.where(xlabel_posn <= max_x)[0]
-        pylab.xticks(xlabel_posn[idx], xlabels[idx])
+        plt.xlim([0, 1])
+        pylab.xticks(xlabel_posn, xlabels)
         plt.xlabel("Month")
         plt.ylabel(cdyv["ER"+item]["attr"]["units"])
         plt.legend(loc='lower right',prop={'size':8})
 
         plt.subplot(224)
         plt.title("ET & Precip",fontsize=12)
-        max_x = 0
         for n,year in enumerate(year_list):
             cdyv = cumulative_dict[year]["variables"]
-            x = numpy.arange(0,len(cdyv["ET"]["data"]))
-            max_x = max([max_x, max(x)])
-            plt.plot(x,cdyv["ET"]["data"],color=color_list[numpy.mod(n,8)],
+            cdyt = cdyv["DateTime"]["data"]
+            cyf = [pfp_utils.get_yearfractionfromdatetime(dt) - int(year) for dt in cdyt]
+            plt.plot(cyf, cdyv["ET"]["data"],color=color_list[numpy.mod(n,8)],
                      label=str(year))
-            plt.plot(x,cdyv["Precip"]["data"],color=color_list[numpy.mod(n,8)],
+            plt.plot(cyf, cdyv["Precip"]["data"],color=color_list[numpy.mod(n,8)],
                      linestyle='--')
-        plt.xlim([0, max_x])
-        idx = numpy.where(xlabel_posn <= max_x)[0]
-        pylab.xticks(xlabel_posn[idx], xlabels[idx])
+        plt.xlim([0, 1])
+        pylab.xticks(xlabel_posn, xlabels)
         plt.xlabel("Month")
         plt.ylabel(cdyv["ET"]["attr"]["units"])
         plt.legend(loc='upper left',prop={'size':8})
@@ -1733,12 +1740,13 @@ def PartitionNEE(cf, ds, info):
     Author: PRI
     Date: August 2014
     """
-    if "gpp" not in info: return
+    if "gpp" not in info:
+        return
     # get the Fsd threshold
     opt = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "Fsd_threshold", default=10)
     Fsd_threshold = float(opt)
     # get the incoming shortwave radiation
-    Fsd,Fsd_flag,Fsd_attr = pfp_utils.GetSeriesasMA(ds,"Fsd")
+    Fsd, Fsd_flag, Fsd_attr = pfp_utils.GetSeriesasMA(ds, "Fsd")
     if "Fsd_syn" in ds.series.keys():
         Fsd_syn,flag,attr = pfp_utils.GetSeriesasMA(ds,"Fsd_syn")
         index = numpy.where(numpy.ma.getmaskarray(Fsd)==True)[0]
@@ -1746,12 +1754,13 @@ def PartitionNEE(cf, ds, info):
         Fsd[index] = Fsd_syn[index]
     # calculate GPP from NEE and ER
     for label in info["gpp"].keys():
-        if "NEE" not in info["gpp"][label] and "ER" not in info["gpp"][label]: continue
+        if "NEE" not in info["gpp"][label] and "ER" not in info["gpp"][label]:
+            continue
         NEE_label = info["gpp"][label]["NEE"]
         ER_label = info["gpp"][label]["ER"]
         output_label = info["gpp"][label]["output"]
-        NEE,NEE_flag,NEE_attr = pfp_utils.GetSeriesasMA(ds,NEE_label)
-        ER,ER_flag,ER_attr = pfp_utils.GetSeriesasMA(ds,ER_label)
+        NEE, NEE_flag, NEE_attr = pfp_utils.GetSeriesasMA(ds, NEE_label)
+        ER, ER_flag, ER_attr = pfp_utils.GetSeriesasMA(ds, ER_label)
         # calculate GPP
         # here we use the conventions from Chapin et al (2006)
         #  NEP = -1*NEE

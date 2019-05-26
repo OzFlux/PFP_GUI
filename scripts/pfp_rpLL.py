@@ -3,7 +3,8 @@
 import ast
 import datetime
 import logging
-#import warnings
+import os
+import warnings
 # 3rd party modules
 import matplotlib.pyplot as plt
 import numpy
@@ -13,7 +14,7 @@ import constants as c
 import pfp_cfg
 import pfp_utils
 
-#warnings.simplefilter("ignore", OptimizeWarning)
+warnings.simplefilter("ignore", OptimizeWarning)
 logger = logging.getLogger("pfp_log")
 
 def ER_LloydTaylor(T,rb,E0):
@@ -65,25 +66,33 @@ def interp_params(param_rslt_array):
 
     return arr
 
-def get_LL_params(ldt,Fsd,D,T,NEE,ER,LT_results,info):
+def get_LL_params(ldt, Fsd, D, T, NEE, ER, LT_results, info, output):
     # Lasslop as it was written in Lasslop et al (2010), mostly ...
     # Actually, the only intended difference is the window length and offset
     # Lasslop et al used window_length=4, window_offset=2
+    # local pointers to entries in the info dictionary
+    iel = info["er"]["lasslop"]
+    ielo = iel["outputs"]
+    ieli = iel["info"]
+    # window and step sizes
+    window_size_days = ielo[output]["window_size_days"]
+    step_size_days = ielo[output]["step_size_days"]
+    # initialise results, missed dates and prior dictionaries
     mta = numpy.array([])
-    LL_results = {"start_date":mta,"mid_date":mta,"end_date":mta,
-                  "alpha":mta,"beta":mta,"k":mta,"rb":mta,
-                  "alpha_low":mta,"rb_low":mta,"rb_prior":mta,"E0":mta}
-    LL_prior = {"rb":1.0,"alpha":0.01,"beta":10,"k":0}
+    LL_results = {"start_date": mta, "mid_date": mta, "end_date": mta,
+                  "alpha": mta, "beta": mta, "k": mta, "rb": mta,
+                  "alpha_low": mta, "rb_low": mta, "rb_prior": mta, "E0": mta}
+    LL_prior = {"rb":1.0, "alpha":0.01, "beta":10, "k":0}
     LL_fixed = {"D0":1}
     D0 = LL_fixed["D0"]
     drivers = {}
     start_date = ldt[0]
     last_date = ldt[-1]
-    end_date = start_date+datetime.timedelta(days=info["window_length"])
-    while end_date<=last_date:
-        sub_results = {"RMSE":[],"alpha":[],"beta":[],"k":[],"rb":[]}
-        si = pfp_utils.GetDateIndex(ldt,str(start_date),ts=info["ts"])
-        ei = pfp_utils.GetDateIndex(ldt,str(end_date),ts=info["ts"])
+    end_date = start_date+datetime.timedelta(days=window_size_days)
+    while end_date <= last_date:
+        sub_results = {"RMSE":[], "alpha":[], "beta":[], "k":[], "rb":[]}
+        si = pfp_utils.GetDateIndex(ldt, str(start_date), ts=ieli["time_step"])
+        ei = pfp_utils.GetDateIndex(ldt, str(end_date), ts=ieli["time_step"])
         drivers["Fsd"] = numpy.ma.compressed(Fsd[si:ei+1])
         drivers["D"] = numpy.ma.compressed(D[si:ei+1])
         drivers["T"] = numpy.ma.compressed(T[si:ei+1])
@@ -92,21 +101,21 @@ def get_LL_params(ldt,Fsd,D,T,NEE,ER,LT_results,info):
         mid_date = start_date+(end_date-start_date)/2
         # get the value of E0 for the period closest to the mid-point of this period
         diffs = [abs(dt-mid_date) for dt in LT_results["mid_date"]]
-        val,idx = min((val,idx) for (idx,val) in enumerate(diffs))
-        LL_results["E0"] = numpy.append(LL_results["E0"],LT_results["E0_int"][idx])
-        LL_results["start_date"] = numpy.append(LL_results["start_date"],start_date)
-        LL_results["mid_date"] = numpy.append(LL_results["mid_date"],mid_date)
-        LL_results["end_date"] = numpy.append(LL_results["end_date"],end_date)
-        if len(NEEsub)>=10:
+        val, idx = min((val, idx) for (idx, val) in enumerate(diffs))
+        LL_results["E0"] = numpy.append(LL_results["E0"], LT_results["E0_int"][idx])
+        LL_results["start_date"] = numpy.append(LL_results["start_date"], start_date)
+        LL_results["mid_date"] = numpy.append(LL_results["mid_date"], mid_date)
+        LL_results["end_date"] = numpy.append(LL_results["end_date"], end_date)
+        if len(NEEsub) >= 10:
             # alpha and rb from linear fit between NEE and Fsd at low light levels
-            idx = numpy.where(drivers["Fsd"]<100)[0]
-            if len(idx)>=2:
-                alpha_low,rb_low = numpy.polyfit(drivers["Fsd"][idx],NEEsub[idx],1)
+            idx = numpy.where(drivers["Fsd"] < 100)[0]
+            if len(idx) >= 2:
+                alpha_low, rb_low = numpy.polyfit(drivers["Fsd"][idx], NEEsub[idx], 1)
             else:
-                alpha_low,rb_low = numpy.nan,numpy.nan
-            if len(ERsub)>=10: LL_prior["rb"] = numpy.mean(ERsub)
-            for bm in [0.5,1,2]:
-                LL_prior["beta"] = numpy.abs(numpy.percentile(NEEsub,3)-numpy.percentile(NEEsub,97))
+                alpha_low, rb_low = numpy.nan, numpy.nan
+            if len(ERsub) >= 10: LL_prior["rb"] = numpy.mean(ERsub)
+            for bm in [0.5, 1,2]:
+                LL_prior["beta"] = numpy.abs(numpy.percentile(NEEsub, 3)-numpy.percentile(NEEsub, 97))
                 LL_prior["beta"] = bm*LL_prior["beta"]
                 E0 = LL_results["E0"][-1]
                 p0 = [LL_prior["alpha"],LL_prior["beta"],LL_prior["k"],LL_prior["rb"]]
@@ -195,12 +204,12 @@ def get_LL_params(ldt,Fsd,D,T,NEE,ER,LT_results,info):
             LL_results["beta"] = numpy.append(LL_results["beta"],numpy.nan)
             LL_results["k"] = numpy.append(LL_results["k"],numpy.nan)
         # update the start and end datetimes
-        start_date = start_date+datetime.timedelta(days=info["window_offset"])
-        end_date = start_date+datetime.timedelta(days=info["window_length"])
+        start_date = start_date+datetime.timedelta(days=window_size_days)
+        end_date = start_date+datetime.timedelta(days=step_size_days)
     LL_results["D0"] = D0
     return LL_results
 
-def get_LT_params(ldt,ER,T,info,mode="verbose"):
+def get_LT_params(ldt, ER, T, info, output, mode="verbose"):
     """
     Purpose:
      Returns rb and E0 for the Lloyd & Taylor respiration function.
@@ -208,69 +217,78 @@ def get_LT_params(ldt,ER,T,info,mode="verbose"):
     Author: PRI
     Date: April 2016
     """
+    # local pointers to entries in the info dictionary
+    iel = info["er"]["lasslop"]
+    ielo = iel["outputs"]
+    ieli = iel["info"]
+    # window and step sizes
+    window_step_size = ielo[output]["window_size_days"]
+    step_size_days = ielo[output]["step_size_days"]
+    # initialise results, missed dates and prior dictionaries
     mta = numpy.array([])
-    LT_results = {"start_date":mta,"mid_date":mta,"end_date":mta,
-                  "rb":mta,"E0":mta,"rb_prior":mta,"E0_prior":mta}
-    missed_dates = {"start_date":[],"end_date":[]}
-    LT_prior = {"rb":1.0,"E0":100}
+    LT_results = {"start_date": mta, "mid_date": mta, "end_date": mta,
+                  "rb": mta, "E0": mta, "rb_prior": mta, "E0_prior": mta}
+    missed_dates = {"start_date":[], "end_date":[]}
+    LT_prior = {"rb": 1.0, "E0": 100}
+    # get the start and end date
     start_date = ldt[0]
     last_date = ldt[-1]
-    end_date = start_date+datetime.timedelta(days=info["window_length"])
+    end_date = start_date+datetime.timedelta(days=ielo[output]["window_size_days"])
     last_E0_OK = False
-    while end_date<=last_date:
-        LT_results["start_date"] = numpy.append(LT_results["start_date"],start_date)
-        LT_results["mid_date"] = numpy.append(LT_results["mid_date"],start_date+(end_date-start_date)/2)
-        LT_results["end_date"] = numpy.append(LT_results["end_date"],end_date)
-        si = pfp_utils.GetDateIndex(ldt,str(start_date),ts=info["ts"])
-        ei = pfp_utils.GetDateIndex(ldt,str(end_date),ts=info["ts"])
-        Tsub = numpy.ma.compressed(T[si:ei+1])
-        ERsub = numpy.ma.compressed(ER[si:ei+1])
-        if len(ERsub)>=10:
+    while end_date <= last_date:
+        LT_results["start_date"] = numpy.append(LT_results["start_date"], start_date)
+        LT_results["mid_date"] = numpy.append(LT_results["mid_date"], start_date+(end_date-start_date)/2)
+        LT_results["end_date"] = numpy.append(LT_results["end_date"], end_date)
+        si = pfp_utils.GetDateIndex(ldt, str(start_date), ts=ieli["time_step"])
+        ei = pfp_utils.GetDateIndex(ldt, str(end_date), ts=ieli["time_step"])
+        Tsub = numpy.ma.compressed(T[si: ei+1])
+        ERsub = numpy.ma.compressed(ER[si: ei+1])
+        if len(ERsub) >= 10:
             LT_prior["rb"] = numpy.mean(ERsub)
-            p0 = [LT_prior["rb"],LT_prior["E0"]]
+            p0 = [LT_prior["rb"], LT_prior["E0"]]
             try:
-                popt,pcov = curve_fit(ER_LloydTaylor,Tsub,ERsub,p0=p0)
+                popt, pcov = curve_fit(ER_LloydTaylor, Tsub, ERsub, p0=p0)
             except RuntimeError:
                 missed_dates["start_date"].append(start_date)
                 missed_dates["end_date"].append(end_date)
             # QC E0 results
-            if popt[1]<50 or popt[1]>400:
+            if popt[1] < 50 or popt[1] > 400:
                 if last_E0_OK:
                     popt[1] = LT_results["E0"][-1]
                     last_E0_OK = False
                 else:
-                    if popt[1]<50: popt[1] = float(50)
-                    if popt[1]>400: popt[1] = float(400)
+                    if popt[1] <50: popt[1] = float(50)
+                    if popt[1] > 400: popt[1] = float(400)
                     last_E0_OK = False
                 # now recalculate rb
                 p0 = LT_prior["rb"]
                 if numpy.isnan(popt[1]): popt[1] = float(50)
                 E0 = numpy.ones(len(Tsub))*float(popt[1])
-                popt1,pcov1 = curve_fit(ER_LloydTaylor_fixedE0,[Tsub,E0],ERsub,p0=p0)
+                popt1, pcov1 = curve_fit(ER_LloydTaylor_fixedE0, [Tsub,E0], ERsub, p0=p0)
                 popt[0] = popt1[0]
             else:
                 last_E0_OK = True
             # QC rb results
-            if popt[0]<0: popt[0] = float(0)
-            LT_results["rb"] = numpy.append(LT_results["rb"],popt[0])
-            LT_results["E0"] = numpy.append(LT_results["E0"],popt[1])
-            LT_results["rb_prior"] = numpy.append(LT_results["rb_prior"],numpy.mean(ERsub))
-            LT_results["E0_prior"] = numpy.append(LT_results["E0_prior"],LT_prior["E0"])
+            if popt[0] < 0: popt[0] = float(0)
+            LT_results["rb"] = numpy.append(LT_results["rb"], popt[0])
+            LT_results["E0"] = numpy.append(LT_results["E0"], popt[1])
+            LT_results["rb_prior"] = numpy.append(LT_results["rb_prior"], numpy.mean(ERsub))
+            LT_results["E0_prior"] = numpy.append(LT_results["E0_prior"], LT_prior["E0"])
         else:
-            LT_results["rb"] = numpy.append(LT_results["rb"],numpy.nan)
-            LT_results["E0"] = numpy.append(LT_results["E0"],numpy.nan)
-            LT_results["rb_prior"] = numpy.append(LT_results["rb_prior"],numpy.nan)
-            LT_results["E0_prior"] = numpy.append(LT_results["E0_prior"],numpy.nan)
-        start_date = start_date+datetime.timedelta(days=info["window_offset"])
-        end_date = start_date+datetime.timedelta(days=info["window_length"])
+            LT_results["rb"] = numpy.append(LT_results["rb"], numpy.nan)
+            LT_results["E0"] = numpy.append(LT_results["E0"], numpy.nan)
+            LT_results["rb_prior"] = numpy.append(LT_results["rb_prior"], numpy.nan)
+            LT_results["E0_prior"] = numpy.append(LT_results["E0_prior"], numpy.nan)
+        start_date = start_date+datetime.timedelta(days=ielo[output]["window_size_days"])
+        end_date = start_date+datetime.timedelta(days=ielo[output]["step_size_days"])
     #    start_date = end_date
     #    end_date = start_date+dateutil.relativedelta.relativedelta(years=1)
-    if mode=="verbose":
-        if len(missed_dates["start_date"])!=0:
+    if mode == "verbose":
+        if len(missed_dates["start_date"]) != 0:
             msg = " No solution found for the following dates:"
             logger.warning(msg)
-            for sd,ed in zip(missed_dates["start_date"],missed_dates["end_date"]):
-                msg = "  "+str(sd)+" to "+str(ed)
+            for sd, ed in zip(missed_dates["start_date"], missed_dates["end_date"]):
+                msg = "  " + str(sd) + " to " + str(ed)
                 logger.warning(msg)
     return LT_results
 
@@ -341,8 +359,8 @@ def rpLL_createdict(cf, ds, info, label):
     # results of best fit for plotting later on
     ilol["results"] = {"startdate":[], "enddate":[], "No. points":[], "r":[],
                        "Bias":[], "RMSE":[], "Frac Bias":[], "NMSE":[],
-                       "Avg (obs)":[], "Avg (LT)":[],
-                       "Var (obs)":[], "Var (LT)":[], "Var ratio":[],
+                       "Avg (obs)":[], "Avg (LL)":[],
+                       "Var (obs)":[], "Var (LL)":[], "Var ratio":[],
                        "m_ols":[], "b_ols":[]}
     # step size
     opt = pfp_utils.get_keyvaluefromcf(cf, ["ER", label, "ERUsingLasslop"], "step_size_days", default=5)
@@ -350,6 +368,9 @@ def rpLL_createdict(cf, ds, info, label):
     # window size
     opt = pfp_utils.get_keyvaluefromcf(cf, ["ER", label, "ERUsingLasslop"], "window_size_days", default=15)
     ilol["window_size_days"] = int(opt)
+    # Fsd day/night threshold
+    opt = pfp_utils.get_keyvaluefromcf(cf, ["ER", label, "ERUsingLasslop"], "fsd_threshold", default=10)
+    ilol["fsd_threshold"] = float(opt)
     # create an empty series in ds if the output series doesn't exist yet
     if ilol["output"] not in ds.series.keys():
         data, flag, attr = pfp_utils.MakeEmptySeries(ds, ilol["output"])
@@ -384,3 +405,133 @@ def rpLL_initplot(**kwargs):
     pd["ts_bottom"] = pd["margin_bottom"]+pd["xy_height"]+pd["xyts_space"]
     pd["ts_height"] = (1.0 - pd["margin_top"] - pd["ts_bottom"])/float(pd["nDrivers"]+1)
     return pd
+
+def rpLL_plot(pd, ds, series, drivers, targetlabel, outputlabel, info, si=0, ei=-1):
+    """ Plot the results of the Lasslop run. """
+    ieli = info["er"]["lasslop"]["info"]
+    ielo = info["er"]["lasslop"]["outputs"]
+    # get a local copy of the datetime series
+    if ei==-1:
+        dt = ds.series['DateTime']['Data'][si:]
+    else:
+        dt = ds.series['DateTime']['Data'][si:ei+1]
+    xdt = numpy.array(dt)
+    Hdh, f, a = pfp_utils.GetSeriesasMA(ds, 'Hdh', si=si, ei=ei)
+    # get the observed and modelled values
+    obs, f, a = pfp_utils.GetSeriesasMA(ds, targetlabel, si=si, ei=ei)
+    mod, f, a = pfp_utils.GetSeriesasMA(ds, outputlabel, si=si, ei=ei)
+    # make the figure
+    if info["er"]["lasslop"]["info"]["show_plots"]:
+        plt.ion()
+    else:
+        plt.ioff()
+    fig = plt.figure(pd["fig_num"], figsize=(13, 8))
+    fig.clf()
+    fig.canvas.set_window_title(targetlabel + " (LL): " + pd["startdate"] + " to " + pd["enddate"])
+    plt.figtext(0.5, 0.95, pd["title"], ha='center', size=16)
+    # XY plot of the diurnal variation
+    rect1 = [0.10, pd["margin_bottom"], pd["xy_width"], pd["xy_height"]]
+    ax1 = plt.axes(rect1)
+    # get the diurnal stats of the observations
+    mask = numpy.ma.mask_or(obs.mask, mod.mask)
+    obs_mor = numpy.ma.array(obs, mask=mask)
+    dstats = pfp_utils.get_diurnalstats(dt, obs_mor, ieli)
+    ax1.plot(dstats["Hr"], dstats["Av"], 'b-', label="Obs")
+    # get the diurnal stats of all predictions
+    dstats = pfp_utils.get_diurnalstats(dt, mod, ieli)
+    ax1.plot(dstats["Hr"], dstats["Av"], 'r-', label="LL(all)")
+    mod_mor = numpy.ma.masked_where(numpy.ma.getmaskarray(obs) == True, mod, copy=True)
+    dstats = pfp_utils.get_diurnalstats(dt, mod_mor, ieli)
+    ax1.plot(dstats["Hr"], dstats["Av"], 'g-', label="LL(obs)")
+    plt.xlim(0, 24)
+    plt.xticks([0, 6, 12, 18, 24])
+    ax1.set_ylabel(targetlabel)
+    ax1.set_xlabel('Hour')
+    ax1.legend(loc='upper right', frameon=False, prop={'size':8})
+    # XY plot of the 30 minute data
+    rect2 = [0.40, pd["margin_bottom"], pd["xy_width"], pd["xy_height"]]
+    ax2 = plt.axes(rect2)
+    ax2.plot(mod, obs, 'b.')
+    ax2.set_ylabel(targetlabel + '_obs')
+    ax2.set_xlabel(targetlabel + '_LL')
+    # plot the best fit line
+    coefs = numpy.ma.polyfit(numpy.ma.copy(mod), numpy.ma.copy(obs), 1)
+    xfit = numpy.ma.array([numpy.ma.minimum(mod), numpy.ma.maximum(mod)])
+    yfit = numpy.polyval(coefs, xfit)
+    r = numpy.ma.corrcoef(mod, obs)
+    ax2.plot(xfit, yfit, 'r--', linewidth=3)
+    eqnstr = 'y = %.3fx + %.3f, r = %.3f'%(coefs[0], coefs[1], r[0][1])
+    ax2.text(0.5, 0.875, eqnstr, fontsize=8, horizontalalignment='center', transform=ax2.transAxes)
+    # write the fit statistics to the plot
+    numpoints = numpy.ma.count(obs)
+    numfilled = numpy.ma.count(mod)-numpy.ma.count(obs)
+    diff = mod - obs
+    bias = numpy.ma.average(diff)
+    ielo[series]["results"]["Bias"].append(bias)
+    rmse = numpy.ma.sqrt(numpy.ma.mean((obs-mod)*(obs-mod)))
+    plt.figtext(0.725, 0.225, 'No. points')
+    plt.figtext(0.825, 0.225, str(numpoints))
+    ielo[series]["results"]["No. points"].append(numpoints)
+    plt.figtext(0.725, 0.200, 'No. filled')
+    plt.figtext(0.825, 0.200, str(numfilled))
+    plt.figtext(0.725, 0.175, 'Slope')
+    plt.figtext(0.825, 0.175, str(pfp_utils.round2sig(coefs[0], sig=4)))
+    ielo[series]["results"]["m_ols"].append(coefs[0])
+    plt.figtext(0.725, 0.150, 'Offset')
+    plt.figtext(0.825, 0.150, str(pfp_utils.round2sig(coefs[1], sig=4)))
+    ielo[series]["results"]["b_ols"].append(coefs[1])
+    plt.figtext(0.725, 0.125, 'r')
+    plt.figtext(0.825, 0.125, str(pfp_utils.round2sig(r[0][1], sig=4)))
+    ielo[series]["results"]["r"].append(r[0][1])
+    plt.figtext(0.725, 0.100, 'RMSE')
+    plt.figtext(0.825, 0.100, str(pfp_utils.round2sig(rmse, sig=4)))
+    ielo[series]["results"]["RMSE"].append(rmse)
+    var_obs = numpy.ma.var(obs)
+    ielo[series]["results"]["Var (obs)"].append(var_obs)
+    var_mod = numpy.ma.var(mod)
+    ielo[series]["results"]["Var (LL)"].append(var_mod)
+    ielo[series]["results"]["Var ratio"].append(var_obs/var_mod)
+    ielo[series]["results"]["Avg (obs)"].append(numpy.ma.average(obs))
+    ielo[series]["results"]["Avg (LL)"].append(numpy.ma.average(mod))
+    # time series of drivers and target
+    ts_axes = []
+    rect = [pd["margin_left"], pd["ts_bottom"], pd["ts_width"], pd["ts_height"]]
+    ts_axes.append(plt.axes(rect))
+    #ts_axes[0].plot(xdt,obs,'b.',xdt,mod,'r-')
+    ts_axes[0].scatter(xdt, obs, c=Hdh)
+    ts_axes[0].plot(xdt, mod, 'r-')
+    plt.axhline(0)
+    ts_axes[0].set_xlim(xdt[0], xdt[-1])
+    TextStr = targetlabel + '_obs (' + ds.series[targetlabel]['Attr']['units'] + ')'
+    ts_axes[0].text(0.05, 0.85, TextStr, color='b', horizontalalignment='left', transform=ts_axes[0].transAxes)
+    TextStr = outputlabel + '(' + ds.series[outputlabel]['Attr']['units'] + ')'
+    ts_axes[0].text(0.85, 0.85, TextStr, color='r', horizontalalignment='right', transform=ts_axes[0].transAxes)
+    for ThisOne, i in zip(drivers, range(1, pd["nDrivers"] + 1)):
+        this_bottom = pd["ts_bottom"] + i*pd["ts_height"]
+        rect = [pd["margin_left"], this_bottom, pd["ts_width"], pd["ts_height"]]
+        ts_axes.append(plt.axes(rect, sharex=ts_axes[0]))
+        data, flag, attr = pfp_utils.GetSeriesasMA(ds, ThisOne, si=si, ei=ei)
+        data_notgf = numpy.ma.masked_where(flag != 0, data)
+        data_gf = numpy.ma.masked_where(flag == 0, data)
+        ts_axes[i].plot(xdt, data_notgf, 'b-')
+        ts_axes[i].plot(xdt, data_gf, 'r-')
+        plt.setp(ts_axes[i].get_xticklabels(), visible=False)
+        TextStr = ThisOne + '(' + ds.series[ThisOne]['Attr']['units'] + ')'
+        ts_axes[i].text(0.05, 0.85, TextStr, color='b', horizontalalignment='left', transform=ts_axes[i].transAxes)
+    # save a hard copy of the plot
+    sdt = xdt[0].strftime("%Y%m%d")
+    edt = xdt[-1].strftime("%Y%m%d")
+    plot_path = os.path.join(info["er"]["lasslop"]["info"]["plot_path"], "L6", "")
+    if not os.path.exists(plot_path):
+        os.makedirs(plot_path)
+    figname = plot_path + pd["site_name"].replace(" ","") + "_LL_" + pd["label"]
+    figname = figname + "_" + sdt + "_" + edt + '.png'
+    fig.savefig(figname, format='png')
+    # draw the plot on the screen
+    if ieli["show_plots"]:
+        plt.draw()
+        plt.pause(1)
+        plt.ioff()
+    else:
+        plt.close(fig)
+        plt.ion()

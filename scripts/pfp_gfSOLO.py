@@ -9,13 +9,14 @@ import subprocess
 import warnings
 # 3rd party modules
 import dateutil
+import numpy
 import matplotlib.dates as mdt
 import matplotlib.pyplot as plt
-import numpy
 import pylab
 from PyQt4 import QtGui
 # PFP modules
 import constants as c
+import pfp_cfg
 import pfp_ck
 import pfp_gf
 import pfp_io
@@ -76,14 +77,18 @@ def  gfSOLO_gui(main_gui, ds, info):
     main_gui.solo_gui.info = info
     main_gui.solo_gui.edit_cfg = main_gui.tabs.tab_dict[main_gui.tabs.tab_index_running]
     # put up the start and end dates
-    main_gui.solo_gui.label_DataStartDate_value.setText(info["solo"]["info"]["startdate"])
-    main_gui.solo_gui.label_DataEndDate_value.setText(info["solo"]["info"]["enddate"])
+    start_date = ds.series["DateTime"]["Data"][0].strftime("%Y-%m-%d %H:%M")
+    end_date = ds.series["DateTime"]["Data"][-1].strftime("%Y-%m-%d %H:%M")
+    main_gui.solo_gui.label_DataStartDate_value.setText(start_date)
+    main_gui.solo_gui.label_DataEndDate_value.setText(end_date)
     # set the default period to manual
     main_gui.solo_gui.radioButton_NumberMonths.setChecked(True)
     # set the default number of nodes
     main_gui.solo_gui.lineEdit_Nodes.setText("Auto")
     # set the default minimum percentage of good data
     main_gui.solo_gui.lineEdit_MinPercent.setText("25")
+    # set the drivers
+    #main_gui.solo_gui.lineEdit_Drivers.setText("Fn,Fg,q,Ta,Ts,Ws")
     # display the SOLO GUI
     main_gui.solo_gui.show()
     main_gui.solo_gui.exec_()
@@ -211,8 +216,12 @@ def gfSOLO_main(ds, info, outputs=[]):
     for output in outputs:
         # get the target series label
         target = info["solo"]["outputs"][output]["target"]
+        # get the drivers
+        drivers = info["solo"]["outputs"][output]["drivers"]
+        # get the start and end datetimes
         info["solo"]["outputs"][output]["results"]["startdate"].append(ldt[si])
         info["solo"]["outputs"][output]["results"]["enddate"].append(ldt[ei])
+        # get the target data and check there is enough to continue
         d, f, a = pfp_utils.GetSeriesasMA(ds, target, si=si, ei=ei)
         if numpy.ma.count(d) < info["solo"]["gui"]["min_points"]:
             msg = "SOLO: Less than " + str(info["solo"]["gui"]["min_points"]) + " points available for target " + target
@@ -224,8 +233,7 @@ def gfSOLO_main(ds, info, outputs=[]):
             for item in results:
                 info["solo"]["outputs"][output]["results"][item].append(float(c.missing_value))
             continue
-        drivers = info["solo"]["gui"]["drivers"].split(",")
-        info["solo"]["outputs"][output]["drivers"] = drivers
+        # get the number of nodes to use for the neural network
         if str(info["solo"]["gui"]["nodes"]).lower() == "auto":
             info["solo"]["gui"]["nodes_target"] = len(drivers) + 1
         else:
@@ -463,7 +471,6 @@ def gfSOLO_plotcoveragelines(ds, info):
     ax2 = ax1.twinx()
     pylab.yticks(ylabel_posn, ylabel_right_list)
     fig.tight_layout()
-    #fig.canvas.manager.window.attributes('-topmost', 1)
     plt.draw()
     plt.ioff()
 
@@ -590,7 +597,7 @@ def gfSOLO_qcchecks(cfg, dsa, dsb, mode="quiet"):
 
 def gfSOLO_quit(solo_gui):
     """ Quit the SOLO GUI."""
-    solo_gui.dsb.returncodes["solo"] = "quit"
+    solo_gui.ds.returncodes["solo"] = "quit"
     # destroy the GUI
     solo_gui.close()
 
@@ -618,7 +625,6 @@ def gfSOLO_run_gui(solo_gui):
     info["solo"]["gui"]["nda_factor"] = str(solo_gui.lineEdit_NdaFactor.text())
     info["solo"]["gui"]["learning_rate"] = str(solo_gui.lineEdit_Learning.text())
     info["solo"]["gui"]["iterations"] = str(solo_gui.lineEdit_Iterations.text())
-    info["solo"]["gui"]["drivers"] = str(solo_gui.lineEdit_Drivers.text())
 
     ts = int(ds.globalattributes["time_step"])
     nperhr = int(float(60)/ts + 0.5)
