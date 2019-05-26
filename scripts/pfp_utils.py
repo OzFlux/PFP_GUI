@@ -1967,6 +1967,11 @@ def get_datetimefromymdhms(ds):
     ds.series["DateTime"]["Attr"]["units"] = "None"
     return
 
+def get_ddoy_from_datetime(dt):
+    """ Return the decimal day of the year from a datetime."""
+    ddoy = dt.timetuple().tm_yday + float(dt.hour+float(dt.minute+float(dt.second)/60)/60)/24
+    return ddoy
+
 def get_diurnalstats(dt,data,info):
     ts = info["time_step"]
     nperday = info["nperday"]
@@ -2090,7 +2095,7 @@ def get_label_list_from_cf(cf):
         logger.error(msg)
     return label_list
 
-def get_missingingapfilledseries(ds):
+def get_missingingapfilledseries(ds, l4_info):
     """
     Purpose:
      Check series in data structure and print a message to the screen if missing points are found.
@@ -2106,26 +2111,29 @@ def get_missingingapfilledseries(ds):
     # create an empty list
     alt_list = []
     # check to see if there was any gap filling using data from alternate sources
-    if "alternate" in dir(ds):
+    if "alternate" in l4_info.keys():
+        l4a = l4_info["alternate"]
         # if so, get a list of the quantities gap filled from alternate sources
-        alt_list = list(set([ds.alternate[item]["label_tower"] for item in ds.alternate.keys()]))
+        alt_list = list(set([l4a["outputs"][item]["target"] for item in l4a["outputs"].keys()]))
     # create an empty list
     cli_list = []
     # check to see if there was any gap filling from climatology
-    if "climatology" in dir(ds):
+    if "climatology" in l4_info.keys():
+        l4c = l4_info["climatology"]
         # if so, get a list of the quantities gap filled using climatology
-        cli_list = list(set([ds.climatology[item]["label_tower"] for item in ds.climatology.keys()]))
+        cli_list = list(set([l4c["outputs"][item]["target"] for item in l4c["outputs"].keys()]))
     # one list to rule them, one list to bind them ...
-    gf_list = list(set(alt_list+cli_list))
+    gf_list = list(set(alt_list + cli_list))
     # clear out if there was no gap filling
-    if len(gf_list)==0: return
+    if len(gf_list) == 0:
+        return
     # loop over the series to be checked
     gap_found = False
     for series in gf_list:
         if series not in ds.series.keys(): continue
         data,flag,attr = GetSeriesasMA(ds,series)
-        idx = numpy.ma.where(data.mask==True)[0]
-        if len(idx)!=0:
+        idx = numpy.ma.where(data.mask == True)[0]
+        if len(idx) != 0:
             gap_found = True
             msg = " Missing points ("+str(len(idx))+") found in "+series
             logger.error(msg)
@@ -2328,6 +2336,23 @@ def get_xldatefromdatetime(ds):
     xldt_new = numpy.ma.array(xldate, dtype=numpy.float64)
     # create the Excel datetime series
     CreateSeries(ds,"xlDateTime",xldt_new,flag,xldt_attr)
+
+def get_yearfractionfromdatetime(dt):
+    """
+    Return the fraction of a year from a datetime.
+    From https://stackoverflow.com/questions/6451655/python-how-to-convert-datetime-dates-to-decimal-years
+    """
+    def sinceEpoch(dt):
+        """returns seconds since epoch"""
+        return time.mktime(dt.timetuple())
+    s = sinceEpoch
+    year = dt.year
+    startOfThisYear = datetime.datetime(year=year, month=1, day=1)
+    startOfNextYear = datetime.datetime(year=year+1, month=1, day=1)
+    yearElapsed = s(dt) - s(startOfThisYear)
+    yearDuration = s(startOfNextYear) - s(startOfThisYear)
+    fraction = yearElapsed/yearDuration
+    return year + fraction
 
 def get_ymdhmsfromdatetime(ds):
     '''

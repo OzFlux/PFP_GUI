@@ -1,5 +1,6 @@
 # standard modules
 import ast
+import copy
 import datetime
 import os
 import logging
@@ -18,7 +19,7 @@ import pfp_utils
 
 logger = logging.getLogger("pfp_log")
 
-def CheckDrivers(cf, dsb, gf_type="SOLO"):
+def CheckDrivers(l5_info, dsb, gf_type):
     """
     Purpose:
      Check the drivers specified for gap filling using SOLO and warn
@@ -28,15 +29,17 @@ def CheckDrivers(cf, dsb, gf_type="SOLO"):
     Author: PRI
     Date: May 2019
     """
+    msg = " Checking drivers for missing data"
+    logger.info(msg)
     ts = int(dsb.globalattributes["time_step"])
     ldt = pfp_utils.GetVariable(dsb, "DateTime")
     gf_drivers = []
     if gf_type == "SOLO":
-        for label in dsb.solo.keys():
-            gf_drivers = gf_drivers + dsb.solo[label]["drivers"]
+        for label in l5_info["solo"]["outputs"].keys():
+            gf_drivers = gf_drivers + l5_info["solo"]["outputs"][label]["drivers"]
     elif gf_type == "FFNET":
-        for label in dsb.ffnet.keys():
-            gf_drivers = gf_drivers + dsb.ffnet[label]["drivers"]
+        for label in l5_info["ffnet"]["outputs"].keys():
+            gf_drivers = gf_drivers + l5_info["ffnet"]["outputs"][label]["drivers"]
     else:
         msg = "  Unrecognised gap fill type (" + gf_type + ")"
         logger.error(msg)
@@ -125,109 +128,121 @@ def CheckDrivers(cf, dsb, gf_type="SOLO"):
         logger.info(msg)
         return
 
-# GapFillParseControlFile parses the L4 control file
-def GapFillParseControlFile(cf, ds, series, ds_alt):
-    # find the section containing the series
-    section = pfp_utils.get_cfsection(cf, series=series, mode="quiet")
-    # return empty handed if the series is not in a section
-    if len(section) == 0:
-        return
-    if "GapFillFromAlternate" in cf[section][series].keys():
-        # create the alternate dictionary in ds
-        gfalternate_createdict(cf, ds, series, ds_alt)
-    if "GapFillUsingSOLO" in cf[section][series].keys():
-        # create the SOLO dictionary in ds
-        gfSOLO_createdict(cf, ds, series)
-    if "GapFillUsingMDS" in cf[section][series].keys():
-        # create the MDS dictionary in ds
-        gfMDS_createdict(cf, ds, series)
-    if "GapFillFromClimatology" in cf[section][series].keys():
-        # create the climatology dictionary in the data structure
-        gfClimatology_createdict(cf, ds, series)
-    if "MergeSeries" in cf[section][series].keys():
-        # create the merge series dictionary in the data structure
-        gfMergeSeries_createdict(cf, ds, series)
+def ParseL4ControlFile(cf, ds):
+    l4_info = {}
+    l4_info["cf"] = copy.deepcopy(cf)
+    for target in cf["Drivers"].keys():
+        if "GapFillFromAlternate" in cf["Drivers"][target].keys():
+            gfalternate_createdict(cf, ds, l4_info, target)
+        if "GapFillFromClimatology" in cf["Drivers"][target].keys():
+            gfClimatology_createdict(cf, ds, l4_info, target)
+        if "MergeSeries" in cf["Drivers"][target].keys():
+            gfMergeSeries_createdict(cf, ds, l4_info, target)
+    return l4_info
 
-def gfalternate_createdict(cf, ds, series, ds_alt):
+def ParseL5ControlFile(cf, ds):
+    l5_info = {}
+    l5_info["cf"] = copy.deepcopy(cf)
+    for target in cf["Fluxes"].keys():
+        if "GapFillUsingSOLO" in cf["Fluxes"][target].keys():
+            gfSOLO_createdict(cf, ds, l5_info, target)
+        if "GapFillUsingMDS" in cf["Fluxes"][target].keys():
+            gfMDS_createdict(cf, ds, l5_info, target)
+        if "MergeSeries" in cf["Fluxes"][target].keys():
+            gfMergeSeries_createdict(cf, ds, l5_info, target)
+    return l5_info
+
+def ReadAlternateFiles(ds, l4_info):
+    #l4_info["alternate"]["outputs"]["Fn_era5"]["file_name"]
+    ds_alt = {}
+    l4ao = l4_info["alternate"]["outputs"]
+    # get a list of file names
+    files = [l4ao[output]["file_name"] for output in l4ao.keys()]
+    # read the alternate files
+    for f in files:
+        # if the file has not already been read, do it now
+        if f not in ds_alt:
+            ds_alternate = pfp_io.nc_read_series(f, fixtimestepmethod="round")
+            gfalternate_matchstartendtimes(ds, ds_alternate)
+            ds_alt[f] = ds_alternate
+    return ds_alt
+
+def gfalternate_createdict(cf, ds, l4_info, label):
     """
     Purpose:
-     Creates a dictionary in ds to hold information about the alternate data used to gap fill the tower data.
+     Creates a dictionary in l4_info to hold information about the alternate data
+     used to gap fill the tower data.
     Usage:
     Side effects:
     Author: PRI
     Date: August 2014
     """
-    # get the section of the control file containing the series
-    section = pfp_utils.get_cfsection(cf, series=series, mode="quiet")
-    # return without doing anything if the series isn't in a control file section
-    if len(section)==0:
-        logger.error("GapFillFromAlternate: Series %s not found in control file, skipping ...", series)
-        return
     # create the alternate directory in the data structure
-    if "alternate" not in dir(ds):
-        ds.alternate = {}
+    if "alternate" not in l4_info.keys():
+        l4_info["alternate"] = {"outputs": {}}
     # name of alternate output series in ds
-    output_list = cf[section][series]["GapFillFromAlternate"].keys()
+    outputs = cf["Drivers"][label]["GapFillFromAlternate"].keys()
     # loop over the outputs listed in the control file
-    for output in output_list:
+    l4ao = l4_info["alternate"]["outputs"]
+    cfalt = cf["Drivers"][label]["GapFillFromAlternate"]
+    for output in outputs:
         # create the dictionary keys for this output
-        ds.alternate[output] = {}
-        ds.alternate[output]["label_tower"] = series
+        l4ao[output] = {}
+        # get the target
+        if "target" in cfalt[output]:
+            l4ao[output]["target"] = cfalt[output]["target"]
+        else:
+            l4ao[output]["target"] = label
         # source name
-        ds.alternate[output]["source"] = cf[section][series]["GapFillFromAlternate"][output]["source"]
-        # site name
-        ds.alternate[output]["site_name"] = ds.globalattributes["site_name"]
+        l4ao[output]["source"] = cfalt[output]["source"]
+        ## site name
+        #l4ao[output]["site_name"] = ds.globalattributes["site_name"]
         # alternate data file name
         # first, look in the [Files] section for a generic file name
         file_list = cf["Files"].keys()
         lower_file_list = [item.lower() for item in file_list]
-        if ds.alternate[output]["source"].lower() in lower_file_list:
+        if l4ao[output]["source"].lower() in lower_file_list:
             # found a generic file name
-            i = lower_file_list.index(ds.alternate[output]["source"].lower())
-            ds.alternate[output]["file_name"] = cf["Files"][file_list[i]]
+            i = lower_file_list.index(l4ao[output]["source"].lower())
+            l4ao[output]["file_name"] = cf["Files"][file_list[i]]
         else:
             # no generic file name found, look for a file name in the variable section
-            ds.alternate[output]["file_name"] = cf[section][series]["GapFillFromAlternate"][output]["file_name"]
-        # if the file has not already been read, do it now
-        if ds.alternate[output]["file_name"] not in ds_alt:
-            ds_alternate = pfp_io.nc_read_series(ds.alternate[output]["file_name"],fixtimestepmethod="round")
-            gfalternate_matchstartendtimes(ds,ds_alternate)
-            ds_alt[ds.alternate[output]["file_name"]] = ds_alternate
+            l4ao[output]["file_name"] = cfalt[output]["file_name"]
         # get the type of fit
-        ds.alternate[output]["fit_type"] = "OLS"
-        if "fit" in cf[section][series]["GapFillFromAlternate"][output]:
-            if cf[section][series]["GapFillFromAlternate"][output]["fit"].lower() in ["ols","ols_thru0","mrev","replace","rma","odr"]:
-                ds.alternate[output]["fit_type"] = cf[section][series]["GapFillFromAlternate"][output]["fit"]
+        l4ao[output]["fit_type"] = "OLS"
+        if "fit" in cfalt[output]:
+            if cfalt[output]["fit"].lower() in ["ols", "ols_thru0", "mrev", "replace", "rma", "odr"]:
+                l4ao[output]["fit_type"] = cfalt[output]["fit"]
             else:
                 logger.info("gfAlternate: unrecognised fit option for series %s, used OLS", output)
         # correct for lag?
-        if "lag" in cf[section][series]["GapFillFromAlternate"][output]:
-            if cf[section][series]["GapFillFromAlternate"][output]["lag"].lower() in ["no","false"]:
-                ds.alternate[output]["lag"] = "no"
-            elif cf[section][series]["GapFillFromAlternate"][output]["lag"].lower() in ["yes","true"]:
-                ds.alternate[output]["lag"] = "yes"
+        if "lag" in cfalt[output]:
+            if cfalt[output]["lag"].lower() in ["no", "false"]:
+                l4ao[output]["lag"] = "no"
+            elif cfalt[output]["lag"].lower() in ["yes", "true"]:
+                l4ao[output]["lag"] = "yes"
             else:
                 logger.info("gfAlternate: unrecognised lag option for series %s", output)
         else:
-            ds.alternate[output]["lag"] = "yes"
+            l4ao[output]["lag"] = "yes"
         # choose specific alternate variable?
-        if "usevars" in cf[section][series]["GapFillFromAlternate"][output]:
-            ds.alternate[output]["usevars"] = ast.literal_eval(cf[section][series]["GapFillFromAlternate"][output]["usevars"])
+        if "usevars" in cfalt[output]:
+            l4ao[output]["usevars"] = ast.literal_eval(cfalt[output]["usevars"])
         # alternate data variable name if different from name used in control file
-        if "alternate_name" in cf[section][series]["GapFillFromAlternate"][output]:
-            ds.alternate[output]["alternate_name"] = cf[section][series]["GapFillFromAlternate"][output]["alternate_name"]
+        if "alternate_name" in cfalt[output]:
+            l4ao[output]["alternate_name"] = cfalt[output]["alternate_name"]
         else:
-            ds.alternate[output]["alternate_name"] = series
+            l4ao[output]["alternate_name"] = output
         # results of best fit for plotting later on
-        ds.alternate[output]["results"] = {"startdate":[],"enddate":[],"No. points":[],"No. filled":[],
-                                           "r":[],"Bias":[],"RMSE":[],"Frac Bias":[],"NMSE":[],
-                                           "Avg (Tower)":[],"Avg (Alt)":[],
-                                           "Var (Tower)":[],"Var (Alt)":[],"Var ratio":[]}
+        l4ao[output]["results"] = {"startdate":[], "enddate":[], "No. points":[], "No. filled":[],
+                                   "r":[], "Bias":[], "RMSE":[], "Frac Bias":[], "NMSE":[],
+                                   "Avg (Tower)":[], "Avg (Alt)":[],
+                                   "Var (Tower)":[], "Var (Alt)":[], "Var ratio":[]}
         # create an empty series in ds if the alternate output series doesn't exist yet
         if output not in ds.series.keys():
-            data,flag,attr = pfp_utils.MakeEmptySeries(ds,output)
-            pfp_utils.CreateSeries(ds,output,data,flag,attr)
-            pfp_utils.CreateSeries(ds,series+"_composite",data,flag,attr)
+            data, flag, attr = pfp_utils.MakeEmptySeries(ds, output)
+            pfp_utils.CreateSeries(ds, output, data, flag, attr)
+            pfp_utils.CreateSeries(ds, label + "_composite", data, flag, attr)
 
 def gfalternate_matchstartendtimes(ds,ds_alternate):
     """
@@ -315,27 +330,28 @@ def gfalternate_matchstartendtimes(ds,ds_alternate):
             pfp_utils.CreateSeries(ds_alternate, series, data, flag, attr)
     ds.returncodes["GapFillFromAlternate"] = "normal"
 
-def gfClimatology_createdict(cf, ds, series):
-    """ Creates a dictionary in ds to hold information about the climatological data used
-        to gap fill the tower data."""
-    # get the section of the control file containing the series
-    section = pfp_utils.get_cfsection(cf, series=series,mode="quiet")
-    # return without doing anything if the series isn't in a control file section
-    if len(section) == 0:
-        logger.error("GapFillFromClimatology: Series %s not found in control file, skipping ...", series)
-        return
+def gfClimatology_createdict(cf, ds, l4_info, label):
+    """
+    Purpose:
+     Creates a dictionary in l4_info to hold information about the climatological data
+     used to gap fill the tower data.
+    Usage:
+    Side effects:
+    Author: PRI
+    Date: August 2014
+    """
     # create the climatology directory in the data structure
-    if "climatology" not in dir(ds):
-        ds.climatology = {}
+    if "climatology" not in l4_info.keys():
+        l4_info["climatology"] = {"outputs": {}}
     # name of alternate output series in ds
-    output_list = cf[section][series]["GapFillFromClimatology"].keys()
+    outputs = cf["Drivers"][label]["GapFillFromClimatology"].keys()
     # loop over the outputs listed in the control file
-    for output in output_list:
+    l4co = l4_info["climatology"]["outputs"]
+    cfcli = cf["Drivers"][label]["GapFillFromClimatology"]
+    for output in outputs:
         # create the dictionary keys for this output
-        ds.climatology[output] = {}
-        ds.climatology[output]["label_tower"] = series
-        # site name
-        ds.climatology[output]["site_name"] = ds.globalattributes["site_name"]
+        l4co[output] = {}
+        l4co[output]["target"] = label
         # Climatology file name
         file_list = cf["Files"].keys()
         lower_file_list = [item.lower() for item in file_list]
@@ -343,220 +359,197 @@ def gfClimatology_createdict(cf, ds, series):
         if "climatology" in lower_file_list:
             # found a generic file name
             i = lower_file_list.index("climatology")
-            ds.climatology[output]["file_name"] = cf["Files"][file_list[i]]
+            l4co[output]["file_name"] = cf["Files"][file_list[i]]
         else:
             # no generic file name found, look for a file name in the variable section
-            ds.climatology[output]["file_name"] = cf[section][series]["GapFillFromClimatology"][output]["file_name"]
+            l4co[output]["file_name"] = cfcli[output]["file_name"]
         # climatology variable name if different from name used in control file
-        if "climatology_name" in cf[section][series]["GapFillFromClimatology"][output]:
-            ds.climatology[output]["climatology_name"] = cf[section][series]["GapFillFromClimatology"][output]["climatology_name"]
+        if "climatology_name" in cfcli[output]:
+            l4co[output]["climatology_name"] = cfcli[output]["climatology_name"]
         else:
-            ds.climatology[output]["climatology_name"] = series
+            l4co[output]["climatology_name"] = label
         # climatology gap filling method
-        if "method" not in cf[section][series]["GapFillFromClimatology"][output].keys():
+        if "method" not in cfcli[output].keys():
             # default if "method" missing is "interpolated_daily"
-            ds.climatology[output]["method"] = "interpolated_daily"
+            l4co[output]["method"] = "interpolated_daily"
         else:
-            ds.climatology[output]["method"] = cf[section][series]["GapFillFromClimatology"][output]["method"]
+            l4co[output]["method"] = cfcli[output]["method"]
         # create an empty series in ds if the climatology output series doesn't exist yet
         if output not in ds.series.keys():
             data, flag, attr = pfp_utils.MakeEmptySeries(ds, output)
             pfp_utils.CreateSeries(ds, output, data, flag, attr)
 
-def gfMDS_createdict(cf, ds, series):
+def gfMDS_createdict(cf, ds, l5_info, label):
     """
     Purpose:
      Create an information dictionary for MDS gap filling from the contents
      of the control file.
     Usage:
-     info["MDS"] = gfMDS_createdict(cf)
+     gfMDS_createdict(cf, ds, l5_info, label)
     Author: PRI
     Date: May 2018
     """
-    # get the section of the control file containing the series
-    section = pfp_utils.get_cfsection(cf, series=series, mode="quiet")
-    # return without doing anything if the series isn't in a control file section
-    if len(section)==0:
-        logger.error("GapFillUsingMDS: Series %s not found in control file, skipping ...", series)
-        return
-    # create the MDS attribute (a dictionary) in ds, this will hold all MDS settings
-    if "mds" not in dir(ds):
-        ds.mds = {}
+    if "mds" not in l5_info:
+        l5_info["mds"] = {"outputs": {}}
     # name of MDS output series in ds
-    output_list = cf[section][series]["GapFillUsingMDS"].keys()
+    outputs = cf["Fluxes"][label]["GapFillUsingMDS"].keys()
     # loop over the outputs listed in the control file
-    for output in output_list:
+    l5mo = l5_info["mds"]["outputs"]
+    for output in outputs:
         # create the dictionary keys for this series
-        ds.mds[output] = {}
+        l5mo[output] = {}
         # get the target
-        if "target" in cf[section][series]["GapFillUsingMDS"][output]:
-            ds.mds[output]["target"] = cf[section][series]["GapFillUsingMDS"][output]["target"]
+        if "target" in cf["Fluxes"][label]["GapFillUsingMDS"][output]:
+            l5mo[output]["target"] = cf["Fluxes"][label]["GapFillUsingMDS"][output]["target"]
         else:
-            ds.mds[output]["target"] = series
-        # site name
-        ds.mds[output]["site_name"] = ds.globalattributes["site_name"]
-        # list of SOLO settings
-        if "mds_settings" in cf[section][series]["GapFillUsingMDS"][output]:
-            mdss_string = cf[section][series]["GapFillUsingMDS"][output]["mds_settings"]
+            l5mo[output]["target"] = label
+        # list of MDS settings
+        if "mds_settings" in cf["Fluxes"][label]["GapFillUsingMDS"][output]:
+            mdss_string = cf["Fluxes"][label]["GapFillUsingMDS"][output]["mds_settings"]
             mdss_string = mdss_string.replace(" ","")
             if "," in mdss_string:
-                ds.mds[output]["mds_settings"] = mdss_string.split(",")
+                l5mo[output]["mds_settings"] = mdss_string.split(",")
             else:
-                ds.mds[output]["mds_settings"] = [mdss_string]
+                l5mo[output]["mds_settings"] = [mdss_string]
         # list of drivers
-        drivers_string = cf[section][series]["GapFillUsingMDS"][output]["drivers"]
+        drivers_string = cf["Fluxes"][label]["GapFillUsingMDS"][output]["drivers"]
         drivers_string = drivers_string.replace(" ","")
         if "," in drivers_string:
             if len(drivers_string.split(",")) == 3:
-                ds.mds[output]["drivers"] = drivers_string.split(",")
+                l5mo[output]["drivers"] = drivers_string.split(",")
             else:
-                msg = " MDS: incorrect number of drivers for " + series + ", skipping ..."
+                msg = " MDS: incorrect number of drivers for " + label + ", skipping ..."
                 logger.error(msg)
                 continue
         else:
-            msg = " MDS: incorrect number of drivers for " + series + ", skipping ..."
+            msg = " MDS: incorrect number of drivers for " + label + ", skipping ..."
             logger.error(msg)
             continue
         # list of tolerances
-        tolerances_string = cf[section][series]["GapFillUsingMDS"][output]["tolerances"]
+        tolerances_string = cf["Fluxes"][label]["GapFillUsingMDS"][output]["tolerances"]
         tolerances_string = tolerances_string.replace(" ","")
         tolerances_string = tolerances_string.replace("(","").replace(")","")
         if "," in tolerances_string:
             if len(tolerances_string.split(",")) == 4:
                 parts = tolerances_string.split(",")
-                ds.mds[output]["tolerances"] = [(parts[0], parts[1]), parts[2], parts[3]]
+                l5mo[output]["tolerances"] = [(parts[0], parts[1]), parts[2], parts[3]]
             else:
-                msg = " MDS: incorrect format for tolerances for " + series + ", skipping ..."
+                msg = " MDS: incorrect format for tolerances for " + label + ", skipping ..."
                 logger.error(msg)
                 continue
         else:
-            msg = " MDS: incorrect format for tolerances for " + series + ", skipping ..."
+            msg = " MDS: incorrect format for tolerances for " + label + ", skipping ..."
             logger.error(msg)
             continue
-        # get the ustar filter option
-        opt = pfp_utils.get_keyvaluefromcf(cf, [section, series, "GapFillUsingMDS", output], "turbulence_filter", default="")
-        ds.mds[output]["turbulence_filter"] = opt
-        # get the day/night filter option
-        opt = pfp_utils.get_keyvaluefromcf(cf, [section, series, "GapFillUsingMDS", output], "daynight_filter", default="")
-        ds.mds[output]["daynight_filter"] = opt
-        # get the include QC option
-        opt = pfp_utils.get_keyvaluefromcf(cf, [section, series, "GapFillUsingMDS", output], "include_qc", default="No")
-        ds.mds[output]["include_qc"] = opt
-
     # check that all requested targets and drivers have a mapping to
     # a FluxNet label, remove if they don't
     fluxnet_label_map = {"Fc":"NEE", "Fe":"LE", "Fh":"H",
                          "Fsd":"SW_IN", "Ta":"TA", "VPD":"VPD"}
-    for mds_label in ds.mds:
-        ds.mds[mds_label]["mds_label"] = mds_label
-        pfp_target = ds.mds[mds_label]["target"]
+    for mds_label in l5_info["mds"]["outputs"]:
+        l5_info["mds"]["outputs"][mds_label]["mds_label"] = mds_label
+        pfp_target = l5_info["mds"]["outputs"][mds_label]["target"]
         if pfp_target not in fluxnet_label_map:
             msg = " Target ("+pfp_target+") not supported for MDS gap filling"
             logger.warning(msg)
-            del ds.mds[mds_label]
+            del l5_info["mds"]["outputs"][mds_label]
         else:
-            ds.mds[mds_label]["target_mds"] = fluxnet_label_map[pfp_target]
-        pfp_drivers = ds.mds[mds_label]["drivers"]
+            l5_info["mds"]["outputs"][mds_label]["target_mds"] = fluxnet_label_map[pfp_target]
+        pfp_drivers = l5_info["mds"]["outputs"][mds_label]["drivers"]
         for pfp_driver in pfp_drivers:
             if pfp_driver not in fluxnet_label_map:
                 msg = "Driver ("+pfp_driver+") not supported for MDS gap filling"
                 logger.warning(msg)
-                ds.mds[mds_label]["drivers"].remove(pfp_driver)
+                l5_info["mds"]["outputs"][mds_label]["drivers"].remove(pfp_driver)
             else:
-                if "drivers_mds" not in ds.mds[mds_label]:
-                    ds.mds[mds_label]["drivers_mds"] = []
-                ds.mds[mds_label]["drivers_mds"].append(fluxnet_label_map[pfp_driver])
-        if len(ds.mds[mds_label]["drivers"]) == 0:
-            del ds.mds[mds_label]
+                if "drivers_mds" not in l5_info["mds"]["outputs"][mds_label]:
+                    l5_info["mds"]["outputs"][mds_label]["drivers_mds"] = []
+                l5_info["mds"]["outputs"][mds_label]["drivers_mds"].append(fluxnet_label_map[pfp_driver])
+        if len(l5_info["mds"]["outputs"][mds_label]["drivers"]) == 0:
+            del l5_info["mds"]["outputs"][mds_label]
     return
 
-def gfMergeSeries_createdict(cf,ds,series):
+def gfMergeSeries_createdict(cf, ds, info, label):
     """ Creates a dictionary in ds to hold information about the merging of gap filled
         and tower data."""
     merge_prereq_list = ["Fsd","Fsu","Fld","Flu","Ts","Sws"]
     # get the section of the control file containing the series
-    section = pfp_utils.get_cfsection(cf,series=series,mode="quiet")
+    section = pfp_utils.get_cfsection(cf,series=label,mode="quiet")
     # create the merge directory in the data structure
-    if "merge" not in dir(ds): ds.merge = {}
+    if "merge" not in info:
+        info["merge"] = {}
     # check to see if this series is in the "merge first" list
     # series in the "merge first" list get merged first so they can be used with existing tower
     # data to re-calculate Fg, Fn and Fa
     merge_order = "standard"
-    if series in merge_prereq_list: merge_order = "prerequisite"
-    if merge_order not in ds.merge.keys(): ds.merge[merge_order] = {}
+    if label in merge_prereq_list:
+        merge_order = "prerequisite"
+    if merge_order not in info["merge"].keys():
+        info["merge"][merge_order] = {}
     # create the dictionary keys for this series
-    ds.merge[merge_order][series] = {}
+    info["merge"][merge_order][label] = {}
     # output series name
-    ds.merge[merge_order][series]["output"] = series
+    info["merge"][merge_order][label]["output"] = label
     # merge source list
-    src_string = cf[section][series]["MergeSeries"]["Source"]
+    src_string = cf[section][label]["MergeSeries"]["Source"]
     if "," in src_string:
         src_list = src_string.split(",")
     else:
         src_list = [src_string]
-    ds.merge[merge_order][series]["source"] = src_list
+    info["merge"][merge_order][label]["source"] = src_list
     # create an empty series in ds if the output series doesn't exist yet
-    if ds.merge[merge_order][series]["output"] not in ds.series.keys():
-        data,flag,attr = pfp_utils.MakeEmptySeries(ds,ds.merge[merge_order][series]["output"])
-        pfp_utils.CreateSeries(ds,ds.merge[merge_order][series]["output"],data,flag,attr)
+    if label not in ds.series.keys():
+        data, flag, attr = pfp_utils.MakeEmptySeries(ds, label)
+        pfp_utils.CreateSeries(ds, label, data, flag, attr)
 
-def gfSOLO_createdict(cf,ds,series):
-    """ Creates a dictionary in ds to hold information about the SOLO data used
-        to gap fill the tower data."""
-    # get the section of the control file containing the series
-    section = pfp_utils.get_cfsection(cf,series=series,mode="quiet")
-    # return without doing anything if the series isn't in a control file section
-    if len(section)==0:
-        logger.error("GapFillUsingSOLO: Series %s not found in control file, skipping ...", series)
-        return
-    # create the solo directory in the data structure
-    if "solo" not in dir(ds): ds.solo = {}
+def gfSOLO_createdict(cf, ds, l5_info, label):
+    """
+    Purpose:
+     Creates a dictionary in l5_info to hold information about the SOLO data
+     used to gap fill the tower data.
+    Usage:
+    Side effects:
+    Author: PRI
+    Date: August 2014
+    """
+    # create the solo settings directory
+    if "solo" not in l5_info:
+        l5_info["solo"] = {"outputs": {}}
     # name of SOLO output series in ds
-    output_list = cf[section][series]["GapFillUsingSOLO"].keys()
+    outputs = cf["Fluxes"][label]["GapFillUsingSOLO"].keys()
     # loop over the outputs listed in the control file
-    for output in output_list:
+    l5so = l5_info["solo"]["outputs"]
+    for output in outputs:
         # create the dictionary keys for this series
-        ds.solo[output] = {}
+        l5so[output] = {}
         # get the target
-        if "target" in cf[section][series]["GapFillUsingSOLO"][output]:
-            ds.solo[output]["label_tower"] = cf[section][series]["GapFillUsingSOLO"][output]["target"]
+        if "target" in cf["Fluxes"][label]["GapFillUsingSOLO"][output]:
+            l5so[output]["target"] = cf["Fluxes"][label]["GapFillUsingSOLO"][output]["target"]
         else:
-            ds.solo[output]["label_tower"] = series
-        # site name
-        ds.solo[output]["site_name"] = ds.globalattributes["site_name"]
+            l5so[output]["target"] = label
         # list of SOLO settings
-        if "solo_settings" in cf[section][series]["GapFillUsingSOLO"][output]:
-            src_string = cf[section][series]["GapFillUsingSOLO"][output]["solo_settings"]
-            if "," in src_string:
-                src_list = src_string.split(",")
-            else:
-                src_list = [src_string]
-            ds.solo[output]["solo_settings"] = {}
-            ds.solo[output]["solo_settings"]["nodes_target"] = int(src_list[0])
-            ds.solo[output]["solo_settings"]["training"] = int(src_list[1])
-            ds.solo[output]["solo_settings"]["factor"] = int(src_list[2])
-            ds.solo[output]["solo_settings"]["learningrate"] = float(src_list[3])
-            ds.solo[output]["solo_settings"]["iterations"] = int(src_list[4])
+        if "solo_settings" in cf["Fluxes"][label]["GapFillUsingSOLO"][output]:
+            src_string = cf["Fluxes"][label]["GapFillUsingSOLO"][output]["solo_settings"]
+            src_list = src_string.split(",")
+            l5so[output]["solo_settings"] = {}
+            l5so[output]["solo_settings"]["nodes_target"] = int(src_list[0])
+            l5so[output]["solo_settings"]["training"] = int(src_list[1])
+            l5so[output]["solo_settings"]["nda_factor"] = int(src_list[2])
+            l5so[output]["solo_settings"]["learning_rate"] = float(src_list[3])
+            l5so[output]["solo_settings"]["iterations"] = int(src_list[4])
         # list of drivers
-        drivers_string = cf[section][series]["GapFillUsingSOLO"][output]["drivers"]
-        ds.solo[output]["drivers"] = pfp_cfg.cfg_string_to_list(drivers_string)
-        # apply ustar filter
-        opt = pfp_utils.get_keyvaluefromcf(cf,[section,series,"GapFillUsingSOLO",output],
-                                         "turbulence_filter",default="")
-        ds.solo[output]["turbulence_filter"] = opt
-        opt = pfp_utils.get_keyvaluefromcf(cf,[section,series,"GapFillUsingSOLO",output],
-                                         "daynight_filter",default="")
-        ds.solo[output]["daynight_filter"] = opt
+        drivers_string = cf["Fluxes"][label]["GapFillUsingSOLO"][output]["drivers"]
+        l5so[output]["drivers"] = pfp_cfg.cfg_string_to_list(drivers_string)
         # results of best fit for plotting later on
-        ds.solo[output]["results"] = {"startdate":[],"enddate":[],"No. points":[],"r":[],
-                                      "Bias":[],"RMSE":[],"Frac Bias":[],"NMSE":[],
-                                      "Avg (obs)":[],"Avg (SOLO)":[],
-                                      "Var (obs)":[],"Var (SOLO)":[],"Var ratio":[],
-                                      "m_ols":[],"b_ols":[]}
+        l5so[output]["results"] = {"startdate":[],"enddate":[],"No. points":[],"r":[],
+                                   "Bias":[],"RMSE":[],"Frac Bias":[],"NMSE":[],
+                                   "Avg (obs)":[],"Avg (SOLO)":[],
+                                   "Var (obs)":[],"Var (SOLO)":[],"Var ratio":[],
+                                   "m_ols":[],"b_ols":[]}
         # create an empty series in ds if the SOLO output series doesn't exist yet
         if output not in ds.series.keys():
-            data,flag,attr = pfp_utils.MakeEmptySeries(ds,output)
-            pfp_utils.CreateSeries(ds,output,data,flag,attr)
+            nrecs = int(ds.globalattributes["nc_nrecs"])
+            variable = pfp_utils.CreateEmptyVariable(output, nrecs)
+            pfp_utils.CreateVariable(ds, variable)
 
 # functions for GapFillUsingMDS: not implemented yet
 def GapFillFluxUsingMDS(cf, ds, series=""):
@@ -568,82 +561,78 @@ def GapFillFluxUsingMDS(cf, ds, series=""):
         return
 
 # functions for GapFillFromClimatology
-def GapFillFromClimatology(ds):
+def GapFillFromClimatology(ds, l4_info):
     '''
     Gap fill missing data using data from the climatology spreadsheet produced by
     the climatology.py script.
     '''
-    if "climatology" not in dir(ds): return
+    if "climatology" not in l4_info.keys():
+        return
+    l4co = l4_info["climatology"]["outputs"]
     # tell the user what we are going to do
     msg = " Reading climatology file and creating climatology series"
     logger.info(msg)
     # loop over the series to be gap filled using climatology
     cli_xlbooks = {}
-    for output in ds.climatology.keys():
+    for output in l4co.keys():
         # check to see if there are any gaps in "series"
         #index = numpy.where(abs(ds.series[label]['Data']-float(c.missing_value))<c.eps)[0]
         #if len(index)==0: continue                      # no gaps found in "series"
-        cli_filename = ds.climatology[output]["file_name"]
+        cli_filename = l4co[output]["file_name"]
         if not os.path.exists(cli_filename):
             logger.error(" GapFillFromClimatology: Climatology file %s doesn't exist", cli_filename)
             continue
-        if cli_filename not in cli_xlbooks: cli_xlbooks[cli_filename] = xlrd.open_workbook(cli_filename)
+        if cli_filename not in cli_xlbooks:
+            cli_xlbooks[cli_filename] = xlrd.open_workbook(cli_filename)
         # local pointers to the series name and climatology method
-        label = ds.climatology[output]["label_tower"]
-        method = ds.climatology[output]["method"]
+        label = l4co[output]["target"]
+        method = l4co[output]["method"]
         # do the gap filling
+        cli_xlbook = cli_xlbooks[cli_filename]
         # choose the gap filling method
-        if method=="monthly":
-            gfClimatology_monthly(ds,label,output,cli_xlbooks)
-        elif method=="interpolated daily":
-            gfClimatology_interpolateddaily(ds,label,output,cli_xlbooks)
+        if method == "interpolated daily":
+            gfClimatology_interpolateddaily(ds, label, output, cli_xlbook)
         else:
             logger.error(" GapFillFromClimatology: unrecognised method option for %s", label)
             continue
-    if 'GapFillFromClimatology' not in ds.globalattributes['Functions']:
-        ds.globalattributes['Functions'] = ds.globalattributes['Functions']+', GapFillFromClimatology'
-    # remove the "climatology" attribute from ds
-    #del ds.climatology
 
-def gfClimatology_interpolateddaily(ds,series,output,xlbooks):
+def gfClimatology_interpolateddaily(ds, series, output, xlbook):
     """
     Gap fill using data interpolated over a 2D array where the days are
     the rows and the time of day is the columns.
     """
     # gap fill from interpolated 30 minute data
-    xlfilename = ds.climatology[output]["file_name"]
-    sheet_name = series+'i(day)'
-    if sheet_name not in xlbooks[xlfilename].sheet_names():
-        msg = " gfClimatology: sheet "+sheet_name+" not found, skipping ..."
+    sheet_name = series + 'i(day)'
+    if sheet_name not in xlbook.sheet_names():
+        msg = " gfClimatology: sheet " + sheet_name + " not found, skipping ..."
         logger.warning(msg)
         return
     ldt = ds.series["DateTime"]["Data"]
-    thissheet = xlbooks[xlfilename].sheet_by_name(sheet_name)
-    datemode = xlbooks[xlfilename].datemode
+    thissheet = xlbook.sheet_by_name(sheet_name)
+    datemode = xlbook.datemode
     basedate = datetime.datetime(1899, 12, 30)
     nts = thissheet.ncols - 1
     ndays = thissheet.nrows - 2
     # read the time stamp values from the climatology worksheet
-    tsteps = thissheet.row_values(1,start_colx=1,end_colx=nts+1)
+    tsteps = thissheet.row_values(1, start_colx=1, end_colx=nts+1)
     # read the data from the climatology workbook
-    val1d = numpy.ma.zeros(ndays*nts,dtype=numpy.float64)
+    val1d = numpy.ma.zeros(ndays*nts, dtype=numpy.float64)
     # initialise an array for the datetime of the climatological values
     cdt = [None]*nts*ndays
     # loop over the rows (days) of data
     for xlRow in range(ndays):
         # get the Excel datetime value
-        xldatenumber = int(thissheet.cell_value(xlRow+2,0))
+        xldatenumber = int(thissheet.cell_value(xlRow+2, 0))
         # convert this to a Python Datetime
-        xldatetime = basedate+datetime.timedelta(days=xldatenumber+1462*datemode)
+        xldatetime = basedate + datetime.timedelta(days=xldatenumber + 1462*datemode)
         # fill the climatology datetime array
         cdt[xlRow*nts:(xlRow+1)*nts] = [xldatetime+datetime.timedelta(hours=hh) for hh in tsteps]
         # fill the climatological value array
-        val1d[xlRow*nts:(xlRow+1)*nts] = thissheet.row_values(xlRow+2,start_colx=1,end_colx=nts+1)
+        val1d[xlRow*nts:(xlRow+1)*nts] = thissheet.row_values(xlRow+2, start_colx=1, end_colx=nts+1)
     # get the data to be filled with climatological values
-    data,flag,attr = pfp_utils.GetSeriesasMA(ds,series)
+    data, flag, attr = pfp_utils.GetSeriesasMA(ds, series)
     # get an index of missing values
-    idx = numpy.where(numpy.ma.getmaskarray(data)==True)[0]
-    #idx = numpy.ma.where(numpy.ma.getmaskarray(data)==True)[0]
+    idx = numpy.where(numpy.ma.getmaskarray(data) == True)[0]
     # there must be a better way to do this ...
     # simply using the index (idx) to set a slice of the data array to the gap filled values in val1d
     # does not seem to work (mask stays true on replaced values in data), the work around is to
@@ -661,7 +650,7 @@ def gfClimatology_interpolateddaily(ds,series,output,xlbooks):
             data[ii] = numpy.float64(c.missing_value)
             flag[ii] = numpy.int32(41)
     # put the gap filled data back into the data structure
-    pfp_utils.CreateSeries(ds,output,data,flag,attr)
+    pfp_utils.CreateSeries(ds, output, data, flag, attr)
 
 def gfClimatology_monthly(ds,series,output,xlbook):
     """ Gap fill using monthly climatology."""
@@ -680,7 +669,7 @@ def gfClimatology_monthly(ds,series,output,xlbook):
     ds.series[output]['Flag'][index] = numpy.int32(40)
 
 # functions for GapFillUsingInterpolation
-def GapFillUsingInterpolation(cf,ds):
+def GapFillUsingInterpolation(cf, ds):
     """
     Purpose:
      Gap fill variables in the data structure using interpolation.

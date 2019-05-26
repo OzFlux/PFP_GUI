@@ -596,4 +596,5 @@ if (__name__ == '__main__'):
     app = QtGui.QApplication(["PyFluxPro"])
     ui = pfp_main_ui()
     ui.show()
-    sys.exit(app.exec_())
+    app.exec_()
+    del ui
