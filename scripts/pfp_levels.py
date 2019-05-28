@@ -339,12 +339,13 @@ def l5qc(main_gui, cf, ds4):
     # do the gap filling using SOLO
     if "solo" in l5_info:
         pfp_gfSOLO.GapFillUsingSOLO(main_gui, ds5, l5_info["solo"])
-        if ds5.returncodes["solo"] == "quit":
+        if ds5.returncodes["solo"] == "quit" or ds5.returncodes["value"] != 0:
             return ds5
     # fill long gaps using SOLO
     if "solo_long" in l5_info:
-        pfp_gfSOLO.GapFillUsingSOLO(main_gui, ds5, l5_info["long"])
-        if ds5.returncodes["solo"] == "quit": return ds5
+        pfp_gfSOLO.GapFillUsingSOLO(main_gui, ds5, l5_info["solo_long"])
+        if ds5.returncodes["solo"] == "quit" or ds5.returncodes["value"] != 0:
+            return ds5
     # merge the gap filled drivers into a single series
     pfp_ts.MergeSeriesUsingDict(ds5, l5_info, merge_order="standard")
     # calculate Monin-Obukhov length

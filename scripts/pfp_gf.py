@@ -40,6 +40,12 @@ def CheckDrivers(info, ds):
     drivers_with_missing = {}
     # loop over the drivers and check for missing data
     for label in drivers:
+        if label not in ds.series.keys():
+            msg = "  Requested driver not found in data structure"
+            logger.error(msg)
+            ds.returncodes["message"] = msg
+            ds.returncodes["value"] = 1
+            return
         var = pfp_utils.GetVariable(ds, label)
         if numpy.ma.count_masked(var["Data"]) != 0:
             # save the number of missing data points and the datetimes when they occur
@@ -49,7 +55,7 @@ def CheckDrivers(info, ds):
                                            "end_date":[]}
     # check to see if any of the drivers have missing data
     if len(drivers_with_missing.keys()) == 0:
-        msg = "  No missing data found in " + gf_type + " drivers"
+        msg = "  No missing data found in drivers"
         logger.info(msg)
         return
     # deal with drivers that contain missing data points
@@ -71,16 +77,15 @@ def CheckDrivers(info, ds):
         s = ','.join(drivers_with_missing.keys())
         msg = "  Unable to resolve missing data in variables " + s
         logger.error(msg)
-        dsb.returncodes["message"] = msg
-        dsb.returncodes["value"] = 1
+        ds.returncodes["message"] = msg
+        ds.returncodes["value"] = 1
         return
     # check to see if the user wants us to truncate to an end date
-    opt = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "TruncateToImports", default="Yes")
-    if opt.lower() == "no":
+    if info["info"]["truncate_to_imports"].lower() == "no":
         msg = "  Truncation to imported variable end date disabled in control file"
         logger.error(msg)
-        dsb.returncodes["message"] = msg
-        dsb.returncodes["value"] = 1
+        ds.returncodes["message"] = msg
+        ds.returncodes["value"] = 1
         return
     msg = "  Truncating data to end date of imported variable"
     logger.info(msg)
@@ -88,17 +93,17 @@ def CheckDrivers(info, ds):
     end_date = numpy.min(dwmed)
     ei = pfp_utils.GetDateIndex(ldt["Data"], end_date, ts=ts)
     # loop over the variables in the data structure
-    for label in dsb.series.keys():
-        var = pfp_utils.GetVariable(dsb, label, start=0, end=ei)
-        pfp_utils.CreateVariable(dsb, var)
+    for label in ds.series.keys():
+        var = pfp_utils.GetVariable(ds, label, start=0, end=ei)
+        pfp_utils.CreateVariable(ds, var)
     # update the global attributes
-    ldt = pfp_utils.GetVariable(dsb, "DateTime")
-    dsb.globalattributes["nc_nrecs"] = len(ldt["Data"])
-    dsb.globalattributes["end_date"] = ldt["Data"][-1].strftime("%Y-%m-%d %H:%M:%S")
+    ldt = pfp_utils.GetVariable(ds, "DateTime")
+    ds.globalattributes["nc_nrecs"] = len(ldt["Data"])
+    ds.globalattributes["end_date"] = ldt["Data"][-1].strftime("%Y-%m-%d %H:%M:%S")
     # ... and check again to see if any drivers have missing data
     drivers_with_missing = {}
     for label in drivers:
-        var = pfp_utils.GetVariable(dsb, label)
+        var = pfp_utils.GetVariable(ds, label)
         if numpy.ma.count_masked(var["Data"]) != 0:
             # save the number of missing data points and the datetimes when they occur
             idx = numpy.where(numpy.ma.getmaskarray(var["Data"]))[0]
@@ -111,12 +116,12 @@ def CheckDrivers(info, ds):
         s = ','.join(drivers_with_missing.keys())
         msg = "  Unable to resolve missing data in variables " + s
         logger.error(msg)
-        dsb.returncodes["message"] = msg
-        dsb.returncodes["value"] = 1
+        ds.returncodes["message"] = msg
+        ds.returncodes["value"] = 1
         return
     else:
         # else we are all good, job done, so return
-        msg = "  No missing data found in " + gf_type + " drivers"
+        msg = "  No missing data found in drivers"
         logger.info(msg)
         return
 
@@ -134,10 +139,14 @@ def ParseL4ControlFile(cf, ds):
 
 def ParseL5ControlFile(cf, ds):
     l5_info = {}
-    l5_info["cf"] = copy.deepcopy(cf)
+    #l5_info["cf"] = copy.deepcopy(cf)
     for target in cf["Fluxes"].keys():
         if "GapFillUsingSOLO" in cf["Fluxes"][target].keys():
-            gfSOLO_createdict(cf, ds, l5_info, target)
+            called_by = "GapFillUsingSOLO"
+            gfSOLO_createdict(cf, ds, l5_info, target, called_by)
+        if "GapFillLongSOLO" in cf["Fluxes"][target].keys():
+            called_by = "GapFillLongSOLO"
+            gfSOLO_createdict(cf, ds, l5_info, target, called_by)
         if "GapFillUsingMDS" in cf["Fluxes"][target].keys():
             gfMDS_createdict(cf, ds, l5_info, target)
         if "MergeSeries" in cf["Fluxes"][target].keys():
@@ -493,7 +502,7 @@ def gfMergeSeries_createdict(cf, ds, info, label):
         data, flag, attr = pfp_utils.MakeEmptySeries(ds, label)
         pfp_utils.CreateSeries(ds, label, data, flag, attr)
 
-def gfSOLO_createdict(cf, ds, l5_info, label):
+def gfSOLO_createdict(cf, ds, l5_info, target, called_by):
     """
     Purpose:
      Creates a dictionary in l5_info to hold information about the SOLO data
@@ -503,55 +512,62 @@ def gfSOLO_createdict(cf, ds, l5_info, label):
     Author: PRI
     Date: August 2014
     """
+    nrecs = int(ds.globalattributes["nc_nrecs"])
+    solo_type = "solo"
+    if called_by == "GapFillLongSOLO":
+        solo_type = "solo_long"
     # create the solo settings directory
-    if "solo" not in l5_info:
-        l5_info["solo"] = {"outputs": {}, "info": {}, "gui": {}}
-    # get the outputs section
-    gfSOLO_createdict_outputs(cf, l5_info["solo"], label)
+    if solo_type not in l5_info:
+        l5_info[solo_type] = {"outputs": {}, "info": {}, "gui": {}}
     # get the info section
-    gfSOLO_createdict_info(cf, ds, l5_info["solo"])
+    gfSOLO_createdict_info(cf, ds, l5_info[solo_type], called_by)
+    # get the outputs section
+    gfSOLO_createdict_outputs(cf, l5_info[solo_type], target, called_by)
     # the gui section is done in pfp_gfSOLO.gfSOLO_run_gui
+    # add the summary plors section
+    if "SummaryPlots" in cf:
+        l5_info[solo_type]["SummaryPlots"] = cf["SummaryPlots"]
     # create an empty series in ds if the SOLO output series doesn't exist yet
-    outputs = cf["Fluxes"][label]["GapFillUsingSOLO"].keys()
+    outputs = cf["Fluxes"][target][called_by].keys()
     for output in outputs:
         if output not in ds.series.keys():
-            nrecs = int(ds.globalattributes["nc_nrecs"])
             variable = pfp_utils.CreateEmptyVariable(output, nrecs)
             pfp_utils.CreateVariable(ds, variable)
     return
 
-def gfSOLO_createdict_info(cf, ds, solo):
+def gfSOLO_createdict_info(cf, ds, solo, called_by):
     # local pointer to the datetime series
     ldt = ds.series["DateTime"]["Data"]
-    # check to see if this is a batch or an interactive run
-    call_mode = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "call_mode", default="interactive")
-    # get the plot path
-    plot_path = pfp_utils.get_keyvaluefromcf(cf, ["Files"], "plot_path", default="./plots/")
     # add an info section to the info["solo"] dictionary
     solo["info"] = {"file_startdate": ldt[0].strftime("%Y-%m-%d %H:%M"),
                     "file_enddate": ldt[-1].strftime("%Y-%m-%d %H:%M"),
                     "startdate": ldt[0].strftime("%Y-%m-%d %H:%M"),
                     "enddate": ldt[-1].strftime("%Y-%m-%d %H:%M"),
-                    "called_by": "GapFillUsingSOLO",
-                    "plot_path": plot_path,
-                    "call_mode": call_mode}
+                    "called_by": called_by}
+    # check to see if this is a batch or an interactive run
+    call_mode = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "call_mode", default="interactive")
+    solo["info"]["call_mode"] = call_mode
+    # truncate to last date in Imports?
+    truncate = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "TruncateToImports", default="Yes")
+    solo["info"]["truncate_to_imports"] = truncate
+    # get the plot path
+    plot_path = pfp_utils.get_keyvaluefromcf(cf, ["Files"], "plot_path", default="./plots/")
+    solo["info"]["plot_path"] = plot_path
     return
 
-def gfSOLO_createdict_outputs(cf, solo, label):
+def gfSOLO_createdict_outputs(cf, solo, target, called_by):
     so = solo["outputs"]
-    # name of SOLO output series in ds
-    outputs = cf["Fluxes"][label]["GapFillUsingSOLO"].keys()
     # loop over the outputs listed in the control file
+    outputs = cf["Fluxes"][target][called_by].keys()
     for output in outputs:
         # create the dictionary keys for this series
         so[output] = {}
         # get the target
-        target = pfp_utils.get_keyvaluefromcf(cf, ["Fluxes", label, "GapFillUsingSOLO", output],
-                                              "target", default=label)
-        so[output]["target"] = target
+        sl = ["Fluxes", target, called_by, output]
+        so[output]["target"] = pfp_utils.get_keyvaluefromcf(cf, sl, "target", default=target)
         # list of SOLO settings
-        if "solo_settings" in cf["Fluxes"][label]["GapFillUsingSOLO"][output]:
-            src_string = cf["Fluxes"][label]["GapFillUsingSOLO"][output]["solo_settings"]
+        if "solo_settings" in cf["Fluxes"][target][called_by][output]:
+            src_string = cf["Fluxes"][target][called_by][output]["solo_settings"]
             src_list = src_string.split(",")
             so[output]["solo_settings"] = {}
             so[output]["solo_settings"]["nodes_target"] = int(src_list[0])
@@ -560,8 +576,7 @@ def gfSOLO_createdict_outputs(cf, solo, label):
             so[output]["solo_settings"]["learning_rate"] = float(src_list[3])
             so[output]["solo_settings"]["iterations"] = int(src_list[4])
         # list of drivers
-        drivers = pfp_utils.get_keyvaluefromcf(cf, ["Fluxes", label, "GapFillUsingSOLO", output],
-                                               "drivers", default="Fn,Fg,SHD,q,Ta,Ts")
+        drivers = pfp_utils.get_keyvaluefromcf(cf, sl, "drivers", default="Fn,Fg,SHD,q,Ta,Ts")
         so[output]["drivers"] = pfp_cfg.cfg_string_to_list(drivers)
         # fit statistics for plotting later on
         so[output]["results"] = {"startdate":[],"enddate":[],"No. points":[],"r":[],

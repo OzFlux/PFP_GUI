@@ -3616,7 +3616,7 @@ class edit_cfg_L5(QtGui.QWidget):
                     child1 = QtGui.QStandardItem(val)
                     self.sections[key1].appendRow([child0, child1])
                 self.model.appendRow(self.sections[key1])
-            elif  key1 in ["Imports","SummaryPlots"]:
+            elif  key1 in ["Imports", "SummaryPlots"]:
                 self.sections[key1] = QtGui.QStandardItem(key1)
                 for key2 in self.cfg[key1]:
                     parent2 = QtGui.QStandardItem(key2)
@@ -3637,7 +3637,7 @@ class edit_cfg_L5(QtGui.QWidget):
                     # key3 is the gap filling method
                     for key3 in self.cfg[key1][key2]:
                         parent3 = QtGui.QStandardItem(key3)
-                        if key3 in ["GapFillUsingSOLO", "GapFillUsingMDS"]:
+                        if key3 in ["GapFillUsingSOLO", "GapFillLongSOLO", "GapFillUsingMDS"]:
                             # key4 is the gap fill variable name
                             for key4 in self.cfg[key1][key2][key3]:
                                 parent4 = QtGui.QStandardItem(key4)
@@ -3701,7 +3701,7 @@ class edit_cfg_L5(QtGui.QWidget):
                         subsubsection = subsection.child(k)
                         key3 = str(subsubsection.text())
                         cfg[key1][key2][key3] = {}
-                        if key3 in ["GapFillUsingSOLO", "GapFillUsingMDS"]:
+                        if key3 in ["GapFillUsingSOLO", "GapFillLongSOLO", "GapFillUsingMDS"]:
                             for l in range(subsubsection.rowCount()):
                                 subsubsubsection = subsubsection.child(l)
                                 key4 = str(subsubsubsection.text())
@@ -3932,6 +3932,12 @@ class edit_cfg_L5(QtGui.QWidget):
                     self.context_menu.addAction(self.context_menu.actionAddSOLO)
                     self.context_menu.actionAddSOLO.triggered.connect(self.add_solo)
                     add_separator = True
+                if "GapFillLongSOLO" not in existing_entries:
+                    self.context_menu.actionAddLongSOLO = QtGui.QAction(self)
+                    self.context_menu.actionAddLongSOLO.setText("Add SOLO (long gaps)")
+                    self.context_menu.addAction(self.context_menu.actionAddLongSOLO)
+                    self.context_menu.actionAddLongSOLO.triggered.connect(self.add_solo_long)
+                    add_separator = True
                 if "GapFillUsingMDS" not in existing_entries:
                     self.context_menu.actionAddMDS = QtGui.QAction(self)
                     self.context_menu.actionAddMDS.setText("Add MDS")
@@ -4066,6 +4072,14 @@ class edit_cfg_L5(QtGui.QWidget):
         idx = self.view.selectedIndexes()[0]
         var_name = str(idx.data()) + "_SOLO"
         dict_to_add = {"GapFillUsingSOLO":{var_name: {"drivers": "Fn,Fg,q,VPD,Ta,Ts"}}}
+        # add the subsubsection (GapFillUsingSOLO)
+        self.add_subsubsubsection(dict_to_add)
+
+    def add_solo_long(self):
+        """ Add GapFillLongSOLO to a variable."""
+        idx = self.view.selectedIndexes()[0]
+        var_name = str(idx.data()) + "_LONG"
+        dict_to_add = {"GapFillLongSOLO":{var_name: {"drivers": "Fn,Fg,q,VPD,Ta,Ts,EVI"}}}
         # add the subsubsection (GapFillUsingSOLO)
         self.add_subsubsubsection(dict_to_add)
 
@@ -5604,19 +5618,19 @@ class solo_gui(QtGui.QDialog):
         self.QuitButton.clicked.connect(self.call_gui_quit)
 
     def call_gui_run(self):
-        if self.info["solo"]["info"]["called_by"] == "GapFillUsingSOLO":
+        if self.solo["info"]["called_by"] in ["GapFillUsingSOLO", "GapFillLongSOLO"]:
             pfp_gfSOLO.gfSOLO_run_gui(self)
-        elif self.info["solo"]["info"]["called_by"] == "ERUsingSOLO":
+        elif self.solo["info"]["called_by"] == "ERUsingSOLO":
             pfp_rpNN.rpSOLO_run_gui(self)
 
     def call_gui_quit(self):
-        if self.info["solo"]["info"]["called_by"] == "GapFillUsingSOLO":
+        if self.solo["info"]["called_by"] in ["GapFillUsingSOLO", "GapFillLongSOLO"]:
             pfp_gfSOLO.gfSOLO_quit(self)
-        elif self.info["solo"]["info"]["called_by"] == "ERUsingSOLO":
+        elif self.solo["info"]["called_by"] == "ERUsingSOLO":
             pfp_rpNN.rpSOLO_quit(self)
 
     def call_gui_done(self):
-        if self.info["solo"]["info"]["called_by"] == "GapFillUsingSOLO":
+        if self.solo["info"]["called_by"] in ["GapFillUsingSOLO", "GapFillLongSOLO"]:
             pfp_gfSOLO.gfSOLO_done(self)
-        elif self.info["solo"]["info"]["called_by"] == "ERUsingSOLO":
+        elif self.solo["info"]["called_by"] == "ERUsingSOLO":
             pfp_rpNN.rpSOLO_done(self)
