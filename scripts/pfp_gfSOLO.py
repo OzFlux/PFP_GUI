@@ -62,8 +62,15 @@ def  gfSOLO_gui(main_gui, ds, solo):
     end_date = ds.series["DateTime"]["Data"][-1].strftime("%Y-%m-%d %H:%M")
     main_gui.solo_gui.label_DataStartDate_value.setText(start_date)
     main_gui.solo_gui.label_DataEndDate_value.setText(end_date)
-    # set the default period to manual
-    main_gui.solo_gui.radioButton_NumberMonths.setChecked(True)
+    # set the default period and auto-complete state
+    # NOTE: auto-complete should be set if not long gaps detected
+    if solo["info"]["called_by"] == "GapFillLongSOLO":
+        main_gui.solo_gui.radioButton_Manual.setChecked(True)
+        main_gui.solo_gui.checkBox_AutoComplete.setChecked(True)
+    else:
+        main_gui.solo_gui.radioButton_NumberMonths.setChecked(True)
+        main_gui.solo_gui.lineEdit_NumberMonths.setText("2")
+        main_gui.solo_gui.checkBox_AutoComplete.setChecked(False)
     # set the default number of nodes
     main_gui.solo_gui.lineEdit_Nodes.setText("Auto")
     # set the default minimum percentage of good data
@@ -457,30 +464,19 @@ def gfSOLO_plotcoveragelines(ds, solo):
 
 def gfSOLO_plotsummary(ds, solo):
     """ Plot single pages of summary results for groups of variables. """
-    if "SummaryPlots" not in solo:
-        msg = " Summary plots section not in control file, no plots done ..."
-        logger.info(msg)
-        return
-    # get a list of variables for which SOLO data was available
-    label_list = solo["outputs"].keys()
-    if len(solo["outputs"][label_list[0]]["results"]["startdate"]) == 0:
-        logger.info("gfSOLO: no summary data to plot")
-        return
-    # get the Excel datemode, needed to convert the Excel datetime to Python datetimes
-    datemode = int(ds.globalattributes['xl_datemode'])
+    # find out who's calling
+    called_by = solo["info"]["called_by"]
+    # get a list of variables for which SOLO data is available
+    outputs = solo["outputs"].keys()
     # site name for titles
     site_name = ds.globalattributes["site_name"]
-    # datetimes are stored as Excel datetimes, here we convert to Python datetimes
-    # for ease of handling and plotting.
-    # start datetimes of the periods compared first
-    basedate = datetime.datetime(1899, 12, 30)
+    # get the start and end dates of the SOLO windows
     dt_start = []
-    for ldt in solo["outputs"][label_list[0]]["results"]["startdate"]:
+    for ldt in solo["outputs"][outputs[0]]["results"]["startdate"]:
         dt_start.append(ldt)
     startdate = min(dt_start)
-    # and then the end datetimes
     dt_end = []
-    for ldt in solo["outputs"][label_list[0]]["results"]["enddate"]:
+    for ldt in solo["outputs"][outputs[0]]["results"]["enddate"]:
         dt_end.append(ldt)
     enddate = max(dt_end)
     # get the major tick locator and label format
@@ -494,56 +490,51 @@ def gfSOLO_plotsummary(ds, solo):
         plt.ion()
     else:
         plt.ioff()
-    # now loop over the group lists
-    for title in solo["SummaryPlots"].keys():
-        plot_title = title
-        var_str = solo["SummaryPlots"][title]["Variables"]
-        var_str = var_str.replace(" ", "")
-        var_list = var_str.split(",")
-        # set up the subplots on the page
-        fig,axs = plt.subplots(len(result_list), len(var_list), figsize=(13, 8))
-        fig.canvas.set_window_title(plot_title + ": summary statistics")
-        # make a title string for the plot and render it
-        title_str = plot_title+": " + site_name + " " + datetime.datetime.strftime(startdate, "%Y-%m-%d")
-        title_str = title_str + " to " + datetime.datetime.strftime(enddate, "%Y-%m-%d")
-        fig.suptitle(title_str, fontsize=14, fontweight='bold')
-        # now loop over the variables in the group list
-        for col, label in enumerate(var_list):
-            # and loop over rows in plot
-            for row, rlabel, ylabel in zip(range(len(result_list)), result_list, ylabel_list):
-                # get the results to be plotted
-                #result = numpy.ma.masked_equal(ds.solo[label]["results"][rlabel],float(c.missing_value))
-                # put the data into the right order to be plotted
-                dt, data = gfSOLO_plotsummary_getdata(dt_start, dt_end, solo["outputs"][label]["results"][rlabel])
-                dt = numpy.ma.masked_equal(dt, float(c.missing_value))
-                data = numpy.ma.masked_equal(data, float(c.missing_value))
-                # plot the results
-                axs[row, col].plot(dt, data)
-                # put in the major ticks
-                axs[row, col].xaxis.set_major_locator(MTLoc)
-                # if this is the left-most column, add the Y axis labels
-                if col == 0: axs[row, col].set_ylabel(ylabel, visible=True)
-                # if this is not the last row, hide the tick mark labels
-                if row < len(result_list)-1: plt.setp(axs[row, col].get_xticklabels(), visible=False)
-                # if this is the first row, add the column title
-                if row == 0: axs[row, col].set_title(label)
-                # if this is the last row, add the major tick mark and axis labels
-                if row == len(result_list)-1:
-                    axs[row, col].xaxis.set_major_formatter(MTFmt)
-                    axs[row, col].set_xlabel('Month', visible=True)
-        # make the hard-copy file name and save the plot as a PNG file
-        sdt = startdate.strftime("%Y%m%d")
-        edt = enddate.strftime("%Y%m%d")
-        plot_path = os.path.join(solo["info"]["plot_path"], "L5", "")
-        if not os.path.exists(plot_path): os.makedirs(plot_path)
-        figname = plot_path + site_name.replace(" ", "") + "_SOLO_FitStatistics_"
-        figname = figname + "_" + sdt + "_" + edt + ".png"
-        fig.savefig(figname, format="png")
-        if solo["gui"]["show_plots"]:
-            plt.draw()
-            plt.ioff()
-        else:
-            plt.ion()
+    # plot the summary statistics
+    # set up the subplots on the page
+    fig,axs = plt.subplots(len(result_list), len(outputs), figsize=(13, 8))
+    fig.canvas.set_window_title(plot_title + ": summary statistics")
+    # make a title string for the plot and render it
+    title_str = called_by + ": " + site_name + " " + datetime.datetime.strftime(startdate, "%Y-%m-%d")
+    title_str = title_str + " to " + datetime.datetime.strftime(enddate, "%Y-%m-%d")
+    fig.suptitle(title_str, fontsize=14, fontweight='bold')
+    # now loop over the variables in the group list
+    for col, label in enumerate(outputs):
+        # and loop over rows in plot
+        for row, rlabel, ylabel in zip(range(len(result_list)), result_list, ylabel_list):
+            # get the results to be plotted
+            #result = numpy.ma.masked_equal(ds.solo[label]["results"][rlabel],float(c.missing_value))
+            # put the data into the right order to be plotted
+            dt, data = gfSOLO_plotsummary_getdata(dt_start, dt_end, solo["outputs"][label]["results"][rlabel])
+            dt = numpy.ma.masked_equal(dt, float(c.missing_value))
+            data = numpy.ma.masked_equal(data, float(c.missing_value))
+            # plot the results
+            axs[row, col].plot(dt, data)
+            # put in the major ticks
+            axs[row, col].xaxis.set_major_locator(MTLoc)
+            # if this is the left-most column, add the Y axis labels
+            if col == 0: axs[row, col].set_ylabel(ylabel, visible=True)
+            # if this is not the last row, hide the tick mark labels
+            if row < len(result_list)-1: plt.setp(axs[row, col].get_xticklabels(), visible=False)
+            # if this is the first row, add the column title
+            if row == 0: axs[row, col].set_title(label)
+            # if this is the last row, add the major tick mark and axis labels
+            if row == len(result_list)-1:
+                axs[row, col].xaxis.set_major_formatter(MTFmt)
+                axs[row, col].set_xlabel('Month', visible=True)
+    # make the hard-copy file name and save the plot as a PNG file
+    sdt = startdate.strftime("%Y%m%d")
+    edt = enddate.strftime("%Y%m%d")
+    plot_path = os.path.join(solo["info"]["plot_path"], "L5", "")
+    if not os.path.exists(plot_path): os.makedirs(plot_path)
+    figname = plot_path + site_name.replace(" ", "") + "_"+called_by+"_FitStatistics_"
+    figname = figname + "_" + sdt + "_" + edt + ".png"
+    fig.savefig(figname, format="png")
+    if solo["gui"]["show_plots"]:
+        plt.draw()
+        plt.ioff()
+    else:
+        plt.ion()
 
 def gfSOLO_plotsummary_getdata(dt_start, dt_end, result):
     dt = []

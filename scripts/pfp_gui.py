@@ -4019,11 +4019,11 @@ class edit_cfg_L5(QtGui.QWidget):
                 self.context_menu.actionRemoveQCCheck.setText("Remove QC check")
                 self.context_menu.addAction(self.context_menu.actionRemoveQCCheck)
                 self.context_menu.actionRemoveQCCheck.triggered.connect(self.remove_item)
-            elif subsubsection_name in ["GapFillUsingSOLO", "GapFillUsingMDS", "GapFillFromClimatology"]:
+            elif subsubsection_name in ["GapFillUsingSOLO", "GapFillLongSOLO", "GapFillUsingMDS", "GapFillFromClimatology"]:
                 self.context_menu.actionRemoveGFMethod = QtGui.QAction(self)
                 self.context_menu.actionRemoveGFMethod.setText("Remove method")
                 self.context_menu.addAction(self.context_menu.actionRemoveGFMethod)
-                self.context_menu.actionRemoveGFMethod.triggered.connect(self.remove_item)
+                self.context_menu.actionRemoveGFMethod.triggered.connect(self.remove_GFMethod)
             if str(grand_parent.text() == "Imports"):
                 key = str(parent.child(selected_item.row(),0).text())
                 if (key == "file_name") and (selected_item.column() == 1):
@@ -4074,6 +4074,13 @@ class edit_cfg_L5(QtGui.QWidget):
         dict_to_add = {"GapFillUsingSOLO":{var_name: {"drivers": "Fn,Fg,q,VPD,Ta,Ts"}}}
         # add the subsubsection (GapFillUsingSOLO)
         self.add_subsubsubsection(dict_to_add)
+        # update the Merge section
+        selected_item =idx.model().itemFromIndex(idx)
+        for i in range(selected_item.rowCount()):
+            if str(selected_item.child(i, 0).text()) == "MergeSeries":
+                sources = str(selected_item.child(i).child(0, 1).text())
+                sources = sources + "," + var_name
+                selected_item.child(i).child(0,1).setText(sources)
 
     def add_solo_long(self):
         """ Add GapFillLongSOLO to a variable."""
@@ -4082,6 +4089,13 @@ class edit_cfg_L5(QtGui.QWidget):
         dict_to_add = {"GapFillLongSOLO":{var_name: {"drivers": "Fn,Fg,q,VPD,Ta,Ts,EVI"}}}
         # add the subsubsection (GapFillUsingSOLO)
         self.add_subsubsubsection(dict_to_add)
+        # update the Merge section
+        selected_item =idx.model().itemFromIndex(idx)
+        for i in range(selected_item.rowCount()):
+            if str(selected_item.child(i, 0).text()) == "MergeSeries":
+                sources = str(selected_item.child(i).child(0, 1).text())
+                sources = sources + "," + var_name
+                selected_item.child(i).child(0,1).setText(sources)
 
     def add_solo_settings(self):
         """ Add solo_settings to a variable."""
@@ -4096,6 +4110,13 @@ class edit_cfg_L5(QtGui.QWidget):
         dict_to_add = {"GapFillFromClimatology": {var_name: {"method":"interpolated daily"}}}
         # add the subsubsection (GapFillFromClimatology)
         self.add_subsubsubsection(dict_to_add)
+        # update the Merge section
+        selected_item =idx.model().itemFromIndex(idx)
+        for i in range(selected_item.rowCount()):
+            if str(selected_item.child(i, 0).text()) == "MergeSeries":
+                sources = str(selected_item.child(i).child(0, 1).text())
+                sources = sources + "," + var_name
+                selected_item.child(i).child(0,1).setText(sources)
 
     def add_dependencycheck(self):
         """ Add a dependency check to a variable."""
@@ -4309,6 +4330,13 @@ class edit_cfg_L5(QtGui.QWidget):
                                                      "tolerances":"(20, 50),2.5,0.5"}}}
         # add the subsubsection (GapFillUsingMDS)
         self.add_subsubsubsection(dict_to_add)
+        # update the Merge section
+        selected_item =idx.model().itemFromIndex(idx)
+        for i in range(selected_item.rowCount()):
+            if str(selected_item.child(i, 0).text()) == "MergeSeries":
+                sources = str(selected_item.child(i).child(0, 1).text())
+                sources = sources + "," + var_name
+                selected_item.child(i).child(0,1).setText(sources)
 
     def add_rangecheck(self):
         """ Add a range check to a variable."""
@@ -4599,6 +4627,34 @@ class edit_cfg_L5(QtGui.QWidget):
         # renumber the subsections
         for i in range(parent.rowCount()):
             parent.child(i, 0).setText(str(i))
+
+    def remove_GFMethod(self):
+        """ Remove a gap filling method from a variable."""
+        # get the currently selected item
+        idx = self.view.selectedIndexes()[0]
+        selected_item = idx.model().itemFromIndex(idx)
+        # get the parent
+        parent = selected_item.parent()
+        # get the variable name
+        var_name = str(selected_item.child(0).text())
+        # find the MergeSeries entry
+        for i in range(parent.rowCount()):
+            if str(parent.child(i, 0).text()) == "MergeSeries":
+                # get the "Sources" value
+                sources = str(parent.child(i).child(0, 1).text())
+                # remove the variable name from the Sources value
+                if var_name in sources:
+                    sources = sources.replace(var_name, "")
+                    # remove double commas
+                    sources = sources.replace(",,",",")
+                    # remove leading or trailing commas
+                    if sources[0] == ",":
+                        sources = sources[1:]
+                    if sources[-1] == ",":
+                        sources = sources[:-1]
+                    # update the MergeSeries Sources value
+                    parent.child(i).child(0, 1).setText(sources)
+        self.remove_item()
 
     def remove_item(self):
         """ Remove an item from the view."""
@@ -5570,10 +5626,8 @@ class solo_gui(QtGui.QDialog):
         self.radioButton_NumberMonths = QtGui.QRadioButton(self)
         self.radioButton_NumberMonths.setGeometry(QtCore.QRect(20, row8_y, radiobutton_width, radiobutton_height))
         self.radioButton_NumberMonths.setText("Months")
-        self.radioButton_NumberMonths.setChecked(True)
         self.lineEdit_NumberMonths = QtGui.QLineEdit(self)
         self.lineEdit_NumberMonths.setGeometry(QtCore.QRect(90, row8_y, lineedit_short_width, lineedit_height))
-        self.lineEdit_NumberMonths.setText("2")
         self.radioButton_NumberDays = QtGui.QRadioButton(self)
         self.radioButton_NumberDays.setGeometry(QtCore.QRect(150, row8_y, radiobutton_width, radiobutton_height))
         self.radioButton_NumberDays.setText("Days")
@@ -5582,7 +5636,6 @@ class solo_gui(QtGui.QDialog):
         self.lineEdit_NumberDays.setText("60")
         self.checkBox_AutoComplete = QtGui.QCheckBox(self)
         self.checkBox_AutoComplete.setGeometry(QtCore.QRect(270, row8_y, radiobutton_width+10, radiobutton_height))
-        self.checkBox_AutoComplete.setChecked(True)
         self.checkBox_AutoComplete.setText("Auto complete")
         # define the radio button group
         self.radioButtons = QtGui.QButtonGroup(self)
