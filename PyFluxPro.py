@@ -247,6 +247,8 @@ class pfp_main_ui(QtGui.QWidget, QPlainTextEditLogger):
         self.l4_ui = pfp_gui.pfp_l4_ui(self)
         # add the L5 GUI
         self.solo_gui = pfp_gui.solo_gui(self)
+        ## add the split file GUI
+        #self.split_gui = pfp_gui.split_gui(self)
 
     def open_controlfile(self):
         # get the control file path
@@ -565,7 +567,7 @@ class pfp_main_ui(QtGui.QWidget, QPlainTextEditLogger):
     def closeTab (self, currentIndex):
         """ Close the selected tab."""
         # check to see if the tab contents have been saved
-        tab_text = str(self.tabs.tabText(self.tabs.tab_index_current))
+        tab_text = str(self.tabs.tabText(currentIndex))
         if "*" in tab_text:
             msg = "Save control file?"
             reply = QtGui.QMessageBox.question(self, 'Message', msg,
@@ -579,8 +581,16 @@ class pfp_main_ui(QtGui.QWidget, QPlainTextEditLogger):
         self.tabs.removeTab(currentIndex)
         # remove the corresponding entry in cfg_dict
         self.tabs.cfg_dict.pop(currentIndex)
+        # and renumber the keys
+        for n in self.tabs.cfg_dict.keys():
+            if n > currentIndex:
+                self.tabs.cfg_dict[n-1] = self.tabs.cfg_dict.pop(n)
         # remove the corresponding entry in tab_dict
         self.tabs.tab_dict.pop(currentIndex)
+        # and renumber the keys
+        for n in self.tabs.tab_dict.keys():
+            if n > currentIndex:
+                self.tabs.tab_dict[n-1] = self.tabs.tab_dict.pop(n)
         # decrement the tab index
         self.tabs.tab_index_all = self.tabs.tab_index_all - 1
         return

@@ -1527,88 +1527,18 @@ def nc_concatenate(cf):
     ndims = int(pfp_utils.get_keyvaluefromcf(cf,["Options"],"NumberOfDimensions", default=3))
     nc_write_series(ncFile,ds,ndims=ndims)
 
-def nc_split():
-    split_info = {}
-    split_gui = Tkinter.Toplevel()
-    split_gui.wm_title("Split netCDF file")
-    split_gui.grid()
-    # first row contains the input file name selection
-    nrow = 0
-    split_gui.infilenameLabel = Tkinter.Label(split_gui,text="Input file")
-    split_gui.infilenameLabel.grid(row=nrow,column=0,columnspan=1)
-    split_gui.infilename = Tkinter.StringVar()
-    split_gui.infilename.set("")
-    split_gui.infilenameEntry = Tkinter.Entry(split_gui,textvariable=split_gui.infilename,width=30)
-    split_gui.infilenameEntry.grid(row=nrow,column=1)
-    split_gui.infilenameBrowse = Tkinter.Button(split_gui,text="Browse",command=lambda:ncsplit_infilename_browse(split_gui))
-    split_gui.infilenameBrowse.grid(row=nrow,column=2)
-    # second row has the start date entry
-    nrow = nrow + 1
-    split_gui.startLabel = Tkinter.Label(split_gui, text="Start date (YYYY-MM-DD)")
-    split_gui.startLabel.grid(row=nrow,column=0,columnspan=1)
-    split_gui.startEntry = Tkinter.Entry(split_gui)
-    split_gui.startEntry.grid(row=nrow,column=1,columnspan=1)
-    # third row has the end date entry
-    nrow = nrow + 1
-    split_gui.endLabel = Tkinter.Label(split_gui, text="End date   (YYYY-MM-DD)")
-    split_gui.endLabel.grid(row=nrow,column=0,columnspan=1)
-    split_gui.endEntry = Tkinter.Entry(split_gui)
-    split_gui.endEntry.grid(row=nrow,column=1,columnspan=1)
-    # fourth row contains the output file name selection
-    nrow = nrow + 1
-    split_gui.outfilenameLabel = Tkinter.Label(split_gui,text="Output file")
-    split_gui.outfilenameLabel.grid(row=nrow,column=0,columnspan=1)
-    split_gui.outfilename = Tkinter.StringVar()
-    split_gui.outfilename.set("")
-    split_gui.outfilenameEntry = Tkinter.Entry(split_gui,textvariable=split_gui.outfilename,width=30)
-    split_gui.outfilenameEntry.grid(row=nrow,column=1)
-    split_gui.outfilenameBrowse = Tkinter.Button(split_gui,text="Browse",command=lambda:ncsplit_outfilename_browse(split_gui))
-    split_gui.outfilenameBrowse.grid(row=nrow,column=2)
-    # action buttons on the bottom row
-    nrow = nrow + 1
-    split_gui.doneButton = Tkinter.Button(split_gui,text="Done",command=lambda:ncsplit_done(split_gui))
-    split_gui.doneButton.grid(row=nrow,column=0,columnspan=1)
-    split_gui.runButton = Tkinter.Button(split_gui,text="Run",command=lambda:ncsplit_run(split_gui))
-    split_gui.runButton.grid(row=nrow,column=1,columnspan=1)
-    # progress message area
-    nrow = nrow + 1
-    split_gui.progress_row = nrow
-    split_gui.progress = Tkinter.Label(split_gui, text='Waiting for input ...')
-    split_gui.progress.grid(row=nrow,column=0,columnspan=6,sticky="W")
-    # event loop for GUI
-    split_gui.wait_window(split_gui)
-
-def ncsplit_infilename_browse(split_gui):
-    root = Tkinter.Tk(); root.withdraw()
-    filename = tkFileDialog.askopenfilename(parent=root,title="Choose an input netCDF file",
-                                            initialdir="../Sites")
-    root.destroy()
-    split_gui.inpathname = ntpath.split(filename)[0]+"/"
-    split_gui.infilename.set(ntpath.split(filename)[1])
-
-def ncsplit_outfilename_browse(split_gui):
-    root = Tkinter.Tk(); root.withdraw()
-    filename = tkFileDialog.asksaveasfilename(parent=root,initialdir=split_gui.inpathname,
-                                          title="Choose an output netCDF file")
-    root.destroy()
-    split_gui.outpathname = ntpath.split(filename)[0]+"/"
-    split_gui.outfilename.set(ntpath.split(filename)[1])
-
-def ncsplit_done(split_gui):
-    split_gui.destroy()
-
 def ncsplit_run(split_gui):
-    msg = " Splitting "+split_gui.infilename.get()
-    ncsplit_progress(split_gui,msg)
-    infilename = split_gui.inpathname+split_gui.infilename.get()
-    outfilename = split_gui.inpathname+split_gui.outfilename.get()
-    msg = " Splitting "+infilename
+    infilename = split_gui.info["input_file_path"]
+    outfilename = split_gui.info["output_file_path"]
+    startdate = split_gui.info["startdate"]
+    enddate = split_gui.info["enddate"]
+    msg = " Splitting " + os.path.basename(infilename) + " between "
+    msg = msg + startdate + " and " + enddate
     logger.info(msg)
-    msg = " Output to "+outfilename
+    msg = " Output to " + os.path.basename(outfilename)
     logger.info(msg)
-    startdate = str(split_gui.startEntry.get())
-    enddate = str(split_gui.endEntry.get())
     # read the input file into the input data structure
+    #ds_in = split_gui.ds
     ds_in = nc_read_series(infilename)
     ts = int(ds_in.globalattributes["time_step"])
     ldt_in = ds_in.series["DateTime"]["Data"]
@@ -1645,16 +1575,8 @@ def ncsplit_run(split_gui):
     # write the output data structure to a netCDF file
     ncFile = nc_open_write(outfilename)
     nc_write_series(ncFile, ds_out)
-    msg = " Finished splitting "+split_gui.infilename.get()
-    ncsplit_progress(split_gui,msg)
+    msg = " Finished splitting " + os.path.basename(infilename)
     logger.info(msg)
-
-def ncsplit_progress(split_gui,text):
-    """ Update progress message in nc split GUI."""
-    split_gui.progress.destroy()
-    split_gui.progress = Tkinter.Label(split_gui, text=text)
-    split_gui.progress.grid(row=9,column=0,columnspan=6,sticky="W")
-    split_gui.update()
 
 def nc_read_series(ncFullName,checktimestep=True,fixtimestepmethod="round"):
     """
@@ -2408,6 +2330,7 @@ def xl_check_cf_section(cf, label):
     return result
 
 def xl_write_AlternateStats(ds, l4_info):
+    print "in xl_write_AlternateStats"
     l4a = l4_info["alternate"]
     if "alternate" not in l4_info: return
     # get the output file name
@@ -2417,6 +2340,7 @@ def xl_write_AlternateStats(ds, l4_info):
     file_name = os.path.split(xl_filename)
     logger.info(' Writing alternate fit statistics to ' + file_name[1])
     # open the Excel file
+    print "opening workbook"
     xlfile = xlwt.Workbook()
     # list of outputs to write to the Excel file
     date_list = ["startdate", "enddate"]
@@ -2424,14 +2348,17 @@ def xl_write_AlternateStats(ds, l4_info):
     d_xf = xlwt.easyxf(num_format_str='dd/mm/yyyy hh:mm')
     label_list = sorted(l4a["outputs"].keys())
     for label in label_list:
+        print label
         # get the list of values to output with the start and end dates removed
         output_list = l4a["outputs"][label]["results"].keys()
         for item in date_list:
             if item in output_list: output_list.remove(item)
         # add a sheet with the series label
+        print "adding worksheet"
         xlResultsSheet = xlfile.add_sheet(label)
         xlRow = 9
         xlCol = 0
+        print "writing datetime to worksheet"
         for dt in date_list:
             xlResultsSheet.write(xlRow, xlCol, dt)
             for item in l4a["outputs"][label]["results"][dt]:
@@ -2439,17 +2366,24 @@ def xl_write_AlternateStats(ds, l4_info):
                 xlResultsSheet.write(xlRow, xlCol, item, d_xf)
             xlRow = 9
             xlCol = xlCol + 1
+        print "writing outputs to worksheet"
         for output in output_list:
             xlResultsSheet.write(xlRow, xlCol, output)
             # convert masked array to ndarray
+            if label == "Precip_access":
+                print "calling numpy.ma.filled for" + output
             output_array = numpy.ma.filled(l4a["outputs"][label]["results"][output], float(c.missing_value))
             for item in output_array:
+                if label == "Precip_access":
+                    print output, item, type(item)
                 xlRow = xlRow + 1
                 # xlwt under Anaconda seems to only allow float64!
                 xlResultsSheet.write(xlRow, xlCol, numpy.float64(item))
             xlRow = 9
             xlCol = xlCol + 1
+    print "saving workbook"
     xlfile.save(xl_filename)
+    print "out of xl_write_AlternateStats"
 
 def xl_write_SOLOStats(ds, l5_info):
     if "solo" not in l5_info.keys():

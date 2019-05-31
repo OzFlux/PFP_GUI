@@ -2,8 +2,9 @@
 import logging
 import os
 # 3rd party modules
+import netCDF4
 import matplotlib
-from PyQt4 import QtCore
+from PyQt4 import QtGui, QtCore
 # PFP modules
 import pfp_clim
 import pfp_compliance
@@ -13,6 +14,7 @@ import pfp_io
 import pfp_levels
 import pfp_plot
 import pfp_utils
+import split_dialog
 
 logger = logging.getLogger("pfp_log")
 # top level routines for the File menu
@@ -159,8 +161,47 @@ def do_file_convert_ncupdate(cfg=None):
         logger.error("")
     return
 def do_file_split():
-    logger.warning("File/Split not implemented yet")
-    return
+    Dialog = QtGui.QDialog()
+    ui = split_dialog.Ui_Dialog()
+    ui.setupUi(Dialog)
+    ui.pushButton_InputFileName.clicked.connect(lambda:do_file_split_browse_input_filename(ui))
+    ui.pushButton_OutputFileName.clicked.connect(lambda:do_file_split_browse_output_filename(ui))
+    ui.pushButton_Run.clicked.connect(lambda:do_file_split_run(ui))
+    ui.pushButton_Quit.clicked.connect(lambda:do_file_split_quit(ui))
+    ui.info = {}
+    ui.Dialog = Dialog
+    Dialog.show()
+    Dialog.exec_()
+def do_file_split_browse_input_filename(ui):
+    input_file_path = QtGui.QFileDialog.getOpenFileName(caption="Choose an input file ...", filter="*.nc")
+    input_file_path = str(input_file_path)
+    ui.info["input_file_path"] = input_file_path
+    ui.lineEdit_InputFileName.setText(os.path.basename(input_file_path))
+    #ui.ds = pfp_io.nc_read_series(input_file_path)
+    #ldt = pfp_utils.GetVariable(ui.ds, "DateTime")
+    ncfile = netCDF4.Dataset(input_file_path, 'r')
+    #ui.label_FileStartDate_value.setText(ldt["Data"][0].strftime("%Y-%m-%d %H:%M"))
+    #ui.label_FileEndDate_value.setText(ldt["Data"][-1].strftime("%Y-%m-%d %H:%M"))
+    ui.label_FileStartDate_value.setText(ncfile.getncattr("start_date"))
+    ui.label_FileEndDate_value.setText(ncfile.getncattr("end_date"))
+    ncfile.close()
+def do_file_split_browse_output_filename(ui):
+    if "input_file_path" in ui.info:
+        file_path = os.path.split(ui.info["input_file_path"])[0]
+    else:
+        file_path = "."
+    output_file_path = QtGui.QFileDialog.getSaveFileName(caption="Choose an output file ...",
+                                                         directory=file_path, filter="*.nc")
+    output_file_path = str(output_file_path)
+    ui.info["output_file_path"] = output_file_path
+    ui.lineEdit_OutputFileName.setText(os.path.basename(output_file_path))
+def do_file_split_quit(ui):
+    ui.Dialog.close()
+def do_file_split_run(ui):
+    ui.info["startdate"] = str(ui.lineEdit_StartDate.text())
+    ui.info["enddate"] = str(ui.lineEdit_EndDate.text())
+    pfp_io.ncsplit_run(ui)
+
 # top level routines for the Run menu
 def do_run_l1(cfg=None):
     """

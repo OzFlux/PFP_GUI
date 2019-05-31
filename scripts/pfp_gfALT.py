@@ -21,7 +21,8 @@ import pfp_io
 import pfp_ts
 import pfp_utils
 
-warnings.filterwarnings("ignore",".*GUI is implemented.*")
+#warnings.filterwarnings("ignore",".*GUI is implemented.*")
+warnings.filterwarnings('error', 'UserWarning')
 logger = logging.getLogger("pfp_log")
 
 # functions for GapFillFromAlternate
@@ -108,6 +109,7 @@ def gfalternate_autocomplete(ds_tower, ds_alt, l4_info, mode="verbose"):
     #   gfalternate_main
     # - there are logical inconsistencies between this routine and
     #   gfalternate_main
+    print "in gfalternate_autocomplete"
     l4a = l4_info["alternate"]
     mode = "quiet" #"verbose" #"quiet"
     if not l4a["gui"]["auto_complete"]: return
@@ -257,6 +259,7 @@ def gfalternate_done(alt_gui):
     Author: PRI
     Date: August 2014
     """
+    print "in gfalternate_done"
     # plot the summary statistics
     #gfalternate_plotsummary(ds,alternate_info)
     # close any open plots
@@ -663,7 +666,10 @@ def gfalternate_getoutputstatistics(data_dict, stat_dict, l4_info):
         rmse = numpy.ma.sqrt(numpy.ma.average(error*error))
         stat_dict[label]["RMSE"] = trap_masked_constant(rmse)
         data_range = numpy.ma.maximum(data_dict[label_tower]["data"])-numpy.ma.minimum(data_dict[label_tower]["data"])
-        nmse = rmse/data_range
+        if numpy.ma.is_masked(data_range) or abs(data_range) < c.eps:
+            nmse = float(c.missing_value)
+        else:
+            nmse = rmse/data_range
         stat_dict[label]["NMSE"] = trap_masked_constant(nmse)
         # bias & fractional bias
         stat_dict[label]["Bias"] = trap_masked_constant(numpy.ma.average(error))
@@ -852,6 +858,7 @@ def gfalternate_main(ds_tower, ds_alt, l4_info, label_tower_list=[]):
     """
     This is the main routine for using alternate data to gap fill drivers.
     """
+    print "in gfalternate_main"
     l4a = l4_info["alternate"]
     mode = "quiet" #"quiet"  #"verbose"
     ts = int(ds_tower.globalattributes["time_step"])
@@ -948,6 +955,7 @@ def gfalternate_main(ds_tower, ds_alt, l4_info, label_tower_list=[]):
         gfalternate_plotcomposite(fig_num, data_dict, stat_dict, diel_avg, l4_info, pd)
 
 def gfalternate_plotcomposite(nfig, data_dict, stat_dict, diel_avg, l4_info, pd):
+    print "in gfalternate_plotcomposite"
     # set up some local pointers
     l4a = l4_info["alternate"]
     label_tower = l4a["run"]["label_tower"]
@@ -981,12 +989,15 @@ def gfalternate_plotcomposite(nfig, data_dict, stat_dict, diel_avg, l4_info, pd)
     xyscatter.text(0.6, 0.075, text, fontsize=10, horizontalalignment="left",
                    transform=xyscatter.transAxes)
     xyscatter.plot(data_dict[label_composite]["fitcorr"], data_dict[label_tower]["data"], 'b.')
-    xfit = numpy.array([numpy.ma.min(data_dict[label_composite]["fitcorr"]),
-                        numpy.ma.max(data_dict[label_composite]["fitcorr"])])
-    yfit = xfit*stat_dict[label_composite]["slope"] + stat_dict[label_composite]["offset"]
-    xyscatter.plot(xfit, yfit, 'g--', linewidth=3)
-    xyscatter.text(0.5, 0.9, stat_dict[label_composite]["eqnstr"], fontsize=8,
-                   horizontalalignment='center', transform=xyscatter.transAxes, color='green')
+    # trap caes where all fitted, corrected data is masked
+    mamin = numpy.ma.min(data_dict[label_composite]["fitcorr"])
+    mamax = numpy.ma.max(data_dict[label_composite]["fitcorr"])
+    if not numpy.ma.is_masked(mamin) and not numpy.ma.is_masked(mamax):
+        xfit = numpy.array([mamin,mamax])
+        yfit = xfit*stat_dict[label_composite]["slope"] + stat_dict[label_composite]["offset"]
+        xyscatter.plot(xfit, yfit, 'g--', linewidth=3)
+        xyscatter.text(0.5, 0.9, stat_dict[label_composite]["eqnstr"], fontsize=8,
+                       horizontalalignment='center', transform=xyscatter.transAxes, color='green')
     # bottom row of XY plots: scatter plot of diurnal averages
     ind = numpy.arange(l4a["gui"]["nperday"])/float(l4a["gui"]["nperhr"])
     rect2 = [0.40, pd["margin_bottom"], pd["xy_width"], pd["xy_height"]]
@@ -1051,6 +1062,7 @@ def gfalternate_plotcoveragelines(ds_tower, l4_info):
     Author: PRI
     Date: Back in the day
     """
+    print "in gfalternate_plotcoveragelines"
     # local pointer to l4_info["alternate"]
     l4ia = l4_info["alternate"]
     # local pointer to datetime
@@ -1207,6 +1219,7 @@ def gfalternate_quit(alt_gui):
 
 def gfalternate_run_gui(alt_gui):
     """ Run the GapFillFromAlternate GUI."""
+    print "in gfalternate_run_gui"
     ds_tower = alt_gui.ds4
     ds_alt = alt_gui.ds_alt
     l4_info = alt_gui.l4_info

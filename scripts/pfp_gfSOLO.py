@@ -493,7 +493,7 @@ def gfSOLO_plotsummary(ds, solo):
     # plot the summary statistics
     # set up the subplots on the page
     fig,axs = plt.subplots(len(result_list), len(outputs), figsize=(13, 8))
-    fig.canvas.set_window_title(plot_title + ": summary statistics")
+    fig.canvas.set_window_title(called_by + ": summary statistics")
     # make a title string for the plot and render it
     title_str = called_by + ": " + site_name + " " + datetime.datetime.strftime(startdate, "%Y-%m-%d")
     title_str = title_str + " to " + datetime.datetime.strftime(enddate, "%Y-%m-%d")
