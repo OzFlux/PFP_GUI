@@ -284,10 +284,8 @@ def l4qc(main_gui, cf, ds3):
     # gap fill using climatology
     pfp_gf.GapFillFromClimatology(ds4, l4_info)
     # do the gap filling using the ACCESS output
-    print "calling GapFillFromAlternate"
     pfp_gfALT.GapFillFromAlternate(main_gui, ds4, ds_alt, l4_info)
     if ds4.returncodes["alternate"] == "quit": return ds4
-    print "returned from GapFillFromAlternate"
     # merge the first group of gap filled drivers into a single series
     pfp_ts.MergeSeriesUsingDict(ds4, l4_info, merge_order="prerequisite")
     # re-calculate the ground heat flux but only if requested in control file

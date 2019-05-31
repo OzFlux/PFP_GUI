@@ -109,7 +109,6 @@ def gfalternate_autocomplete(ds_tower, ds_alt, l4_info, mode="verbose"):
     #   gfalternate_main
     # - there are logical inconsistencies between this routine and
     #   gfalternate_main
-    print "in gfalternate_autocomplete"
     l4a = l4_info["alternate"]
     mode = "quiet" #"verbose" #"quiet"
     if not l4a["gui"]["auto_complete"]: return
@@ -259,7 +258,6 @@ def gfalternate_done(alt_gui):
     Author: PRI
     Date: August 2014
     """
-    print "in gfalternate_done"
     # plot the summary statistics
     #gfalternate_plotsummary(ds,alternate_info)
     # close any open plots
@@ -658,7 +656,7 @@ def gfalternate_getoutputstatistics(data_dict, stat_dict, l4_info):
         var_alt = numpy.ma.var(data_dict[label]["fitcorr"])
         stat_dict[label]["Var (Alt)"] = trap_masked_constant(var_alt)
         if var_alt != 0:
-            stat_dict[label]["Var ratio"] = var_tower/var_alt
+            stat_dict[label]["Var ratio"] = trap_masked_constant(var_tower/var_alt)
         else:
             stat_dict[label]["Var ratio"] = float(c.missing_value)
         # RMSE & NMSE
@@ -858,7 +856,6 @@ def gfalternate_main(ds_tower, ds_alt, l4_info, label_tower_list=[]):
     """
     This is the main routine for using alternate data to gap fill drivers.
     """
-    print "in gfalternate_main"
     l4a = l4_info["alternate"]
     mode = "quiet" #"quiet"  #"verbose"
     ts = int(ds_tower.globalattributes["time_step"])
@@ -955,7 +952,6 @@ def gfalternate_main(ds_tower, ds_alt, l4_info, label_tower_list=[]):
         gfalternate_plotcomposite(fig_num, data_dict, stat_dict, diel_avg, l4_info, pd)
 
 def gfalternate_plotcomposite(nfig, data_dict, stat_dict, diel_avg, l4_info, pd):
-    print "in gfalternate_plotcomposite"
     # set up some local pointers
     l4a = l4_info["alternate"]
     label_tower = l4a["run"]["label_tower"]
@@ -1062,7 +1058,6 @@ def gfalternate_plotcoveragelines(ds_tower, l4_info):
     Author: PRI
     Date: Back in the day
     """
-    print "in gfalternate_plotcoveragelines"
     # local pointer to l4_info["alternate"]
     l4ia = l4_info["alternate"]
     # local pointer to datetime
@@ -1219,7 +1214,6 @@ def gfalternate_quit(alt_gui):
 
 def gfalternate_run_gui(alt_gui):
     """ Run the GapFillFromAlternate GUI."""
-    print "in gfalternate_run_gui"
     ds_tower = alt_gui.ds4
     ds_alt = alt_gui.ds_alt
     l4_info = alt_gui.l4_info

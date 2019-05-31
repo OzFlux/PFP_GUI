@@ -2330,7 +2330,6 @@ def xl_check_cf_section(cf, label):
     return result
 
 def xl_write_AlternateStats(ds, l4_info):
-    print "in xl_write_AlternateStats"
     l4a = l4_info["alternate"]
     if "alternate" not in l4_info: return
     # get the output file name
@@ -2340,7 +2339,6 @@ def xl_write_AlternateStats(ds, l4_info):
     file_name = os.path.split(xl_filename)
     logger.info(' Writing alternate fit statistics to ' + file_name[1])
     # open the Excel file
-    print "opening workbook"
     xlfile = xlwt.Workbook()
     # list of outputs to write to the Excel file
     date_list = ["startdate", "enddate"]
@@ -2348,17 +2346,14 @@ def xl_write_AlternateStats(ds, l4_info):
     d_xf = xlwt.easyxf(num_format_str='dd/mm/yyyy hh:mm')
     label_list = sorted(l4a["outputs"].keys())
     for label in label_list:
-        print label
         # get the list of values to output with the start and end dates removed
         output_list = l4a["outputs"][label]["results"].keys()
         for item in date_list:
             if item in output_list: output_list.remove(item)
         # add a sheet with the series label
-        print "adding worksheet"
         xlResultsSheet = xlfile.add_sheet(label)
         xlRow = 9
         xlCol = 0
-        print "writing datetime to worksheet"
         for dt in date_list:
             xlResultsSheet.write(xlRow, xlCol, dt)
             for item in l4a["outputs"][label]["results"][dt]:
@@ -2366,24 +2361,17 @@ def xl_write_AlternateStats(ds, l4_info):
                 xlResultsSheet.write(xlRow, xlCol, item, d_xf)
             xlRow = 9
             xlCol = xlCol + 1
-        print "writing outputs to worksheet"
         for output in output_list:
             xlResultsSheet.write(xlRow, xlCol, output)
             # convert masked array to ndarray
-            if label == "Precip_access":
-                print "calling numpy.ma.filled for" + output
             output_array = numpy.ma.filled(l4a["outputs"][label]["results"][output], float(c.missing_value))
             for item in output_array:
-                if label == "Precip_access":
-                    print output, item, type(item)
                 xlRow = xlRow + 1
                 # xlwt under Anaconda seems to only allow float64!
                 xlResultsSheet.write(xlRow, xlCol, numpy.float64(item))
             xlRow = 9
             xlCol = xlCol + 1
-    print "saving workbook"
     xlfile.save(xl_filename)
-    print "out of xl_write_AlternateStats"
 
 def xl_write_SOLOStats(ds, l5_info):
     if "solo" not in l5_info.keys():
