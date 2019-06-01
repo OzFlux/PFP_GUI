@@ -26,7 +26,7 @@ warnings.filterwarnings('error', 'UserWarning')
 logger = logging.getLogger("pfp_log")
 
 # functions for GapFillFromAlternate
-def GapFillFromAlternate(main_gui, ds4, ds_alt, l4_info):
+def GapFillFromAlternate(main_gui, ds4, ds_alt, l4_info, called_by):
     '''
     This is the gap fill from alternate data GUI.
     The alternate data gap fill GUI is displayed separately from the main OzFluxQC GUI.
@@ -36,45 +36,24 @@ def GapFillFromAlternate(main_gui, ds4, ds_alt, l4_info):
     the GUI when we are done.  On exit, the OzFluxQC main GUI continues
     and eventually writes the gap filled data to file.
     '''
-    # local point to the control file
-    cf = l4_info["cf"]
     # set the default return code
-    ds4.returncodes["alternate"] = "normal"
-    if "alternate" not in l4_info.keys():
-        return
-    # get a local pointer to the tower datetime series
-    ldt_tower = ds4.series["DateTime"]["Data"]
-    # get the start and end datetime of the tower data
-    startdate = ldt_tower[0]
-    enddate = ldt_tower[-1]
-    # check to see if this is a batch or an interactive run
-    call_mode = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "call_mode", default="interactive")
-    # create the alternate_info dictionary, this will hold much useful information
-    l4a = l4_info["alternate"]
-    l4a["info"] = {"overlap_startdate": startdate.strftime("%Y-%m-%d %H:%M"),
-                   "overlap_enddate": enddate.strftime("%Y-%m-%d %H:%M"),
-                   "startdate": startdate.strftime("%Y-%m-%d %H:%M"),
-                   "enddate": enddate.strftime("%Y-%m-%d %H:%M"),
-                   "plot_path": cf["Files"]["plot_path"],
-                   "call_mode": call_mode,
-                   "time_step": int(ds4.globalattributes["time_step"]),
-                   "site_name": ds4.globalattributes["site_name"]}
-    # add a gui section to the l4_info["alternate"] dictionary
-    l4a["gui"] = {}
-    if call_mode.lower() == "interactive":
-        l4a["gui"]["show_plots"] = True
+    ds4.returncodes["message"] = "normal"
+    # get the alternate data information
+    alternate = l4_info[called_by]
+    if alternate["info"]["call_mode"] == "interactive":
         # put up a plot of the data coverage at L3
-        gfalternate_plotcoveragelines(ds4, l4_info)
+        gfalternate_plotcoveragelines(ds4, l4_info, called_by)
         # call the GapFillFromAlternate GUI
-        gfalternate_gui(main_gui, ds4, ds_alt, l4_info)
-    else:
-        gfalternate_run_nogui(ds4, ds_alt, l4_info)
+        gfalternate_gui(main_gui, ds4, ds_alt, l4_info, called_by)
+    #else:
+        #gfalternate_run_nogui(ds4, ds_alt, l4_info)
 
-def gfalternate_gui(main_gui, ds4, ds_alt, l4_info):
+def gfalternate_gui(main_gui, ds4, ds_alt, l4_info, called_by):
     # put up the start and end dates
     main_gui.l4_ui.ds4 = ds4
     main_gui.l4_ui.ds_alt = ds_alt
     main_gui.l4_ui.l4_info = l4_info
+    main_gui.l4_ui.called_by = called_by
     main_gui.l4_ui.edit_cfg = main_gui.tabs.tab_dict[main_gui.tabs.tab_index_running]
     start_date = ds4.series["DateTime"]["Data"][0].strftime("%Y-%m-%d %H:%M")
     end_date = ds4.series["DateTime"]["Data"][-1].strftime("%Y-%m-%d %H:%M")
@@ -216,7 +195,7 @@ def gfalternate_autocomplete(ds_tower, ds_alt, l4_info, mode="verbose"):
             gfalternate_plotcoveragelines(ds_tower, l4_info)
             if not_enough_points: break
 
-def gfalternate_createdataandstatsdict(ldt_tower, data_tower, attr_tower, l4_info):
+def gfalternate_createdataandstatsdict(ldt_tower, data_tower, attr_tower, l4a):
     """
     Purpose:
      Creates the data_dict and stat_dict to hold data and statistics during gap filling from
@@ -228,7 +207,6 @@ def gfalternate_createdataandstatsdict(ldt_tower, data_tower, attr_tower, l4_inf
     Author: PRI
     Date: May 2015
     """
-    l4a = l4_info["alternate"]
     data_dict = {}
     stat_dict = {}
     label_tower = l4a["run"]["label_tower"]
@@ -750,12 +728,11 @@ def gfalternate_gotnogaps(data,label,mode="verbose"):
         return_code = False
     return return_code
 
-def gfalternate_gotminpoints(data, l4_info, label, mode="verbose"):
+def gfalternate_gotminpoints(data, l4a, label, mode="verbose"):
     """
     Returns true if data contains more than the minimum number of points required
     or data contains less than the minimum number but the fit type is replace.
     """
-    l4a = l4_info["alternate"]
     return_code = True
     if numpy.ma.count(data) < l4a["run"]["min_points"]:
         if mode == "verbose":
@@ -852,11 +829,11 @@ def gfalternate_loadoutputdata(ds_tower, data_dict, l4_info):
     ds_tower.series[label_output]["Data"][si:ei+1][ind6] = numpy.ma.filled(data_dict[label_output][label_alternate]["fitcorr"][ind6], c.missing_value)
     ds_tower.series[label_output]["Flag"][si:ei+1][ind6] = numpy.int32(20)
 
-def gfalternate_main(ds_tower, ds_alt, l4_info, label_tower_list=[]):
+def gfalternate_main(ds_tower, ds_alt, l4_info, called_by, label_tower_list=[]):
     """
     This is the main routine for using alternate data to gap fill drivers.
     """
-    l4a = l4_info["alternate"]
+    l4a = l4_info[called_by]
     mode = "quiet" #"quiet"  #"verbose"
     ts = int(ds_tower.globalattributes["time_step"])
     startdate = l4a["info"]["startdate"]
@@ -885,9 +862,9 @@ def gfalternate_main(ds_tower, ds_alt, l4_info, label_tower_list=[]):
         # check to see if we have any gaps to fill
         l4a["run"]["nogaps_tower"] = gfalternate_gotnogaps(data_tower, label_tower, mode=mode)
         # check to see if we have more than the minimum number of points
-        l4a["run"]["gotminpoints_tower"] = gfalternate_gotminpoints(data_tower, l4_info, label_tower, mode=mode)
+        l4a["run"]["gotminpoints_tower"] = gfalternate_gotminpoints(data_tower, l4a, label_tower, mode=mode)
         # initialise a dictionary to hold the data
-        data_dict, stat_dict = gfalternate_createdataandstatsdict(ldt_tower, data_tower, attr_tower, l4_info)
+        data_dict, stat_dict = gfalternate_createdataandstatsdict(ldt_tower, data_tower, attr_tower, l4a)
         # get a list of the output names for this tower series
         label_output_list = gfalternate_getlabeloutputlist(l4_info, label_tower)
         # loop over the outputs for this tower series
@@ -1050,7 +1027,7 @@ def gfalternate_plotcomposite(nfig, data_dict, stat_dict, diel_avg, l4_info, pd)
     else:
         plt.ion()
 
-def gfalternate_plotcoveragelines(ds_tower, l4_info):
+def gfalternate_plotcoveragelines(ds_tower, l4_info, called_by):
     """
     Purpose:
      Plot a line representing the coverage of variables being gap filled.
@@ -1059,7 +1036,7 @@ def gfalternate_plotcoveragelines(ds_tower, l4_info):
     Date: Back in the day
     """
     # local pointer to l4_info["alternate"]
-    l4ia = l4_info["alternate"]
+    l4ia = l4_info[called_by]
     # local pointer to datetime
     ldt = ds_tower.series["DateTime"]["Data"]
     # get the site name and the start and end date
@@ -1217,7 +1194,8 @@ def gfalternate_run_gui(alt_gui):
     ds_tower = alt_gui.ds4
     ds_alt = alt_gui.ds_alt
     l4_info = alt_gui.l4_info
-    l4a = l4_info["alternate"]
+    called_by = alt_gui.called_by
+    l4a = l4_info[called_by]
     # populate the l4_info dictionary with things that will be useful
     if str(alt_gui.radioButtons.checkedButton().text()) == "Manual":
         l4a["gui"]["period_option"] = 1
@@ -1249,8 +1227,8 @@ def gfalternate_run_gui(alt_gui):
             l4a["info"]["startdate"] = str(alt_gui.lineEdit_StartDate.text())
         if len(str(alt_gui.lineEdit_EndDate.text())) != 0:
             l4a["info"]["enddate"] = str(alt_gui.lineEdit_EndDate.text())
-        gfalternate_main(ds_tower, ds_alt, l4_info)
-        gfalternate_plotcoveragelines(ds_tower, l4_info)
+        gfalternate_main(ds_tower, ds_alt, l4_info, called_by)
+        gfalternate_plotcoveragelines(ds_tower, l4_info, called_by)
         logger.info(" Finished manual run ...")
         # get the start and end datetime of the tower data
         ldt_tower = ds_tower.series["DateTime"]["Data"]
@@ -1277,14 +1255,14 @@ def gfalternate_run_gui(alt_gui):
         enddate = min([overlap_enddate, enddate])
         l4a["info"]["enddate"] = datetime.datetime.strftime(enddate, "%Y-%m-%d %H:%M")
         while startdate < overlap_enddate:
-            gfalternate_main(ds_tower, ds_alt, l4_info)
-            gfalternate_plotcoveragelines(ds_tower, l4_info)
+            gfalternate_main(ds_tower, ds_alt, l4_info, called_by)
+            gfalternate_plotcoveragelines(ds_tower, l4_info, called_by)
             startdate = enddate
             enddate = startdate + dateutil.relativedelta.relativedelta(months=nMonths)
             l4a["info"]["startdate"] = startdate.strftime("%Y-%m-%d %H:%M")
             enddate = min([enddate, overlap_enddate])
             l4a["info"]["enddate"] = enddate.strftime("%Y-%m-%d %H:%M")
-        gfalternate_autocomplete(ds_tower, ds_alt, l4_info)
+        gfalternate_autocomplete(ds_tower, ds_alt, l4_info, called_by)
         logger.info(" Finished auto (months) run ...")
         # get the start and end datetime of the tower data
         ldt_tower = ds_tower.series["DateTime"]["Data"]
@@ -1314,14 +1292,14 @@ def gfalternate_run_gui(alt_gui):
         l4a["info"]["startdate"] = datetime.datetime.strftime(startdate, "%Y-%m-%d %H:%M")
         stopdate = min([overlap_enddate, gui_enddate])
         while startdate < stopdate:
-            gfalternate_main(ds_tower, ds_alt, l4_info)
-            gfalternate_plotcoveragelines(ds_tower, l4_info)
+            gfalternate_main(ds_tower, ds_alt, l4_info, called_by)
+            gfalternate_plotcoveragelines(ds_tower, l4_info, called_by)
             startdate = enddate
             enddate = startdate + dateutil.relativedelta.relativedelta(days=nDays)
             run_enddate = min([stopdate, enddate])
             l4a["info"]["startdate"] = startdate.strftime("%Y-%m-%d %H:%M")
             l4a["info"]["enddate"] = run_enddate.strftime("%Y-%m-%d %H:%M")
-        gfalternate_autocomplete(ds_tower, ds_alt, l4_info)
+        gfalternate_autocomplete(ds_tower, ds_alt, l4_info, called_by)
         logger.info(" Finished auto (days) run ...")
         # get the start and end datetime of the tower data
         ldt_tower = ds_tower.series["DateTime"]["Data"]

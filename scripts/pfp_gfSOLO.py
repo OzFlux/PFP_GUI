@@ -27,7 +27,7 @@ warnings.filterwarnings("ignore",".*GUI is implemented.*")
 logger = logging.getLogger("pfp_log")
 
 # functions for GapFillUsingSOLO
-def GapFillUsingSOLO(main_gui, ds, solo):
+def GapFillUsingSOLO(main_gui, ds, l5_info, called_by):
     '''
     This is the "Run SOLO" GUI.
     The SOLO GUI is displayed separately from the main OzFluxQC GUI.
@@ -38,7 +38,9 @@ def GapFillUsingSOLO(main_gui, ds, solo):
     writes the gap filled data to file.
     '''
     # set the default return code
-    ds.returncodes["solo"] = "normal"
+    ds.returncodes["message"] = "normal"
+    # get the SOLO information
+    solo = l5_info[called_by]
     # check the SOLO drivers for missing data
     pfp_gf.CheckDrivers(solo, ds)
     if ds.returncodes["value"] != 0:
@@ -57,13 +59,14 @@ def  gfSOLO_gui(main_gui, ds, solo):
     main_gui.solo_gui.ds = ds
     main_gui.solo_gui.solo = solo
     main_gui.solo_gui.edit_cfg = main_gui.tabs.tab_dict[main_gui.tabs.tab_index_running]
+    main_gui.solo_gui.setWindowTitle(solo["info"]["called_by"])
     # put up the start and end dates
     start_date = ds.series["DateTime"]["Data"][0].strftime("%Y-%m-%d %H:%M")
     end_date = ds.series["DateTime"]["Data"][-1].strftime("%Y-%m-%d %H:%M")
     main_gui.solo_gui.label_DataStartDate_value.setText(start_date)
     main_gui.solo_gui.label_DataEndDate_value.setText(end_date)
     # set the default period and auto-complete state
-    # NOTE: auto-complete should be set if not long gaps detected
+    # NOTE: auto-complete should only be set if no long gaps detected
     if solo["info"]["called_by"] == "GapFillLongSOLO":
         main_gui.solo_gui.radioButton_Manual.setChecked(True)
         main_gui.solo_gui.checkBox_AutoComplete.setChecked(True)
@@ -134,7 +137,7 @@ def gfSOLO_done(solo_gui):
     # destroy the SOLO GUI
     solo_gui.close()
     # remove the solo dictionary from the data structure
-    ds.returncodes["solo"] = "normal"
+    ds.returncodes["message"] = "normal"
 
 def gfSOLO_getserieslist(cf):
     series_list = []
@@ -447,11 +450,11 @@ def gfSOLO_plotcoveragelines(ds, solo):
         target = pfp_utils.GetVariable(ds, tlabel)
         percent = 100*numpy.ma.count(target["Data"])/len(target["Data"])
         ylabel_right_list.append("{0:.0f}%".format(percent))
-        ind_series = numpy.ma.ones(len(target["Data"]))*float(n)
-        ind_series = numpy.ma.masked_where(numpy.ma.getmaskarray(target["Data"]) == True, ind_series)
+        ind_target = numpy.ma.ones(len(target["Data"]))*float(n)
+        ind_target = numpy.ma.masked_where(numpy.ma.getmaskarray(target["Data"]) == True, ind_target)
         ind_output = numpy.ma.ones(len(output["Data"]))*float(n)
         ind_output = numpy.ma.masked_where(numpy.ma.getmaskarray(output["Data"]) == True, ind_output)
-        plt.plot(ldt, ind_series, color=colors[numpy.mod(n, 8)], linewidth=1)
+        plt.plot(ldt, ind_target, color=colors[numpy.mod(n, 8)], linewidth=1)
         plt.plot(ldt, ind_output, color=colors[numpy.mod(n, 8)], linewidth=4)
     ylabel_posn = range(0, len(outputs)+2)
     pylab.yticks(ylabel_posn, ylabel_list)
@@ -492,7 +495,17 @@ def gfSOLO_plotsummary(ds, solo):
         plt.ioff()
     # plot the summary statistics
     # set up the subplots on the page
-    fig,axs = plt.subplots(len(result_list), len(outputs), figsize=(13, 8))
+    if plt.fignum_exists(1):
+        fig = plt.figure(1)
+        plt.clf()
+        # axs = fig.subplots(len(result_list), len(outputs)) may be supported in matplotlib V2.1 and above
+        # meanwhile, we do it the hard way
+        axs = numpy.empty((len(result_list), len(outputs)), dtype="O")
+        for row in range(len(result_list)):
+            for col in range(len(outputs)):
+                axs[row, col] = fig.add_subplot(len(result_list), len(outputs), col+row*len(outputs)+1)
+    else:
+        fig, axs = plt.subplots(len(result_list), len(outputs), figsize=(13, 8))
     fig.canvas.set_window_title(called_by + ": summary statistics")
     # make a title string for the plot and render it
     title_str = called_by + ": " + site_name + " " + datetime.datetime.strftime(startdate, "%Y-%m-%d")
@@ -565,7 +578,7 @@ def gfSOLO_qcchecks(cfg, dsa, dsb, mode="quiet"):
 
 def gfSOLO_quit(solo_gui):
     """ Quit the SOLO GUI."""
-    solo_gui.ds.returncodes["solo"] = "quit"
+    solo_gui.ds.returncodes["message"] = "quit"
     solo_gui.ds.returncodes["values"] = 1
     # destroy the GUI
     solo_gui.close()

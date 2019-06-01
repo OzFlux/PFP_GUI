@@ -32,7 +32,7 @@ def ERUsingSOLO(main_gui, cf, ds, info):
                  of ER.
     """
     # set the default return code
-    ds.returncodes["solo"] = "normal"
+    ds.returncodes["message"] = "normal"
     # check calculating ER using SOLO has beeen requested
     if "solo" not in info["er"]:
         return
@@ -83,7 +83,7 @@ def rpSOLO_quit(solo_gui):
     # destroy the GUI
     solo_gui.close()
     # put the return code in ds.returncodes
-    ds.returncodes["solo"] = "quit"
+    ds.returncodes["message"] = "quit"
 
 def rp_getdiurnalstats(dt, data, info):
     ts = info["solo"]["info"]["time_step"]

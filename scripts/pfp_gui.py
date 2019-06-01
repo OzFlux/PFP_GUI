@@ -5532,7 +5532,6 @@ class solo_gui(QtGui.QDialog):
     def __init__(self, parent=None):
         super(solo_gui, self).__init__(parent)
         self.resize(400, 265)
-        self.setWindowTitle("Gap fill (SOLO)")
         # component sizes and positions
         row_height = 25
         label_width = 145

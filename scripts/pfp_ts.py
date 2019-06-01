@@ -2483,7 +2483,7 @@ def MassmanStandard(cf, ds, Ta_in='Ta', Ah_in='Ah', ps_in='ps', u_in="U_SONIC_Av
 
 def MergeSeriesUsingDict(ds, info, merge_order="standard"):
     """ Merge series as defined in the merge dictionary."""
-    merge = info["merge"]
+    merge = info["MergeSeries"]
     # loop over the entries in merge
     for target in merge[merge_order].keys():
         srclist = merge[merge_order][target]["source"]

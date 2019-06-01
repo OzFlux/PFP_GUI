@@ -127,14 +127,17 @@ def CheckDrivers(info, ds):
 
 def ParseL4ControlFile(cf, ds):
     l4_info = {}
-    l4_info["cf"] = copy.deepcopy(cf)
+    #l4_info["cf"] = copy.deepcopy(cf)
     for target in cf["Drivers"].keys():
         if "GapFillFromAlternate" in cf["Drivers"][target].keys():
-            gfalternate_createdict(cf, ds, l4_info, target)
+            called_by = "GapFillFromAlternate"
+            gfalternate_createdict(cf, ds, l4_info, target, called_by)
         if "GapFillFromClimatology" in cf["Drivers"][target].keys():
-            gfClimatology_createdict(cf, ds, l4_info, target)
+            called_by = "GapFillFromClimatology"
+            gfClimatology_createdict(cf, ds, l4_info, target, called_by)
         if "MergeSeries" in cf["Drivers"][target].keys():
-            gfMergeSeries_createdict(cf, ds, l4_info, target)
+            called_by = "MergeSeries"
+            gfMergeSeries_createdict(cf, ds, l4_info, target, called_by)
     return l4_info
 
 def ParseL5ControlFile(cf, ds):
@@ -148,15 +151,17 @@ def ParseL5ControlFile(cf, ds):
             called_by = "GapFillLongSOLO"
             gfSOLO_createdict(cf, ds, l5_info, target, called_by)
         if "GapFillUsingMDS" in cf["Fluxes"][target].keys():
-            gfMDS_createdict(cf, ds, l5_info, target)
+            called_by = "GapFillUsingMDS"
+            gfMDS_createdict(cf, ds, l5_info, target, called_by)
         if "MergeSeries" in cf["Fluxes"][target].keys():
-            gfMergeSeries_createdict(cf, ds, l5_info, target)
+            called_by = "MergeSeries"
+            gfMergeSeries_createdict(cf, ds, l5_info, target, called_by)
     return l5_info
 
 def ReadAlternateFiles(ds, l4_info):
     #l4_info["alternate"]["outputs"]["Fn_era5"]["file_name"]
     ds_alt = {}
-    l4ao = l4_info["alternate"]["outputs"]
+    l4ao = l4_info["GapFillFromAlternate"]["outputs"]
     # get a list of file names
     files = [l4ao[output]["file_name"] for output in l4ao.keys()]
     # read the alternate files
@@ -168,7 +173,7 @@ def ReadAlternateFiles(ds, l4_info):
             ds_alt[f] = ds_alternate
     return ds_alt
 
-def gfalternate_createdict(cf, ds, l4_info, label):
+def gfalternate_createdict(cf, ds, l4_info, label, called_by):
     """
     Purpose:
      Creates a dictionary in l4_info to hold information about the alternate data
@@ -178,26 +183,60 @@ def gfalternate_createdict(cf, ds, l4_info, label):
     Author: PRI
     Date: August 2014
     """
-    # create the alternate directory in the data structure
-    if "alternate" not in l4_info.keys():
-        l4_info["alternate"] = {"outputs": {}}
+    nrecs = int(ds.globalattributes["nc_nrecs"])
+    # create the alternate data settings directory
+    if called_by not in l4_info.keys():
+        l4_info[called_by] = {"outputs": {}, "info": {}, "gui": {}}
+    # get the info section
+    gfalternate_createdict_info(cf, ds, l4_info, called_by)
+    # get the outputs section
+    gfalternate_createdict_outputs(cf, ds, l4_info, label, called_by)
+    # create an empty series in ds if the alternate output series doesn't exist yet
+    outputs = cf["Drivers"][label][called_by].keys()
+    for output in outputs:
+        if output not in ds.series.keys():
+            variable = pfp_utils.CreateEmptyVariable(output, nrecs)
+            pfp_utils.CreateVariable(ds, variable)
+            variable = pfp_utils.CreateEmptyVariable(label + "_composite", nrecs)
+            pfp_utils.CreateVariable(ds, variable)
+    return
+
+def gfalternate_createdict_info(cf, ds, l4_info, called_by):
+    # get a local pointer to the tower datetime series
+    ldt_tower = ds.series["DateTime"]["Data"]
+    # get the start and end datetime of the tower data
+    startdate = ldt_tower[0]
+    enddate = ldt_tower[-1]
+    plot_path = pfp_utils.get_keyvaluefromcf(cf, ["Files"], "plot_path", default="plots")
+    # check to see if this is a batch or an interactive run
+    call_mode = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "call_mode", default="interactive")
+    # create the alternate_info dictionary, this will hold much useful information
+    l4a = l4_info[called_by]
+    l4a["info"] = {"overlap_startdate": startdate.strftime("%Y-%m-%d %H:%M"),
+                   "overlap_enddate": enddate.strftime("%Y-%m-%d %H:%M"),
+                   "startdate": startdate.strftime("%Y-%m-%d %H:%M"),
+                   "enddate": enddate.strftime("%Y-%m-%d %H:%M"),
+                   "called_by": called_by,
+                   "plot_path": plot_path,
+                   "call_mode": call_mode,
+                   "time_step": int(ds.globalattributes["time_step"]),
+                   "site_name": ds.globalattributes["site_name"]}
+    return
+
+def gfalternate_createdict_outputs(cf, ds, l4_info, label, called_by):
     # name of alternate output series in ds
-    outputs = cf["Drivers"][label]["GapFillFromAlternate"].keys()
+    outputs = cf["Drivers"][label][called_by].keys()
     # loop over the outputs listed in the control file
-    l4ao = l4_info["alternate"]["outputs"]
-    cfalt = cf["Drivers"][label]["GapFillFromAlternate"]
+    l4ao = l4_info[called_by]["outputs"]
+    cfalt = cf["Drivers"][label][called_by]
     for output in outputs:
         # create the dictionary keys for this output
         l4ao[output] = {}
         # get the target
-        if "target" in cfalt[output]:
-            l4ao[output]["target"] = cfalt[output]["target"]
-        else:
-            l4ao[output]["target"] = label
+        sl = ["Drivers", label, called_by, output]
+        l4ao[output]["target"] = pfp_utils.get_keyvaluefromcf(cf, sl, "target", default=label)
         # source name
-        l4ao[output]["source"] = cfalt[output]["source"]
-        ## site name
-        #l4ao[output]["site_name"] = ds.globalattributes["site_name"]
+        l4ao[output]["source"] = pfp_utils.get_keyvaluefromcf(cf, sl, "source", default="")
         # alternate data file name
         # first, look in the [Files] section for a generic file name
         file_list = cf["Files"].keys()
@@ -239,11 +278,6 @@ def gfalternate_createdict(cf, ds, l4_info, label):
                                    "r":[], "Bias":[], "RMSE":[], "Frac Bias":[], "NMSE":[],
                                    "Avg (Tower)":[], "Avg (Alt)":[],
                                    "Var (Tower)":[], "Var (Alt)":[], "Var ratio":[]}
-        # create an empty series in ds if the alternate output series doesn't exist yet
-        if output not in ds.series.keys():
-            data, flag, attr = pfp_utils.MakeEmptySeries(ds, output)
-            pfp_utils.CreateSeries(ds, output, data, flag, attr)
-            pfp_utils.CreateSeries(ds, label + "_composite", data, flag, attr)
 
 def gfalternate_matchstartendtimes(ds,ds_alternate):
     """
@@ -331,7 +365,7 @@ def gfalternate_matchstartendtimes(ds,ds_alternate):
             pfp_utils.CreateSeries(ds_alternate, series, data, flag, attr)
     ds.returncodes["GapFillFromAlternate"] = "normal"
 
-def gfClimatology_createdict(cf, ds, l4_info, label):
+def gfClimatology_createdict(cf, ds, l4_info, label, called_by):
     """
     Purpose:
      Creates a dictionary in l4_info to hold information about the climatological data
@@ -342,12 +376,12 @@ def gfClimatology_createdict(cf, ds, l4_info, label):
     Date: August 2014
     """
     # create the climatology directory in the data structure
-    if "climatology" not in l4_info.keys():
-        l4_info["climatology"] = {"outputs": {}}
+    if called_by not in l4_info.keys():
+        l4_info[called_by] = {"outputs": {}}
     # name of alternate output series in ds
     outputs = cf["Drivers"][label]["GapFillFromClimatology"].keys()
     # loop over the outputs listed in the control file
-    l4co = l4_info["climatology"]["outputs"]
+    l4co = l4_info[called_by]["outputs"]
     cfcli = cf["Drivers"][label]["GapFillFromClimatology"]
     for output in outputs:
         # create the dictionary keys for this output
@@ -380,22 +414,27 @@ def gfClimatology_createdict(cf, ds, l4_info, label):
             data, flag, attr = pfp_utils.MakeEmptySeries(ds, output)
             pfp_utils.CreateSeries(ds, output, data, flag, attr)
 
-def gfMDS_createdict(cf, ds, l5_info, label):
+def gfMDS_createdict(cf, ds, l5_info, label, called_by):
     """
     Purpose:
      Create an information dictionary for MDS gap filling from the contents
      of the control file.
     Usage:
-     gfMDS_createdict(cf, ds, l5_info, label)
+     gfMDS_createdict(cf, ds, l5_info, label, called_by)
     Author: PRI
     Date: May 2018
     """
-    if "mds" not in l5_info:
-        l5_info["mds"] = {"outputs": {}}
+    if called_by not in l5_info:
+        l5_info[called_by] = {"outputs": {}, "info": {}}
+    # file path and input file name
+    l5_info[called_by]["info"]["file_path"] = cf["Files"]["file_path"]
+    l5_info[called_by]["info"]["in_filename"] = cf["Files"]["in_filename"]
+    opt = pfp_utils.get_keyvaluefromcf(cf, ["Files"], "plot_path", default="plots")
+    l5_info[called_by]["info"]["plot_path"] = opt
     # name of MDS output series in ds
     outputs = cf["Fluxes"][label]["GapFillUsingMDS"].keys()
     # loop over the outputs listed in the control file
-    l5mo = l5_info["mds"]["outputs"]
+    l5mo = l5_info[called_by]["outputs"]
     for output in outputs:
         # create the dictionary keys for this series
         l5mo[output] = {}
@@ -446,57 +485,57 @@ def gfMDS_createdict(cf, ds, l5_info, label):
     # a FluxNet label, remove if they don't
     fluxnet_label_map = {"Fc":"NEE", "Fe":"LE", "Fh":"H",
                          "Fsd":"SW_IN", "Ta":"TA", "VPD":"VPD"}
-    for mds_label in l5_info["mds"]["outputs"]:
-        l5_info["mds"]["outputs"][mds_label]["mds_label"] = mds_label
-        pfp_target = l5_info["mds"]["outputs"][mds_label]["target"]
+    for mds_label in l5_info[called_by]["outputs"]:
+        l5_info[called_by]["outputs"][mds_label]["mds_label"] = mds_label
+        pfp_target = l5_info[called_by]["outputs"][mds_label]["target"]
         if pfp_target not in fluxnet_label_map:
             msg = " Target ("+pfp_target+") not supported for MDS gap filling"
             logger.warning(msg)
-            del l5_info["mds"]["outputs"][mds_label]
+            del l5_info[called_by]["outputs"][mds_label]
         else:
-            l5_info["mds"]["outputs"][mds_label]["target_mds"] = fluxnet_label_map[pfp_target]
-        pfp_drivers = l5_info["mds"]["outputs"][mds_label]["drivers"]
+            l5_info[called_by]["outputs"][mds_label]["target_mds"] = fluxnet_label_map[pfp_target]
+        pfp_drivers = l5_info[called_by]["outputs"][mds_label]["drivers"]
         for pfp_driver in pfp_drivers:
             if pfp_driver not in fluxnet_label_map:
                 msg = "Driver ("+pfp_driver+") not supported for MDS gap filling"
                 logger.warning(msg)
-                l5_info["mds"]["outputs"][mds_label]["drivers"].remove(pfp_driver)
+                l5_info[called_by]["outputs"][mds_label]["drivers"].remove(pfp_driver)
             else:
-                if "drivers_mds" not in l5_info["mds"]["outputs"][mds_label]:
-                    l5_info["mds"]["outputs"][mds_label]["drivers_mds"] = []
-                l5_info["mds"]["outputs"][mds_label]["drivers_mds"].append(fluxnet_label_map[pfp_driver])
-        if len(l5_info["mds"]["outputs"][mds_label]["drivers"]) == 0:
-            del l5_info["mds"]["outputs"][mds_label]
+                if "drivers_mds" not in l5_info[called_by]["outputs"][mds_label]:
+                    l5_info[called_by]["outputs"][mds_label]["drivers_mds"] = []
+                l5_info[called_by]["outputs"][mds_label]["drivers_mds"].append(fluxnet_label_map[pfp_driver])
+        if len(l5_info[called_by]["outputs"][mds_label]["drivers"]) == 0:
+            del l5_info[called_by]["outputs"][mds_label]
     return
 
-def gfMergeSeries_createdict(cf, ds, info, label):
+def gfMergeSeries_createdict(cf, ds, info, label, called_by):
     """ Creates a dictionary in ds to hold information about the merging of gap filled
         and tower data."""
     merge_prereq_list = ["Fsd","Fsu","Fld","Flu","Ts","Sws"]
     # get the section of the control file containing the series
     section = pfp_utils.get_cfsection(cf,series=label,mode="quiet")
     # create the merge directory in the data structure
-    if "merge" not in info:
-        info["merge"] = {}
+    if called_by not in info:
+        info[called_by] = {}
     # check to see if this series is in the "merge first" list
     # series in the "merge first" list get merged first so they can be used with existing tower
     # data to re-calculate Fg, Fn and Fa
     merge_order = "standard"
     if label in merge_prereq_list:
         merge_order = "prerequisite"
-    if merge_order not in info["merge"].keys():
-        info["merge"][merge_order] = {}
+    if merge_order not in info[called_by].keys():
+        info[called_by][merge_order] = {}
     # create the dictionary keys for this series
-    info["merge"][merge_order][label] = {}
+    info[called_by][merge_order][label] = {}
     # output series name
-    info["merge"][merge_order][label]["output"] = label
+    info[called_by][merge_order][label]["output"] = label
     # merge source list
     src_string = cf[section][label]["MergeSeries"]["Source"]
     if "," in src_string:
         src_list = src_string.split(",")
     else:
         src_list = [src_string]
-    info["merge"][merge_order][label]["source"] = src_list
+    info[called_by][merge_order][label]["source"] = src_list
     # create an empty series in ds if the output series doesn't exist yet
     if label not in ds.series.keys():
         data, flag, attr = pfp_utils.MakeEmptySeries(ds, label)
@@ -513,20 +552,17 @@ def gfSOLO_createdict(cf, ds, l5_info, target, called_by):
     Date: August 2014
     """
     nrecs = int(ds.globalattributes["nc_nrecs"])
-    solo_type = "solo"
-    if called_by == "GapFillLongSOLO":
-        solo_type = "solo_long"
     # create the solo settings directory
-    if solo_type not in l5_info:
-        l5_info[solo_type] = {"outputs": {}, "info": {}, "gui": {}}
+    if called_by not in l5_info.keys():
+        l5_info[called_by] = {"outputs": {}, "info": {}, "gui": {}}
     # get the info section
-    gfSOLO_createdict_info(cf, ds, l5_info[solo_type], called_by)
+    gfSOLO_createdict_info(cf, ds, l5_info[called_by], called_by)
     # get the outputs section
-    gfSOLO_createdict_outputs(cf, l5_info[solo_type], target, called_by)
+    gfSOLO_createdict_outputs(cf, l5_info[called_by], target, called_by)
     # the gui section is done in pfp_gfSOLO.gfSOLO_run_gui
     # add the summary plors section
     if "SummaryPlots" in cf:
-        l5_info[solo_type]["SummaryPlots"] = cf["SummaryPlots"]
+        l5_info[called_by]["SummaryPlots"] = cf["SummaryPlots"]
     # create an empty series in ds if the SOLO output series doesn't exist yet
     outputs = cf["Fluxes"][target][called_by].keys()
     for output in outputs:
@@ -586,24 +622,15 @@ def gfSOLO_createdict_outputs(cf, solo, target, called_by):
                                  "m_ols":[],"b_ols":[]}
     return
 
-# functions for GapFillUsingMDS: not implemented yet
-def GapFillFluxUsingMDS(cf, ds, series=""):
-    section = pfp_utils.get_cfsection(cf, series=series, mode="quiet")
-    if len(section)==0:
-        return
-    if "GapFillFluxUsingMDS" in cf[section][series].keys():
-        logger.info(" GapFillFluxUsingMDS: not implemented yet")
-        return
-
 # functions for GapFillFromClimatology
-def GapFillFromClimatology(ds, l4_info):
+def GapFillFromClimatology(ds, l4_info, called_by):
     '''
     Gap fill missing data using data from the climatology spreadsheet produced by
     the climatology.py script.
     '''
-    if "climatology" not in l4_info.keys():
+    if called_by not in l4_info.keys():
         return
-    l4co = l4_info["climatology"]["outputs"]
+    l4co = l4_info[called_by]["outputs"]
     # tell the user what we are going to do
     msg = " Reading climatology file and creating climatology series"
     logger.info(msg)
