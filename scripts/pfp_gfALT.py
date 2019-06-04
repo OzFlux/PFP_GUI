@@ -45,8 +45,8 @@ def GapFillFromAlternate(main_gui, ds4, ds_alt, l4_info, called_by):
         gfalternate_plotcoveragelines(ds4, l4_info, called_by)
         # call the GapFillFromAlternate GUI
         gfalternate_gui(main_gui, ds4, ds_alt, l4_info, called_by)
-    #else:
-        #gfalternate_run_nogui(ds4, ds_alt, l4_info)
+    else:
+        gfalternate_run_nogui(ds4, ds_alt, l4_info, called_by)
 
 def gfalternate_gui(main_gui, ds4, ds_alt, l4_info, called_by):
     # put up the start and end dates
@@ -62,7 +62,7 @@ def gfalternate_gui(main_gui, ds4, ds_alt, l4_info, called_by):
     main_gui.l4_ui.show()
     main_gui.l4_ui.exec_()
 
-def gfalternate_autocomplete(ds_tower, ds_alt, l4_info, mode="verbose"):
+def gfalternate_autocomplete(ds_tower, ds_alt, l4_info, called_by, mode="verbose"):
     """
     Purpose:
      Gap fill using alternate data with gaps identified automatically.
@@ -88,9 +88,10 @@ def gfalternate_autocomplete(ds_tower, ds_alt, l4_info, mode="verbose"):
     #   gfalternate_main
     # - there are logical inconsistencies between this routine and
     #   gfalternate_main
-    l4a = l4_info["alternate"]
+    l4a = l4_info[called_by]
     mode = "quiet" #"verbose" #"quiet"
-    if not l4a["gui"]["auto_complete"]: return
+    if not l4a["gui"]["auto_complete"]:
+        return
     dt_tower = ds_tower.series["DateTime"]["Data"]
     nRecs = len(dt_tower)
     ts = int(ds_tower.globalattributes["time_step"])
@@ -191,8 +192,8 @@ def gfalternate_autocomplete(ds_tower, ds_alt, l4_info, mode="verbose"):
                 logger.info(msg)
             l4a["info"]["startdate"] = ldt_tower[gap[0]].strftime("%Y-%m-%d %H:%M")
             l4a["info"]["enddate"] = ldt_tower[gap[1]].strftime("%Y-%m-%d %H:%M")
-            gfalternate_main(ds_tower, ds_alt, l4_info, label_tower_list=[label_tower])
-            gfalternate_plotcoveragelines(ds_tower, l4_info)
+            gfalternate_main(ds_tower, ds_alt, l4_info, called_by, label_tower_list=[label_tower])
+            gfalternate_plotcoveragelines(ds_tower, l4_info, called_by)
             if not_enough_points: break
 
 def gfalternate_createdataandstatsdict(ldt_tower, data_tower, attr_tower, l4a):
@@ -247,9 +248,9 @@ def gfalternate_done(alt_gui):
     # write Excel spreadsheet with fit statistics
     pfp_io.xl_write_AlternateStats(alt_gui.ds4, alt_gui.l4_info)
     # put the return code into ds.returncodes
-    alt_gui.ds4.returncodes["alternate"] = "normal"
+    alt_gui.ds4.returncodes["message"] = "normal"
 
-def gfalternate_getalternatevaratmaxr(ds_tower, ds_alternate, l4_info, mode="verbose"):
+def gfalternate_getalternatevaratmaxr(ds_tower, ds_alternate, l4a, mode="verbose"):
     """
     Purpose:
      Get a list of alternate variable names that are sorted based on correlation
@@ -259,7 +260,6 @@ def gfalternate_getalternatevaratmaxr(ds_tower, ds_alternate, l4_info, mode="ver
     Author: PRI
     Date: August 2014
     """
-    l4a = l4_info["alternate"]
     # get a list of alternate variables for this tower variable
     label_tower = l4a["run"]["label_tower"]
     label_output = l4a["run"]["label_output"]
@@ -284,7 +284,7 @@ def gfalternate_getalternatevaratmaxr(ds_tower, ds_alternate, l4_info, mode="ver
     for idx, var in enumerate(altvar_list):
         # get the alternate data
         data_alternate, _, _ = pfp_utils.GetSeriesasMA(ds_alternate, var, si=si_alternate, ei=ei_alternate)
-        l4a["run"]["gotminpoints_alternate"] = gfalternate_gotminpoints(data_alternate, l4_info,
+        l4a["run"]["gotminpoints_alternate"] = gfalternate_gotminpoints(data_alternate, l4a,
                                                                         label_tower, mode="quiet")
         if numpy.ma.count(data_alternate) > l4a["run"]["min_points"]:
             # check the lengths of the tower and alternate data are the same
@@ -332,7 +332,7 @@ def gfalternate_getalternatevarlist(ds_alternate, label):
         logger.error("gfalternate_getalternatevarlist: series %s not in alternate data file", label)
     return alternate_var_list
 
-def gfalternate_getdataas2d(odt, data, l4_info):
+def gfalternate_getdataas2d(odt, data, l4a):
     """
     Purpose:
      Return data, a 1D array, as a 2D array with hours along axis=0 and days along
@@ -343,7 +343,6 @@ def gfalternate_getdataas2d(odt, data, l4_info):
     Author: PRI
     Date: August 2014
     """
-    l4a = l4_info["alternate"]
     ts = l4a["info"]["time_step"]
     nperday = l4a["gui"]["nperday"]
     si = 0
@@ -374,13 +373,8 @@ def gfalternate_getdateindices(ldt_tower,ldt_alternate,alternate_info,match):
     ei_tower = pfp_utils.GetDateIndex(ldt_tower,enddate,ts=ts,match=ei_match,default=len(ldt_tower)-1)
     si_alternate = pfp_utils.GetDateIndex(ldt_alternate,startdate,ts=ts,match=si_match,default=0)
     ei_alternate = pfp_utils.GetDateIndex(ldt_alternate,enddate,ts=ts,match=ei_match,default=len(ldt_alternate)-1)
-    #alternate_info["tower"]["si"] = si_tower
-    #alternate_info["tower"]["ei"] = ei_tower
-    #alternate_info["alternate"]["si"] = si_alternate
-    #alternate_info["alternate"]["ei"] = ei_alternate
 
-def gfalternate_getdielaverage(data_dict, l4_info):
-    l4a = l4_info["alternate"]
+def gfalternate_getdielaverage(data_dict, l4a):
     odt = data_dict["DateTime"]["data"]
     label_tower = l4a["run"]["label_tower"]
     output_list = list(data_dict[label_tower]["output_list"])
@@ -388,34 +382,33 @@ def gfalternate_getdielaverage(data_dict, l4_info):
     for label_output in output_list:
         diel_avg[label_output] = {}
         if "data" in data_dict[label_output].keys():
-            data_2d = gfalternate_getdataas2d(odt, data_dict[label_output]["data"], l4_info)
+            data_2d = gfalternate_getdataas2d(odt, data_dict[label_output]["data"], l4a)
             diel_avg[label_output]["data"] = numpy.ma.average(data_2d, axis=0)
         if "fitcorr" in data_dict[label_output].keys():
-            data_2d = gfalternate_getdataas2d(odt, data_dict[label_output]["fitcorr"], l4_info)
+            data_2d = gfalternate_getdataas2d(odt, data_dict[label_output]["fitcorr"], l4a)
             diel_avg[label_output]["fitcorr"] = numpy.ma.average(data_2d, axis=0)
     return diel_avg
 
-def gfalternate_getfitcorrecteddata(data_dict, stat_dict, l4_info):
+def gfalternate_getfitcorrecteddata(data_dict, stat_dict, l4a):
     """
     Wrapper for the various methods of fitting the alternate data to the tower data.
     """
-    l4a = l4_info["alternate"]
     if l4a["run"]["fit_type"].lower() == "ols":
-        gfalternate_getolscorrecteddata(data_dict, stat_dict, l4_info)
+        gfalternate_getolscorrecteddata(data_dict, stat_dict, l4a)
     if l4a["run"]["fit_type"].lower() == "ols_thru0":
-        gfalternate_getolscorrecteddata(data_dict, stat_dict, l4_info)
+        gfalternate_getolscorrecteddata(data_dict, stat_dict, l4a)
     if l4a["run"]["fit_type"].lower() == "mrev":
-        gfalternate_getmrevcorrected(data_dict, stat_dict, l4_info)
+        gfalternate_getmrevcorrected(data_dict, stat_dict, l4a)
     if l4a["run"]["fit_type"].lower() == "replace":
-        gfalternate_getreplacedata(data_dict, stat_dict, l4_info)
+        gfalternate_getreplacedata(data_dict, stat_dict, l4a)
     if l4a["run"]["fit_type"].lower() == "rma":
-        gfalternate_getrmacorrecteddata(data_dict, stat_dict, l4_info)
+        gfalternate_getrmacorrecteddata(data_dict, stat_dict, l4a)
     if l4a["run"]["fit_type"].lower() == "odr":
-        gfalternate_getodrcorrecteddata(data_dict, stat_dict, l4_info)
+        gfalternate_getodrcorrecteddata(data_dict, stat_dict, l4a)
 
 def gfalternate_getlabeloutputlist(l4_info, label_tower):
-    l4a = l4_info["alternate"]
-    l4m = l4_info["merge"]
+    l4a = l4_info["GapFillFromAlternate"]
+    l4m = l4_info["MergeSeries"]
     olist = [item for item in l4a["outputs"].keys() if l4a["outputs"][item]["target"] == label_tower]
     for item in l4m.keys():
         if label_tower in l4m[item].keys():
@@ -425,8 +418,7 @@ def gfalternate_getlabeloutputlist(l4_info, label_tower):
         if item in olist: label_output_list.append(item)
     return label_output_list
 
-def gfalternate_getcorrecteddata(ds_alternate, data_dict, stat_dict, l4_info):
-    l4a = l4_info["alternate"]
+def gfalternate_getcorrecteddata(ds_alternate, data_dict, stat_dict, l4a):
     label_output = l4a["run"]["label_output"]
     label_alternate = l4a["run"]["label_alternate"]
     if l4a["run"]["nogaps_tower"]:
@@ -439,13 +431,13 @@ def gfalternate_getcorrecteddata(ds_alternate, data_dict, stat_dict, l4_info):
         stat_dict[label_output][label_alternate]["eqnstr"] = "No gaps in tower"
     elif not l4a["run"]["nogaps_tower"] and l4a["run"]["gotminpoints_both"]:
         # got enough good points common to both data series
-        gfalternate_getlagcorrecteddata(ds_alternate, data_dict, stat_dict, l4_info)
-        gfalternate_getfitcorrecteddata(data_dict, stat_dict, l4_info)
+        gfalternate_getlagcorrecteddata(ds_alternate, data_dict, stat_dict, l4a)
+        gfalternate_getfitcorrecteddata(data_dict, stat_dict, l4a)
     elif not l4a["run"]["nogaps_tower"] and not l4a["run"]["gotminpoints_both"]:
         stat_dict[label_output][label_alternate]["nLags"] = int(0)
         data_dict[label_output][label_alternate]["lagcorr"] = numpy.ma.copy(data_dict[label_output][label_alternate]["data"])
         if l4a["run"]["fit_type"].lower() == "replace":
-            gfalternate_getfitcorrecteddata(data_dict, stat_dict, l4_info)
+            gfalternate_getfitcorrecteddata(data_dict, stat_dict, l4a)
         else:
             data_dict[label_output][label_alternate]["fitcorr"] = numpy.ma.masked_all_like(data_dict[label_output][label_alternate]["data"])
             stat_dict[label_output][label_alternate]["slope"] = float(0)
@@ -455,8 +447,7 @@ def gfalternate_getcorrecteddata(ds_alternate, data_dict, stat_dict, l4_info):
         msg = "getcorrecteddata: Unrecognised combination of logical tests"
         logger.error(msg)
 
-def gfalternate_getlagcorrecteddata(ds_alternate, data_dict, stat_dict, l4_info):
-    l4a = l4_info["alternate"]
+def gfalternate_getlagcorrecteddata(ds_alternate, data_dict, stat_dict, l4a):
     label_tower = l4a["run"]["label_tower"]
     label_output = l4a["run"]["label_output"]
     label_alternate = l4a["run"]["label_alternate"]
@@ -483,11 +474,10 @@ def gfalternate_getlagcorrecteddata(ds_alternate, data_dict, stat_dict, l4_info)
         data_dict[label_output][label_alternate]["lagcorr"] = numpy.ma.copy(data_dict[label_output][label_alternate]["data"])
         stat_dict[label_output][label_alternate]["nLags"] = int(0)
 
-def gfalternate_getmrevcorrected(data_dict, stat_dict, l4_info):
+def gfalternate_getmrevcorrected(data_dict, stat_dict, l4a):
     """
     Fit alternate data to tower data by replacing means and equalising variance.
     """
-    l4a = l4_info["alternate"]
     odt = data_dict["DateTime"]["data"]
     label_tower = l4a["run"]["label_tower"]
     label_output = l4a["run"]["label_output"]
@@ -495,9 +485,9 @@ def gfalternate_getmrevcorrected(data_dict, stat_dict, l4_info):
     # local copies of the data
     data_tower = numpy.ma.copy(data_dict[label_tower]["data"])
     data_alternate = numpy.ma.copy(data_dict[label_output][label_alternate]["data"])
-    data_2d = gfalternate_getdataas2d(odt, data_tower, l4_info)
+    data_2d = gfalternate_getdataas2d(odt, data_tower, l4a)
     data_twr_hravg = numpy.ma.average(data_2d, axis=0)
-    data_2d = gfalternate_getdataas2d(odt, data_alternate, l4_info)
+    data_2d = gfalternate_getdataas2d(odt, data_alternate, l4a)
     data_alt_hravg = numpy.ma.average(data_2d, axis=0)
     # calculate the means
     mean_tower = numpy.ma.mean(data_tower)
@@ -516,11 +506,10 @@ def gfalternate_getnumgoodpoints(data_tower, data_alternate):
     mask = numpy.ma.mask_or(data_tower.mask, data_alternate.mask, copy=True, shrink=False)
     return len(numpy.where(mask == False)[0])
 
-def gfalternate_getodrcorrecteddata(data_dict, stat_dict, l4_info):
+def gfalternate_getodrcorrecteddata(data_dict, stat_dict, l4a):
     """
     Calculate the orthogonal distance regression fit between 2 1D arrays.
     """
-    l4a = l4_info["alternate"]
     label_tower = l4a["run"]["label_tower"]
     label_output = l4a["run"]["label_output"]
     label_alternate = l4a["run"]["label_alternate"]
@@ -541,11 +530,10 @@ def gfalternate_getodrcorrecteddata(data_dict, stat_dict, l4_info):
     stat_dict[label_output][label_alternate]["offset"] = odr_offset
     stat_dict[label_output][label_alternate]["eqnstr"] = "y = %.3fx + %.3f"%(odr_slope, odr_offset)
 
-def gfalternate_getolscorrecteddata(data_dict, stat_dict, l4_info):
+def gfalternate_getolscorrecteddata(data_dict, stat_dict, l4a):
     """
     Calculate the ordinary least squares fit between 2 1D arrays.
     """
-    l4a = l4_info["alternate"]
     label_tower = l4a["run"]["label_tower"]
     label_output = l4a["run"]["label_output"]
     label_alternate = l4a["run"]["label_alternate"]
@@ -574,8 +562,7 @@ def gfalternate_getolscorrecteddata(data_dict, stat_dict, l4_info):
             stat_dict[label_output][label_alternate]["offset"] = float(0)
             stat_dict[label_output][label_alternate]["eqnstr"] = "OLS error, replaced"
 
-def gfalternate_getoutputstatistics(data_dict, stat_dict, l4_info):
-    l4a = l4_info["alternate"]
+def gfalternate_getoutputstatistics(data_dict, stat_dict, l4a):
     label_tower = l4a["run"]["label_tower"]
     output_list = list(data_dict[label_tower]["output_list"])
     if label_tower in output_list:
@@ -652,8 +639,7 @@ def gfalternate_getoutputstatistics(data_dict, stat_dict, l4_info):
         norm_error = (error)/(0.5*(data_dict[label_tower]["data"]+data_dict[label]["fitcorr"]))
         stat_dict[label]["Frac Bias"] = trap_masked_constant(numpy.ma.average(norm_error))
 
-def gfalternate_getreplacedata(data_dict, stat_dict, l4_info):
-    l4a = l4_info["alternate"]
+def gfalternate_getreplacedata(data_dict, stat_dict, l4a):
     label_output = l4a["run"]["label_output"]
     label_alternate = l4a["run"]["label_alternate"]
     data_alternate = data_dict[label_output][label_alternate]["lagcorr"]
@@ -662,11 +648,10 @@ def gfalternate_getreplacedata(data_dict, stat_dict, l4_info):
     stat_dict[label_output][label_alternate]["offset"] = float(0)
     stat_dict[label_output][label_alternate]["eqnstr"] = "No OLS, replaced"
 
-def gfalternate_getrmacorrecteddata(data_dict, stat_dict, l4_info):
+def gfalternate_getrmacorrecteddata(data_dict, stat_dict, l4a):
     """
     Calculate the ordinary least squares fit between 2 1D arrays.
     """
-    l4a = l4_info["alternate"]
     label_tower = l4a["run"]["label_tower"]
     label_output = l4a["run"]["label_output"]
     label_alternate = l4a["run"]["label_alternate"]
@@ -699,11 +684,10 @@ def gfalternate_getrmacorrecteddata(data_dict, stat_dict, l4_info):
             stat_dict[label_output][label_alternate]["offset"] = float(0)
             stat_dict[label_output][label_alternate]["eqnstr"] = "RMA error, replaced"
 
-def gfalternate_gotdataforgaps(data, data_alternate, l4_info, mode="verbose"):
+def gfalternate_gotdataforgaps(data, data_alternate, l4a, mode="verbose"):
     """
     Returns true if the alternate series has data where the composite series has gaps.
     """
-    l4a = l4_info["alternate"]
     return_code = True
     ind = numpy.where((numpy.ma.getmaskarray(data) == True) & (numpy.ma.getmaskarray(data_alternate) == False))[0]
     if len(ind) == 0:
@@ -745,8 +729,7 @@ def gfalternate_gotminpoints(data, l4a, label, mode="verbose"):
         return_code = False
     return return_code
 
-def gfalternate_gotminpointsboth(data_tower, data_alternate, l4_info, label_tower, label_alternate, mode="verbose"):
-    l4a = l4_info["alternate"]
+def gfalternate_gotminpointsboth(data_tower, data_alternate, l4a, label_tower, label_alternate, mode="verbose"):
     return_code = True
     mask = numpy.ma.mask_or(numpy.ma.getmaskarray(data_tower), numpy.ma.getmaskarray(data_alternate),
                             copy=True, shrink=False)
@@ -763,8 +746,7 @@ def gfalternate_gotminpointsboth(data_tower, data_alternate, l4_info, label_towe
         return_code = False
     return return_code
 
-def gfalternate_initplot(data_dict, l4_info, **kwargs):
-    l4a = l4_info["alternate"]
+def gfalternate_initplot(data_dict, l4a, **kwargs):
     pd = {"margin_bottom":0.075, "margin_top":0.05, "margin_left":0.075, "margin_right":0.05,
           "xy_height":0.25, "xy_width":0.20, "xyts_space":0.05, "xyxy_space":0.05, "ts_width":0.9,
           "text_left":0.675, "num_left":0.825, "row_bottom":0.35, "row_space":0.030}
@@ -781,8 +763,7 @@ def gfalternate_initplot(data_dict, l4_info, **kwargs):
         pd[key] = value
     return pd
 
-def gfalternate_loadoutputdata(ds_tower, data_dict, l4_info):
-    l4a = l4_info["alternate"]
+def gfalternate_loadoutputdata(ds_tower, data_dict, l4a):
     ldt_tower = ds_tower.series["DateTime"]["Data"]
     label_output = l4a["run"]["label_output"]
     label_composite = l4a["run"]["label_composite"]
@@ -872,7 +853,7 @@ def gfalternate_main(ds_tower, ds_alt, l4_info, called_by, label_tower_list=[]):
             l4a["run"]["label_output"] = label_output
             l4a["run"]["alternate_name"] = l4a["outputs"][label_output]["alternate_name"]
             # update the alternate_info dictionary
-            gfalternate_update_alternate_info(l4_info)
+            gfalternate_update_alternate_info(l4a)
             # update the dictionaries
             stat_dict[label_output] = {"startdate": l4a["info"]["startdate"],
                                        "enddate": l4a["info"]["enddate"]}
@@ -887,16 +868,16 @@ def gfalternate_main(ds_tower, ds_alt, l4_info, called_by, label_tower_list=[]):
             si_alternate = pfp_utils.GetDateIndex(ldt_alternate, l4a["info"]["startdate"], ts=ts, default=0)
             ei_alternate = pfp_utils.GetDateIndex(ldt_alternate, l4a["info"]["enddate"], ts=ts, default=len(ldt_alternate)-1)
             # get the alternate series that has the highest correlation with the tower data
-            label_alternate_list = gfalternate_getalternatevaratmaxr(ds_tower, ds_alternate, l4_info, mode=mode)
+            label_alternate_list = gfalternate_getalternatevaratmaxr(ds_tower, ds_alternate, l4a, mode=mode)
             # loop over alternate variables
             for label_alternate in label_alternate_list:
                 l4a["run"]["label_alternate"] = label_alternate
                 # get the raw alternate data
                 data_alternate, _, attr_alternate = pfp_utils.GetSeriesasMA(ds_alternate, label_alternate, si=si_alternate, ei=ei_alternate)
                 # check this alternate variable to see if there are enough points
-                l4a["run"]["gotminpoints_alternate"] = gfalternate_gotminpoints(data_alternate, l4_info, label_alternate, mode=mode)
-                l4a["run"]["gotdataforgaps_alternate"] = gfalternate_gotdataforgaps(data_dict[label_output]["data"], data_alternate, l4_info, mode=mode)
-                l4a["run"]["gotminpoints_both"] = gfalternate_gotminpointsboth(data_tower, data_alternate, l4_info, label_tower, label_alternate, mode=mode)
+                l4a["run"]["gotminpoints_alternate"] = gfalternate_gotminpoints(data_alternate, l4a, label_alternate, mode=mode)
+                l4a["run"]["gotdataforgaps_alternate"] = gfalternate_gotdataforgaps(data_dict[label_output]["data"], data_alternate, l4a, mode=mode)
+                l4a["run"]["gotminpoints_both"] = gfalternate_gotminpointsboth(data_tower, data_alternate, l4a, label_tower, label_alternate, mode=mode)
                 # update the data and sata dictionaries
                 stat_dict[label_output][label_alternate] = {"startdate": l4a["info"]["startdate"],
                                                             "enddate":l4a["info"]["enddate"]}
@@ -904,15 +885,15 @@ def gfalternate_main(ds_tower, ds_alt, l4_info, called_by, label_tower_list=[]):
                     data_dict[label_tower]["output_list"].append(label_output)
                 data_dict[label_output][label_alternate] = {"data": data_alternate,
                                                             "attr": attr_alternate}
-                gfalternate_getcorrecteddata(ds_alternate, data_dict, stat_dict, l4_info)
-                gfalternate_loadoutputdata(ds_tower, data_dict, l4_info)
+                gfalternate_getcorrecteddata(ds_alternate, data_dict, stat_dict, l4a)
+                gfalternate_loadoutputdata(ds_tower, data_dict, l4a)
                 # check to see if we have alternate data for this whole period, if so there is no reason to continue
                 ind_tower = numpy.where(abs(ds_tower.series[label_output]["Data"][si_tower:ei_tower+1]-float(c.missing_value)) < c.eps)[0]
                 if len(ind_tower) == 0:
                     break
         # we have completed the loop over the alternate data for this output
         # now do the statistics, diurnal average and daily averages for this output
-        gfalternate_getoutputstatistics(data_dict, stat_dict, l4_info)
+        gfalternate_getoutputstatistics(data_dict, stat_dict, l4a)
         for label_output in label_output_list:
             for result in l4a["outputs"][label_output]["results"]:
                 l4a["outputs"][label_output]["results"][result].append(stat_dict[label_output][result])
@@ -922,15 +903,14 @@ def gfalternate_main(ds_tower, ds_alt, l4_info, called_by, label_tower_list=[]):
             else:
                 continue
         # plot the gap filled data
-        pd = gfalternate_initplot(data_dict, l4_info)
-        diel_avg = gfalternate_getdielaverage(data_dict, l4_info)
+        pd = gfalternate_initplot(data_dict, l4a)
+        diel_avg = gfalternate_getdielaverage(data_dict, l4a)
         # reserve figure number 0 for the coverage lines/progress plot
         fig_num = fig_num + 1
-        gfalternate_plotcomposite(fig_num, data_dict, stat_dict, diel_avg, l4_info, pd)
+        gfalternate_plotcomposite(fig_num, data_dict, stat_dict, diel_avg, l4a, pd)
 
-def gfalternate_plotcomposite(nfig, data_dict, stat_dict, diel_avg, l4_info, pd):
+def gfalternate_plotcomposite(nfig, data_dict, stat_dict, diel_avg, l4a, pd):
     # set up some local pointers
-    l4a = l4_info["alternate"]
     label_tower = l4a["run"]["label_tower"]
     label_composite = l4a["run"]["label_composite"]
     time_step = l4a["info"]["time_step"]
@@ -1035,7 +1015,7 @@ def gfalternate_plotcoveragelines(ds_tower, l4_info, called_by):
     Author: PRI
     Date: Back in the day
     """
-    # local pointer to l4_info["alternate"]
+    # local pointer to l4_info["GapFillFromAlternate"]
     l4ia = l4_info[called_by]
     # local pointer to datetime
     ldt = ds_tower.series["DateTime"]["Data"]
@@ -1187,7 +1167,7 @@ def gfalternate_quit(alt_gui):
     # destroy the alternate GUI
     alt_gui.close()
     # put the return code into ds.returncodes
-    ds.returncodes["alternate"] = "quit"
+    ds.returncodes["message"] = "quit"
 
 def gfalternate_run_gui(alt_gui):
     """ Run the GapFillFromAlternate GUI."""
@@ -1215,8 +1195,8 @@ def gfalternate_run_gui(alt_gui):
     l4a["gui"]["nperhr"] = int(float(60)/ts + 0.5)
     l4a["gui"]["nperday"] = int(float(24)*l4a["gui"]["nperhr"] + 0.5)
     l4a["gui"]["max_lags"] = int(float(12)*l4a["gui"]["nperhr"] + 0.5)
-    l4a["gui"]["tower"] = {}
-    l4a["gui"]["alternate"] = {}
+    #l4a["gui"]["tower"] = {}
+    #l4a["gui"]["alternate"] = {}
     series_list = [l4a["outputs"][item]["target"] for item in l4a["outputs"].keys()]
     l4a["gui"]["series_list"] = sorted(list(set(series_list)))
     logger.info(" Gap filling %s using alternate data", l4a["gui"]["series_list"])
@@ -1315,9 +1295,9 @@ def gfalternate_run_gui(alt_gui):
     # write Excel spreadsheet with fit statistics
     #pfp_io.xl_write_AlternateStats(ds_tower)
 
-def gfalternate_run_nogui(ds_tower, ds_alt, l4_info):
+def gfalternate_run_nogui(ds_tower, ds_alt, l4_info, called_by):
     # populate the alternate_info dictionary with things that will be useful
-    l4a = l4_info["alternate"]
+    l4a = l4_info[called_by]
     # autoforce is used by gfalternate_autocomplete
     l4a["gui"]["autoforce"] = False
     # period option
@@ -1438,87 +1418,8 @@ def gfalternate_run_nogui(ds_tower, ds_alt, l4_info):
     # write Excel spreadsheet with fit statistics
     pfp_io.xl_write_AlternateStats(ds_tower, l4_info)
 
-def gfalternate_updatedict(cf,ds_tower,ds_alt):
-    """
-    Update the ds.alternate dictionary.  This is done after reading the control file so
-    that the user can make changes to the control file while the gap fill GUI is still
-    displayed and the re-run the gap filling.  This gives a measure of interactive-like
-    behaviour to the gap filling process.
-    """
-    if "alternate" not in dir(ds_tower): return
-    section = "Drivers"
-    series_list = cf[section].keys()
-    for series in series_list:
-        if "GapFillFromAlternate" not in cf[section][series].keys(): continue
-        # name of alternate output series in ds
-        output_list = cf[section][series]["GapFillFromAlternate"].keys()
-        # loop over the outputs listed in the control file
-        for output in output_list:
-            if output not in ds_tower.alternate.keys(): ds_tower.alternate[output] = {}
-            ds_tower.alternate[output]["label_tower"] = series
-            # source name
-            ds_tower.alternate[output]["source"] = cf[section][series]["GapFillFromAlternate"][output]["source"]
-            # site name
-            ds_tower.alternate[output]["site_name"] = ds_tower.globalattributes["site_name"]
-            # alternate data file name
-            # first, look in the [Files] section for a generic file name
-            file_list = cf["Files"].keys()
-            lower_file_list = [item.lower() for item in file_list]
-            if ds_tower.alternate[output]["source"].lower() in lower_file_list:
-                # found a generic file name
-                i = lower_file_list.index(ds_tower.alternate[output]["source"].lower())
-                ds_tower.alternate[output]["file_name"] = cf["Files"][file_list[i]]
-            else:
-                # no generic file name found, look for a file name in the variable section
-                ds_tower.alternate[output]["file_name"] = cf[section][series]["GapFillFromAlternate"][output]["file_name"]
-            # if the file has not already been read, do it now
-            if ds_tower.alternate[output]["file_name"] not in ds_alt:
-                ds_alt[ds_tower.alternate[output]["file_name"]] = pfp_io.nc_read_series(ds_tower.alternate[output]["file_name"])
-            # get the type of fit
-            ds_tower.alternate[output]["fit_type"] = "OLS"
-            if "fit" in cf[section][series]["GapFillFromAlternate"][output]:
-                if cf[section][series]["GapFillFromAlternate"][output]["fit"].lower() in ["ols","ols_thru0","mrev","replace","rma","odr"]:
-                    ds_tower.alternate[output]["fit_type"] = cf[section][series]["GapFillFromAlternate"][output]["fit"]
-                else:
-                    logger.info("gfAlternate: unrecognised fit option for series %s", output)
-            # force the fit through the origin
-            #ds_tower.alternate[output]["thru0"] = "no"
-            #if "thru0" in cf[section][series]["GapFillFromAlternate"][output]:
-                #if cf[section][series]["GapFillFromAlternate"][output]["thru0"].lower() in ["yes","true"]:
-                    #ds_tower.alternate[output]["thru0"] = "yes"
-                #else:
-                    #log.info("gfAlternate: unrecognised thru0 option for series "+output)
-            # correct for lag?
-            if "lag" in cf[section][series]["GapFillFromAlternate"][output]:
-                if cf[section][series]["GapFillFromAlternate"][output]["lag"].lower() in ["no","false"]:
-                    ds_tower.alternate[output]["lag"] = "no"
-                elif cf[section][series]["GapFillFromAlternate"][output]["lag"].lower() in ["yes","true"]:
-                    ds_tower.alternate[output]["lag"] = "yes"
-                else:
-                    logger.info("gfAlternate: unrecognised lag option for series %s", output)
-            else:
-                ds_tower.alternate[output]["lag"] = "yes"
-            # alternate data variable name if different from name used in control file
-            if "alternate_name" in cf[section][series]["GapFillFromAlternate"][output]:
-                ds_tower.alternate[output]["alternate_name"] = cf[section][series]["GapFillFromAlternate"][output]["alternate_name"]
-            else:
-                ds_tower.alternate[output]["alternate_name"] = series
-            # results of best fit for plotting later on
-            if "results" not in ds_tower.alternate[output].keys():
-                ds_tower.alternate[output]["results"] = {"startdate":[],"enddate":[],"No. points":[],"r":[],
-                                                         "Bias":[],"RMSE":[],"Frac Bias":[],"NMSE":[],
-                                                         "Avg (tower)":[],"Avg (alternate)":[],
-                                                         "Var (tower)":[],"Var (alternate)":[],"Var ratio":[],
-                                                         "Lag (uncorrected)":[],"Lag (corrected)":[],
-                                                         "Slope":[],"Offset":[]}
-            # create an empty series in ds if the alternate output series doesn't exist yet
-            if output not in ds_tower.series.keys():
-                data,flag,attr = pfp_utils.MakeEmptySeries(ds_tower,output)
-                pfp_utils.CreateSeries(ds_tower,output,data,flag,attr)
-
-def gfalternate_update_alternate_info(l4_info):
+def gfalternate_update_alternate_info(l4a):
     """Update the l4_info dictionary."""
-    l4a = l4_info["alternate"]
     label_output = l4a["run"]["label_output"]
     l4a["run"]["fit_type"] = l4a["outputs"][label_output]["fit_type"]
     l4a["run"]["lag"] = l4a["outputs"][label_output]["lag"]

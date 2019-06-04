@@ -2111,15 +2111,15 @@ def get_missingingapfilledseries(ds, l4_info):
     # create an empty list
     alt_list = []
     # check to see if there was any gap filling using data from alternate sources
-    if "alternate" in l4_info.keys():
-        l4a = l4_info["alternate"]
+    if "GapFillFromAlternate" in l4_info.keys():
+        l4a = l4_info["GapFillFromAlternate"]
         # if so, get a list of the quantities gap filled from alternate sources
         alt_list = list(set([l4a["outputs"][item]["target"] for item in l4a["outputs"].keys()]))
     # create an empty list
     cli_list = []
     # check to see if there was any gap filling from climatology
-    if "climatology" in l4_info.keys():
-        l4c = l4_info["climatology"]
+    if "GapFillFromClimatology" in l4_info.keys():
+        l4c = l4_info["GapFillFromClimatology"]
         # if so, get a list of the quantities gap filled using climatology
         cli_list = list(set([l4c["outputs"][item]["target"] for item in l4c["outputs"].keys()]))
     # one list to rule them, one list to bind them ...

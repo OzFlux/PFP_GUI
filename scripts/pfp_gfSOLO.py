@@ -757,8 +757,8 @@ def gfSOLO_run_nogui(cf,dsa,dsb,solo_info):
     solo_info["nperday"] = int(float(24)*solo_info["nperhr"]+0.5)
     solo_info["maxlags"] = int(float(12)*solo_info["nperhr"]+0.5)
     solo_info["series"] = dsb.solo.keys()
-    solo_info["tower"] = {}
-    solo_info["alternate"] = {}
+    #solo_info["tower"] = {}
+    #solo_info["alternate"] = {}
     series_list = [dsb.solo[item]["label_tower"] for item in dsb.solo.keys()]
     logger.info(" Gap filling "+str(series_list)+" using SOLO")
     if solo_info["peropt"]==1:

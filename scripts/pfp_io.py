@@ -2330,13 +2330,8 @@ def xl_check_cf_section(cf, label):
     return result
 
 def xl_write_AlternateStats(ds, l4_info):
-    l4a = l4_info["alternate"]
-    if "alternate" not in l4_info: return
-    # get the output file name
-    out_filename = get_outfilenamefromcf(l4_info["cf"])
-    # get the Excel file name
-    xl_filename = out_filename.replace('.nc', '_AlternateStats.xls')
-    file_name = os.path.split(xl_filename)
+    l4a = l4_info["GapFillFromAlternate"]
+    file_name = os.path.split(l4a["info"]["xl_file_name"])
     logger.info(' Writing alternate fit statistics to ' + file_name[1])
     # open the Excel file
     xlfile = xlwt.Workbook()
@@ -2371,7 +2366,7 @@ def xl_write_AlternateStats(ds, l4_info):
                 xlResultsSheet.write(xlRow, xlCol, numpy.float64(item))
             xlRow = 9
             xlCol = xlCol + 1
-    xlfile.save(xl_filename)
+    xlfile.save(l4a["info"]["xl_file_name"])
 
 def xl_write_SOLOStats(ds, l5_info):
     if "solo" not in l5_info.keys():

@@ -358,10 +358,10 @@ def do_run_l4(main_gui, cfg=None):
         cfg["Options"]={}
     cfg["Options"]["call_mode"] = "interactive"
     ds4 = pfp_levels.l4qc(main_gui, cfg, ds3)
-    if ds4.returncodes["alternate"]=="quit":
-        logger.info("Quitting L4: "+sitename)
+    if ds4.returncodes["message"] == "quit":
+        logger.info("Quitting L4: " + sitename)
     else:
-        logger.info("Finished L4: "+sitename)
+        logger.info("Finished L4: " + sitename)
         out_filepath = pfp_io.get_outfilenamefromcf(cfg)
         nc_file = pfp_io.nc_open_write(out_filepath)
         pfp_io.nc_write_series(nc_file, ds4)         # save the L4 data

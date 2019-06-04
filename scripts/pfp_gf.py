@@ -51,8 +51,7 @@ def CheckDrivers(info, ds):
             # save the number of missing data points and the datetimes when they occur
             idx = numpy.where(numpy.ma.getmaskarray(var["Data"]))[0]
             drivers_with_missing[label] = {"count": len(idx),
-                                           "dates": ldt["Data"][idx],
-                                           "end_date":[]}
+                                           "dates": ldt["Data"][idx]}
     # check to see if any of the drivers have missing data
     if len(drivers_with_missing.keys()) == 0:
         msg = "  No missing data found in drivers"
@@ -68,6 +67,8 @@ def CheckDrivers(info, ds):
         var = pfp_utils.GetVariable(ds, label)
         # check to see if this variable was imported
         if "end_date" in var["Attr"]:
+            if "end_date" not in drivers_with_missing[label]:
+                drivers_with_missing[label]["end_date"] = []
             # it was, so perhaps this variable finishes before the tower data
             drivers_with_missing[label]["end_date"].append(dateutil.parser.parse(var["Attr"]["end_date"]))
     # check to see if any variables with missing data have an end date
@@ -159,7 +160,6 @@ def ParseL5ControlFile(cf, ds):
     return l5_info
 
 def ReadAlternateFiles(ds, l4_info):
-    #l4_info["alternate"]["outputs"]["Fn_era5"]["file_name"]
     ds_alt = {}
     l4ao = l4_info["GapFillFromAlternate"]["outputs"]
     # get a list of file names
@@ -221,6 +221,9 @@ def gfalternate_createdict_info(cf, ds, l4_info, called_by):
                    "call_mode": call_mode,
                    "time_step": int(ds.globalattributes["time_step"]),
                    "site_name": ds.globalattributes["site_name"]}
+    out_filename = pfp_io.get_outfilenamefromcf(cf)
+    xl_file_name = out_filename.replace('.nc', '_AlternateStats.xls')
+    l4a["info"]["xl_file_name"] = xl_file_name
     return
 
 def gfalternate_createdict_outputs(cf, ds, l4_info, label, called_by):
