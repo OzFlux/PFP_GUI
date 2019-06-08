@@ -275,7 +275,7 @@ def ConvertFcUnits(cf, ds):
         Fc = GetVariable(ds, label)
         # check the units, we only operate on what we know (LBYL)
         if Fc["Attr"]["units"] not in units_list:
-            Fc_list.remove(label)
+            #Fc_list.remove(label)
             continue
         Fc_units_in = Fc["Attr"]["units"]
         # check to see if we need to convert units
