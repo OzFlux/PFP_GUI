@@ -364,7 +364,8 @@ def l6qc(main_gui, cf, ds5):
     ds6 = pfp_io.copy_datastructure(cf, ds5)
     # ds6 will be empty (logical false) if an error occurs in copy_datastructure
     # return from this routine if this is the case
-    if not ds6: return ds6
+    if not ds6:
+        return ds6
     # set some attributes for this level
     pfp_utils.UpdateGlobalAttributes(cf, ds6, "L6")
     # parse the control file

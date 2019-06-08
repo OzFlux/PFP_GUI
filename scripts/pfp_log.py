@@ -1,7 +1,24 @@
+# standard modules
+import datetime
 import logging
 import os
+# 3rd party modules
+from PyQt4 import QtCore, QtGui
 
-def init_logger(logger_name="pfp_log", file_handler="pfp.log"):
+class QPlainTextEditLogger(logging.Handler):
+    def __init__(self, parent):
+        super(QPlainTextEditLogger, self).__init__()
+        self.textBox = QtGui.QPlainTextEdit(parent)
+        self.textBox.setReadOnly(True)
+        logfmt = logging.Formatter('%(asctime)s %(levelname)s %(message)s','%H:%M:%S')
+        self.setFormatter(logfmt)
+
+    def emit(self, record):
+        msg = self.format(record)
+        self.textBox.appendPlainText(msg)
+        QtGui.QApplication.processEvents()
+
+def init_logger():
     """
     Purpose:
      Returns a logger object.
@@ -10,25 +27,20 @@ def init_logger(logger_name="pfp_log", file_handler="pfp.log"):
     Author: PRI with acknowledgement to James Cleverly
     Date: September 2016
     """
-    logger = logging.getLogger(name=logger_name)
+    # get the logger
+    logger = logging.getLogger(name="pfp_log")
+    # set the level
     logger.setLevel(logging.DEBUG)
     # create file handler
-    #max_bytes = 1024 * 1024 * 2
-    #fh = logging.handlers.RotatingFileHandler(os.path.join("logfiles", 'pfp.log'), mode="a", maxBytes=max_bytes, backupCount=1)
-    if not os.path.exists("logfiles"):
-        os.makedirs("logfiles")
-    log_file_path = os.path.join("logfiles", file_handler)
+    now = datetime.datetime.now()
+    file_name = "pfp_" + now.strftime("%Y%m%d%H%M") + ".log"
+    log_file_path = os.path.join("logfiles", file_name)
     fh = logging.FileHandler(log_file_path)
     fh.setLevel(logging.DEBUG)
-    # create console handler
-    ch = logging.StreamHandler()
-    ch.setLevel(logging.INFO)
     # create formatter and add to handlers
     formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s','%H:%M:%S')
     fh.setFormatter(formatter)
-    ch.setFormatter(formatter)
     # add the handlers to the logger
     logger.addHandler(fh)
-    logger.addHandler(ch)
 
     return logger
