@@ -358,7 +358,7 @@ def optimise_annual_Eo(data_dict, params_dict, configs_dict, year_index_dict):
         logger.info(" Eo estimates passed QC for all years")
     return yearsEo_dict, yearsQC_dict, yearsEo_raw_dict, yearsQC_raw_dict, status
 
-def rpLT_createdict(cf, ds, info, label):
+def rpLT_createdict(cf, ds, l6_info, label, called_by):
     """
     Purpose:
      Creates a dictionary in ds to hold information about estimating ecosystem
@@ -367,10 +367,12 @@ def rpLT_createdict(cf, ds, info, label):
     Author: PRI
     Date October 2015
     """
+    nrecs = int(ds.globalattributes["nc_nrecs"])
     # get the target
-    target = pfp_utils.get_keyvaluefromcf(cf, ["ER", label, "ERUsingLloydTaylor"], "target", default="ER")
+    target = pfp_utils.get_keyvaluefromcf(cf, ["ER", label, called_by], "target", default="ER")
+    output = pfp_utils.get_keyvaluefromcf(cf, ["ER", label, called_by], "output", default="ER_LT_all")
     # check that none of the drivers have missing data
-    opt = pfp_utils.get_keyvaluefromcf(cf, ["ER", label, "ERUsingLloydTaylor"], "drivers", default="Ta")
+    opt = pfp_utils.get_keyvaluefromcf(cf, ["ER", label, called_by], "drivers", default="Ta")
     drivers = pfp_cfg.cfg_string_to_list(opt)
     for driver in drivers:
         data, flag, attr = pfp_utils.GetSeriesasMA(ds, driver)
@@ -379,19 +381,16 @@ def rpLT_createdict(cf, ds, info, label):
             logger.error(msg)
             return
     # create the dictionary keys for this series
-    if "lloydtaylor" not in info:
-        info["lloydtaylor"] = {"outputs": {label: {}}}
-    ilol = info["lloydtaylor"]["outputs"][label]
+    if called_by not in l6_info["ER"].keys():
+        l6_info["ER"][called_by] = {"outputs": {}, "info": {}, "gui": {}}
+    ilol = l6_info["ER"][called_by]["outputs"][output] = {}
     # target series name
     ilol["target"] = target
     # list of drivers
     ilol["drivers"] = drivers
     # source to use as CO2 flux
-    opt = pfp_utils.get_keyvaluefromcf(cf, ["ER", label, "ERUsingLloydTaylor"], "source", default="Fc")
+    opt = pfp_utils.get_keyvaluefromcf(cf, ["ER", label, called_by], "source", default="Fc")
     ilol["source"] = opt
-    # name of output series in ds
-    output = pfp_utils.get_keyvaluefromcf(cf, ["ER", label, "ERUsingLloydTaylor"], "output", default="ER_LT_all")
-    ilol["output"] = output
     # results of best fit for plotting later on
     ilol["results"] = {"startdate":[], "enddate":[], "No. points":[], "r":[],
                        "Bias":[], "RMSE":[], "Frac Bias":[], "NMSE":[],
@@ -401,26 +400,9 @@ def rpLT_createdict(cf, ds, info, label):
     # create the configuration dictionary
     ilol["configs_dict"] = get_configs_dict(cf, ds)
     # create an empty series in ds if the output series doesn't exist yet
-    if ilol["output"] not in ds.series.keys():
-        data, flag, attr = pfp_utils.MakeEmptySeries(ds, ilol["output"])
-        pfp_utils.CreateSeries(ds, ilol["output"], data, flag, attr)
-    # create the merge directory in the info dictionary
-    if "merge" not in info:
-        info["merge"] = {}
-    if "standard" not in info["merge"].keys():
-        info["merge"]["standard"] = {}
-    # create the dictionary keys for this series
-    info["merge"]["standard"][label] = {}
-    # output series name
-    info["merge"]["standard"][label]["output"] = label
-    # source
-    opt = pfp_utils.get_keyvaluefromcf(cf, ["ER", label, "MergeSeries"], "Source", default="ER,ER_LT_all")
-    sources = pfp_cfg.cfg_string_to_list(opt)
-    info["merge"]["standard"][label]["source"] = sources
-    # create an empty series in ds if the output series doesn't exist yet
-    if info["merge"]["standard"][label]["output"] not in ds.series.keys():
-        data, flag, attr = pfp_utils.MakeEmptySeries(ds, info["merge"]["standard"][label]["output"])
-        pfp_utils.CreateSeries(ds, info["merge"]["standard"][label]["output"], data, flag, attr)
+    if output not in ds.series.keys():
+        variable = pfp_utils.CreateEmptyVariable(output, nrecs)
+        pfp_utils.CreateVariable(ds, variable)
     return
 
 def rpLT_initplot(**kwargs):
@@ -436,28 +418,28 @@ def rpLT_initplot(**kwargs):
     pd["ts_height"] = (1.0 - pd["margin_top"] - pd["ts_bottom"])/float(pd["nDrivers"]+1)
     return pd
 
-def rpLT_plot(pd, ds, series, driverlist, targetlabel, outputlabel, info, si=0, ei=-1):
+def rpLT_plot(pd, ds, output, drivers, target, iel, si=0, ei=-1):
     """ Plot the results of the Lloyd-Taylor run. """
-    ieli = info["er"]["lloydtaylor"]["info"]
-    ielo = info["er"]["lloydtaylor"]["outputs"]
+    ieli = iel["info"]
+    ielo = iel["outputs"]
     # get a local copy of the datetime series
-    if ei==-1:
+    if ei == -1:
         dt = ds.series['DateTime']['Data'][si:]
     else:
         dt = ds.series['DateTime']['Data'][si:ei+1]
     xdt = numpy.array(dt)
     Hdh, f, a = pfp_utils.GetSeriesasMA(ds, 'Hdh', si=si, ei=ei)
     # get the observed and modelled values
-    obs, f, a = pfp_utils.GetSeriesasMA(ds, targetlabel, si=si, ei=ei)
-    mod, f, a = pfp_utils.GetSeriesasMA(ds, outputlabel, si=si, ei=ei)
+    obs, f, a = pfp_utils.GetSeriesasMA(ds, target, si=si, ei=ei)
+    mod, f, a = pfp_utils.GetSeriesasMA(ds, output, si=si, ei=ei)
     # make the figure
-    if info["er"]["lloydtaylor"]["info"]["show_plots"]:
+    if ieli["show_plots"]:
         plt.ion()
     else:
         plt.ioff()
     fig = plt.figure(pd["fig_num"], figsize=(13, 8))
     fig.clf()
-    fig.canvas.set_window_title(targetlabel + " (LT): " + pd["startdate"] + " to " + pd["enddate"])
+    fig.canvas.set_window_title(target + " (LT): " + pd["startdate"] + " to " + pd["enddate"])
     plt.figtext(0.5, 0.95, pd["title"], ha='center', size=16)
     # XY plot of the diurnal variation
     rect1 = [0.10, pd["margin_bottom"], pd["xy_width"], pd["xy_height"]]
@@ -475,15 +457,15 @@ def rpLT_plot(pd, ds, series, driverlist, targetlabel, outputlabel, info, si=0, 
     ax1.plot(dstats["Hr"], dstats["Av"], 'g-', label="LT(obs)")
     plt.xlim(0, 24)
     plt.xticks([0, 6, 12, 18, 24])
-    ax1.set_ylabel(targetlabel)
+    ax1.set_ylabel(target)
     ax1.set_xlabel('Hour')
     ax1.legend(loc='upper right', frameon=False, prop={'size':8})
     # XY plot of the 30 minute data
     rect2 = [0.40, pd["margin_bottom"], pd["xy_width"], pd["xy_height"]]
     ax2 = plt.axes(rect2)
     ax2.plot(mod, obs, 'b.')
-    ax2.set_ylabel(targetlabel + '_obs')
-    ax2.set_xlabel(targetlabel + '_LT')
+    ax2.set_ylabel(target + '_obs')
+    ax2.set_xlabel(target + '_LT')
     # plot the best fit line
     coefs = numpy.ma.polyfit(numpy.ma.copy(mod), numpy.ma.copy(obs), 1)
     xfit = numpy.ma.array([numpy.ma.minimum(mod), numpy.ma.maximum(mod)])
@@ -497,32 +479,32 @@ def rpLT_plot(pd, ds, series, driverlist, targetlabel, outputlabel, info, si=0, 
     numfilled = numpy.ma.count(mod)-numpy.ma.count(obs)
     diff = mod - obs
     bias = numpy.ma.average(diff)
-    ielo[series]["results"]["Bias"].append(bias)
+    ielo[output]["results"]["Bias"].append(bias)
     rmse = numpy.ma.sqrt(numpy.ma.mean((obs-mod)*(obs-mod)))
     plt.figtext(0.725, 0.225, 'No. points')
     plt.figtext(0.825, 0.225, str(numpoints))
-    ielo[series]["results"]["No. points"].append(numpoints)
+    ielo[output]["results"]["No. points"].append(numpoints)
     plt.figtext(0.725, 0.200, 'No. filled')
     plt.figtext(0.825, 0.200, str(numfilled))
     plt.figtext(0.725, 0.175, 'Slope')
     plt.figtext(0.825, 0.175, str(pfp_utils.round2sig(coefs[0], sig=4)))
-    ielo[series]["results"]["m_ols"].append(coefs[0])
+    ielo[output]["results"]["m_ols"].append(coefs[0])
     plt.figtext(0.725, 0.150, 'Offset')
     plt.figtext(0.825, 0.150, str(pfp_utils.round2sig(coefs[1], sig=4)))
-    ielo[series]["results"]["b_ols"].append(coefs[1])
+    ielo[output]["results"]["b_ols"].append(coefs[1])
     plt.figtext(0.725, 0.125, 'r')
     plt.figtext(0.825, 0.125, str(pfp_utils.round2sig(r[0][1], sig=4)))
-    ielo[series]["results"]["r"].append(r[0][1])
+    ielo[output]["results"]["r"].append(r[0][1])
     plt.figtext(0.725, 0.100, 'RMSE')
     plt.figtext(0.825, 0.100, str(pfp_utils.round2sig(rmse, sig=4)))
-    ielo[series]["results"]["RMSE"].append(rmse)
+    ielo[output]["results"]["RMSE"].append(rmse)
     var_obs = numpy.ma.var(obs)
-    ielo[series]["results"]["Var (obs)"].append(var_obs)
+    ielo[output]["results"]["Var (obs)"].append(var_obs)
     var_mod = numpy.ma.var(mod)
-    ielo[series]["results"]["Var (LT)"].append(var_mod)
-    ielo[series]["results"]["Var ratio"].append(var_obs/var_mod)
-    ielo[series]["results"]["Avg (obs)"].append(numpy.ma.average(obs))
-    ielo[series]["results"]["Avg (LT)"].append(numpy.ma.average(mod))
+    ielo[output]["results"]["Var (LT)"].append(var_mod)
+    ielo[output]["results"]["Var ratio"].append(var_obs/var_mod)
+    ielo[output]["results"]["Avg (obs)"].append(numpy.ma.average(obs))
+    ielo[output]["results"]["Avg (LT)"].append(numpy.ma.average(mod))
     # time series of drivers and target
     ts_axes = []
     rect = [pd["margin_left"], pd["ts_bottom"], pd["ts_width"], pd["ts_height"]]
@@ -532,11 +514,11 @@ def rpLT_plot(pd, ds, series, driverlist, targetlabel, outputlabel, info, si=0, 
     ts_axes[0].plot(xdt, mod, 'r-')
     plt.axhline(0)
     ts_axes[0].set_xlim(xdt[0], xdt[-1])
-    TextStr = targetlabel + '_obs (' + ds.series[targetlabel]['Attr']['units'] + ')'
+    TextStr = target + '_obs (' + ds.series[target]['Attr']['units'] + ')'
     ts_axes[0].text(0.05, 0.85, TextStr, color='b', horizontalalignment='left', transform=ts_axes[0].transAxes)
-    TextStr = outputlabel + '(' + ds.series[outputlabel]['Attr']['units'] + ')'
+    TextStr = output + '(' + ds.series[output]['Attr']['units'] + ')'
     ts_axes[0].text(0.85, 0.85, TextStr, color='r', horizontalalignment='right', transform=ts_axes[0].transAxes)
-    for ThisOne, i in zip(driverlist, range(1, pd["nDrivers"] + 1)):
+    for ThisOne, i in zip(drivers, range(1, pd["nDrivers"] + 1)):
         this_bottom = pd["ts_bottom"] + i*pd["ts_height"]
         rect = [pd["margin_left"], this_bottom, pd["ts_width"], pd["ts_height"]]
         ts_axes.append(plt.axes(rect, sharex=ts_axes[0]))
@@ -551,7 +533,7 @@ def rpLT_plot(pd, ds, series, driverlist, targetlabel, outputlabel, info, si=0, 
     # save a hard copy of the plot
     sdt = xdt[0].strftime("%Y%m%d")
     edt = xdt[-1].strftime("%Y%m%d")
-    plot_path = os.path.join(info["er"]["lloydtaylor"]["info"]["plot_path"], "L6", "")
+    plot_path = os.path.join(ieli["plot_path"], "L6", "")
     if not os.path.exists(plot_path):
         os.makedirs(plot_path)
     figname = plot_path + pd["site_name"].replace(" ","") + "_LT_" + pd["label"]

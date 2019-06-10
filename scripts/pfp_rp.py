@@ -16,6 +16,7 @@ import xlrd
 # PFP modules
 import constants as c
 import meteorologicalfunctions as pfp_mf
+import pfp_cfg
 import pfp_io
 import pfp_rpLL
 import pfp_rpLT
@@ -372,7 +373,7 @@ def ERUsingLasslop(cf, ds, info):
                          nDrivers=len(data.keys()),startdate=str(startdate),enddate=str(enddate))
     pfp_rpLL.rpLL_plot(pd, ds, output, drivers, target, output_all, info)
 
-def ERUsingLloydTaylor(cf, ds, info):
+def ERUsingLloydTaylor(cf, ds, l6_info):
     """
     Purpose:
      Estimate ecosystem respiration using Lloyd-Taylor.
@@ -382,7 +383,7 @@ def ERUsingLloydTaylor(cf, ds, info):
     Author: IMcH, PRI
     Date: October 2015
     """
-    if "lloydtaylor" not in info["er"]: return
+    if "ERUsingLloydTaylor" not in l6_info["ER"]: return
     logger.info("Estimating ER using Lloyd-Taylor")
     long_name = "Ecosystem respiration modelled by Lloyd-Taylor"
     ER_attr = pfp_utils.MakeAttributeDictionary(long_name=long_name, units="umol/m2/s")
@@ -393,7 +394,7 @@ def ERUsingLloydTaylor(cf, ds, info):
     enddate = ldt[-1]
     nperhr = int(float(60)/ts+0.5)
     nperday = int(float(24)*nperhr+0.5)
-    iel = info["er"]["lloydtaylor"]
+    iel = l6_info["ER"]["ERUsingLloydTaylor"]
     iel["info"] = {"file_startdate": startdate.strftime("%Y-%m-%d %H:%M"),
                    "file_enddate": enddate.strftime("%Y-%m-%d %H:%M"),
                    "plot_path": cf["Files"]["plot_path"],
@@ -401,8 +402,8 @@ def ERUsingLloydTaylor(cf, ds, info):
                    "time_step": ts,
                    "nperday": nperday}
     call_mode = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "call_mode", default="interactive")
-    iel["info"]["call_mode"]= call_mode
-    if call_mode.lower()=="interactive":
+    iel["info"]["call_mode"] = call_mode
+    if call_mode.lower() == "interactive":
         iel["info"]["show_plots"] = True
     # set the figure number
     if len(plt.get_fignums()) == 0:
@@ -570,15 +571,12 @@ def ERUsingLloydTaylor(cf, ds, info):
         target = iel["outputs"][output]["target"]
         #drivers = str(configs_dict["drivers"])
         drivers = iel["outputs"][output]["drivers"]
-        output_all = iel["outputs"][output]["output"]
-        ER_attr["comment1"] = "Drivers were "+str(drivers)
-        pfp_utils.CreateSeries(ds, output_all, ER_LT, ER_LT_flag, ER_attr)
         # plot the respiration estimated using Lloyd-Taylor
         fig_num = fig_num + 1
         title = site_name+" : "+output+" estimated using Lloyd-Taylor"
         pd = pfp_rpLT.rpLT_initplot(site_name=site_name, label=target, fig_num=fig_num, title=title,
                              nDrivers=len(drivers), startdate=str(startdate), enddate=str(enddate))
-        pfp_rpLT.rpLT_plot(pd, ds, output, drivers, target, output_all, info)
+        pfp_rpLT.rpLT_plot(pd, ds, output, drivers, target, iel)
     # close the Excel workbook
     xl_file.save(xl_name)
 
@@ -605,19 +603,19 @@ def GetERFromFc(cf, ds, info):
     ldt = ds.series["DateTime"]["Data"]
     ts = int(ds.globalattributes["time_step"])
     er_type_list = []
-    for item in ["solo", "lloydtaylor", "lasslop"]:
-        if item in info["er"]:
+    for item in ["ERUsingSOLO", "ERUsingLloydTaylor", "ERUsingLasslop"]:
+        if item in info["ER"]:
             er_type_list.append(item)
     for er_type in er_type_list:
-        label_list = info["er"][er_type]["outputs"].keys()
+        label_list = info["ER"][er_type]["outputs"].keys()
         for label in label_list:
-            source = info["er"][er_type]["outputs"][label]["source"]
-            target = info["er"][er_type]["outputs"][label]["target"]
-            ER = {"Label":target}
+            source = info["ER"][er_type]["outputs"][label]["source"]
+            target = info["ER"][er_type]["outputs"][label]["target"]
+            ER = {"Label": target}
             Fc = pfp_utils.GetVariable(ds, source)
             # get a copy of the Fc flag and make the attribute dictionary
             ER["Flag"] = numpy.array(Fc["Flag"])
-            long_name = "Ecosystem respiration (observed) derived from "+source
+            long_name = "Ecosystem respiration (observed) derived from " + source
             units = Fc["Attr"]["units"]
             ER["Attr"] = pfp_utils.MakeAttributeDictionary(long_name=long_name, units=units)
             # only accept Fc with QC flag value of 0
@@ -1704,26 +1702,28 @@ def ParseL6ControlFile(cf, ds):
     if "Respiration" in cf.keys() and "ER" not in cf.keys():
         cf["ER"] = cf.pop("Respiration")
     l6_info = {}
-    l6_info["cf"] = copy.deepcopy(cf)
+    #l6_info["cf"] = copy.deepcopy(cf)
     if "ER" in cf.keys():
-        l6_info["er"] = {}
+        l6_info["ER"] = {}
         for output in cf["ER"].keys():
             if "ERUsingSOLO" in cf["ER"][output].keys():
-                pfp_rpNN.rpSOLO_createdict(cf, ds, l6_info["er"], output)
-            #if "ERUsingFFNET" in cf["ER"][output].keys():
-                #pfp_rpNN.rpFFNET_createdict(cf, ds, l6_info["er"], output)
+                pfp_rpNN.rpSOLO_createdict(cf, ds, l6_info, output, "ERUsingSOLO")
+            if "ERUsingFFNET" in cf["ER"][output].keys():
+                pfp_rpNN.rpFFNET_createdict(cf, ds, l6_info, output, "ERUsingFFNET")
             if "ERUsingLloydTaylor" in cf["ER"][output].keys():
-                pfp_rpLT.rpLT_createdict(cf, ds, l6_info["er"], output)
+                pfp_rpLT.rpLT_createdict(cf, ds, l6_info, output, "ERUsingLloydTaylor")
             if "ERUsingLasslop" in cf["ER"][output].keys():
-                pfp_rpLL.rpLL_createdict(cf, ds, l6_info["er"], output)
+                pfp_rpLL.rpLL_createdict(cf, ds, l6_info, output, "ERUsingLasslop")
+            if "MergeSeries" in cf["ER"][output].keys():
+                rpMergeSeries_createdict(cf, ds, l6_info, output, "MergeSeries")
     if "NEE" in cf.keys():
-        l6_info["nee"] = {}
+        l6_info["NEE"] = {}
         for output in cf["NEE"].keys():
-            rpNEE_createdict(cf, ds, l6_info["nee"], output)
+            rpNEE_createdict(cf, ds, l6_info["NEE"], output)
     if "GPP" in cf.keys():
-        l6_info["gpp"] = {}
+        l6_info["GPP"] = {}
         for output in cf["GPP"].keys():
-            rpGPP_createdict(cf, ds, l6_info["gpp"], output)
+            rpGPP_createdict(cf, ds, l6_info["GPP"], output)
     return l6_info
 
 def PartitionNEE(cf, ds, info):
@@ -1821,28 +1821,25 @@ def rpNEE_createdict(cf, ds, info, label):
         pfp_utils.CreateSeries(ds, info[label]["output"], data, flag, attr)
     return
 
-def rpMerge_createdict(cf, ds, series):
-    # PRI May 2019 ZOMBIE CODE?
+def rpMergeSeries_createdict(cf, ds, l6_info, label, called_by):
     """ Creates a dictionary in ds to hold information about the merging of gap filled
         and tower data."""
-    merge_prereq_list = []
-    # get the section of the control file containing the series
-    section = pfp_utils.get_cfsection(cf,series=series,mode="quiet")
-    # create the ffnet directory in the data structure
-    if "merge" not in dir(ds): ds.merge = {}
-    # check to see if this series is in the "merge first" list
-    # series in the "merge first" list get merged first so they can be used with existing tower
-    # data to re-calculate Fg, Fn and Fa
-    merge_order = "standard"
-    if series in merge_prereq_list: merge_order = "prerequisite"
-    if merge_order not in ds.merge.keys(): ds.merge[merge_order] = {}
+    nrecs = int(ds.globalattributes["nc_nrecs"])
+    # create the merge directory in the info dictionary
+    if called_by not in l6_info["ER"]:
+        l6_info["ER"][called_by] = {}
+    if "standard" not in l6_info["ER"][called_by].keys():
+        l6_info["ER"][called_by]["standard"] = {}
     # create the dictionary keys for this series
-    ds.merge[merge_order][series] = {}
+    l6_info["ER"][called_by]["standard"][label] = {}
     # output series name
-    ds.merge[merge_order][series]["output"] = series
+    l6_info["ER"][called_by]["standard"][label]["output"] = label
     # source
-    ds.merge[merge_order][series]["source"] = ast.literal_eval(cf[section][series]["MergeSeries"]["Source"])
+    opt = pfp_utils.get_keyvaluefromcf(cf, ["ER", label, "MergeSeries"], "Source", default="ER,ER_SOLO_all")
+    sources = pfp_cfg.cfg_string_to_list(opt)
+    l6_info["ER"][called_by]["standard"][label]["source"] = sources
     # create an empty series in ds if the output series doesn't exist yet
-    if ds.merge[merge_order][series]["output"] not in ds.series.keys():
-        data,flag,attr = pfp_utils.MakeEmptySeries(ds,ds.merge[merge_order][series]["output"])
-        pfp_utils.CreateSeries(ds,ds.merge[merge_order][series]["output"],data,flag,attr)
+    if l6_info["ER"][called_by]["standard"][label]["output"] not in ds.series.keys():
+        variable = pfp_utils.CreateEmptyVariable(label, nrecs)
+        pfp_utils.CreateVariable(ds, variable)
+    return

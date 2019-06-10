@@ -128,35 +128,26 @@ def CheckDrivers(info, ds):
 
 def ParseL4ControlFile(cf, ds):
     l4_info = {}
-    #l4_info["cf"] = copy.deepcopy(cf)
     for target in cf["Drivers"].keys():
         if "GapFillFromAlternate" in cf["Drivers"][target].keys():
-            called_by = "GapFillFromAlternate"
-            gfalternate_createdict(cf, ds, l4_info, target, called_by)
+            gfalternate_createdict(cf, ds, l4_info, target, "GapFillFromAlternate")
         if "GapFillFromClimatology" in cf["Drivers"][target].keys():
-            called_by = "GapFillFromClimatology"
-            gfClimatology_createdict(cf, ds, l4_info, target, called_by)
+            gfClimatology_createdict(cf, ds, l4_info, target, "GapFillFromClimatology")
         if "MergeSeries" in cf["Drivers"][target].keys():
-            called_by = "MergeSeries"
-            gfMergeSeries_createdict(cf, ds, l4_info, target, called_by)
+            gfMergeSeries_createdict(cf, ds, l4_info, target, "MergeSeries")
     return l4_info
 
 def ParseL5ControlFile(cf, ds):
     l5_info = {}
-    #l5_info["cf"] = copy.deepcopy(cf)
     for target in cf["Fluxes"].keys():
         if "GapFillUsingSOLO" in cf["Fluxes"][target].keys():
-            called_by = "GapFillUsingSOLO"
-            gfSOLO_createdict(cf, ds, l5_info, target, called_by)
+            gfSOLO_createdict(cf, ds, l5_info, target, "GapFillUsingSOLO")
         if "GapFillLongSOLO" in cf["Fluxes"][target].keys():
-            called_by = "GapFillLongSOLO"
-            gfSOLO_createdict(cf, ds, l5_info, target, called_by)
+            gfSOLO_createdict(cf, ds, l5_info, target, "GapFillLongSOLO")
         if "GapFillUsingMDS" in cf["Fluxes"][target].keys():
-            called_by = "GapFillUsingMDS"
-            gfMDS_createdict(cf, ds, l5_info, target, called_by)
+            gfMDS_createdict(cf, ds, l5_info, target, "GapFillUsingMDS")
         if "MergeSeries" in cf["Fluxes"][target].keys():
-            called_by = "MergeSeries"
-            gfMergeSeries_createdict(cf, ds, l5_info, target, called_by)
+            gfMergeSeries_createdict(cf, ds, l5_info, target, "MergeSeries")
     return l5_info
 
 def ReadAlternateFiles(ds, l4_info):
