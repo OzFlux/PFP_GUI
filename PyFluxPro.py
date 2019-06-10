@@ -15,8 +15,9 @@ import matplotlib.pyplot as plt
 from PyQt4 import QtCore, QtGui
 # PFP modules
 sys.path.append('scripts')
-import pfp_top_level
 import pfp_gui
+import pfp_log
+import pfp_top_level
 # now check the logfiles and plots directories are present
 dir_list = ["./logfiles/", "./plots/"]
 for item in dir_list:
@@ -38,9 +39,7 @@ for item in dir_list:
     if not os.path.exists(item):
         os.makedirs(item)
 
-logger = logging.getLogger("pfp_log")
-logfmt = logging.Formatter('%(asctime)s %(levelname)s %(message)s','%H:%M:%S')
-logger.setLevel(logging.DEBUG)
+logger = pfp_log.init_logger()
 
 class myMessageBox(QtGui.QMessageBox):
     def __init__(self, msg, title="Information", parent=None):
@@ -51,23 +50,11 @@ class myMessageBox(QtGui.QMessageBox):
         self.setStandardButtons(QtGui.QMessageBox.Ok)
         self.exec_()
 
-class QPlainTextEditLogger(logging.Handler):
-    def __init__(self, parent):
-        super(QPlainTextEditLogger, self).__init__()
-        self.textBox = QtGui.QPlainTextEdit(parent)
-        self.textBox.setReadOnly(True)
-
-    def emit(self, record):
-        msg = self.format(record)
-        self.textBox.appendPlainText(msg)
-        QtGui.QApplication.processEvents()
-
-class pfp_main_ui(QtGui.QWidget, QPlainTextEditLogger):
+class pfp_main_ui(QtGui.QWidget):
     def __init__(self, parent=None):
         super(pfp_main_ui, self).__init__(parent)
 
-        logTextBox = QPlainTextEditLogger(self)
-        logTextBox.setFormatter(logfmt)
+        logTextBox = pfp_log.QPlainTextEditLogger(self)
         logger.addHandler(logTextBox)
 
         # menu bar
