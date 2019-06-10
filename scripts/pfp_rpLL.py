@@ -66,12 +66,12 @@ def interp_params(param_rslt_array):
 
     return arr
 
-def get_LL_params(ldt, Fsd, D, T, NEE, ER, LT_results, info, output):
+def get_LL_params(ldt, Fsd, D, T, NEE, ER, LT_results, l6_info, output):
     # Lasslop as it was written in Lasslop et al (2010), mostly ...
     # Actually, the only intended difference is the window length and offset
     # Lasslop et al used window_length=4, window_offset=2
     # local pointers to entries in the info dictionary
-    iel = info["er"]["lasslop"]
+    iel = l6_info["ER"]["ERUsingLasslop"]
     ielo = iel["outputs"]
     ieli = iel["info"]
     # window and step sizes
@@ -209,7 +209,7 @@ def get_LL_params(ldt, Fsd, D, T, NEE, ER, LT_results, info, output):
     LL_results["D0"] = D0
     return LL_results
 
-def get_LT_params(ldt, ER, T, info, output, mode="verbose"):
+def get_LT_params(ldt, ER, T, l6_info, output, mode="verbose"):
     """
     Purpose:
      Returns rb and E0 for the Lloyd & Taylor respiration function.
@@ -218,7 +218,7 @@ def get_LT_params(ldt, ER, T, info, output, mode="verbose"):
     Date: April 2016
     """
     # local pointers to entries in the info dictionary
-    iel = info["er"]["lasslop"]
+    iel = l6_info["ER"]["ERUsingLasslop"]
     ielo = iel["outputs"]
     ieli = iel["info"]
     # window and step sizes
@@ -389,10 +389,10 @@ def rpLL_initplot(**kwargs):
     pd["ts_height"] = (1.0 - pd["margin_top"] - pd["ts_bottom"])/float(pd["nDrivers"]+1)
     return pd
 
-def rpLL_plot(pd, ds, series, drivers, targetlabel, outputlabel, info, si=0, ei=-1):
+def rpLL_plot(pd, ds, output, drivers, target, l6_info, si=0, ei=-1):
     """ Plot the results of the Lasslop run. """
-    ieli = info["er"]["lasslop"]["info"]
-    ielo = info["er"]["lasslop"]["outputs"]
+    ieli = l6_info["ER"]["ERUsingLasslop"]["info"]
+    ielo = l6_info["ER"]["ERUsingLasslop"]["outputs"]
     # get a local copy of the datetime series
     if ei==-1:
         dt = ds.series['DateTime']['Data'][si:]
@@ -401,16 +401,16 @@ def rpLL_plot(pd, ds, series, drivers, targetlabel, outputlabel, info, si=0, ei=
     xdt = numpy.array(dt)
     Hdh, f, a = pfp_utils.GetSeriesasMA(ds, 'Hdh', si=si, ei=ei)
     # get the observed and modelled values
-    obs, f, a = pfp_utils.GetSeriesasMA(ds, targetlabel, si=si, ei=ei)
-    mod, f, a = pfp_utils.GetSeriesasMA(ds, outputlabel, si=si, ei=ei)
+    obs, f, a = pfp_utils.GetSeriesasMA(ds, target, si=si, ei=ei)
+    mod, f, a = pfp_utils.GetSeriesasMA(ds, output, si=si, ei=ei)
     # make the figure
-    if info["er"]["lasslop"]["info"]["show_plots"]:
+    if ieli["show_plots"]:
         plt.ion()
     else:
         plt.ioff()
     fig = plt.figure(pd["fig_num"], figsize=(13, 8))
     fig.clf()
-    fig.canvas.set_window_title(targetlabel + " (LL): " + pd["startdate"] + " to " + pd["enddate"])
+    fig.canvas.set_window_title(target + " (LL): " + pd["startdate"] + " to " + pd["enddate"])
     plt.figtext(0.5, 0.95, pd["title"], ha='center', size=16)
     # XY plot of the diurnal variation
     rect1 = [0.10, pd["margin_bottom"], pd["xy_width"], pd["xy_height"]]
@@ -428,15 +428,15 @@ def rpLL_plot(pd, ds, series, drivers, targetlabel, outputlabel, info, si=0, ei=
     ax1.plot(dstats["Hr"], dstats["Av"], 'g-', label="LL(obs)")
     plt.xlim(0, 24)
     plt.xticks([0, 6, 12, 18, 24])
-    ax1.set_ylabel(targetlabel)
+    ax1.set_ylabel(target)
     ax1.set_xlabel('Hour')
     ax1.legend(loc='upper right', frameon=False, prop={'size':8})
     # XY plot of the 30 minute data
     rect2 = [0.40, pd["margin_bottom"], pd["xy_width"], pd["xy_height"]]
     ax2 = plt.axes(rect2)
     ax2.plot(mod, obs, 'b.')
-    ax2.set_ylabel(targetlabel + '_obs')
-    ax2.set_xlabel(targetlabel + '_LL')
+    ax2.set_ylabel(target + '_obs')
+    ax2.set_xlabel(target + '_LL')
     # plot the best fit line
     coefs = numpy.ma.polyfit(numpy.ma.copy(mod), numpy.ma.copy(obs), 1)
     xfit = numpy.ma.array([numpy.ma.minimum(mod), numpy.ma.maximum(mod)])
@@ -450,32 +450,32 @@ def rpLL_plot(pd, ds, series, drivers, targetlabel, outputlabel, info, si=0, ei=
     numfilled = numpy.ma.count(mod)-numpy.ma.count(obs)
     diff = mod - obs
     bias = numpy.ma.average(diff)
-    ielo[series]["results"]["Bias"].append(bias)
+    ielo[output]["results"]["Bias"].append(bias)
     rmse = numpy.ma.sqrt(numpy.ma.mean((obs-mod)*(obs-mod)))
     plt.figtext(0.725, 0.225, 'No. points')
     plt.figtext(0.825, 0.225, str(numpoints))
-    ielo[series]["results"]["No. points"].append(numpoints)
+    ielo[output]["results"]["No. points"].append(numpoints)
     plt.figtext(0.725, 0.200, 'No. filled')
     plt.figtext(0.825, 0.200, str(numfilled))
     plt.figtext(0.725, 0.175, 'Slope')
     plt.figtext(0.825, 0.175, str(pfp_utils.round2sig(coefs[0], sig=4)))
-    ielo[series]["results"]["m_ols"].append(coefs[0])
+    ielo[output]["results"]["m_ols"].append(coefs[0])
     plt.figtext(0.725, 0.150, 'Offset')
     plt.figtext(0.825, 0.150, str(pfp_utils.round2sig(coefs[1], sig=4)))
-    ielo[series]["results"]["b_ols"].append(coefs[1])
+    ielo[output]["results"]["b_ols"].append(coefs[1])
     plt.figtext(0.725, 0.125, 'r')
     plt.figtext(0.825, 0.125, str(pfp_utils.round2sig(r[0][1], sig=4)))
-    ielo[series]["results"]["r"].append(r[0][1])
+    ielo[output]["results"]["r"].append(r[0][1])
     plt.figtext(0.725, 0.100, 'RMSE')
     plt.figtext(0.825, 0.100, str(pfp_utils.round2sig(rmse, sig=4)))
-    ielo[series]["results"]["RMSE"].append(rmse)
+    ielo[output]["results"]["RMSE"].append(rmse)
     var_obs = numpy.ma.var(obs)
-    ielo[series]["results"]["Var (obs)"].append(var_obs)
+    ielo[output]["results"]["Var (obs)"].append(var_obs)
     var_mod = numpy.ma.var(mod)
-    ielo[series]["results"]["Var (LL)"].append(var_mod)
-    ielo[series]["results"]["Var ratio"].append(var_obs/var_mod)
-    ielo[series]["results"]["Avg (obs)"].append(numpy.ma.average(obs))
-    ielo[series]["results"]["Avg (LL)"].append(numpy.ma.average(mod))
+    ielo[output]["results"]["Var (LL)"].append(var_mod)
+    ielo[output]["results"]["Var ratio"].append(var_obs/var_mod)
+    ielo[output]["results"]["Avg (obs)"].append(numpy.ma.average(obs))
+    ielo[output]["results"]["Avg (LL)"].append(numpy.ma.average(mod))
     # time series of drivers and target
     ts_axes = []
     rect = [pd["margin_left"], pd["ts_bottom"], pd["ts_width"], pd["ts_height"]]
@@ -485,9 +485,9 @@ def rpLL_plot(pd, ds, series, drivers, targetlabel, outputlabel, info, si=0, ei=
     ts_axes[0].plot(xdt, mod, 'r-')
     plt.axhline(0)
     ts_axes[0].set_xlim(xdt[0], xdt[-1])
-    TextStr = targetlabel + '_obs (' + ds.series[targetlabel]['Attr']['units'] + ')'
+    TextStr = target + '_obs (' + ds.series[target]['Attr']['units'] + ')'
     ts_axes[0].text(0.05, 0.85, TextStr, color='b', horizontalalignment='left', transform=ts_axes[0].transAxes)
-    TextStr = outputlabel + '(' + ds.series[outputlabel]['Attr']['units'] + ')'
+    TextStr = output + '(' + ds.series[output]['Attr']['units'] + ')'
     ts_axes[0].text(0.85, 0.85, TextStr, color='r', horizontalalignment='right', transform=ts_axes[0].transAxes)
     for ThisOne, i in zip(drivers, range(1, pd["nDrivers"] + 1)):
         this_bottom = pd["ts_bottom"] + i*pd["ts_height"]
@@ -504,7 +504,7 @@ def rpLL_plot(pd, ds, series, drivers, targetlabel, outputlabel, info, si=0, ei=
     # save a hard copy of the plot
     sdt = xdt[0].strftime("%Y%m%d")
     edt = xdt[-1].strftime("%Y%m%d")
-    plot_path = os.path.join(info["er"]["lasslop"]["info"]["plot_path"], "L6", "")
+    plot_path = os.path.join(ieli["plot_path"], "L6", "")
     if not os.path.exists(plot_path):
         os.makedirs(plot_path)
     figname = plot_path + pd["site_name"].replace(" ","") + "_LL_" + pd["label"]

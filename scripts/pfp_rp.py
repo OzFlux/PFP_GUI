@@ -48,7 +48,7 @@ def CalculateET(ds):
         attr["units"] = "mm"
         pfp_utils.CreateSeries(ds, label.replace("Fe","ET"), ET, flag, attr)
 
-def CalculateNEE(cf, ds, info):
+def CalculateNEE(cf, ds, l6_info):
     """
     Purpose:
      Calculate NEE from observed Fc and observed/modeled ER.
@@ -62,7 +62,7 @@ def CalculateNEE(cf, ds, info):
     Author: PRI
     Date: August 2014
     """
-    if "nee" not in info:
+    if "NEE" not in l6_info:
         return
     # get the Fsd and ustar thresholds
     Fsd_threshold = float(pfp_utils.get_keyvaluefromcf(cf, ["Options"], "Fsd_threshold", default=10))
@@ -73,16 +73,16 @@ def CalculateNEE(cf, ds, info):
         index = numpy.where(numpy.ma.getmaskarray(Fsd) == True)[0]
         Fsd[index] = Fsd_syn[index]
     ustar, ustar_flag, ustar_attr = pfp_utils.GetSeriesasMA(ds, "ustar")
-    for label in info["nee"].keys():
-        if "Fc" not in info["nee"][label] and "ER" not in info["nee"][label]:
+    for label in l6_info["NEE"].keys():
+        if "Fc" not in l6_info["NEE"][label] and "ER" not in l6_info["NEE"][label]:
             continue
-        Fc_label = info["nee"][label]["Fc"]
-        ER_label = info["nee"][label]["ER"]
-        output_label = info["nee"][label]["output"]
+        Fc_label = l6_info["NEE"][label]["Fc"]
+        ER_label = l6_info["NEE"][label]["ER"]
+        output_label = l6_info["NEE"][label]["output"]
         Fc, Fc_flag, Fc_attr = pfp_utils.GetSeriesasMA(ds, Fc_label)
         ER, ER_flag, ER_attr = pfp_utils.GetSeriesasMA(ds, ER_label)
         # put the day time Fc into the NEE series
-        index = numpy.ma.where(Fsd>=Fsd_threshold)[0]
+        index = numpy.ma.where(Fsd >= Fsd_threshold)[0]
         ds.series[output_label]["Data"][index] = Fc[index]
         ds.series[output_label]["Flag"][index] = Fc_flag[index]
         # put the night time ER into the NEE series
@@ -187,7 +187,7 @@ def ERUsingFFNET(cf, ds, info):
             if "FFNET" in cf["GUI"]:
                 pfp_rpNN.rpFFNET_run_nogui(cf,ds,FFNET_info)
 
-def ERUsingLasslop(cf, ds, info):
+def ERUsingLasslop(cf, ds, l6_info):
     """
     Purpose:
     Usage:
@@ -195,9 +195,10 @@ def ERUsingLasslop(cf, ds, info):
     Author: IMcH, PRI
     Date: Back in the day
     """
-    if "lasslop" not in info["er"]: return
+    if "ERUsingLasslop" not in l6_info["ER"]:
+        return
     logger.info("Estimating ER using Lasslop")
-    iel = info["er"]["lasslop"]
+    iel = l6_info["ER"]["ERUsingLasslop"]
     ielo = iel["outputs"]
     # get a list of the required outputs
     outputs = iel["outputs"].keys()
@@ -205,7 +206,6 @@ def ERUsingLasslop(cf, ds, info):
     output = outputs[0]
     drivers = ielo[output]["drivers"]
     target = ielo[output]["target"]
-    output_all = ielo[output]["output"]
     # get some useful things
     ldt = ds.series["DateTime"]["Data"]
     startdate = ldt[0]
@@ -255,7 +255,7 @@ def ERUsingLasslop(cf, ds, info):
     ER = numpy.ma.masked_where(indicator_night == 0, Fc)
     # loop over the windows and get E0
     logger.info(" Estimating the rb and E0 parameters")
-    LT_results = pfp_rpLL.get_LT_params(ldt, ER, T_night, info, output)
+    LT_results = pfp_rpLL.get_LT_params(ldt, ER, T_night, l6_info, output)
     # interpolate parameters
     # this should have a check to make sure we are not interpolating with a small
     # number of points
@@ -293,7 +293,7 @@ def ERUsingLasslop(cf, ds, info):
     NEE_day = numpy.ma.masked_where(indicator_day==0,Fc)
     # get the Lasslop parameters
     logger.info(" Estimating the Lasslop parameters")
-    LL_results = pfp_rpLL.get_LL_params(ldt, Fsd_day, D_day, T_day, NEE_day, ER, LT_results, info, output)
+    LL_results = pfp_rpLL.get_LL_params(ldt, Fsd_day, D_day, T_day, NEE_day, ER, LT_results, l6_info, output)
     # interpolate parameters
     LL_results["alpha_int"] = pfp_rpLL.interp_params(LL_results["alpha"])
     LL_results["beta_int"] = pfp_rpLL.interp_params(LL_results["beta"])
@@ -333,7 +333,7 @@ def ERUsingLasslop(cf, ds, info):
     units = Fc_attr["units"]
     long_name = "Ecosystem respiration modelled by Lasslop et al (2010)"
     attr = pfp_utils.MakeAttributeDictionary(long_name=long_name,units=units)
-    pfp_utils.CreateSeries(ds,output_all,ER_LL,flag,attr)
+    pfp_utils.CreateSeries(ds,output,ER_LL,flag,attr)
     # parameters associated with GPP and GPP itself
     alpha = LL_results["alpha_tts"]
     units = "umol/J"
@@ -371,7 +371,7 @@ def ERUsingLasslop(cf, ds, info):
     title = site_name+" : ER estimated using Lasslop et al"
     pd = pfp_rpLL.rpLL_initplot(site_name=site_name,label="ER",fig_num=fig_num,title=title,
                          nDrivers=len(data.keys()),startdate=str(startdate),enddate=str(enddate))
-    pfp_rpLL.rpLL_plot(pd, ds, output, drivers, target, output_all, info)
+    pfp_rpLL.rpLL_plot(pd, ds, output, drivers, target, l6_info)
 
 def ERUsingLloydTaylor(cf, ds, l6_info):
     """
@@ -571,6 +571,9 @@ def ERUsingLloydTaylor(cf, ds, l6_info):
         target = iel["outputs"][output]["target"]
         #drivers = str(configs_dict["drivers"])
         drivers = iel["outputs"][output]["drivers"]
+        output = str(configs_dict["output_label"])
+        ER_attr["comment1"] = "Drivers were "+str(drivers)
+        pfp_utils.CreateSeries(ds, output, ER_LT, ER_LT_flag, ER_attr)
         # plot the respiration estimated using Lloyd-Taylor
         fig_num = fig_num + 1
         title = site_name+" : "+output+" estimated using Lloyd-Taylor"
@@ -1726,7 +1729,7 @@ def ParseL6ControlFile(cf, ds):
             rpGPP_createdict(cf, ds, l6_info["GPP"], output)
     return l6_info
 
-def PartitionNEE(cf, ds, info):
+def PartitionNEE(cf, ds, l6_info):
     """
     Purpose:
      Partition NEE into GPP and ER.
@@ -1740,7 +1743,7 @@ def PartitionNEE(cf, ds, info):
     Author: PRI
     Date: August 2014
     """
-    if "gpp" not in info:
+    if "GPP" not in l6_info:
         return
     # get the Fsd threshold
     opt = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "Fsd_threshold", default=10)
@@ -1753,12 +1756,12 @@ def PartitionNEE(cf, ds, info):
         #index = numpy.ma.where(numpy.ma.getmaskarray(Fsd)==True)[0]
         Fsd[index] = Fsd_syn[index]
     # calculate GPP from NEE and ER
-    for label in info["gpp"].keys():
-        if "NEE" not in info["gpp"][label] and "ER" not in info["gpp"][label]:
+    for label in l6_info["GPP"].keys():
+        if "NEE" not in l6_info["GPP"][label] and "ER" not in l6_info["GPP"][label]:
             continue
-        NEE_label = info["gpp"][label]["NEE"]
-        ER_label = info["gpp"][label]["ER"]
-        output_label = info["gpp"][label]["output"]
+        NEE_label = l6_info["GPP"][label]["NEE"]
+        ER_label = l6_info["GPP"][label]["ER"]
+        output_label = l6_info["GPP"][label]["output"]
         NEE, NEE_flag, NEE_attr = pfp_utils.GetSeriesasMA(ds, NEE_label)
         ER, ER_flag, ER_attr = pfp_utils.GetSeriesasMA(ds, ER_label)
         # calculate GPP

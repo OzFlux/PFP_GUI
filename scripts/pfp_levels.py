@@ -388,7 +388,7 @@ def l6qc(main_gui, cf, ds5):
     # estimate ER using Lasslop et al
     pfp_rp.ERUsingLasslop(cf, ds6, l6_info)
     # merge the estimates of ER with the observations
-    pfp_ts.MergeSeriesUsingDict(ds6, l6_info["er"], merge_order="standard")
+    pfp_ts.MergeSeriesUsingDict(ds6, l6_info["ER"], merge_order="standard")
     # calculate NEE from Fc and ER
     pfp_rp.CalculateNEE(cf, ds6, l6_info)
     # calculate NEP from NEE
