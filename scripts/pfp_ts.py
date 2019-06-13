@@ -2484,6 +2484,10 @@ def MassmanStandard(cf, ds, Ta_in='Ta', Ah_in='Ah', ps_in='ps', u_in="U_SONIC_Av
 def MergeSeriesUsingDict(ds, info, merge_order="standard"):
     """ Merge series as defined in the merge dictionary."""
     merge = info["MergeSeries"]
+    if merge_order not in merge:
+        msg = "MergeSeriesUsingDict: merge order " + merge_order + " not found"
+        logger.warning(msg)
+        return
     # loop over the entries in merge
     for target in merge[merge_order].keys():
         srclist = merge[merge_order][target]["source"]

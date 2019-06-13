@@ -559,9 +559,14 @@ def gfSOLO_createdict(cf, ds, l5_info, target, called_by):
         l5_info[called_by]["SummaryPlots"] = cf["SummaryPlots"]
     # create an empty series in ds if the SOLO output series doesn't exist yet
     outputs = cf["Fluxes"][target][called_by].keys()
+    target_attr = copy.deepcopy(ds.series[target]["Attr"])
+    target_attr["long_name"] = "Modeled by neural network (SOLO)"
     for output in outputs:
         if output not in ds.series.keys():
-            variable = pfp_utils.CreateEmptyVariable(output, nrecs)
+            # create an empty variable
+            variable = pfp_utils.CreateEmptyVariable(output, nrecs, attr=target_attr)
+            variable["Attr"]["drivers"] = l5_info[called_by]["outputs"][output]["drivers"]
+            variable["Attr"]["target"] = target
             pfp_utils.CreateVariable(ds, variable)
     return
 

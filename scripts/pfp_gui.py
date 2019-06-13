@@ -37,6 +37,19 @@ logger = logging.getLogger("pfp_log")
     #def dragEnterEvent(self, event):
         #print "entering"
         #event.accept()
+class myMessageBox(QtGui.QMessageBox):
+    def __init__(self, msg, title="Information", parent=None):
+        super(myMessageBox, self).__init__(parent)
+        if title == "Critical":
+            self.setIcon(QtGui.QMessageBox.Critical)
+        elif title == "Warning":
+            self.setIcon(QtGui.QMessageBox.Warning)
+        else:
+            self.setIcon(QtGui.QMessageBox.Information)
+        self.setText(msg)
+        self.setWindowTitle(title)
+        self.setStandardButtons(QtGui.QMessageBox.Ok)
+        self.exec_()
 
 class edit_cfg_L1(QtGui.QWidget):
     def __init__(self, main_gui):

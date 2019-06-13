@@ -358,7 +358,7 @@ def do_run_l4(main_gui, cfg=None):
         cfg["Options"]={}
     cfg["Options"]["call_mode"] = "interactive"
     ds4 = pfp_levels.l4qc(main_gui, cfg, ds3)
-    if ds4.returncodes["message"] == "quit":
+    if ds4.returncodes["value"] != 0:
         logger.info("Quitting L4: " + sitename)
     else:
         logger.info("Finished L4: " + sitename)
@@ -399,7 +399,7 @@ def do_run_l5(main_gui, cfg=None):
         cfg["Options"] = {}
     cfg["Options"]["call_mode"] = "interactive"
     ds5 = pfp_levels.l5qc(main_gui, cfg, ds4)
-    if ds5.returncodes["message"] == "quit":
+    if ds5.returncodes["value"] != 0:
         logger.info("Quitting L5: "+sitename)
     else:
         logger.info("Finished L5: "+sitename)
@@ -440,7 +440,7 @@ def do_run_l6(main_gui, cfg=None):
         cfg["Options"] = {}
     cfg["Options"]["call_mode"] = "interactive"
     ds6 = pfp_levels.l6qc(main_gui, cfg, ds5)
-    if ds6.returncodes["message"] == "quit":
+    if ds6.returncodes["value"] != 0:
         logger.info("Quitting L6: "+sitename)
     else:
         logger.info("Finished L6: "+sitename)

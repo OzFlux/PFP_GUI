@@ -167,6 +167,7 @@ def gfalternate_autocomplete(ds_tower, ds_alt, l4_info, called_by, mode="verbose
                     num_points_list.remove(label)
                     continue
                 ngpts = gfalternate_getnumgoodpoints(data_tower[gap[0]:gap[1]], data_all[label][gap[0]:gap[1]])
+                #ngpts = int(len(data_tower[gap[0]:gap[1]+1])*l4a["gui"]["min_percent"]/100)
                 num_good_points = max([num_good_points, ngpts])
             while num_good_points < min_points:
                 gap[0] = max(0, gap[0] - l4a["gui"]["nperday"])
@@ -183,6 +184,7 @@ def gfalternate_autocomplete(ds_tower, ds_alt, l4_info, called_by, mode="verbose
                 min_points = max([int(((gap[1]-gap[0])+1)*l4a["gui"]["min_percent"]/100), 3*l4a["gui"]["nperhr"]])
                 for label in num_points_list:
                     ngpts = gfalternate_getnumgoodpoints(data_tower[gap[0]:gap[1]+1], data_all[label][gap[0]:gap[1]+1])
+                    #ngpts = int(len(data_tower[gap[0]:gap[1]+1])*l4a["gui"]["min_percent"]/100)
                     if ngpts > num_good_points:
                         num_good_points = ngpts
             gapfillperiod_startdate = ldt_tower[gap[0]].strftime("%Y-%m-%d %H:%M")

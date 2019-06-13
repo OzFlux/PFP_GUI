@@ -287,7 +287,7 @@ def l4qc(main_gui, cf, ds3):
     # do the gap filling using the ACCESS output
     if "GapFillFromAlternate" in l4_info:
         pfp_gfALT.GapFillFromAlternate(main_gui, ds4, ds_alt, l4_info, "GapFillFromAlternate")
-        if ds4.returncodes["message"] == "quit":
+        if ds4.returncodes["message"] == "quit" or ds4.returncodes["value"] != 0:
             return ds4
     # merge the first group of gap filled drivers into a single series
     pfp_ts.MergeSeriesUsingDict(ds4, l4_info, merge_order="prerequisite")
@@ -376,9 +376,12 @@ def l6qc(main_gui, cf, ds5):
     Fc_list = [label for label in ds6.series.keys() if label[0:2] == "Fc"]
     pfp_utils.CheckUnits(ds6, Fc_list, "umol/m2/s", convert_units=True)
     ## apply the turbulence filter (if requested)
-    pfp_ck.ApplyTurbulenceFilter(cf, ds6)
+    #pfp_ck.ApplyTurbulenceFilter(cf, ds6)
     # get ER from the observed Fc
     pfp_rp.GetERFromFc(cf, ds6, l6_info)
+    # return code will be non-zero if turbulance filter not applied to CO2 flux
+    if ds6.returncodes["value"] != 0:
+        return ds6
     # estimate ER using SOLO
     pfp_rpNN.ERUsingSOLO(main_gui, cf, ds6, l6_info)
     # estimate ER using FFNET

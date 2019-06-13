@@ -200,7 +200,9 @@ def rpSOLO_main(ds, solo, outputs=[]):
         solo["outputs"][output]["results"]["enddate"].append(ldt[ei])
         d, f, a = pfp_utils.GetSeriesasMA(ds, target, si=si, ei=ei)
         if numpy.ma.count(d) < solo["gui"]["min_points"]:
-            msg = "rpSOLO: Less than " + str(solo["gui"]["min_points"]) + " points available for series " + target + " ..."
+            pts = solo["gui"]["min_points"]
+            pct = int(float(100)*pts/len(d) + 0.5)
+            msg = "rpSOLO: Less than " + str(pts) + " points (" + str(pct) + "%) available for series " + target + " ..."
             logger.error(msg)
             solo["outputs"][output]["results"]["No. points"].append(float(0))
             results = solo["outputs"][output]["results"].keys()

@@ -868,8 +868,6 @@ def gfSOLO_runseqsolo(dsb, drivers, targetlabel, outputlabel, nRecs, si=0, ei=-1
         else:
             dsb.series[outputlabel]['Data'][si:ei+1][goodindex] = seqdata[:, 1]
             dsb.series[outputlabel]['Flag'][si:ei+1][goodindex] = numpy.int32(30)
-        # set the attributes
-        dsb.series[outputlabel]["Attr"]["long_name"] = dsb.series[outputlabel]["Attr"]["long_name"]+", modeled by SOLO"
         return 1
     else:
         msg = " SEQSOLO did not run correctly, check the GUI and the log files"
