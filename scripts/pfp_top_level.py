@@ -3,7 +3,7 @@ import logging
 import os
 # 3rd party modules
 import matplotlib
-from PyQt4 import QtCore
+from PyQt5 import QtCore
 # PFP modules
 import pfp_clim
 import pfp_compliance
