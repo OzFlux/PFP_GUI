@@ -9,7 +9,7 @@ dependencies:
   - netcdf4
   - numpy
   - pandas
-  - pyqt=4
+  - pyqt
   - pytz
   - scipy
   - statsmodels

@@ -20,7 +20,7 @@ import Tkinter, tkFileDialog
 import xlrd
 import xlwt
 import xlsxwriter
-from PyQt4 import QtGui
+from PyQt5 import QtGui, QtWidgets
 # PFP modules
 import cfg
 import constants as c
@@ -1131,7 +1131,7 @@ def get_filename_dialog(file_path='.', title='Choose a file', ext="*.*"):
     Author: PRI
     Date: Back in the day
     """
-    file_name = QtGui.QFileDialog.getOpenFileName(caption=title, directory=file_path, filter=ext)
+    file_name = QtWidgets.QFileDialog.getOpenFileName(caption=title, directory=file_path, filter=ext)[0]
     return str(file_name)
 
 def get_infilenamefromcf(cf):

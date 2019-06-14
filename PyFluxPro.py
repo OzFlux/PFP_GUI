@@ -12,7 +12,7 @@ from configobj import ConfigObj
 import matplotlib
 matplotlib.use("QT4Agg")
 import matplotlib.pyplot as plt
-from PyQt4 import QtCore, QtGui
+from PyQt5 import QtCore, QtGui, QtWidgets
 # PFP modules
 sys.path.append('scripts')
 import pfp_gui
@@ -41,99 +41,99 @@ for item in dir_list:
 
 logger = pfp_log.init_logger()
 
-class myMessageBox(QtGui.QMessageBox):
+class myMessageBox(QtWidgets.QMessageBox):
     def __init__(self, msg, title="Information", parent=None):
         super(myMessageBox, self).__init__(parent)
-        self.setIcon(QtGui.QMessageBox.Information)
+        self.setIcon(QtWidgets.QMessageBox.Information)
         self.setText(msg)
         self.setWindowTitle(title)
-        self.setStandardButtons(QtGui.QMessageBox.Ok)
+        self.setStandardButtons(QtWidgets.QMessageBox.Ok)
         self.exec_()
 
-class pfp_main_ui(QtGui.QWidget):
-    def __init__(self, parent=None):
-        super(pfp_main_ui, self).__init__(parent)
+class pfp_main_ui(QtWidgets.QWidget):
+    def __init__(self):
+        super(pfp_main_ui, self).__init__()
 
         logTextBox = pfp_log.QPlainTextEditLogger(self)
         logger.addHandler(logTextBox)
 
         # menu bar
-        self.menubar = QtGui.QMenuBar(self)
+        self.menubar = QtWidgets.QMenuBar(self)
         # File menu
-        self.menuFile = QtGui.QMenu(self.menubar)
+        self.menuFile = QtWidgets.QMenu(self.menubar)
         self.menuFile.setTitle("File")
         # File/Convert submenu
-        self.menuFileConvert = QtGui.QMenu(self.menuFile)
+        self.menuFileConvert = QtWidgets.QMenu(self.menuFile)
         self.menuFileConvert.setTitle("Convert")
         # Edit menu
-        self.menuEdit = QtGui.QMenu(self.menubar)
+        self.menuEdit = QtWidgets.QMenu(self.menubar)
         self.menuEdit.setTitle("Edit")
         # Run menu
-        self.menuRun = QtGui.QMenu(self.menubar)
+        self.menuRun = QtWidgets.QMenu(self.menubar)
         self.menuRun.setTitle("Run")
         # Plot menu
-        self.menuPlot = QtGui.QMenu(self.menubar)
+        self.menuPlot = QtWidgets.QMenu(self.menubar)
         self.menuPlot.setTitle("Plot")
         # Utilities menu
-        self.menuUtilities = QtGui.QMenu(self.menubar)
+        self.menuUtilities = QtWidgets.QMenu(self.menubar)
         self.menuUtilities.setTitle("Utilities")
         # Help menu
-        self.menuHelp = QtGui.QMenu(self.menubar)
+        self.menuHelp = QtWidgets.QMenu(self.menubar)
         self.menuHelp.setTitle("Help")
         # File menu items
-        self.actionFileOpen = QtGui.QAction(self)
+        self.actionFileOpen = QtWidgets.QAction(self)
         self.actionFileOpen.setText("Open")
         self.actionFileOpen.setShortcut('Ctrl+O')
-        self.actionFileSave = QtGui.QAction(self)
+        self.actionFileSave = QtWidgets.QAction(self)
         self.actionFileSave.setText("Save")
         self.actionFileSave.setShortcut('Ctrl+S')
-        self.actionFileSaveAs = QtGui.QAction(self)
+        self.actionFileSaveAs = QtWidgets.QAction(self)
         self.actionFileSaveAs.setText("Save As...")
         self.actionFileSaveAs.setShortcut('Shift+Ctrl+S')
-        self.actionFileConcatenate = QtGui.QAction(self)
+        self.actionFileConcatenate = QtWidgets.QAction(self)
         self.actionFileConcatenate.setText("Concatenate")
-        self.actionFileSplit = QtGui.QAction(self)
+        self.actionFileSplit = QtWidgets.QAction(self)
         self.actionFileSplit.setText("Split")
-        self.actionFileQuit = QtGui.QAction(self)
+        self.actionFileQuit = QtWidgets.QAction(self)
         self.actionFileQuit.setText("Quit")
         self.actionFileQuit.setShortcut('Ctrl+Z')
         # File/Convert submenu
-        self.actionFileConvertnc2biomet = QtGui.QAction(self)
+        self.actionFileConvertnc2biomet = QtWidgets.QAction(self)
         self.actionFileConvertnc2biomet.setText("nc to Biomet")
-        self.actionFileConvertnc2ecostress = QtGui.QAction(self)
+        self.actionFileConvertnc2ecostress = QtWidgets.QAction(self)
         self.actionFileConvertnc2ecostress.setText("nc to ECOSTRESS")
-        self.actionFileConvertnc2xls = QtGui.QAction(self)
+        self.actionFileConvertnc2xls = QtWidgets.QAction(self)
         self.actionFileConvertnc2xls.setText("nc to Excel")
-        self.actionFileConvertnc2fluxnet = QtGui.QAction(self)
+        self.actionFileConvertnc2fluxnet = QtWidgets.QAction(self)
         self.actionFileConvertnc2fluxnet.setText("nc to FluxNet")
-        self.actionFileConvertnc2reddyproc = QtGui.QAction(self)
+        self.actionFileConvertnc2reddyproc = QtWidgets.QAction(self)
         self.actionFileConvertnc2reddyproc.setText("nc to REddyProc")
-        self.actionFileConvertncupdate = QtGui.QAction(self)
+        self.actionFileConvertncupdate = QtWidgets.QAction(self)
         self.actionFileConvertncupdate.setText("nc update")
         # Edit menu items
-        self.actionEditPreferences = QtGui.QAction(self)
+        self.actionEditPreferences = QtWidgets.QAction(self)
         self.actionEditPreferences.setText("Preferences...")
         # Run menu items
-        self.actionRunCurrent = QtGui.QAction(self)
+        self.actionRunCurrent = QtWidgets.QAction(self)
         self.actionRunCurrent.setText("Current...")
         self.actionRunCurrent.setShortcut('Ctrl+R')
         # Plot menu items
-        self.actionPlotFcVersusUstar = QtGui.QAction(self)
+        self.actionPlotFcVersusUstar = QtWidgets.QAction(self)
         self.actionPlotFcVersusUstar.setText("Fc vs u*")
-        self.actionPlotFingerprints = QtGui.QAction(self)
+        self.actionPlotFingerprints = QtWidgets.QAction(self)
         self.actionPlotFingerprints.setText("Fingerprints")
-        self.actionPlotQuickCheck = QtGui.QAction(self)
+        self.actionPlotQuickCheck = QtWidgets.QAction(self)
         self.actionPlotQuickCheck.setText("Summary")
-        self.actionPlotTimeSeries = QtGui.QAction(self)
+        self.actionPlotTimeSeries = QtWidgets.QAction(self)
         self.actionPlotTimeSeries.setText("Time series")
-        self.actionPlotClosePlots = QtGui.QAction(self)
+        self.actionPlotClosePlots = QtWidgets.QAction(self)
         self.actionPlotClosePlots.setText("Close plots")
         # Utilities menu
-        self.actionUtilitiesClimatology = QtGui.QAction(self)
+        self.actionUtilitiesClimatology = QtWidgets.QAction(self)
         self.actionUtilitiesClimatology.setText("Climatology")
-        self.actionUtilitiesUstarCPD = QtGui.QAction(self)
+        self.actionUtilitiesUstarCPD = QtWidgets.QAction(self)
         self.actionUtilitiesUstarCPD.setText("u* threshold (CPD)")
-        self.actionUtilitiesUstarMPT = QtGui.QAction(self)
+        self.actionUtilitiesUstarMPT = QtWidgets.QAction(self)
         self.actionUtilitiesUstarMPT.setText("u* threshold (MPT)")
         # add the actions to the menus
         # File/Convert submenu
@@ -177,7 +177,7 @@ class pfp_main_ui(QtGui.QWidget):
         self.menubar.addAction(self.menuHelp.menuAction())
 
         # create a tab bar
-        self.tabs = QtGui.QTabWidget(self)
+        self.tabs = QtWidgets.QTabWidget(self)
         self.tabs.tab_index_all = 0
         self.tabs.tab_index_current = 0
         self.tabs.tab_dict = {}
@@ -190,12 +190,12 @@ class pfp_main_ui(QtGui.QWidget):
         self.tabs.addTab(logTextBox.textBox, "Log")
         self.tabs.tab_index_all = self.tabs.tab_index_all + 1
         # hide the tab close icon for the console tab
-        self.tabs.tabBar().setTabButton(0, QtGui.QTabBar.RightSide, None)
+        self.tabs.tabBar().setTabButton(0, QtWidgets.QTabBar.RightSide, None)
         # connect the tab-in-focus signal to the appropriate slot
-        self.tabs.connect(self.tabs, QtCore.SIGNAL("currentChanged(int)"), self.tabSelected)
+        self.tabs.currentChanged[int].connect(self.tabSelected)
 
         # use VBoxLayout to position widgets so they resize with main window
-        layout = QtGui.QVBoxLayout()
+        layout = QtWidgets.QVBoxLayout()
         # add widgets to the layout
         layout.addWidget(self.menubar)
         layout.addWidget(self.tabs)
@@ -215,7 +215,7 @@ class pfp_main_ui(QtGui.QWidget):
         self.actionFileSaveAs.triggered.connect(self.saveas_controlfile)
         self.actionFileConcatenate.triggered.connect(pfp_top_level.do_file_concatenate)
         self.actionFileSplit.triggered.connect(pfp_top_level.do_file_split)
-        self.actionFileQuit.triggered.connect(QtGui.qApp.quit)
+        self.actionFileQuit.triggered.connect(QtWidgets.QApplication.quit)
         # Edit menu actions
         self.actionEditPreferences.triggered.connect(self.edit_preferences)
         # Run menu actions
@@ -239,7 +239,7 @@ class pfp_main_ui(QtGui.QWidget):
 
     def open_controlfile(self):
         # get the control file path
-        cfgpath = QtGui.QFileDialog.getOpenFileName(caption="Choose a control file ...")
+        cfgpath = QtWidgets.QFileDialog.getOpenFileName(caption="Choose a control file ...")[0]
         cfgpath = str(cfgpath)
         # check to see if file open was cancelled
         if len(str(cfgpath)) == 0:
@@ -325,7 +325,7 @@ class pfp_main_ui(QtGui.QWidget):
             self.cfg["level"] = "L6"
         else:
             logger.info(" Unable to detect level, enter manually ...")
-            text, ok = QtGui.QInputDialog.getText(self, 'Processing level', 'Enter the processing level:')
+            text, ok = QtWidgets.QInputDialog.getText(self, 'Processing level', 'Enter the processing level:')
             if ok:
                 self.cfg["level"] = text
         return self.cfg["level"]
@@ -474,7 +474,7 @@ class pfp_main_ui(QtGui.QWidget):
             msg = msg + "Please save this control file to a different location."
             msgbox = myMessageBox(msg)
             # put up a "Save as ..." dialog
-            cfg_filename = QtGui.QFileDialog.getSaveFileName(self, "Save as ...")
+            cfg_filename = QtWidgets.QFileDialog.getSaveFileName(self, "Save as ...")[0]
             # return without doing anything if cancel used
             if len(str(cfg_filename)) == 0:
                 return
@@ -496,7 +496,7 @@ class pfp_main_ui(QtGui.QWidget):
         # get the updated control file data
         cfg = self.tabs.tab_dict[tab_index_current].get_data_from_model()
         # put up a "Save as ..." dialog
-        cfgpath = QtGui.QFileDialog.getSaveFileName(self, "Save as ...")
+        cfgpath = QtWidgets.QFileDialog.getSaveFileName(self, "Save as ...")[0]
         # return without doing anything if cancel used
         if len(str(cfgpath)) == 0:
             return
@@ -557,9 +557,9 @@ class pfp_main_ui(QtGui.QWidget):
         tab_text = str(self.tabs.tabText(currentIndex))
         if "*" in tab_text:
             msg = "Save control file?"
-            reply = QtGui.QMessageBox.question(self, 'Message', msg,
-                                               QtGui.QMessageBox.Yes, QtGui.QMessageBox.No)
-            if reply == QtGui.QMessageBox.Yes:
+            reply = QtWidgets.QMessageBox.question(self, 'Message', msg,
+                                               QtWidgets.QMessageBox.Yes, QtWidgets.QMessageBox.No)
+            if reply == QtWidgets.QMessageBox.Yes:
                 self.save_controlfile()
         # get the current tab from its index
         currentQWidget = self.tabs.widget(currentIndex)
@@ -590,7 +590,7 @@ class pfp_main_ui(QtGui.QWidget):
             self.tabs.setTabText(self.tabs.tab_index_current, tab_text+"*")
 
 if (__name__ == '__main__'):
-    app = QtGui.QApplication(["PyFluxPro"])
+    app = QtWidgets.QApplication(["PyFluxPro"])
     ui = pfp_main_ui()
     ui.show()
     app.exec_()

@@ -13,7 +13,6 @@ import numpy
 import matplotlib.dates as mdt
 import matplotlib.pyplot as plt
 import pylab
-from PyQt4 import QtGui
 # PFP modules
 import constants as c
 import pfp_cfg

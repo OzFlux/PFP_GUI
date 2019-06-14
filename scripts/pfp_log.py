@@ -3,20 +3,18 @@ import datetime
 import logging
 import os
 # 3rd party modules
-from PyQt4 import QtCore, QtGui
+from PyQt5 import QtCore, QtGui, QtWidgets
 
 class QPlainTextEditLogger(logging.Handler):
     def __init__(self, parent):
         super(QPlainTextEditLogger, self).__init__()
-        self.textBox = QtGui.QPlainTextEdit(parent)
+        self.textBox = QtWidgets.QPlainTextEdit(parent)
         self.textBox.setReadOnly(True)
-        logfmt = logging.Formatter('%(asctime)s %(levelname)s %(message)s','%H:%M:%S')
-        self.setFormatter(logfmt)
 
     def emit(self, record):
         msg = self.format(record)
         self.textBox.appendPlainText(msg)
-        QtGui.QApplication.processEvents()
+        QtWidgets.QApplication.processEvents()
 
 def init_logger(logger_name="pfp_log", to_file=True):
     """

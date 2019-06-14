@@ -4,7 +4,7 @@ import os
 # 3rd party modules
 import netCDF4
 import matplotlib
-from PyQt4 import QtGui, QtCore
+from PyQt5 import QtCore, QtWidgets, QtGui
 # PFP modules
 import pfp_clim
 import pfp_compliance
@@ -161,7 +161,7 @@ def do_file_convert_ncupdate(cfg=None):
         logger.error("")
     return
 def do_file_split():
-    Dialog = QtGui.QDialog()
+    Dialog = QtWidgets.QDialog()
     ui = split_dialog.Ui_Dialog()
     ui.setupUi(Dialog)
     ui.pushButton_InputFileName.clicked.connect(lambda:do_file_split_browse_input_filename(ui))
