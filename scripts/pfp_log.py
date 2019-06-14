@@ -10,6 +10,8 @@ class QPlainTextEditLogger(logging.Handler):
         super(QPlainTextEditLogger, self).__init__()
         self.textBox = QtWidgets.QPlainTextEdit(parent)
         self.textBox.setReadOnly(True)
+        logfmt = logging.Formatter('%(asctime)s %(levelname)s %(message)s','%H:%M:%S')
+        self.setFormatter(logfmt)
 
     def emit(self, record):
         msg = self.format(record)

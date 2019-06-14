@@ -173,7 +173,7 @@ def do_file_split():
     Dialog.show()
     Dialog.exec_()
 def do_file_split_browse_input_filename(ui):
-    input_file_path = QtGui.QFileDialog.getOpenFileName(caption="Choose an input file ...", filter="*.nc")
+    input_file_path = QtWidgets.QFileDialog.getOpenFileName(caption="Choose an input file ...", filter="*.nc")[0]
     input_file_path = str(input_file_path)
     ui.info["input_file_path"] = input_file_path
     ui.lineEdit_InputFileName.setText(os.path.basename(input_file_path))
@@ -190,8 +190,8 @@ def do_file_split_browse_output_filename(ui):
         file_path = os.path.split(ui.info["input_file_path"])[0]
     else:
         file_path = "."
-    output_file_path = QtGui.QFileDialog.getSaveFileName(caption="Choose an output file ...",
-                                                         directory=file_path, filter="*.nc")
+    output_file_path = QtWidgets.QFileDialog.getSaveFileName(caption="Choose an output file ...",
+                                                         directory=file_path, filter="*.nc")[0]
     output_file_path = str(output_file_path)
     ui.info["output_file_path"] = output_file_path
     ui.lineEdit_OutputFileName.setText(os.path.basename(output_file_path))
@@ -200,6 +200,10 @@ def do_file_split_quit(ui):
 def do_file_split_run(ui):
     ui.info["startdate"] = str(ui.lineEdit_StartDate.text())
     ui.info["enddate"] = str(ui.lineEdit_EndDate.text())
+    if "output_file_path" not in ui.info:
+        file_path = os.path.split(ui.info["input_file_path"])[0]
+        file_name = str(ui.lineEdit_OutputFileName.text())
+        ui.info["output_file_path"] = os.path.join(file_path, file_name)
     pfp_io.ncsplit_run(ui)
 
 # top level routines for the Run menu
