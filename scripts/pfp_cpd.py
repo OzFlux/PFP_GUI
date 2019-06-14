@@ -12,6 +12,8 @@ import netCDF4
 import numpy as np
 import os
 import pandas as pd
+from pandas.plotting import register_matplotlib_converters
+register_matplotlib_converters()
 from scipy import stats
 import statsmodels.formula.api as sm
 import sys

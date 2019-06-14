@@ -177,11 +177,7 @@ def do_file_split_browse_input_filename(ui):
     input_file_path = str(input_file_path)
     ui.info["input_file_path"] = input_file_path
     ui.lineEdit_InputFileName.setText(os.path.basename(input_file_path))
-    #ui.ds = pfp_io.nc_read_series(input_file_path)
-    #ldt = pfp_utils.GetVariable(ui.ds, "DateTime")
     ncfile = netCDF4.Dataset(input_file_path, 'r')
-    #ui.label_FileStartDate_value.setText(ldt["Data"][0].strftime("%Y-%m-%d %H:%M"))
-    #ui.label_FileEndDate_value.setText(ldt["Data"][-1].strftime("%Y-%m-%d %H:%M"))
     ui.label_FileStartDate_value.setText(ncfile.getncattr("start_date"))
     ui.label_FileEndDate_value.setText(ncfile.getncattr("end_date"))
     ncfile.close()

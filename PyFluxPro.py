@@ -10,7 +10,7 @@ sip.setapi('QVariant', 2)
 # 3rd party modules
 from configobj import ConfigObj
 import matplotlib
-matplotlib.use("QT4Agg")
+matplotlib.use("QT5Agg")
 import matplotlib.pyplot as plt
 from PyQt5 import QtCore, QtGui, QtWidgets
 # PFP modules
@@ -234,18 +234,16 @@ class pfp_main_ui(QtWidgets.QWidget):
         self.l4_ui = pfp_gui.pfp_l4_ui(self)
         # add the L5 GUI
         self.solo_gui = pfp_gui.solo_gui(self)
-        ## add the split file GUI
-        #self.split_gui = pfp_gui.split_gui(self)
 
     def open_controlfile(self):
         # get the control file path
         cfgpath = QtWidgets.QFileDialog.getOpenFileName(caption="Choose a control file ...")[0]
         cfgpath = str(cfgpath)
         # check to see if file open was cancelled
-        if len(str(cfgpath)) == 0:
+        if len(cfgpath) == 0:
             return
         # read the contents of the control file
-        logger.info(" Opening "+cfgpath)
+        logger.info(" Opening " + cfgpath)
         self.cfg = ConfigObj(cfgpath, indent_type="    ", list_values=False)
         self.cfg["level"] = self.get_cf_level()
         # create a QtTreeView to edit the control file

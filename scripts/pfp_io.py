@@ -11,12 +11,9 @@ import netCDF4
 import numpy
 import ntpath
 import os
-import pandas
-import pdb
 import platform
 import sys
 import time
-import Tkinter, tkFileDialog
 import xlrd
 import xlwt
 import xlsxwriter
@@ -42,27 +39,6 @@ class DataStructure(object):
         self.mergeserieslist = []
         self.averageserieslist = []
         self.returncodes = {"value":0,"message":"OK"}
-
-def convert_v27tov28():
-    """ Convert V2.7 (1D) netCDF files to V2.8 (3D). """
-    # get the file names
-    ncV27name = get_filename_dialog(path="../Sites")
-    ncV28name = ncV27name.replace(".nc","_V28.nc")
-    # read the V2.7 file
-    ds = nc_read_series(ncV27name)
-    # add the "time_zone" global attribute if it is not present
-    if "time_zone" not in ds.globalattributes.keys():
-        for gattr in ["site_name","SiteName"]:
-            if gattr in ds.globalattributes.keys():
-                time_zone,found = pfp_utils.get_timezone(ds.globalattributes[gattr],prompt="yes")
-        ds.globalattributes["time_zone"] = time_zone
-    # add the "missing_value" attribute if it is not present
-    for ThisOne in ds.series.keys():
-        if "missing_value" not in ds.series[ThisOne]["Attr"].keys():
-            ds.series[ThisOne]["Attr"]["missing_value"] = numpy.int32(c.missing_value)
-    # write the V2.8 file
-    ncFile = nc_open_write(ncV28name,nctype='NETCDF4')
-    nc_write_series(ncFile, ds)
 
 def copy_datastructure(cf,ds_in):
     '''
@@ -1672,82 +1648,6 @@ def nc_read_series(ncFullName,checktimestep=True,fixtimestepmethod="round"):
     logger.info(msg)
     return ds
 
-def nc_read_todf(ncFullName, var_list=[], include_qcflags=False):
-    """
-    Purpose:
-     Read an OzFlux netCDF file and return the data in an Pandas data frame.
-    Usage:
-     df = pfp_io.nc_read_todf(ncFullName)
-      where ncFullName is the full name of the netCDF file.
-    Side effects:
-     Returns a Pandas data frame
-    Author: PRI using code originally written by Ian McHugh
-    Date: August 2014
-    """
-    logger.info(" Reading netCDF file "+ncFullName+" to Pandas data frame")
-    netCDF4.default_encoding = 'latin-1'
-    # check to see if the requested file exists, return empty ds if it doesn't
-    if not pfp_utils.file_exists(ncFullName, mode="quiet"):
-        logger.error(' netCDF file '+ncFullName+' not found')
-        raise Exception("nc_read_todf: file not found")
-    # file probably exists, so let's read it
-    ncFile = netCDF4.Dataset(ncFullName, "r")
-    # disable automatic masking of data when valid_range specified
-    ncFile.set_auto_mask(False)
-    # now deal with the global attributes
-    gattrlist = ncFile.ncattrs()
-    if len(gattrlist)!=0:
-        gattr = {}
-        for attr in gattrlist:
-            gattr[attr] = getattr(ncFile,attr)
-    # get a list of variables to read from the netCDF file
-    if len(var_list) == 0:
-        # get the variable list from the netCDF file contents
-        var_list = [l for l in ncFile.variables.keys() if "_QCFlag" not in l]
-    if include_qcflags:
-        # add the QC flags to the list entered as an argument
-        var_flag = []
-        for var in var_list:
-            var_flag.append(var+"_QCFlag")
-        var_list = var_list+var_flag
-    # read the variables and attributes from the netCDF file
-    # create dictionaries to hold the data and the variable attributes
-    data = {}
-    vattr = {}
-    for item in var_list:
-        # skip variables that do not have time as a dimension
-        dimlist = [x.lower() for x in ncFile.variables[item].dimensions]
-        if "time" not in dimlist:
-            continue
-        data[item], flag, vattr[item] = nc_read_var(ncFile, item)
-        data[item] = numpy.ma.filled(data[item], fill_value=c.missing_value)
-    ncFile.close()
-    # get a list of Python datetimes from the xlDatetime
-    # this may be better replaced with one of the standard OzFluxQC routines
-    dates = netCDF4.num2date(data["time"], vattr["time"]["units"])
-    # convert the dictionary to a Pandas data frame
-    df = pandas.DataFrame(data, index=dates)
-    # replace missing values with NaN
-    df.replace(to_replace=c.missing_value, value=numpy.NaN, inplace=True)
-    return df, gattr, vattr
-
-def df_droprecords(df,qc_list=[0,10]):
-    # replace configured error values with NaNs
-    df.replace(c.missing_value,np.nan)
-    # replace unacceptable QC flags with NaNs
-    var_list = df.columns.values.tolist()
-    data_list = [item for item in var_list if "QCFlag" not in item]
-    flag_list = [item for item in var_list if "QCFlag" in item]
-    if len(data_list)!=len(flag_list): raise Exception("df_droprecords: number of data and flag series differ")
-    eval_string='|'.join(['(df[flag_list[i]]=='+str(i)+')' for i in qc_list])
-    #for i in xrange(len(data_list)):
-    for i in range(len(data_list)):
-        df[data_list[i]]=np.where(eval(eval_string),df[data_list[i]],np.nan)
-    # drop the all records with NaNs
-    df=df[data_list]
-    # return the data frame
-    return df
-
 def nc_read_var(ncFile,ThisOne):
     """ Reads a variable from a netCDF file and returns the data, the QC flag and the variable
         attribute dictionary.
@@ -1944,7 +1844,7 @@ def nc_write_series(ncFile, ds, outputlist=None, ndims=3):
     if "nc_nrecs" in ds.globalattributes.keys():
         nRecs = int(ds.globalattributes['nc_nrecs'])
     else:
-        nRecs = len(ldt)
+        nRecs = len(ds.series["DateTime"]["Data"])
     ncFile.createDimension("time",nRecs)
     if ndims==3:
         ncFile.createDimension("latitude",1)
@@ -2076,144 +1976,6 @@ def xl_open_write(xl_name):
         logger.error(' Unable to open Excel file '+xl_name+' for writing')
         xl_file = ''
     return xl_file
-
-def xl_read_flags(cf,ds,level,VariablesInFile):
-    # First data row in Excel worksheets.
-    FirstDataRow = int(pfp_utils.get_keyvaluefromcf(cf,["Files",level],"first_data_row")) - 1
-    HeaderRow = int(pfp_utils.get_keyvaluefromcf(cf,['Files','in'],'header_row')) - 1
-    # Get the full name of the Excel file from the control file.
-    xlFullName = get_filename_from_cf(cf,level)
-    # Get the Excel workbook object.
-    if os.path.isfile(xlFullName):
-        xlBook = xlrd.open_workbook(xlFullName)
-    else:
-        logger.error(' Excel file '+xlFullName+' not found, choose another')
-        xlFullName = get_filename_dialog(path='.',title='Choose an Excel file')
-        if len(xlFullName)==0:
-            return
-        xlBook = xlrd.open_workbook(xlFullName)
-    ds.globalattributes['xlFullName'] = xlFullName
-
-    for ThisOne in VariablesInFile:
-        if 'xl' in cf['Variables'][ThisOne].keys():
-            logger.info(' Getting flags for '+ThisOne+' from spreadsheet')
-            ActiveSheet = xlBook.sheet_by_name('Flag')
-            LastDataRow = int(ActiveSheet.nrows)
-            HeaderList = [x.lower() for x in ActiveSheet.row_values(HeaderRow)]
-            if cf['Variables'][ThisOne]['xl']['name'] in HeaderList:
-                xlCol = HeaderRow.index(cf['Variables'][ThisOne]['xl']['name'])
-                Values = ActiveSheet.col_values(xlCol)[FirstDataRow:LastDataRow]
-                Types = ActiveSheet.col_types(xlCol)[FirstDataRow:LastDataRow]
-                ds.series[ThisOne]['Flag'] = numpy.array([c.missing_value]*len(Values),numpy.int32)
-                for i in range(len(Values)):
-                    if Types[i]==2: #xlType=3 means a date/time value, xlType=2 means a number
-                        ds.series[ThisOne]['Flag'][i] = numpy.int32(Values[i])
-                    else:
-                        logger.error('  xl_read_flags: flags for '+ThisOne+' not found in xl file')
-    return ds
-
-#def xl_read_series(cf):
-    ## Instance the data structure object.
-    #ds = DataStructure()
-    ## get the filename
-    #FileName = get_infilenamefromcf(cf)
-    #if len(FileName)==0:
-        #msg = " in_filename not found in control file"
-        #logger.error(msg)
-        #ds.returncodes = {"value":1,"message":msg}
-        #return ds
-    #if not os.path.exists(FileName):
-        #msg = ' Input file '+FileName+' specified in control file not found'
-        #logger.error(msg)
-        #ds.returncodes = {"value":1,"message":msg}
-        #return ds
-    #label_list = cf['Variables'].keys()
-    #if "xlDateTime" not in label_list and "DateTime" not in label_list:
-        #msg = " No xlDateTime or DateTime section found in control file"
-        #logger.error(msg)
-        #ds.returncodes = {"value":1,"message":msg}
-        #return ds
-    ## convert from Excel row number to xlrd row number
-    #first_data_row = int(pfp_utils.get_keyvaluefromcf(cf,["Files"],"in_firstdatarow")) - 1
-    #header_row = int(pfp_utils.get_keyvaluefromcf(cf,["Files"],"in_headerrow")) - 1
-    ## get the Excel workbook object.
-    #file_name = os.path.split(FileName)
-    #logger.info(" Reading Excel file "+file_name[1])
-    #xl_book = xlrd.open_workbook(FileName)
-    ##log.info(" Opened and read Excel file "+FileName)
-    #ds.globalattributes['featureType'] = 'timeseries'
-    #ds.globalattributes['xl_filename'] = FileName
-    #ds.globalattributes['xl_datemode'] = str(xl_book.datemode)
-    #xlsheet_names = [x.lower() for x in xl_book.sheet_names()]
-    ## Get the Excel file modification date and time, these will be
-    ## written to the netCDF file to uniquely identify the version
-    ## of the Excel file used to create this netCDF file.
-    #s = os.stat(FileName)
-    #t = time.localtime(s.st_mtime)
-    #ds.globalattributes['xl_moddatetime'] = str(datetime.datetime(t[0],t[1],t[2],t[3],t[4],t[5]))
-    ## Loop over the variables defined in the 'Variables' section of the
-    ## configuration file.
-    ## We do the xlDateTime variable first so as to set the default number of records
-    #if "xlDateTime" in cf["Variables"]:
-        #xlsheet_name = cf["Variables"]["xlDateTime"]["xl"]["sheet"]
-        #if xlsheet_name.lower() in xlsheet_names:
-            #xlsheet_index = xlsheet_names.index(xlsheet_name.lower())
-            #active_sheet = xl_book.sheet_by_index(xlsheet_index)
-            #header_list = [x.lower() for x in active_sheet.row_values(header_row)]
-            #if cf["Variables"]["xlDateTime"]["xl"]["name"].lower() in header_list:
-                #logger.info(" Getting xlDateTime from sheet "+xlsheet_name)
-                #last_data_row = int(active_sheet.nrows)
-                #ds.series[unicode("xlDateTime")] = {}
-                #xl_col = header_list.index(cf["Variables"]["xlDateTime"]["xl"]["name"].lower())
-                #values = active_sheet.col_values(xl_col)[first_data_row:last_data_row]
-                #types = active_sheet.col_types(xl_col)[first_data_row:last_data_row]
-                #nrecs = len(values)
-                #ds.series["xlDateTime"]["Data"] = numpy.ones(nrecs,dtype=numpy.float64)*float(c.missing_value)
-                #ds.series["xlDateTime"]["Flag"] = numpy.ones(nrecs,dtype=numpy.int32)
-                #for i in range(nrecs):
-                    #if (types[i]==3) or (types[i]==2):
-                        #ds.series["xlDateTime"]["Data"][i] = numpy.float64(values[i])
-                        #ds.series["xlDateTime"]["Flag"][i] = numpy.int32(0)
-                #ds.globalattributes['nc_nrecs'] = str(nrecs)
-            #else:
-                #logger.error("  xlDateTime not found on sheet "+xlsheet_name)
-        #else:
-            #logger.error("  Sheet "+xlsheet_name+" (xlDateTime) not found in Excel workbook")
-    ## remove xlDateTime from the list of series to be read
-    #if "xlDateTime" in label_list:
-        #label_list.remove("xlDateTime")
-    ## and now loop over the series to be read from the Excel file
-    #for label in label_list:
-        #if xl_check_cf_section(cf, label):
-            #xlsheet_name = cf["Variables"][label]["xl"]["sheet"]
-            #if xlsheet_name.lower() in xlsheet_names:
-                #xlsheet_index = xlsheet_names.index(xlsheet_name.lower())
-                #active_sheet = xl_book.sheet_by_index(xlsheet_index)
-                #header_list = [x.lower() for x in active_sheet.row_values(header_row)]
-                #if cf["Variables"][label]["xl"]["name"].lower() in header_list:
-                    #logger.info(" Getting "+label+" from sheet "+xlsheet_name)
-                    #last_data_row = int(active_sheet.nrows)
-                    #if last_data_row-first_data_row == nrecs:
-                        #ds.series[unicode(label)] = {}
-                        #xl_col = header_list.index(cf["Variables"][label]["xl"]["name"].lower())
-                        #values = active_sheet.col_values(xl_col)[first_data_row:last_data_row]
-                        #types = active_sheet.col_types(xl_col)[first_data_row:last_data_row]
-                        #nrecs = len(values)
-                        #ds.series[label]["Data"] = numpy.ones(nrecs,dtype=numpy.float64)*float(c.missing_value)
-                        #ds.series[label]["Flag"] = numpy.ones(nrecs,dtype=numpy.int32)
-                        #for i in range(nrecs):
-                            #if (types[i]==3) or (types[i]==2) and (values[i]!=c.missing_value):
-                                #ds.series[label]["Data"][i] = numpy.float64(values[i])
-                                #ds.series[label]["Flag"][i] = numpy.int32(0)
-                    #else:
-                        #logger.error("  "+label+" on sheet "+xlsheet_name+" is the wrong length")
-                        #continue
-                #else:
-                    #logger.error("  "+label+" not found on sheet "+xlsheet_name)
-            #else:
-                #logger.error("  Sheet "+xlsheet_name+" ("+label+") not found in Excel workbook")
-    #ds.returncodes = {"value":0,"message":"OK"}
-    #return ds
 
 def xl_read_series(cf):
     # Instance the data structure object.

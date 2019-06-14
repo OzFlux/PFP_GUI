@@ -542,11 +542,23 @@ def rpLT_plot(pd, ds, output, drivers, target, iel, si=0, ei=-1):
     # draw the plot on the screen
     if ieli["show_plots"]:
         plt.draw()
-        plt.pause(1)
+        #plt.pause(1)
+        mypause(1)
         plt.ioff()
     else:
         plt.close(fig)
         plt.ion()
+
+def mypause(interval):
+    backend = plt.rcParams['backend']
+    if backend in matplotlib.rcsetup.interactive_bk:
+        figManager = matplotlib._pylab_helpers.Gcf.get_active()
+        if figManager is not None:
+            canvas = figManager.canvas
+            if canvas.figure.stale:
+                canvas.draw()
+            canvas.start_event_loop(interval)
+            return
 
 def subset_window(data_dict, index_list):
     # Subset the arrays on basis of index list

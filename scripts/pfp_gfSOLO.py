@@ -10,6 +10,7 @@ import warnings
 # 3rd party modules
 import dateutil
 import numpy
+import matplotlib
 import matplotlib.dates as mdt
 import matplotlib.pyplot as plt
 import pylab
@@ -404,10 +405,22 @@ def gfSOLO_plot(pd, ds, drivers, target, output, solo, si=0, ei=-1):
     # draw the plot on the screen
     if solo["gui"]["show_plots"]:
         plt.draw()
-        plt.pause(1)
+        #plt.pause(1)
+        mypause(1)
         plt.ioff()
     else:
         plt.ion()
+
+def mypause(interval):
+    backend = plt.rcParams['backend']
+    if backend in matplotlib.rcsetup.interactive_bk:
+        figManager = matplotlib._pylab_helpers.Gcf.get_active()
+        if figManager is not None:
+            canvas = figManager.canvas
+            if canvas.figure.stale:
+                canvas.draw()
+            canvas.start_event_loop(interval)
+            return
 
 def gfSOLO_plotcoveragelines(ds, solo):
     """
