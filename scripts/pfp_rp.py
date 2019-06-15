@@ -8,6 +8,7 @@ import os
 import sys
 # 3rd party modules
 import dateutil
+import matplotlib
 import matplotlib.pyplot as plt
 import netCDF4
 import numpy
@@ -1203,6 +1204,7 @@ def L6_summary_plotdaily(cf, ds, daily_dict):
         fig.savefig(figure_path, format='png')
         if cf["Options"]["call_mode"].lower()=="interactive":
             plt.draw()
+            mypause(1)
             plt.ioff()
         else:
             plt.close(fig)
@@ -1233,6 +1235,7 @@ def L6_summary_plotdaily(cf, ds, daily_dict):
     fig.savefig(figname,format='png')
     if cf["Options"]["call_mode"].lower()=="interactive":
         plt.draw()
+        mypause(1)
         plt.ioff()
     else:
         plt.close(fig)
@@ -1335,6 +1338,7 @@ def L6_summary_plotcumulative(cf, ds, cumulative_dict):
         fig.savefig(figure_path, format='png')
         if cf["Options"]["call_mode"].lower()=="interactive":
             plt.draw()
+            mypause(1)
             plt.ioff()
         else:
             plt.close(fig)
@@ -1868,3 +1872,14 @@ def rpMergeSeries_createdict(cf, ds, l6_info, label, called_by):
         variable = pfp_utils.CreateEmptyVariable(label, nrecs)
         pfp_utils.CreateVariable(ds, variable)
     return
+
+def mypause(interval):
+    backend = plt.rcParams['backend']
+    if backend in matplotlib.rcsetup.interactive_bk:
+        figManager = matplotlib._pylab_helpers.Gcf.get_active()
+        if figManager is not None:
+            canvas = figManager.canvas
+            if canvas.figure.stale:
+                canvas.draw()
+            canvas.start_event_loop(interval)
+            return

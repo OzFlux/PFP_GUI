@@ -8,6 +8,7 @@ level = L5
 
 [Options]
     MaxGapInterpolate = 3
+    MaxShortGapLength = 14
     FilterList = Fc
     TurbulenceFilter = ustar
     DayNightFilter = Fsd

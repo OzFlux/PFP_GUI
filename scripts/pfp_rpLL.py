@@ -6,6 +6,7 @@ import logging
 import os
 import warnings
 # 3rd party modules
+import matplotlib
 import matplotlib.pyplot as plt
 import numpy
 from scipy.optimize import curve_fit, OptimizeWarning

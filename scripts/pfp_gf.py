@@ -13,6 +13,7 @@ import xlrd
 # PFP modules
 import constants as c
 import pfp_cfg
+import pfp_gui
 import pfp_io
 import pfp_ts
 import pfp_utils
@@ -125,6 +126,84 @@ def CheckDrivers(info, ds):
         msg = "  No missing data found in drivers"
         logger.info(msg)
         return
+
+def CheckGapLengths(cf, ds, l5_info):
+    """
+    Purpose:
+     Check to see if any of the series being gap filled have long gaps and
+     tell the user if they are present.  The user can then opt to continue
+     or to add a long-gap filling method (e.g. GapFillLongSOLO) to the
+     control file.
+    Usage:
+    Side effects:
+    Author: PRI
+    Date: June 2019
+    """
+    ds.returncodes["value"] = 0
+    l5_info["CheckGapLengths"] = {}
+    # get the maximum length for "short" gaps in days
+    opt = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "MaxShortGapLength", default=14)
+    max_short_gap_days = int(opt)
+    # maximum length in records
+    ts = int(ds.globalattributes["time_step"])
+    nperday = 24 * 60/ts
+    max_short_gap_records = max_short_gap_days * nperday
+    # get a list of variables being gap filled
+    targets = cf["Fluxes"].keys()
+    targets_with_long_gaps = []
+    # loop over the targets, get the duration and check to see if any exceed the maximum
+    for target in targets:
+        # initialise dictionary entry
+        l5_info["CheckGapLengths"][target] = {"got_long_gaps": False,
+                                              "got_long_gap_method": False}
+        # loop over possible long gap filling methods
+        for long_gap_method in ["GapFillLongSOLO"]:
+            if long_gap_method in cf["Fluxes"][target].keys():
+                # set logical true if long gap filling method present
+                l5_info["CheckGapLengths"][target]["got_long_gap_method"] = True
+        # get the data
+        variable = pfp_utils.GetVariable(ds, target)
+        # get the mask
+        mask = numpy.ma.getmaskarray(variable["Data"])
+        # get the gaps
+        gap_start_end = pfp_utils.contiguous_regions(mask)
+        # loop over the gaps
+        for start, end in gap_start_end:
+            gap_length = end - start
+            # check to see if any gaps are longer than the max
+            if gap_length > max_short_gap_records:
+                # set logical if long gaps present
+                l5_info["CheckGapLengths"][target]["got_long_gaps"] = True
+                targets_with_long_gaps.append(target)
+                break
+    # write an info message to the log window
+    if len(targets_with_long_gaps) != 0:
+        msg = " Series " + ",".join(targets_with_long_gaps) + " have gaps longer than "
+        msg = msg + str(max_short_gap_days) + " days"
+        logger.warning(msg)
+    # check for targets with long gaps but no long gap fill method
+    targets_without = []
+    for target in targets:
+        if (l5_info["CheckGapLengths"][target]["got_long_gaps"] and
+            not l5_info["CheckGapLengths"][target]["got_long_gap_method"]):
+            targets_without.append(target)
+    # if we have any, put up a warning message and let the user decide
+    if len(targets_without) != 0:
+        # put up a message box, continue or quit
+        msg = "The following series have long gaps but no long gap filling method\n"
+        msg = msg + "is specified in the control file.\n"
+        msg = msg + "    " + ",".join(targets_without) + "\n"
+        msg = msg + "To add a long gap fill method, press 'Quit' and edit the control file\n"
+        msg = msg + "or press 'Continue' to ignore this warning."
+        result = pfp_gui.MsgBox_ContinueOrQuit(msg, title="Warning")
+        if result.clickedButton().text() == "Quit":
+            # user wants to edit the control file
+            ds.returncodes["message"] = "Quitting L5 to edit control file"
+            ds.returncodes["value"] = 1
+        else:
+            # user wants to continue, turn on auto-complete
+            l5_info["GapFillUsingSOLO"]["gui"]["auto_complete"] = True
+    return
 
 def ParseL4ControlFile(cf, ds):
     l4_info = {}
@@ -554,6 +633,7 @@ def gfSOLO_createdict(cf, ds, l5_info, target, called_by):
     # get the outputs section
     gfSOLO_createdict_outputs(cf, l5_info[called_by], target, called_by)
     # the gui section is done in pfp_gfSOLO.gfSOLO_run_gui
+    l5_info[called_by]["gui"]["auto_complete"] = False
     # add the summary plors section
     if "SummaryPlots" in cf:
         l5_info[called_by]["SummaryPlots"] = cf["SummaryPlots"]

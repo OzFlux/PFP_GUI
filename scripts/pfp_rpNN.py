@@ -8,6 +8,7 @@ import platform
 import subprocess
 # 3rd party modules
 import dateutil
+import matplotlib
 import matplotlib.pyplot as plt
 import numpy
 # PFP modules
@@ -48,6 +49,8 @@ def rpSOLO_gui(main_gui, ds, solo):
     # add the data structures (dsa and dsb) and the solo_info dictionary to self
     main_gui.solo_gui.ds = ds
     main_gui.solo_gui.solo = solo
+    # window title
+    main_gui.solo_gui.setWindowTitle("ER using SOLO")
     # put up the start and end dates
     main_gui.solo_gui.label_DataStartDate_value.setText(solo["info"]["file_startdate"])
     main_gui.solo_gui.label_DataEndDate_value.setText(solo["info"]["file_enddate"])

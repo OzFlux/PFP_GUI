@@ -51,6 +51,23 @@ class myMessageBox(QtWidgets.QMessageBox):
         self.setStandardButtons(QtWidgets.QMessageBox.Ok)
         self.exec_()
 
+class MsgBox_ContinueOrQuit(QtWidgets.QMessageBox):
+    def __init__(self, msg, title="Information", parent=None):
+        super(MsgBox_ContinueOrQuit, self).__init__(parent)
+        if title == "Critical":
+            self.setIcon(QtWidgets.QMessageBox.Critical)
+        elif title == "Warning":
+            self.setIcon(QtWidgets.QMessageBox.Warning)
+        else:
+            self.setIcon(QtWidgets.QMessageBox.Information)
+        self.setText(msg)
+        self.setWindowTitle(title)
+        self.setStandardButtons(QtWidgets.QMessageBox.Yes |
+                                QtWidgets.QMessageBox.No)
+        self.button(QtWidgets.QMessageBox.Yes).setText("Continue")
+        self.button(QtWidgets.QMessageBox.No).setText("Quit")
+        self.exec_()
+
 class edit_cfg_L1(QtWidgets.QWidget):
     def __init__(self, main_gui):
 
@@ -970,11 +987,11 @@ class edit_cfg_L2(QtWidgets.QWidget):
                     self.context_menu.actionAddWindDirectionCorrection.setText("Add CorrectWindDirection")
                     self.context_menu.addAction(self.context_menu.actionAddWindDirectionCorrection)
                     self.context_menu.actionAddWindDirectionCorrection.triggered.connect(self.add_winddirectioncorrection)
-                #self.context_menu.actionAddExcludeHours = QtGui.QAction(self)
+                #self.context_menu.actionAddExcludeHours = QtWidgets.QAction(self)
                 #self.context_menu.actionAddExcludeHours.setText("Add ExcludeHours")
                 #self.context_menu.addAction(self.context_menu.actionAddExcludeHours)
                 #self.context_menu.actionAddExcludeHours.triggered.connect(self.add_excludehours)
-                #self.context_menu.actionAddLinear = QtGui.QAction(self)
+                #self.context_menu.actionAddLinear = QtWidgets.QAction(self)
                 #self.context_menu.actionAddLinear.setText("Add Linear")
                 #self.context_menu.addAction(self.context_menu.actionAddLinear)
                 #self.context_menu.actionAddLinear.triggered.connect(self.add_linear)
@@ -1820,11 +1837,11 @@ class edit_cfg_L3(QtWidgets.QWidget):
                     self.context_menu.actionAddCorrectFgForStorage.setText("CorrectFgForStorage")
                     self.context_menu.addAction(self.context_menu.actionAddCorrectFgForStorage)
                     self.context_menu.actionAddCorrectFgForStorage.triggered.connect(self.add_correctfgforstorage)
-                #self.context_menu.actionCoordinateFluxGaps = QtGui.QAction(self)
+                #self.context_menu.actionCoordinateFluxGaps = QtWidgets.QAction(self)
                 #self.context_menu.actionCoordinateFluxGaps.setText("CoordinateFluxGaps")
                 #self.context_menu.addAction(self.context_menu.actionAddCoordinateFluxGaps)
                 #self.context_menu.actionAddCoordinateFluxGaps.triggered.connect(self.add_coordinatefluxgaps)
-                #self.context_menu.actionCoordinateAhFcGaps = QtGui.QAction(self)
+                #self.context_menu.actionCoordinateAhFcGaps = QtWidgets.QAction(self)
                 #self.context_menu.actionCoordinateAhFcGaps.setText("CoordinateAhFcGaps")
                 #self.context_menu.addAction(self.context_menu.actionAddCoordinateAhFcGaps)
                 #self.context_menu.actionAddCoordinateAhFcGaps.triggered.connect(self.add_coordinateahfcgaps)
@@ -1927,7 +1944,7 @@ class edit_cfg_L3(QtWidgets.QWidget):
                 self.context_menu.addAction(self.context_menu.actionRemoveVariable)
                 self.context_menu.actionRemoveVariable.triggered.connect(self.remove_item)
             elif str(parent.text()) == "Plots":
-                #self.context_menu.actionDisablePlot = QtGui.QAction(self)
+                #self.context_menu.actionDisablePlot = QtWidgets.QAction(self)
                 #self.context_menu.actionDisablePlot.setText("Disable plot")
                 #self.context_menu.addAction(self.context_menu.actionDisablePlot)
                 #self.context_menu.actionDisablePlot.triggered.connect(self.disable_plot)
@@ -3766,16 +3783,19 @@ class edit_cfg_L5(QtWidgets.QWidget):
                 self.context_menu.actionAddSummaryPlots.setText("Add summary plots section")
                 self.context_menu.addAction(self.context_menu.actionAddSummaryPlots)
                 self.context_menu.actionAddSummaryPlots.triggered.connect(self.add_summary_plots_section)
+                add_separator = True
             if "ustar_threshold" not in section_headings:
                 self.context_menu.actionAddUstarThreshold = QtWidgets.QAction(self)
                 self.context_menu.actionAddUstarThreshold.setText("Add u* threshold section")
                 self.context_menu.addAction(self.context_menu.actionAddUstarThreshold)
                 self.context_menu.actionAddUstarThreshold.triggered.connect(self.add_ustar_threshold_section)
+                add_separator = True
             if "Imports" not in section_headings:
                 self.context_menu.actionAddImports = QtWidgets.QAction(self)
                 self.context_menu.actionAddImports.setText("Add Imports section")
                 self.context_menu.addAction(self.context_menu.actionAddImports)
                 self.context_menu.actionAddImports.triggered.connect(self.add_imports_section)
+                add_separator = True
             if selected_text == "Files":
                 self.context_menu.actionAddFileEntry = QtWidgets.QAction(self)
                 self.context_menu.actionAddFileEntry.setText("Add item")
@@ -3784,6 +3804,9 @@ class edit_cfg_L5(QtWidgets.QWidget):
             elif selected_text == "Output":
                 pass
             elif selected_text == "Options":
+                if add_separator:
+                    self.context_menu.addSeparator()
+                    add_separator = False
                 # get a list of existing entries in this section
                 existing_entries = self.get_existing_entries()
                 # only put an option in the context menu if it is not already present
@@ -3792,6 +3815,11 @@ class edit_cfg_L5(QtWidgets.QWidget):
                     self.context_menu.actionAddMaxGapInterpolate.setText("MaxGapInterpolate")
                     self.context_menu.addAction(self.context_menu.actionAddMaxGapInterpolate)
                     self.context_menu.actionAddMaxGapInterpolate.triggered.connect(self.add_maxgapinterpolate)
+                if "MaxShortGapLength" not in existing_entries:
+                    self.context_menu.actionAddMaxShortGapLength = QtWidgets.QAction(self)
+                    self.context_menu.actionAddMaxShortGapLength.setText("MaxShortGapLength")
+                    self.context_menu.addAction(self.context_menu.actionAddMaxShortGapLength)
+                    self.context_menu.actionAddMaxShortGapLength.triggered.connect(self.add_maxshortgaplength)
                 if "FilterList" not in existing_entries:
                     self.context_menu.actionAddFilterList = QtWidgets.QAction(self)
                     self.context_menu.actionAddFilterList.setText("FilterList")
@@ -3946,7 +3974,7 @@ class edit_cfg_L5(QtWidgets.QWidget):
                     self.context_menu.actionAddSOLO.triggered.connect(self.add_solo)
                     add_separator = True
                 if "GapFillLongSOLO" not in existing_entries:
-                    self.context_menu.actionAddLongSOLO = QtGui.QAction(self)
+                    self.context_menu.actionAddLongSOLO = QtWidgets.QAction(self)
                     self.context_menu.actionAddLongSOLO.setText("Add SOLO (long gaps)")
                     self.context_menu.addAction(self.context_menu.actionAddLongSOLO)
                     self.context_menu.actionAddLongSOLO.triggered.connect(self.add_solo_long)
@@ -4033,7 +4061,7 @@ class edit_cfg_L5(QtWidgets.QWidget):
                 self.context_menu.addAction(self.context_menu.actionRemoveQCCheck)
                 self.context_menu.actionRemoveQCCheck.triggered.connect(self.remove_item)
             elif subsubsection_name in ["GapFillUsingSOLO", "GapFillLongSOLO", "GapFillUsingMDS", "GapFillFromClimatology"]:
-                self.context_menu.actionRemoveGFMethod = QtGui.QAction(self)
+                self.context_menu.actionRemoveGFMethod = QtWidgets.QAction(self)
                 self.context_menu.actionRemoveGFMethod.setText("Remove method")
                 self.context_menu.addAction(self.context_menu.actionRemoveGFMethod)
                 self.context_menu.actionRemoveGFMethod.triggered.connect(self.remove_GFMethod)
@@ -4224,6 +4252,12 @@ class edit_cfg_L5(QtWidgets.QWidget):
     def add_maxgapinterpolate(self):
         """ Add MaxGapInterpolate to the [Options] section."""
         dict_to_add = {"MaxGapInterpolate": "3"}
+        # add the subsection
+        self.add_subsection(dict_to_add)
+
+    def add_maxshortgaplength(self):
+        """ Add MaxShortGapLength to the [Options] section."""
+        dict_to_add = {"MaxShortGapLength": "14"}
         # add the subsection
         self.add_subsection(dict_to_add)
 
@@ -4897,7 +4931,7 @@ class edit_cfg_L6(QtWidgets.QWidget):
                 self.context_menu.actionAddGlobalAttribute.triggered.connect(self.add_global_attribute)
             elif selected_text in ["ER"]:
                 pass
-                #self.context_menu.actionAddVariable = QtGui.QAction(self)
+                #self.context_menu.actionAddVariable = QtWidgets.QAction(self)
                 #self.context_menu.actionAddVariable.setText("Add variable")
                 #self.context_menu.addAction(self.context_menu.actionAddVariable)
                 #self.context_menu.actionAddVariable.triggered.connect(self.add_er_variable)

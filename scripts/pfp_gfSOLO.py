@@ -68,18 +68,19 @@ def  gfSOLO_gui(main_gui, ds, solo):
     # set the default period and auto-complete state
     # NOTE: auto-complete should only be set if no long gaps detected
     if solo["info"]["called_by"] == "GapFillLongSOLO":
+        main_gui.solo_gui.setWindowTitle("Gap fill using SOLO (long gaps)")
         main_gui.solo_gui.radioButton_Manual.setChecked(True)
         main_gui.solo_gui.checkBox_AutoComplete.setChecked(True)
     else:
+        main_gui.solo_gui.setWindowTitle("Gap fill using SOLO (short gaps)")
         main_gui.solo_gui.radioButton_NumberMonths.setChecked(True)
         main_gui.solo_gui.lineEdit_NumberMonths.setText("2")
-        main_gui.solo_gui.checkBox_AutoComplete.setChecked(False)
+        auto_complete = solo["gui"]["auto_complete"]
+        main_gui.solo_gui.checkBox_AutoComplete.setChecked(auto_complete)
     # set the default number of nodes
     main_gui.solo_gui.lineEdit_Nodes.setText("Auto")
     # set the default minimum percentage of good data
     main_gui.solo_gui.lineEdit_MinPercent.setText("25")
-    # set the drivers
-    #main_gui.solo_gui.lineEdit_Drivers.setText("Fn,Fg,q,Ta,Ts,Ws")
     # display the SOLO GUI
     main_gui.solo_gui.show()
     main_gui.solo_gui.exec_()
@@ -591,7 +592,7 @@ def gfSOLO_qcchecks(cfg, dsa, dsb, mode="quiet"):
 def gfSOLO_quit(solo_gui):
     """ Quit the SOLO GUI."""
     solo_gui.ds.returncodes["message"] = "quit"
-    solo_gui.ds.returncodes["values"] = 1
+    solo_gui.ds.returncodes["value"] = 1
     # destroy the GUI
     solo_gui.close()
 

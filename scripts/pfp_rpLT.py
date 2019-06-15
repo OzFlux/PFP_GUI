@@ -7,6 +7,7 @@ import os
 import sys
 # 3rd party modules
 import numpy
+import matplotlib
 import matplotlib.pyplot as plt
 import scipy
 # PFP modules
