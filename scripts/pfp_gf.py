@@ -201,8 +201,9 @@ def CheckGapLengths(cf, ds, l5_info):
             ds.returncodes["message"] = "Quitting L5 to edit control file"
             ds.returncodes["value"] = 1
         else:
-            # user wants to continue, turn on auto-complete
-            l5_info["GapFillUsingSOLO"]["gui"]["auto_complete"] = True
+            # user wants to continue, turn on auto-complete for SOLO
+            if "GapFillUsingSOLO" in l5_info:
+                l5_info["GapFillUsingSOLO"]["gui"]["auto_complete"] = True
     return
 
 def ParseL4ControlFile(cf, ds):
@@ -504,6 +505,14 @@ def gfMDS_createdict(cf, ds, l5_info, label, called_by):
     l5_info[called_by]["info"]["in_filename"] = cf["Files"]["in_filename"]
     opt = pfp_utils.get_keyvaluefromcf(cf, ["Files"], "plot_path", default="plots")
     l5_info[called_by]["info"]["plot_path"] = opt
+    # get the maximum length for "short" gaps in days
+    opt = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "MaxShortGapDays", default=14)
+    max_short_gap_days = int(opt)
+    l5_info[called_by]["info"]["MaxShortGapDays"] = max_short_gap_days
+    # maximum length in records
+    ts = int(ds.globalattributes["time_step"])
+    nperday = 24 * 60/ts
+    l5_info[called_by]["info"]["MaxShortGapRecords"] = max_short_gap_days * nperday
     # name of MDS output series in ds
     outputs = cf["Fluxes"][label]["GapFillUsingMDS"].keys()
     # loop over the outputs listed in the control file
@@ -862,8 +871,8 @@ def gf_getdiurnalstats(DecHour,Data,ts):
             if Num[i]!=0:
                 Av[i] = numpy.ma.mean(Data[li])
                 Sd[i] = numpy.ma.std(Data[li])
-                Mx[i] = numpy.ma.maximum(Data[li])
-                Mn[i] = numpy.ma.minimum(Data[li])
+                Mx[i] = numpy.ma.maximum.reduce(Data[li])
+                Mn[i] = numpy.ma.minimum.reduce(Data[li])
     return Num, Hr, Av, Sd, Mx, Mn
 
 def gf_getdateticks(start, end):

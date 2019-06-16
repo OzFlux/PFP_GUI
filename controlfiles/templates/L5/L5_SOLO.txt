@@ -43,25 +43,3 @@ level = L5
                 drivers = Fn,Fg,q,VPD,Ta,Ts
         [[[MergeSeries]]]
             Source = Fc,Fc_SOLO
-
-[Plots]
-    [[1]]
-        Title = "Turbulent fluxes"
-        Variables = "['ustar','Fh','Fe','Fc']"
-    [[2]]
-        Title = "ustar gap filling"
-        Variables = "['ustar','ustar_SOLO']"
-    [[3]]
-        Title = "Fe gap filling"
-        Variables = "['Fe','Fe_SOLO']"
-    [[4]]
-        Title = "Fh gap filling"
-        Variables = "['Fh','Fh_SOLO']"
-    [[5]]
-        Title = "Fc gap filling"
-        Variables = "['Fc','Fc_SOLO']"
-
-[SOLO_Summary]
-    [[1]]
-        Title = "Fluxes"
-        Variables = "['ustar_SOLO','Fh_SOLO','Fe_SOLO','Fc_SOLO']"

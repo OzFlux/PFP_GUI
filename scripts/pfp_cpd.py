@@ -26,17 +26,9 @@ import constants as c
 import pfp_io
 import pfp_utils
 
-# show all warnings, not just the first
-warnings.simplefilter("always")
 # get the logger
 logger = logging.getLogger("pfp_log")
-# overload warnings.showwarnings to get traceback with warnings
-def warn_with_traceback(message, category, filename, lineno, file=None, line=None):
 
-    log = file if hasattr(file,'write') else sys.stderr
-    traceback.print_stack(file=log)
-    log.write(warnings.formatwarning(message, category, filename, lineno, line))
-warnings.showwarning = warn_with_traceback
 #------------------------------------------------------------------------------
 # Return a bootstrapped sample of the passed dataframe
 def bootstrap(df):

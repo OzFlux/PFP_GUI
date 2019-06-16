@@ -1,9 +1,11 @@
 # standard modules
 import copy
+import datetime
 import logging
 import os
 import sys
 import time
+import warnings
 # force QVariant API to V2 to avoid AttributeErrors on Mac OS X
 import sip
 sip.setapi('QVariant', 2)
@@ -40,6 +42,16 @@ for item in dir_list:
         os.makedirs(item)
 
 logger = pfp_log.init_logger()
+
+## show all warnings, not just the first
+#warnings.simplefilter("always")
+## overload warnings.showwarnings to get traceback with warnings
+#def warn_with_traceback(message, category, filename, lineno, file=None, line=None):
+
+    #log = file if hasattr(file,'write') else sys.stderr
+    #traceback.print_stack(file=log)
+    #log.write(warnings.formatwarning(message, category, filename, lineno, line))
+#warnings.showwarning = warn_with_traceback
 
 class myMessageBox(QtWidgets.QMessageBox):
     def __init__(self, msg, title="Information", parent=None):

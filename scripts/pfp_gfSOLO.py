@@ -312,7 +312,7 @@ def gfSOLO_plot(pd, ds, drivers, target, output, solo, si=0, ei=-1):
     ax2.set_xlabel(target + '_SOLO')
     # plot the best fit line
     coefs = numpy.ma.polyfit(numpy.ma.copy(mod), numpy.ma.copy(obs), 1)
-    xfit = numpy.ma.array([numpy.ma.minimum(mod), numpy.ma.maximum(mod)])
+    xfit = numpy.ma.array([numpy.ma.minimum.reduce(mod), numpy.ma.maximum.reduce(mod)])
     yfit = numpy.polyval(coefs, xfit)
     r = numpy.ma.corrcoef(mod, obs)
     ax2.plot(xfit, yfit, 'r--', linewidth=3)
@@ -329,7 +329,7 @@ def gfSOLO_plot(pd, ds, drivers, target, output, solo, si=0, ei=-1):
     rmse = numpy.ma.sqrt(numpy.ma.mean((obs-mod)*(obs-mod)))
     mean_mod = numpy.ma.mean(mod)
     mean_obs = numpy.ma.mean(obs)
-    data_range = numpy.ma.maximum(obs)-numpy.ma.minimum(obs)
+    data_range = numpy.ma.maximum.reduce(obs)-numpy.ma.minimum.reduce(obs)
     nmse = rmse/data_range
     plt.figtext(0.65, 0.225, 'No. points')
     plt.figtext(0.75, 0.225, str(numpoints))
@@ -1112,8 +1112,8 @@ def gf_getdiurnalstats(DecHour,Data,ts):
             if Num[i]!=0:
                 Av[i] = numpy.ma.mean(Data[li])
                 Sd[i] = numpy.ma.std(Data[li])
-                Mx[i] = numpy.ma.maximum(Data[li])
-                Mn[i] = numpy.ma.minimum(Data[li])
+                Mx[i] = numpy.ma.maximum.reduce(Data[li])
+                Mn[i] = numpy.ma.minimum.reduce(Data[li])
     return Num, Hr, Av, Sd, Mx, Mn
 
 def trap_masked_constant(num):

@@ -89,19 +89,19 @@ def get_yaxislimitsfromcf(cf,nFig,maxkey,minkey,nSer,YArray):
     if maxkey in cf['Plots'][str(nFig)].keys():                               # Y axis minima specified
         maxlist = ast.literal_eval(cf['Plots'][str(nFig)][maxkey])     # Evaluate the minima list
         if str(maxlist[nSer])=='Auto':             # This entry is 'Auto' ...
-            YAxMax = numpy.ma.maximum(YArray)                        # ... so take the array minimum value
+            YAxMax = numpy.ma.maximum.reduce(YArray)                        # ... so take the array minimum value
         else:
             YAxMax = float(maxlist[nSer])         # Evaluate the entry for this series
     else:
-        YAxMax = numpy.ma.maximum(YArray)                            # Y axis minima not given, use auto
+        YAxMax = numpy.ma.maximum.reduce(YArray)                            # Y axis minima not given, use auto
     if minkey in cf['Plots'][str(nFig)].keys():                               # Y axis minima specified
         minlist = ast.literal_eval(cf['Plots'][str(nFig)][minkey])     # Evaluate the minima list
         if str(minlist[nSer])=='Auto':             # This entry is 'Auto' ...
-            YAxMin = numpy.ma.minimum(YArray)                        # ... so take the array minimum value
+            YAxMin = numpy.ma.minimum.reduce(YArray)                        # ... so take the array minimum value
         else:
             YAxMin = float(minlist[nSer])         # Evaluate the entry for this series
     else:
-        YAxMin = numpy.ma.minimum(YArray)                            # Y axis minima not given, use auto
+        YAxMin = numpy.ma.minimum.reduce(YArray)                            # Y axis minima not given, use auto
     if (abs(YAxMax-YAxMin) < c.eps):
         YAxDelta = 0.001*YAxMax
         if YAxDelta == 0:
@@ -1151,7 +1151,7 @@ def xyplot(x,y,sub=[1,1,1],regr=0,thru0=0,title=None,xlabel=None,ylabel=None,fna
         return
     if regr==1:
         coefs = numpy.ma.polyfit(numpy.ma.copy(x),numpy.ma.copy(y),1)
-        xfit = numpy.ma.array([numpy.ma.minimum(x),numpy.ma.maximum(x)])
+        xfit = numpy.ma.array([numpy.ma.minimum.reduce(x),numpy.ma.maximum.reduce(x)])
         yfit = numpy.polyval(coefs,xfit)
         r = numpy.ma.corrcoef(x,y)
         eqnstr = 'y = %.3fx + %.3f (OLS)'%(coefs[0],coefs[1])

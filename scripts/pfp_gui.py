@@ -3815,11 +3815,11 @@ class edit_cfg_L5(QtWidgets.QWidget):
                     self.context_menu.actionAddMaxGapInterpolate.setText("MaxGapInterpolate")
                     self.context_menu.addAction(self.context_menu.actionAddMaxGapInterpolate)
                     self.context_menu.actionAddMaxGapInterpolate.triggered.connect(self.add_maxgapinterpolate)
-                if "MaxShortGapLength" not in existing_entries:
-                    self.context_menu.actionAddMaxShortGapLength = QtWidgets.QAction(self)
-                    self.context_menu.actionAddMaxShortGapLength.setText("MaxShortGapLength")
-                    self.context_menu.addAction(self.context_menu.actionAddMaxShortGapLength)
-                    self.context_menu.actionAddMaxShortGapLength.triggered.connect(self.add_maxshortgaplength)
+                if "MaxShortGapDays" not in existing_entries:
+                    self.context_menu.actionAddMaxShortGapDays = QtWidgets.QAction(self)
+                    self.context_menu.actionAddMaxShortGapDays.setText("MaxShortGapDays")
+                    self.context_menu.addAction(self.context_menu.actionAddMaxShortGapDays)
+                    self.context_menu.actionAddMaxShortGapDays.triggered.connect(self.add_maxshortgapdays)
                 if "FilterList" not in existing_entries:
                     self.context_menu.actionAddFilterList = QtWidgets.QAction(self)
                     self.context_menu.actionAddFilterList.setText("FilterList")
@@ -4255,9 +4255,9 @@ class edit_cfg_L5(QtWidgets.QWidget):
         # add the subsection
         self.add_subsection(dict_to_add)
 
-    def add_maxshortgaplength(self):
-        """ Add MaxShortGapLength to the [Options] section."""
-        dict_to_add = {"MaxShortGapLength": "14"}
+    def add_maxshortgapdays(self):
+        """ Add MaxShortGapDays to the [Options] section."""
+        dict_to_add = {"MaxShortGapDays": "30"}
         # add the subsection
         self.add_subsection(dict_to_add)
 

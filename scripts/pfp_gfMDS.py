@@ -9,6 +9,7 @@ import time
 # 3rd party modules
 import dateutil
 import numpy
+import matplotlib
 import matplotlib.pyplot as plt
 # PFP modules
 import constants as c
@@ -82,7 +83,8 @@ def GapFillUsingMDS(ds, l5_info, called_by):
         mds_out_file = os.path.join("mds", "output", "mds.csv")
         os.rename(mds_out_file, out_file_path)
         gfMDS_get_mds_output(ds, mds_label, out_file_path, l5_info, called_by)
-
+        # mask long gaps, if requested
+        gfMDS_mask_long_gaps(ds, mds_label, l5_info, called_by)
         # plot the MDS results
         target = l5im["outputs"][mds_label]["target"]
         drivers = l5im["outputs"][mds_label]["drivers"]
@@ -249,6 +251,36 @@ def gfMDS_make_data_array(ds, current_year, info):
     data[:,0] = numpy.array([int(xdt.strftime("%Y%m%d%H%M")) for xdt in cdt])
     return data, header, fmt
 
+def gfMDS_mask_long_gaps(ds, mds_label, l5_info, called_by):
+    """
+    Purpose:
+     Mask gaps that are longer than a specified maximum length.
+    Usage:
+    Side effects:
+    Author: PRI
+    Date: June 2019
+    """
+    if "MaxShortGapRecords" not in l5_info[called_by]["info"]:
+        return
+    max_short_gap_days = l5_info[called_by]["info"]["MaxShortGapDays"]
+    msg = "  Masking gaps longer than " + str(max_short_gap_days) + " days"
+    logger.info(msg)
+    label = l5_info[called_by]["outputs"][mds_label]["target"]
+    target = pfp_utils.GetVariable(ds, label)
+    variable = pfp_utils.GetVariable(ds, mds_label)
+    mask = numpy.ma.getmaskarray(target["Data"])
+    # start and stop indices of contiguous blocks
+    max_short_gap_records = l5_info[called_by]["info"]["MaxShortGapRecords"]
+    gap_start_end = pfp_utils.contiguous_regions(mask)
+    for start, stop in gap_start_end:
+        gap_length = stop - start
+        if gap_length > max_short_gap_records:
+            variable["Data"][start: stop] = target["Data"][start: stop]
+            variable["Flag"][start: stop] = target["Flag"][start: stop]
+    # put data_int back into the data structure
+    pfp_utils.CreateVariable(ds, variable)
+    return
+
 def gfMDS_plot(pd, ds, mds_label, l5_info, called_by):
     ts = int(ds.globalattributes["time_step"])
     drivers = l5_info[called_by]["outputs"][mds_label]["drivers"]
@@ -260,8 +292,11 @@ def gfMDS_plot(pd, ds, mds_label, l5_info, called_by):
         plt.ion()
     else:
         plt.ioff()
-    fig = plt.figure(pd["fig_num"], figsize=(13,8))
-    fig.clf()
+    if plt.fignum_exists(1):
+        fig = plt.figure(1)
+        plt.clf()
+    else:
+        fig = plt.figure(1, figsize=(13, 8))
     fig.canvas.set_window_title(target)
     plt.figtext(0.5, 0.95, pd["title"], ha='center', size=16)
 
@@ -386,6 +421,6 @@ def gf_getdiurnalstats(DecHour, Data, ts):
             if Num[i]!=0:
                 Av[i] = numpy.ma.mean(Data[li])
                 Sd[i] = numpy.ma.std(Data[li])
-                Mx[i] = numpy.ma.maximum(Data[li])
-                Mn[i] = numpy.ma.minimum(Data[li])
+                Mx[i] = numpy.ma.maximum.reduce(Data[li])
+                Mn[i] = numpy.ma.minimum.reduce(Data[li])
     return Num, Hr, Av, Sd, Mx, Mn

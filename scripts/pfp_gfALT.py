@@ -630,7 +630,7 @@ def gfalternate_getoutputstatistics(data_dict, stat_dict, l4a):
         error = (data_dict[label_tower]["data"]-data_dict[label]["fitcorr"])
         rmse = numpy.ma.sqrt(numpy.ma.average(error*error))
         stat_dict[label]["RMSE"] = trap_masked_constant(rmse)
-        data_range = numpy.ma.maximum(data_dict[label_tower]["data"])-numpy.ma.minimum(data_dict[label_tower]["data"])
+        data_range = numpy.ma.maximum.reduce(data_dict[label_tower]["data"])-numpy.ma.minimum.reduce(data_dict[label_tower]["data"])
         if numpy.ma.is_masked(data_range) or abs(data_range) < c.eps:
             nmse = float(c.missing_value)
         else:
@@ -1178,8 +1178,8 @@ def gfalternate_plotsummary_getdata(dt_start,dt_end,result):
 def gfalternate_quit(alt_gui):
     """ Quit the GapFillFromAlternate GUI."""
     # put the return code into ds.returncodes
-    alt_gui.ds.returncodes["message"] = "quit"
-    alt_gui.ds.returncodes["value"] = 1
+    alt_gui.ds4.returncodes["message"] = "quit"
+    alt_gui.ds4.returncodes["value"] = 1
     # destroy the alternate GUI
     alt_gui.close()
 
