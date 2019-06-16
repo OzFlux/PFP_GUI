@@ -1177,11 +1177,11 @@ def gfalternate_plotsummary_getdata(dt_start,dt_end,result):
 
 def gfalternate_quit(alt_gui):
     """ Quit the GapFillFromAlternate GUI."""
-    ds = alt_gui.ds4
+    # put the return code into ds.returncodes
+    alt_gui.ds.returncodes["message"] = "quit"
+    alt_gui.ds.returncodes["value"] = 1
     # destroy the alternate GUI
     alt_gui.close()
-    # put the return code into ds.returncodes
-    ds.returncodes["message"] = "quit"
 
 def gfalternate_run_gui(alt_gui):
     """ Run the GapFillFromAlternate GUI."""

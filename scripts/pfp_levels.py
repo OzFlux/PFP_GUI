@@ -287,7 +287,7 @@ def l4qc(main_gui, cf, ds3):
     # do the gap filling using the ACCESS output
     if "GapFillFromAlternate" in l4_info:
         pfp_gfALT.GapFillFromAlternate(main_gui, ds4, ds_alt, l4_info, "GapFillFromAlternate")
-        if ds4.returncodes["message"] == "quit" or ds4.returncodes["value"] != 0:
+        if ds4.returncodes["value"] != 0:
             return ds4
     # merge the first group of gap filled drivers into a single series
     pfp_ts.MergeSeriesUsingDict(ds4, l4_info, merge_order="prerequisite")
@@ -345,12 +345,12 @@ def l5qc(main_gui, cf, ds4):
     # do the gap filling using SOLO
     if "GapFillUsingSOLO" in l5_info:
         pfp_gfSOLO.GapFillUsingSOLO(main_gui, ds5, l5_info, "GapFillUsingSOLO")
-        if ds5.returncodes["message"] == "quit" or ds5.returncodes["value"] != 0:
+        if ds5.returncodes["value"] != 0:
             return ds5
     # fill long gaps using SOLO
     if "GapFillLongSOLO" in l5_info:
         pfp_gfSOLO.GapFillUsingSOLO(main_gui, ds5, l5_info, "GapFillLongSOLO")
-        if ds5.returncodes["message"] == "quit" or ds5.returncodes["value"] != 0:
+        if ds5.returncodes["value"] != 0:
             return ds5
     # merge the gap filled drivers into a single series
     pfp_ts.MergeSeriesUsingDict(ds5, l5_info, merge_order="standard")

@@ -82,6 +82,7 @@ def GapFillUsingMDS(ds, l5_info, called_by):
         mds_out_file = os.path.join("mds", "output", "mds.csv")
         os.rename(mds_out_file, out_file_path)
         gfMDS_get_mds_output(ds, mds_label, out_file_path, l5_info, called_by)
+
         # plot the MDS results
         target = l5im["outputs"][mds_label]["target"]
         drivers = l5im["outputs"][mds_label]["drivers"]

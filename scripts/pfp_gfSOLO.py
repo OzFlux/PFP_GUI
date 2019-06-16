@@ -591,6 +591,7 @@ def gfSOLO_qcchecks(cfg, dsa, dsb, mode="quiet"):
 
 def gfSOLO_quit(solo_gui):
     """ Quit the SOLO GUI."""
+    # put the return code into ds.returncodes
     solo_gui.ds.returncodes["message"] = "quit"
     solo_gui.ds.returncodes["value"] = 1
     # destroy the GUI
