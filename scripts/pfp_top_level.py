@@ -2,8 +2,9 @@
 import logging
 import os
 # 3rd party modules
+import netCDF4
 import matplotlib
-from PyQt4 import QtCore
+from PyQt5 import QtCore, QtWidgets, QtGui
 # PFP modules
 import pfp_clim
 import pfp_compliance
@@ -13,6 +14,7 @@ import pfp_io
 import pfp_levels
 import pfp_plot
 import pfp_utils
+import split_dialog
 
 logger = logging.getLogger("pfp_log")
 # top level routines for the File menu
@@ -159,8 +161,47 @@ def do_file_convert_ncupdate(cfg=None):
         logger.error("")
     return
 def do_file_split():
-    logger.warning("File/Split not implemented yet")
-    return
+    Dialog = QtWidgets.QDialog()
+    ui = split_dialog.Ui_Dialog()
+    ui.setupUi(Dialog)
+    ui.pushButton_InputFileName.clicked.connect(lambda:do_file_split_browse_input_filename(ui))
+    ui.pushButton_OutputFileName.clicked.connect(lambda:do_file_split_browse_output_filename(ui))
+    ui.pushButton_Run.clicked.connect(lambda:do_file_split_run(ui))
+    ui.pushButton_Quit.clicked.connect(lambda:do_file_split_quit(ui))
+    ui.info = {}
+    ui.Dialog = Dialog
+    Dialog.show()
+    Dialog.exec_()
+def do_file_split_browse_input_filename(ui):
+    input_file_path = QtWidgets.QFileDialog.getOpenFileName(caption="Choose an input file ...", filter="*.nc")[0]
+    input_file_path = str(input_file_path)
+    ui.info["input_file_path"] = input_file_path
+    ui.lineEdit_InputFileName.setText(os.path.basename(input_file_path))
+    ncfile = netCDF4.Dataset(input_file_path, 'r')
+    ui.label_FileStartDate_value.setText(ncfile.getncattr("start_date"))
+    ui.label_FileEndDate_value.setText(ncfile.getncattr("end_date"))
+    ncfile.close()
+def do_file_split_browse_output_filename(ui):
+    if "input_file_path" in ui.info:
+        file_path = os.path.split(ui.info["input_file_path"])[0]
+    else:
+        file_path = "."
+    output_file_path = QtWidgets.QFileDialog.getSaveFileName(caption="Choose an output file ...",
+                                                         directory=file_path, filter="*.nc")[0]
+    output_file_path = str(output_file_path)
+    ui.info["output_file_path"] = output_file_path
+    ui.lineEdit_OutputFileName.setText(os.path.basename(output_file_path))
+def do_file_split_quit(ui):
+    ui.Dialog.close()
+def do_file_split_run(ui):
+    ui.info["startdate"] = str(ui.lineEdit_StartDate.text())
+    ui.info["enddate"] = str(ui.lineEdit_EndDate.text())
+    if "output_file_path" not in ui.info:
+        file_path = os.path.split(ui.info["input_file_path"])[0]
+        file_name = str(ui.lineEdit_OutputFileName.text())
+        ui.info["output_file_path"] = os.path.join(file_path, file_name)
+    pfp_io.ncsplit_run(ui)
+
 # top level routines for the Run menu
 def do_run_l1(cfg=None):
     """
@@ -317,10 +358,10 @@ def do_run_l4(main_gui, cfg=None):
         cfg["Options"]={}
     cfg["Options"]["call_mode"] = "interactive"
     ds4 = pfp_levels.l4qc(main_gui, cfg, ds3)
-    if ds4.returncodes["alternate"]=="quit":
-        logger.info("Quitting L4: "+sitename)
+    if ds4.returncodes["value"] != 0:
+        logger.info("Quitting L4: " + sitename)
     else:
-        logger.info("Finished L4: "+sitename)
+        logger.info("Finished L4: " + sitename)
         out_filepath = pfp_io.get_outfilenamefromcf(cfg)
         nc_file = pfp_io.nc_open_write(out_filepath)
         pfp_io.nc_write_series(nc_file, ds4)         # save the L4 data
@@ -358,7 +399,7 @@ def do_run_l5(main_gui, cfg=None):
         cfg["Options"] = {}
     cfg["Options"]["call_mode"] = "interactive"
     ds5 = pfp_levels.l5qc(main_gui, cfg, ds4)
-    if ds5.returncodes["solo"] == "quit":
+    if ds5.returncodes["value"] != 0:
         logger.info("Quitting L5: "+sitename)
     else:
         logger.info("Finished L5: "+sitename)
@@ -399,7 +440,7 @@ def do_run_l6(main_gui, cfg=None):
         cfg["Options"] = {}
     cfg["Options"]["call_mode"] = "interactive"
     ds6 = pfp_levels.l6qc(main_gui, cfg, ds5)
-    if ds6.returncodes["solo"] == "quit":
+    if ds6.returncodes["value"] != 0:
         logger.info("Quitting L6: "+sitename)
     else:
         logger.info("Finished L6: "+sitename)

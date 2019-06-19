@@ -282,10 +282,13 @@ def l4qc(main_gui, cf, ds3):
     # fill short gaps using interpolation
     pfp_gf.GapFillUsingInterpolation(cf, ds4)
     # gap fill using climatology
-    pfp_gf.GapFillFromClimatology(ds4, l4_info)
+    if "GapFillFromClimatology" in l4_info:
+        pfp_gf.GapFillFromClimatology(ds4, l4_info, "GapFillFromClimatology")
     # do the gap filling using the ACCESS output
-    pfp_gfALT.GapFillFromAlternate(main_gui, ds4, ds_alt, l4_info)
-    if ds4.returncodes["alternate"] == "quit": return ds4
+    if "GapFillFromAlternate" in l4_info:
+        pfp_gfALT.GapFillFromAlternate(main_gui, ds4, ds_alt, l4_info, "GapFillFromAlternate")
+        if ds4.returncodes["value"] != 0:
+            return ds4
     # merge the first group of gap filled drivers into a single series
     pfp_ts.MergeSeriesUsingDict(ds4, l4_info, merge_order="prerequisite")
     # re-calculate the ground heat flux but only if requested in control file
@@ -329,15 +332,26 @@ def l5qc(main_gui, cf, ds4):
     # parse the control file for information on how the user wants to do the gap filling
     l5_info = pfp_gf.ParseL5ControlFile(cf, ds5)
     # *** start of the section that does the gap filling of the fluxes ***
+    pfp_gf.CheckGapLengths(cf, ds5, l5_info)
+    if ds5.returncodes["value"] != 0:
+        return ds5
     # apply the turbulence filter (if requested)
     pfp_ck.ApplyTurbulenceFilter(cf, ds5)
     # fill short gaps using interpolation
     pfp_gf.GapFillUsingInterpolation(cf, ds5)
-    # do the gap filling using SOLO
-    pfp_gfSOLO.GapFillUsingSOLO(main_gui, ds5, l5_info)
-    if ds5.returncodes["solo"] == "quit": return ds5
     # gap fill using marginal distribution sampling
-    pfp_gfMDS.GapFillUsingMDS(ds5, l5_info)
+    if "GapFillUsingMDS" in l5_info:
+        pfp_gfMDS.GapFillUsingMDS(ds5, l5_info, "GapFillUsingMDS")
+    # do the gap filling using SOLO
+    if "GapFillUsingSOLO" in l5_info:
+        pfp_gfSOLO.GapFillUsingSOLO(main_gui, ds5, l5_info, "GapFillUsingSOLO")
+        if ds5.returncodes["value"] != 0:
+            return ds5
+    # fill long gaps using SOLO
+    if "GapFillLongSOLO" in l5_info:
+        pfp_gfSOLO.GapFillUsingSOLO(main_gui, ds5, l5_info, "GapFillLongSOLO")
+        if ds5.returncodes["value"] != 0:
+            return ds5
     # merge the gap filled drivers into a single series
     pfp_ts.MergeSeriesUsingDict(ds5, l5_info, merge_order="standard")
     # calculate Monin-Obukhov length
@@ -353,7 +367,8 @@ def l6qc(main_gui, cf, ds5):
     ds6 = pfp_io.copy_datastructure(cf, ds5)
     # ds6 will be empty (logical false) if an error occurs in copy_datastructure
     # return from this routine if this is the case
-    if not ds6: return ds6
+    if not ds6:
+        return ds6
     # set some attributes for this level
     pfp_utils.UpdateGlobalAttributes(cf, ds6, "L6")
     # parse the control file
@@ -364,9 +379,12 @@ def l6qc(main_gui, cf, ds5):
     Fc_list = [label for label in ds6.series.keys() if label[0:2] == "Fc"]
     pfp_utils.CheckUnits(ds6, Fc_list, "umol/m2/s", convert_units=True)
     ## apply the turbulence filter (if requested)
-    pfp_ck.ApplyTurbulenceFilter(cf, ds6)
+    #pfp_ck.ApplyTurbulenceFilter(cf, ds6)
     # get ER from the observed Fc
     pfp_rp.GetERFromFc(cf, ds6, l6_info)
+    # return code will be non-zero if turbulance filter not applied to CO2 flux
+    if ds6.returncodes["value"] != 0:
+        return ds6
     # estimate ER using SOLO
     pfp_rpNN.ERUsingSOLO(main_gui, cf, ds6, l6_info)
     # estimate ER using FFNET
@@ -376,7 +394,7 @@ def l6qc(main_gui, cf, ds5):
     # estimate ER using Lasslop et al
     pfp_rp.ERUsingLasslop(cf, ds6, l6_info)
     # merge the estimates of ER with the observations
-    pfp_ts.MergeSeriesUsingDict(ds6, l6_info["er"], merge_order="standard")
+    pfp_ts.MergeSeriesUsingDict(ds6, l6_info["ER"], merge_order="standard")
     # calculate NEE from Fc and ER
     pfp_rp.CalculateNEE(cf, ds6, l6_info)
     # calculate NEP from NEE

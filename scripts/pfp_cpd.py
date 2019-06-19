@@ -1,31 +1,39 @@
 # -*- coding: utf-8 -*-
 
-# Python modules
+# standard modules
 import ast
-from configobj import ConfigObj
-import constants as c
 import datetime as dt
 import logging
+import os
+import pdb
+import sys
+import traceback
+import warnings
+# 3rd party modules
+from configobj import ConfigObj
 import matplotlib.pyplot as plt
 import matplotlib.mlab as mlab
 import netCDF4
 import numpy as np
-import os
 import pandas as pd
+from pandas.plotting import register_matplotlib_converters
+register_matplotlib_converters()
 from scipy import stats
 import statsmodels.formula.api as sm
-import sys
 import xlrd
-import pdb
+# PFP modules
+import constants as c
 import pfp_io
 import pfp_utils
 
+# get the logger
 logger = logging.getLogger("pfp_log")
 
 #------------------------------------------------------------------------------
 # Return a bootstrapped sample of the passed dataframe
 def bootstrap(df):
-    return df.iloc[np.random.random_integers(0, len(df)-1, len(df))]
+    #return df.iloc[np.random.random_integers(0, len(df)-1, len(df))]
+    return df.iloc[np.random.randint(0, len(df)-1, len(df))]
 #------------------------------------------------------------------------------
 
 #------------------------------------------------------------------------------
@@ -56,7 +64,7 @@ def fit(temp_df):
         # Operational (b) model
         temp_df['ustar_alt']=temp_df['ustar'] # Add dummy variable to df
         temp_df['ustar_alt'].iloc[i+1:]=temp_df['ustar_alt'].iloc[i]
-        reg_params=np.linalg.lstsq(temp_df[['int','ustar_alt']],temp_df['Fc'])[0] # Do linear regression
+        reg_params=np.linalg.lstsq(temp_df[['int','ustar_alt']],temp_df['Fc'],rcond=None)[0] # Do linear regression
         yHat=reg_params[0]+reg_params[1]*temp_df['ustar_alt'] # Calculate the predicted values for y
         SSE_full=((temp_df['Fc']-yHat)**2).sum() # Calculate SSE
         f_b_array[i]=(SSE_null_b-SSE_full)/(SSE_full/(50-2)) # Calculate and store F-score
@@ -65,7 +73,7 @@ def fit(temp_df):
         temp_df['ustar_alt1']=temp_df['ustar']
         temp_df['ustar_alt1'].iloc[i+1:]=temp_df['ustar_alt1'].iloc[i]
         temp_df['ustar_alt2']=(temp_df['ustar']-temp_df['ustar'].iloc[i])*np.concatenate([np.zeros(i+1),np.ones(50-(i+1))])
-        reg_params=np.linalg.lstsq(temp_df[['int','ustar_alt1','ustar_alt2']],temp_df['Fc'])[0] # Do piecewise linear regression (multiple regression with dummy)
+        reg_params=np.linalg.lstsq(temp_df[['int','ustar_alt1','ustar_alt2']],temp_df['Fc'],rcond=None)[0] # Do piecewise linear regression (multiple regression with dummy)
         yHat=reg_params[0]+reg_params[1]*temp_df['ustar_alt1']+reg_params[2]*temp_df['ustar_alt2'] # Calculate the predicted values for y
         SSE_full=((temp_df['Fc']-yHat)**2).sum() # Calculate SSE
         f_a_array[i]=(SSE_null_a-SSE_full)/(SSE_full/(50-2)) # Calculate and store F-score
@@ -89,7 +97,7 @@ def fit(temp_df):
     # b model
     temp_df['ustar_alt']=temp_df['ustar']
     temp_df['ustar_alt'].iloc[change_point_b+1:]=ustar_threshold_b
-    reg_params=np.linalg.lstsq(temp_df[['int','ustar_alt']],temp_df['Fc'])[0]
+    reg_params=np.linalg.lstsq(temp_df[['int','ustar_alt']],temp_df['Fc'],rcond=None)[0]
     b0=reg_params[0]
     b1=reg_params[1]
 
@@ -450,16 +458,18 @@ def plot_hist(S,mu,sig,crit_t,year,d):
         plt.ioff()
     fig=plt.figure(figsize=(12,8))
     #fig.patch.set_facecolor('white')
-    plt.hist(S,normed=True)
-    plt.plot(x,mlab.normpdf(x,mu,sig),color='red',linewidth=2.5,label='Gaussian PDF')
+    #plt.hist(S,normed=True)
+    plt.hist(S, density=True)
     plt.xlim(x_low,x_high)
     plt.xlabel(r'u* ($m\/s^{-1}$)',fontsize=16)
-    plt.axvline(x=mu-sig*crit_t,color='black',linestyle='--')
-    plt.axvline(x=mu+sig*crit_t,color='black',linestyle='--')
-    plt.axvline(x=mu,color='black',linestyle='dotted')
-    props = dict(boxstyle='round,pad=1', facecolor='white', alpha=0.5)
+    if np.isfinite(mu) and np.isfinite(sig):
+        plt.plot(x,stats.norm.pdf(x,mu,sig),color='red',linewidth=2.5,label='Gaussian PDF')
+        plt.axvline(x=mu-sig*crit_t,color='black',linestyle='--')
+        plt.axvline(x=mu+sig*crit_t,color='black',linestyle='--')
+        plt.axvline(x=mu,color='black',linestyle='dotted')
     txt='mean u*='+str(mu)
     ax=plt.gca()
+    props = dict(boxstyle='round,pad=1', facecolor='white', alpha=0.5)
     plt.text(0.4,0.1,txt,bbox=props,fontsize=12,verticalalignment='top',transform=ax.transAxes)
     plt.legend(loc='upper left')
     plt.title(str(year)+'\n')
@@ -608,9 +618,11 @@ def sort(df, flux_period, years_index, i):
             end_ind = season * (bin_size / 2) + bin_size
             # ugly hack to avoid FutureWarning from pandas V0.16.2 and older
             try:
-                lst.append(df.ix[str(year)].iloc[start_ind:end_ind].sort_values(by='Ta',axis = 0))
+                #lst.append(df.ix[str(year)].iloc[start_ind:end_ind].sort_values(by='Ta',axis = 0))
+                lst.append(df.loc[str(year)].iloc[start_ind:end_ind].sort_values(by='Ta',axis = 0))
             except AttributeError:
-                lst.append(df.ix[str(year)].iloc[start_ind:end_ind].sort('Ta', axis = 0))
+                #lst.append(df.ix[str(year)].iloc[start_ind:end_ind].sort('Ta', axis = 0))
+                lst.append(df.loc[str(year)].iloc[start_ind:end_ind].sort('Ta', axis = 0))
     seasons_df = pd.concat([frame for frame in lst])
 
     # Make a hierarchical index for year, season, temperature class, bin for the seasons dataframe

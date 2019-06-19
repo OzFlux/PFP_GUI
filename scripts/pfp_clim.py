@@ -178,8 +178,8 @@ def get_diurnalstats(DecHour,Data,ts):
             if Num[i]!=0:
                 Av[i] = numpy.ma.mean(Data[li])
                 Sd[i] = numpy.ma.std(Data[li])
-                Mx[i] = numpy.ma.maximum(Data[li])
-                Mn[i] = numpy.ma.minimum(Data[li])
+                Mx[i] = numpy.ma.maximum.reduce(Data[li])
+                Mn[i] = numpy.ma.minimum.reduce(Data[li])
     return Num, Hr, Av, Sd, Mx, Mn
 
 def get_rangecheck_limit(cf,label,upr_def=1E10,lwr_def=-1E10):

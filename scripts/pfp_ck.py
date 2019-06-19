@@ -199,7 +199,7 @@ def ApplyTurbulenceFilter(cf,ds,ustar_threshold=None):
         logger.info(msg)
     return
 
-def ApplyTurbulenceFilter_checks(cf,ds):
+def ApplyTurbulenceFilter_checks(cf, ds):
     """
     Purpose:
     Usage:

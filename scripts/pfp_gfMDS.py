@@ -9,6 +9,7 @@ import time
 # 3rd party modules
 import dateutil
 import numpy
+import matplotlib
 import matplotlib.pyplot as plt
 # PFP modules
 import constants as c
@@ -16,7 +17,7 @@ import pfp_utils
 
 logger = logging.getLogger("pfp_log")
 
-def GapFillUsingMDS(ds, l5_info):
+def GapFillUsingMDS(ds, l5_info, called_by):
     """
     Purpose:
      Run the FluxNet C code to implement the MDS gap filling method.
@@ -25,14 +26,10 @@ def GapFillUsingMDS(ds, l5_info):
     Author: PRI
     Date: May 2018
     """
-    if "mds" not in l5_info.keys():
-        return
-    # local pointer to control file
-    cf = l5_info["cf"]
-    l5im = l5_info["mds"]
+    l5im = l5_info[called_by]
     # get the file name
-    file_path = cf["Files"]["file_path"]
-    file_name = cf["Files"]["in_filename"]
+    file_path = l5_info[called_by]["info"]["file_path"]
+    file_name = l5_info[called_by]["info"]["in_filename"]
     nc_full_path = os.path.join(file_path, file_name)
     nc_name = os.path.split(nc_full_path)[1]
     # get some useful metadata
@@ -85,20 +82,22 @@ def GapFillUsingMDS(ds, l5_info):
         subprocess.call(cmd, stdout=mdslogfile)
         mds_out_file = os.path.join("mds", "output", "mds.csv")
         os.rename(mds_out_file, out_file_path)
-        gfMDS_get_mds_output(ds, mds_label, out_file_path, l5_info)
+        gfMDS_get_mds_output(ds, mds_label, out_file_path, l5_info, called_by)
+        # mask long gaps, if requested
+        gfMDS_mask_long_gaps(ds, mds_label, l5_info, called_by)
         # plot the MDS results
         target = l5im["outputs"][mds_label]["target"]
         drivers = l5im["outputs"][mds_label]["drivers"]
         title = site_name+' : Comparison of tower and MDS data for '+target
         pd = gfMDS_initplot(site_name=site_name, label=target, fig_num=fig_num,
                             title=title, nDrivers=len(drivers), show_plots=True)
-        gfMDS_plot(pd, ds, mds_label, l5_info)
+        gfMDS_plot(pd, ds, mds_label, l5_info, called_by)
 
     # close the log file
     mdslogfile.close()
     return
 
-def gfMDS_get_mds_output(ds, mds_label, out_file_path, l5_info):
+def gfMDS_get_mds_output(ds, mds_label, out_file_path, l5_info, called_by):
     """
     Purpose:
      Reads the CSV file output by the MDS C code and puts the contents into
@@ -122,14 +121,14 @@ def gfMDS_get_mds_output(ds, mds_label, out_file_path, l5_info):
     # get a list of the names in the data array
     mds_output_names = list(data_mds.dtype.names)
     # strip out the timestamp and the original data
-    for item in ["TIMESTAMP", l5_info["mds"]["outputs"][mds_label]["target_mds"]]:
+    for item in ["TIMESTAMP", l5_info[called_by]["outputs"][mds_label]["target_mds"]]:
         if item in mds_output_names:
             mds_output_names.remove(item)
     # and now loop over the MDS output series
     for mds_output_name in mds_output_names:
         if mds_output_name == "FILLED":
             # get the gap filled target and write it to the data structure
-            var_in = pfp_utils.GetVariable(ds, l5_info["mds"]["outputs"][mds_label]["target"])
+            var_in = pfp_utils.GetVariable(ds, l5_info[called_by]["outputs"][mds_label]["target"])
             data = data_mds[mds_output_name][si_mds:ei_mds+1]
             idx = numpy.where((numpy.ma.getmaskarray(var_in["Data"]) == True) &
                               (abs(data - c.missing_value) > c.eps))[0]
@@ -141,18 +140,18 @@ def gfMDS_get_mds_output(ds, mds_label, out_file_path, l5_info):
             pfp_utils.CreateVariable(ds, var_out)
         elif mds_output_name == "TIMEWINDOW":
             # make the series name for the data structure
-            mds_qc_label = "MDS"+"_"+l5_info["mds"]["outputs"][mds_label]["target"]+"_"+mds_output_name
+            mds_qc_label = "MDS"+"_"+l5_info[called_by]["outputs"][mds_label]["target"]+"_"+mds_output_name
             data = data_mds[mds_output_name][si_mds:ei_mds+1]
             flag = numpy.zeros(len(data))
-            attr = {"long_name":"TIMEWINDOW from MDS gap filling for "+l5_info["mds"]["outputs"][mds_label]["target"]}
+            attr = {"long_name":"TIMEWINDOW from MDS gap filling for "+l5_info[called_by]["outputs"][mds_label]["target"]}
             var_out = {"Label":mds_qc_label, "Data":data, "Flag":flag, "Attr":attr}
             pfp_utils.CreateVariable(ds, var_out)
         else:
             # make the series name for the data structure
-            mds_qc_label = "MDS"+"_"+l5_info["mds"]["outputs"][mds_label]["target"]+"_"+mds_output_name
+            mds_qc_label = "MDS"+"_"+l5_info[called_by]["outputs"][mds_label]["target"]+"_"+mds_output_name
             data = data_mds[mds_output_name][si_mds:ei_mds+1]
             flag = numpy.zeros(len(data))
-            attr = {"long_name":"QC field from MDS gap filling for "+l5_info["mds"]["outputs"][mds_label]["target"]}
+            attr = {"long_name":"QC field from MDS gap filling for "+l5_info[called_by]["outputs"][mds_label]["target"]}
             var_out = {"Label":mds_qc_label, "Data":data, "Flag":flag, "Attr":attr}
             pfp_utils.CreateVariable(ds, var_out)
     return
@@ -252,10 +251,40 @@ def gfMDS_make_data_array(ds, current_year, info):
     data[:,0] = numpy.array([int(xdt.strftime("%Y%m%d%H%M")) for xdt in cdt])
     return data, header, fmt
 
-def gfMDS_plot(pd, ds, mds_label, l5_info):
+def gfMDS_mask_long_gaps(ds, mds_label, l5_info, called_by):
+    """
+    Purpose:
+     Mask gaps that are longer than a specified maximum length.
+    Usage:
+    Side effects:
+    Author: PRI
+    Date: June 2019
+    """
+    if "MaxShortGapRecords" not in l5_info[called_by]["info"]:
+        return
+    max_short_gap_days = l5_info[called_by]["info"]["MaxShortGapDays"]
+    msg = "  Masking gaps longer than " + str(max_short_gap_days) + " days"
+    logger.info(msg)
+    label = l5_info[called_by]["outputs"][mds_label]["target"]
+    target = pfp_utils.GetVariable(ds, label)
+    variable = pfp_utils.GetVariable(ds, mds_label)
+    mask = numpy.ma.getmaskarray(target["Data"])
+    # start and stop indices of contiguous blocks
+    max_short_gap_records = l5_info[called_by]["info"]["MaxShortGapRecords"]
+    gap_start_end = pfp_utils.contiguous_regions(mask)
+    for start, stop in gap_start_end:
+        gap_length = stop - start
+        if gap_length > max_short_gap_records:
+            variable["Data"][start: stop] = target["Data"][start: stop]
+            variable["Flag"][start: stop] = target["Flag"][start: stop]
+    # put data_int back into the data structure
+    pfp_utils.CreateVariable(ds, variable)
+    return
+
+def gfMDS_plot(pd, ds, mds_label, l5_info, called_by):
     ts = int(ds.globalattributes["time_step"])
-    drivers = l5_info["mds"]["outputs"][mds_label]["drivers"]
-    target = l5_info["mds"]["outputs"][mds_label]["target"]
+    drivers = l5_info[called_by]["outputs"][mds_label]["drivers"]
+    target = l5_info[called_by]["outputs"][mds_label]["target"]
     Hdh = pfp_utils.GetVariable(ds, "Hdh")
     obs = pfp_utils.GetVariable(ds, target)
     mds = pfp_utils.GetVariable(ds, mds_label)
@@ -263,8 +292,11 @@ def gfMDS_plot(pd, ds, mds_label, l5_info):
         plt.ion()
     else:
         plt.ioff()
-    fig = plt.figure(pd["fig_num"], figsize=(13,8))
-    fig.clf()
+    if plt.fignum_exists(1):
+        fig = plt.figure(1)
+        plt.clf()
+    else:
+        fig = plt.figure(1, figsize=(13, 8))
     fig.canvas.set_window_title(target)
     plt.figtext(0.5, 0.95, pd["title"], ha='center', size=16)
 
@@ -344,23 +376,33 @@ def gfMDS_plot(pd, ds, mds_label, l5_info):
     # save a hard copy
     sdt = obs["DateTime"][0].strftime("%Y%m%d")
     edt = obs["DateTime"][-1].strftime("%Y%m%d")
-    if "plot_path" in l5_info["cf"]["Files"]:
-        plot_path = l5_info["cf"]["Files"]["plot_path"] + "L5/"
-    else:
-        plot_path = "plots/L5"
+    plot_path = os.path.join(l5_info[called_by]["info"]["plot_path"], "L5", "")
     if not os.path.exists(plot_path):
         os.makedirs(plot_path)
-    figname = plot_path+pd["site_name"].replace(" ","")+"_MDS_"+pd["label"]
-    figname = figname+"_"+sdt+"_"+edt+'.png'
-    fig.savefig(figname, format='png')
+    figure_name = pd["site_name"].replace(" ","") + "_MDS_" + pd["label"]
+    figure_name = figure_name + "_" + sdt + "_" + edt + ".png"
+    figure_path = os.path.join(plot_path, figure_name)
+    fig.savefig(figure_path, format='png')
     if pd["show_plots"]:
         plt.draw()
-        plt.pause(1)
+        #plt.pause(1)
+        mypause(1)
         plt.ioff()
     else:
         plt.close(fig)
         plt.ion()
     return
+
+def mypause(interval):
+    backend = plt.rcParams['backend']
+    if backend in matplotlib.rcsetup.interactive_bk:
+        figManager = matplotlib._pylab_helpers.Gcf.get_active()
+        if figManager is not None:
+            canvas = figManager.canvas
+            if canvas.figure.stale:
+                canvas.draw()
+            canvas.start_event_loop(interval)
+            return
 
 def gf_getdiurnalstats(DecHour, Data, ts):
     nInts = 24*int((60/ts)+0.5)
@@ -379,6 +421,6 @@ def gf_getdiurnalstats(DecHour, Data, ts):
             if Num[i]!=0:
                 Av[i] = numpy.ma.mean(Data[li])
                 Sd[i] = numpy.ma.std(Data[li])
-                Mx[i] = numpy.ma.maximum(Data[li])
-                Mn[i] = numpy.ma.minimum(Data[li])
+                Mx[i] = numpy.ma.maximum.reduce(Data[li])
+                Mn[i] = numpy.ma.minimum.reduce(Data[li])
     return Num, Hr, Av, Sd, Mx, Mn

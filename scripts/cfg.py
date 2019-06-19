@@ -1,5 +1,13 @@
 version_name = "PyFluxPro"
-version_number = "V0.9.2"
+version_number = "V1.0.0"
+# V1.0.0 - 16th June 2019
+#        - MAJOR CHANGES
+#          - implement detection and filling of long gaps
+#            at L5
+#          - implement consistent way of handling program
+#            settings and options at L4, L5 and L6
+#          - move from PyQt4 to PyQt5
+#          - many other changes along the way
 # V0.9.2 - 7th October 2018
 #        - implemented output to ECOSTRESS CSV file
 #        - implemented L5 and L6 processing

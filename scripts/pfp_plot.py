@@ -3,6 +3,7 @@ import constants as c
 import datetime
 import time
 import math
+import matplotlib
 import matplotlib.dates as mdt
 import matplotlib.pyplot as plt
 import meteorologicalfunctions as pfp_mf
@@ -88,19 +89,19 @@ def get_yaxislimitsfromcf(cf,nFig,maxkey,minkey,nSer,YArray):
     if maxkey in cf['Plots'][str(nFig)].keys():                               # Y axis minima specified
         maxlist = ast.literal_eval(cf['Plots'][str(nFig)][maxkey])     # Evaluate the minima list
         if str(maxlist[nSer])=='Auto':             # This entry is 'Auto' ...
-            YAxMax = numpy.ma.maximum(YArray)                        # ... so take the array minimum value
+            YAxMax = numpy.ma.maximum.reduce(YArray)                        # ... so take the array minimum value
         else:
             YAxMax = float(maxlist[nSer])         # Evaluate the entry for this series
     else:
-        YAxMax = numpy.ma.maximum(YArray)                            # Y axis minima not given, use auto
+        YAxMax = numpy.ma.maximum.reduce(YArray)                            # Y axis minima not given, use auto
     if minkey in cf['Plots'][str(nFig)].keys():                               # Y axis minima specified
         minlist = ast.literal_eval(cf['Plots'][str(nFig)][minkey])     # Evaluate the minima list
         if str(minlist[nSer])=='Auto':             # This entry is 'Auto' ...
-            YAxMin = numpy.ma.minimum(YArray)                        # ... so take the array minimum value
+            YAxMin = numpy.ma.minimum.reduce(YArray)                        # ... so take the array minimum value
         else:
             YAxMin = float(minlist[nSer])         # Evaluate the entry for this series
     else:
-        YAxMin = numpy.ma.minimum(YArray)                            # Y axis minima not given, use auto
+        YAxMin = numpy.ma.minimum.reduce(YArray)                            # Y axis minima not given, use auto
     if (abs(YAxMax-YAxMin) < c.eps):
         YAxDelta = 0.001*YAxMax
         if YAxDelta == 0:
@@ -228,7 +229,7 @@ def plot_fcvsustar(ds):
             axs[row, col].set_ylabel("Fc ("+Fc["Attr"]["units"]+")")
         fig.tight_layout()
         plt.draw()
-    plt.ioff()    
+    plt.ioff()
     return
 
 def pltfingerprint_createdict(cf,ds):
@@ -404,6 +405,7 @@ def plot_fingerprint(cf):
         fig.savefig(pngname,format='png')
         if opt.lower=="yes":
             plt.draw()
+            mypause(0.5)
             plt.ioff()
         else:
             plt.ion()
@@ -461,8 +463,6 @@ def plottimeseries(cf, nFig, dsa, dsb):
     Month = dsa.series['Month']['Data'][0]
     p = plot_setup(cf,nFig)
     logger.info(' Plotting series: '+str(p['SeriesList']))
-    #L1XArray = numpy.array(dsa.series['DateTime']['Data'][si:ei])
-    #L2XArray = numpy.array(dsb.series['DateTime']['Data'][si:ei])
     L1XArray = dsa.series['DateTime']['Data']
     L2XArray = dsb.series['DateTime']['Data']
     p['XAxMin'] = min(L2XArray)
@@ -560,7 +560,9 @@ def plottimeseries(cf, nFig, dsa, dsb):
             #if n > 0: plt.setp(bar_ax.get_xticklabels(), visible=False)
         else:
             logger.error('  plttimeseries: series '+ThisOne+' not in data structure')
-    fig.show()
+    #fig.show()
+    plt.draw()
+    mypause(0.5)
     if "plot_path" in cf["Files"]:
         plot_path = os.path.join(cf["Files"]["plot_path"],Level)
     else:
@@ -841,7 +843,7 @@ def plot_quickcheck(cf):
     daily["Sws"]["Avg"], daily["Sws"]["Count"] = plot_quickcheck_get_avg(daily, "Sws")
     daily["Precip"]["Avg"], daily["Precip"]["Count"] = plot_quickcheck_get_avg(daily, "Precip")
     # scatter plot of (Fh+Fe) versys Fa, all data
-    nFig = nFig + 1    
+    nFig = nFig + 1
     file_name = site_name.replace(" ", "") + "_" + level + "_QC_SEB_30minutes.png"
     figure_name = os.path.join("plots", file_name)
     plot_quickcheck_seb(nFig, plot_title, figure_name, data, daily)
@@ -1149,7 +1151,7 @@ def xyplot(x,y,sub=[1,1,1],regr=0,thru0=0,title=None,xlabel=None,ylabel=None,fna
         return
     if regr==1:
         coefs = numpy.ma.polyfit(numpy.ma.copy(x),numpy.ma.copy(y),1)
-        xfit = numpy.ma.array([numpy.ma.minimum(x),numpy.ma.maximum(x)])
+        xfit = numpy.ma.array([numpy.ma.minimum.reduce(x),numpy.ma.maximum.reduce(x)])
         yfit = numpy.polyval(coefs,xfit)
         r = numpy.ma.corrcoef(x,y)
         eqnstr = 'y = %.3fx + %.3f (OLS)'%(coefs[0],coefs[1])
@@ -1226,3 +1228,14 @@ def tsplot(x,y,sub=[1,1,1],title=None,xlabel=None,ylabel=None,colours=None,linea
     if sub[2] != sub[0]:
         ax.set_xlabel('',visible=False)
         ax.tick_params(labelbottom=False)
+
+def mypause(interval):
+    backend = plt.rcParams['backend']
+    if backend in matplotlib.rcsetup.interactive_bk:
+        figManager = matplotlib._pylab_helpers.Gcf.get_active()
+        if figManager is not None:
+            canvas = figManager.canvas
+            if canvas.figure.stale:
+                canvas.draw()
+            canvas.start_event_loop(interval)
+            return
