@@ -1,4 +1,4 @@
-name: pfp_gui
+name: pfp_env
 channels:
   - conda-forge
 dependencies:
