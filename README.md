@@ -58,6 +58,7 @@ PyFluxPro is still being actively developed and there are frequent changes to fi
 To update a PyFluxPro installation done by "git", follow these steps:
 * 1. Open a command line window or terminal session and use the "cd" command to navigate to the PyFluxPro directory created during the installation step above.  Note that while the install is done from the directory one level above the PyFluxPro directory, the update is done from the PyFluxPro directory.
 * 2. Type "git pull origin master" at the command prompt in the PyFluxPro directory.  This will update the PyFluxPro installation.
+* 3. It is a good idea to update the virtual environment when you update PyFluxPro.  To do this, type "conda env update -f environment.yml" at the command prompt in the PyFluxPro directory.  If you have difficulty with this, see https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html for instructions on removing and creating a virtual environment.
 
 # Running PyFluxPro
 The simplest way to run PyFluxPro is from the command line.
