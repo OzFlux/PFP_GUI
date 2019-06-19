@@ -1,4 +1,4 @@
-# PFP_GUI
+# PyFluxPro
 
 Welcome to the repository for the integrated GUI version of PyFluxPro.
 
@@ -18,7 +18,7 @@ PyFluxPro is written for Python V2.7 and uses a number of standard and 3rd party
 
 OzFlux uses and recommends the Miniconda (https://conda.io/miniconda.html) Python V2.7 distribution.  This is a minimilist installation of Python which installs into your home directory and can then be automatically configured to provide all of the Python modules used by PyFluxPro.
 
-**NOTE:** The GUI version of PyFluxPro uses PyQt4 to provide the GUI elements.  We have not found a way of installing PyQt4 using "pip" so a "requirements.txt" file for automatically configuring the Miniconda installation using "pip" is not supplied at present.  The currently recommended way to configure the Miniconda installation is to create a virtual environment using "conda env create ..." using the YAML file ("environment.yml") supplied.
+**NOTE:** The GUI version of PyFluxPro uses PyQt5 to provide the GUI elements.  We have not found a way of installing PyQt5 using "pip" so a "requirements.txt" file for automatically configuring the Miniconda installation using "pip" is not supplied at present.  The currently recommended way to configure the Miniconda installation is to create a virtual environment using "conda env create ..." using the YAML file ("environment.yml") supplied.
 
 To install Miniconda, follow these steps:
 * 1. Download the Miniconda Python V2.7 installer for your operating system from https://conda.io/miniconda.html.
@@ -40,16 +40,16 @@ PyFluxPro is easily installed using the "git" version control software.  This pr
 
 To install PyFluxPro, follow these steps:
 * 1. Open a command line window or terminal session and use the "cd" (shorthand for "change directory") command to navigate to the directory into which you want to install PyFluxPro.  Note that the installation process will create a subdirectory called PyFluxPro in the directory from which the install is run.
-* 2. Clone the PyFluxPro repository by typing "git clone https://github.com/OzFlux/PFP_GUI.git" at the command prompt.
+* 2. Clone the PyFluxPro repository by typing "git clone https://github.com/OzFlux/PyFluxPro.git" at the command prompt.
 * 3. PyFluxPro is now installed but needs a Python virtual environment to be created with the required packages before it can be used.
 
 ## Creating the PyFluxPro virtual environment
 Miniconda installs a minimal version of Python that does not include all of the packages required by PyFluxPro.  The easiest way to configure the Miniconda installation so that it includes all of the required packages is to create a virtual environment using the "environment.yml" file supplied with PyFluxPro.  Conda virtual environments are explained at https://conda.io/docs/user-guide/tasks/manage-environments.html.  You can read the docs (always recommended!) or you can follow the steps below:
 * 1. Open a command (or terminal) window and use "cd" to navigate to the PyFluxPro directory.
-* 2. At the command prompt in the PyFluxPro directory, type "conda env create -f environment.yml" to create the virtual environment.  This process downloads and installs the packages required by PyFluxPro which may take several minutes.  The default name of the environment created is "pfp_gui".
+* 2. At the command prompt in the PyFluxPro directory, type "conda env create -f environment.yml" to create the virtual environment.  This process downloads and installs the packages required by PyFluxPro which may take several minutes.  The default name of the environment created is "pfp_env".
 * 3. Once the environment has been created, you must activate the environment before running PyFluxPro using;
-  * a) On Windows, type "activate pfp_gui" at the command prompt in the PyFluxPro directory.
-  * b) On Linux and Mac OSX, type "source activate pfp_gui" at the command prompt in the PyFluxPro directory.
+  * a) On Windows, type "activate pfp_env" at the command prompt in the PyFluxPro directory.
+  * b) On Linux and Mac OSX, type "source activate pfp_env" at the command prompt in the PyFluxPro directory.
 * 4. PyFluxPro should now be ready to use.
 
 ## Updating PyFluxPro
