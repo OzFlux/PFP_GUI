@@ -343,8 +343,6 @@ def plot_fingerprint(cf):
             nPerHr = int(float(60)/ts+0.5)
             nPerDay = int(float(24)*nPerHr+0.5)
             nDays = len(ldt)/nPerDay
-            sd = datetime.datetime.toordinal(ldt[0])
-            ed = datetime.datetime.toordinal(ldt[-1])
             # let's check the named variable is in the data structure
             if nc_varname not in ds[infilename].series.keys():
                 # if it isn't, let's look for an alias
@@ -367,14 +365,14 @@ def plot_fingerprint(cf):
             data_daily = data.reshape(nDays,nPerDay)
             units = str(ds[infilename].series[nc_varname]['Attr']['units'])
             label = var + ' (' + units + ')'
-            loc,fmt = get_ticks(datetime.datetime.fromordinal(sd),datetime.datetime.fromordinal(ed))
             if n==0:
                 ax = plt.subplot(1,nPlots,n+1)
             else:
                 ax = plt.subplot(1,nPlots,n+1,sharey=ax)
+            sd = mdt.date2num(ldt[0])
+            ed = mdt.date2num(ldt[-1])
             plt.imshow(data_daily,extent=[0,24,sd,ed],aspect='auto',origin='lower')
-            ax.yaxis.set_major_locator(loc)
-            ax.yaxis.set_major_formatter(fmt)
+            ax.yaxis_date()
             # only plot the colourbar if there is data to plot
             if numpy.ma.count(data)!=0:
                 cb = plt.colorbar(orientation='horizontal',fraction=0.02,pad=0.075)
@@ -1023,7 +1021,7 @@ def plot_onetimeseries_left(fig,n,ThisOne,xarray,yarray,p):
     Date: Sometime
     """
     # check to see if this is the first graph
-    if n==0:
+    if n == 0:
         # if so, define the X axis
         rect = [p['ts_XAxOrg'],p['YAxOrg'],p['ts_XAxLen'],p['ts_YAxLen']]
         ts_ax_left = fig.add_axes(rect)
@@ -1036,20 +1034,15 @@ def plot_onetimeseries_left(fig,n,ThisOne,xarray,yarray,p):
         else:
             # a right axis was defined for the first graph, use it
             ts_ax_left = fig.add_axes(rect,sharex=p["ts_ax_right"][0])
-    # let the axes change
-    #ts_ax_left.hold(False)
     # put this axis in the plot setup dictionary
     p["ts_ax_left"][n] = ts_ax_left
     # plot the data on this axis
     ts_ax_left.plot(xarray,yarray,'b-')
-    # set the major tick marks on the X (datetime) axis
-    ts_ax_left.xaxis.set_major_locator(p['loc'])
-    ts_ax_left.xaxis.set_major_formatter(p['fmt'])
     # set the axes limits
     ts_ax_left.set_xlim(p['XAxMin'],p['XAxMax'])
     ts_ax_left.set_ylim(p['LYAxMin'],p['LYAxMax'])
     # check to see if this is the first graph
-    if n==0:
+    if n == 0:
         # if it is, label the X axis
         ts_ax_left.set_xlabel('Date',visible=True)
     else:
@@ -1083,8 +1076,6 @@ def plot_onetimeseries_right(fig,n,ThisOne,xarray,yarray,p):
     colour = 'r'
     p["ts_ax_right"][n] = ts_ax_right
     ts_ax_right.plot(xarray,yarray,'r-')
-    ts_ax_right.xaxis.set_major_locator(p['loc'])
-    ts_ax_right.xaxis.set_major_formatter(p['fmt'])
     ts_ax_right.set_xlim(p['XAxMin'],p['XAxMax'])
     ts_ax_right.set_ylim(p['RYAxMin'],p['RYAxMax'])
     if n==0:
