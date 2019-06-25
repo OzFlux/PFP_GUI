@@ -160,7 +160,7 @@ def csv_read_parse_cf(cf):
     csv_file = open(info["csv_filename"],'rb')
     # skip to the header row
     for i in range(0, info["first_data_row"]):
-        line = csv_file.readline()
+        line = csv_file.readline().strip()
         if i == info["header_row"]-1 or i == info["units_row"]-1:
             # sniff the CSV dialect
             info["dialect"] = csv.Sniffer().sniff(line, info["delimiters"])
@@ -180,6 +180,14 @@ def csv_read_parse_cf(cf):
     for item in cf["Variables"].keys():
         if "csv" in cf["Variables"][item].keys():
             opt = pfp_utils.get_keyvaluefromcf(cf, ["Variables", item, "csv"], "name", default="")
+            if opt in info["header_line"]:
+                csv_varnames[item] = str(opt)
+            else:
+                msg = "  "+str(opt)+" not found in CSV file, skipping ..."
+                logger.error(msg)
+                continue
+        elif "xl" in cf["Variables"][item].keys():
+            opt = pfp_utils.get_keyvaluefromcf(cf, ["Variables", item, "xl"], "name", default="")
             if opt in info["header_line"]:
                 csv_varnames[item] = str(opt)
             else:
@@ -261,8 +269,9 @@ def csv_read_series(cf):
         variable["Data"] = data
         variable["Flag"] = flag
         # make the attribute dictionary ...
-        attr = {}
-        variable["Attr"] = copy.deepcopy(attr)
+        variable["Attr"] = {}
+        for attr in cf["Variables"][label]["Attr"].keys():
+            variable["Attr"][attr] = cf["Variables"][label]["Attr"][attr]
         pfp_utils.CreateVariable(ds, variable)
     ## call the function given in the control file to convert the date/time string to a datetime object
     ## NOTE: the function being called needs to deal with missing date values and empty lines
