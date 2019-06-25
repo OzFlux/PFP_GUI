@@ -1,177 +1,131 @@
-#level = L3
-[General]
-    zms = 20                 # instrument height above surface, m
-
+level = L3
 [Files]
     file_path = examples/Calperum/
     in_filename = Calperum_2016_L2.nc
     out_filename = Calperum_2016_L3.nc
-
 [Options]
-    MassmanCorrection       = Yes
-    CO2Units                = umol/mol
-    FcUnits                 = umol/m2/s     # 'mg/m2/s' or 'umol/m2/s', units for Fc
-
-[Output]
-
+    MassmanCorrection = Yes
+    CO2Units = umol/mol
+    FcUnits = umol/m2/s
+    zms = 20
 [Soil]
-    FgDepth = 0.08  # Depth of ground heat flux plates, m
-    BulkDensity = 1600  # soil bulk density in kg/m3
-    OrganicContent = 0.01  # fraction  (% divided by 100)
+    FgDepth = 0.08
+    BulkDensity = 1600
+    OrganicContent = 0.01
     SwsDefault = 0.1
-    SwsSeries = "['Sws_10cma']"
-
+    SwsSeries = Sws_10cma
 [Massman]
-    zmd = 18   # instrument height above displacement plane, z-d; d = 2 / 3 * h; h = canopy height, z = measurement height
-    z0 = 0.368  # roughness length from Brutseart 1982, eqn 5.7: h / z = 3 * e  z0 = 3eh; h = canopy height, ln(e) = 1
-    angle = 26.35  # angle between CSAT3 mounting point and IRGA sensor head mid-path, degrees
-    CSATarm = 0.52 # distance from CSAT mounting point to CSAT sensor, m
-    IRGAarm = 0.38 # distance from CSAT mounting point to IRGA sensor, m
-
+    zmd = 18
+    z0 = 0.368
+    angle = 26.35
+    CSATarm = 0.52
+    IRGAarm = 0.38
 [Variables]
-# Radiation
     [[Fsd]]
         [[[MergeSeries]]]
-            Source     = "['Fsd','Fsd_Li']"
+            Source = Fsd,Fsd_Li
         [[[RangeCheck]]]
-            Lower      = "[-10]*12"
-            Upper      = "[1500]*12"
-#        [[[DiurnalCheck]]]
-#            NumSd      = "[5]*12"
+            Lower = -10
+            Upper = 1500
     [[Fn]]
         [[[MergeSeries]]]
-            Source     = "['Fn_KZ']"
+            Source = Fn_4cmpt
         [[[RangeCheck]]]
-            Lower      = [-150]*12
-            Upper      = [1100]*12
-#        [[[DiurnalCheck]]]
-#            NumSd      = "[5]*12"
-# Fluxes
+            Lower = -150
+            Upper = 1100
     [[Fh]]
         [[[RangeCheck]]]
-            Lower      = "[-100]*12"
-            Upper      = "[600]*12"
-#        [[[DiurnalCheck]]]
-#            NumSd      = "[5]*12"
+            Lower = -100
+            Upper = 600
     [[Fe]]
         [[[RangeCheck]]]
-            Lower      = "[-100]*12"
-            Upper      = "[600]*12"
-#        [[[DiurnalCheck]]]
-#            NumSd      = "[5]*12"
+            Lower = -100
+            Upper = 600
     [[Fc]]
         [[[RangeCheck]]]
-            Lower      = "[-50]*12"
-            Upper      = "[50]*12"
-#        [[[DiurnalCheck]]]
-#            NumSd      = "[5]*12"
+            Lower = -50
+            Upper = 50
     [[Fm]]
         [[[RangeCheck]]]
-            Lower      = "[-1]*12"
-            Upper      = "[1]*12"
-#        [[[DiurnalCheck]]]
-#            NumSd      = "[5]*12"
+            Lower = -1
+            Upper = 1
     [[ustar]]
         [[[RangeCheck]]]
-            Lower      = "[0]*12"
-            Upper      = "[2]*12"
-#        [[[DiurnalCheck]]]
-#            NumSd      = "[5]*12"
-# Meteorology: Air temperature
+            Lower = 0
+            Upper = 2
     [[Ta]]
         [[[MergeSeries]]]
-            Source     = "['Ta_HMP_2m','Ta_CSAT']"     # Example series for MergeSeriesTa
+            Source = Ta_HMP_2m,Ta_CSAT
         [[[RangeCheck]]]
-            Lower      = "[-5]*12"
-            Upper      = "[50]*12"
-#        [[[DiurnalCheck]]]
-#            NumSd      = "[5]*12"
-# Meteorology: Absolute humidity
+            Lower = -5
+            Upper = 50
     [[Ah]]
         [[[MergeSeries]]]
-            Source     = "['Ah_HMP_2m','Ah_7500_Av']"     # Example series for MergeSeriesAh
+            Source = Ah_HMP_2m,Ah_7500_Av
         [[[RangeCheck]]]
-            Lower      = "[0]*12"
-            Upper      = "[25]*12"
-#        [[[DiurnalCheck]]]
-#            NumSd      = "[6]*12"
-# Meteorology: CO2 concentration
+            Lower = 0
+            Upper = 25
     [[Cc]]
-    # units are umol/mol
         [[[MergeSeries]]]
-            Source     = "['Cc_7500_Av']"
-            standard_name = "not defined"
+            Source = Cc_7500_Av
+            standard_name = notdefined
         [[[RangeCheck]]]
-            Lower      = "[250]*12"
-            Upper      = "[900]*12"
-# Meteorology: Wind speed
+            Lower = 250
+            Upper = 900
     [[Ws]]
         [[[MergeSeries]]]
-            Source     = "['Ws_RMY_10m','Ws_CSAT','Ws_RMY_2m']"
-            standard_name = "not defined"
+            Source = Ws_RMY_10m,Ws_CSAT,Ws_RMY_2m
+            standard_name = notdefined
         [[[RangeCheck]]]
-            Lower      = "[0]*12"
-            Upper      = "[30]*12"
-# Meteorology: Wind direction
+            Lower = 0
+            Upper = 30
     [[Wd]]
         [[[MergeSeries]]]
-            Source     = "['Wd_RMY_10m','Wd_CSAT','Wd_RMY_2m']"
-            standard_name = "not defined"
+            Source = Wd_RMY_10m,Wd_CSAT,Wd_RMY_2m
+            standard_name = notdefined
         [[[RangeCheck]]]
-            Lower      = "[0]*12"
-            Upper      = "[360]*12"
-# Soil: Ground heat flux
+            Lower = 0
+            Upper = 360
     [[Fg]]
         [[[AverageSeries]]]
-            Source = "['Fg_8cma','Fg_8cmb','Fg_8cmc']"
+            Source = Fg_8cma,Fg_8cmb,Fg_8cmc
         [[[RangeCheck]]]
-            Lower      = "[-300]*12"
-            Upper      = "[300]*12"
+            Lower = -300
+            Upper = 300
     [[Ts]]
         [[[AverageSeries]]]
-          Source = "['Ts_8cma','Ts_8cmb','Ts_8cmc']"
+            Source = Ts_8cma,Ts_8cmb,Ts_8cmc
     [[Sws]]
         [[[AverageSeries]]]
-            Source = "['Sws_10cma','Sws_10cmb','Sws_10cmc']"      #  Default
+            Source = Sws_10cma,Sws_10cmb,Sws_10cmc
     [[Sws_25cm]]
         [[[AverageSeries]]]
-            Source = "['Sws_25cma','Sws_25cmb','Sws_25cmc']"      #  Default
+            Source = Sws_25cma,Sws_25cmb,Sws_25cmc
     [[Sws_50cm]]
         [[[AverageSeries]]]
-            Source = "['Sws_50cma','Sws_50cmb','Sws_50cmc']"      #  Default
+            Source = Sws_50cma,Sws_50cmb,Sws_50cmc
     [[Sws_100cm]]
         [[[AverageSeries]]]
-            Source = "['Sws_100cma','Sws_100cmb','Sws_100cmc']"      #  Default
+            Source = Sws_100cma,Sws_100cmb,Sws_100cmc
     [[Sws_180cm]]
         [[[AverageSeries]]]
-            Source = "['Sws_180cma','Sws_180cmb','Sws_180cmc']"      #  Default
-
+            Source = Sws_180cma,Sws_180cmb,Sws_180cmc
 [Plots]
-    [[0]]
-        Title = "Radiative fluxes"
-        Variables = "['Fsd','Fsu','Fld','Flu','Fn']"
-    [[1]]
-        Title = "Turbulent fluxes"
-        Variables = "['Fh','Fe','Fc','ustar','Fm']"
-    [[2]]
-        Title = "Air temperature, humidity and CO2"
-        Variables = "['Ta','Ah','Cc','Precip']"
-    [[3]]
-        Title = "Soil temperature, water content and heat flux"
-        Variables = "['Ts','Sws','Fg','Precip']"
-    [[4]]
-        Title = "Pressure, wind speed and direction"
-        Variables = "['ps','Ws_CSAT','Ux','Uy','Uz','Wd']"
-    [[5]]
-        Title = "Fc, precip and ppm"
-        Variables = "['Fc','Precip','Cc']"
-    [[6]]
-        Title = "Fh diagnostics"
-        Variables = "['Fh','UzT','Diag_CSAT','Diag_7500','AGC_7500','Ah_7500_Sd','Cc_7500_Sd']"
-    [[7]]
-        Title = "Fe diagnostics"
-        Variables = "['Fe','UzA','Diag_CSAT','Diag_7500','AGC_7500','Ah_7500_Sd','Cc_7500_Sd']"
-    [[8]]
-        Title = "Fc diagnostics"
-        Variables = "['Fc','UzC','Diag_CSAT','Diag_7500','AGC_7500','Ah_7500_Sd','Cc_7500_Sd']"
-
+    [[Radiative fluxes]]
+        Variables = Fsd,Fsu,Fld,Flu,Fn
+    [[Turbulent fluxes]]
+        Variables = Fh,Fe,Fc,ustar,Fm
+    [[Air temperature, humidity and CO2]]
+        Variables = Ta,Ah,Cc,Precip
+    [[Soil temperature, water content and heat flux]]
+        Variables = Ts,Sws,Fg,Precip
+    [[Pressure, wind speed and direction]]
+        Variables = ps,Ws_CSAT,Ux,Uy,Uz,Wd
+    [[Fc, precip and ppm]]
+        Variables = Fc,Precip,Cc
+    [[Fh diagnostics]]
+        Variables = Fh,UzT,Diag_CSAT,Diag_7500,AGC_7500,Ah_7500_Sd,Cc_7500_Sd
+    [[Fe diagnostics]]
+        Variables = Fe,UzA,Diag_CSAT,Diag_7500,AGC_7500,Ah_7500_Sd,Cc_7500_Sd
+    [[Fc diagnostics]]
+        Variables = Fc,UzC,Diag_CSAT,Diag_7500,AGC_7500,Ah_7500_Sd,Cc_7500_Sd
