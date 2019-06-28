@@ -1126,7 +1126,7 @@ def CalculateFcStorageSinglePoint(cf,ds,Fc_out='Fc_single',CO2_in='CO2'):
     else:
         logger.info('CalculateFcStorage: Fc_single found in data structure, not calculated')
 
-def CorrectFcForStorage(cf,ds,Fc_out='Fc',Fc_in='Fc',Fc_storage_in='Fc_storage'):
+def CorrectFcForStorage(cf,ds,Fc_out='Fc',Fc_in='Fc',Fc_storage_in='Fc_single'):
     """
     Correct CO2 flux for storage in the air column beneath the CO2 instrument.
 
@@ -1158,6 +1158,11 @@ def CorrectFcForStorage(cf,ds,Fc_out='Fc',Fc_in='Fc',Fc_storage_in='Fc_storage')
             msg = "CorrectFcForStorage: Fc or Fc_storage not found, skipping ..."
             logger.warning(msg)
             return
+        # check to see if we have an Fc_profile series
+        if "Fc_profile" in ds.series.keys():
+            Fc_storage_in = "Fc_profile"
+        elif "Fc_storage" in ds.series.keys():
+            Fc_storage_in = "Fc_storage"
         logger.info(" ***!!! Applying Fc storage term !!!***")
         Fc_raw,Fc_flag,Fc_attr = pfp_utils.GetSeriesasMA(ds,Fc_in)
         Fc_storage,Fc_storage_flag,Fc_storage_attr = pfp_utils.GetSeriesasMA(ds,Fc_storage_in)
