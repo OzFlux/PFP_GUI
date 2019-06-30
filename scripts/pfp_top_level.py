@@ -1,6 +1,7 @@
 # standard modules
 import logging
 import os
+import traceback
 # 3rd party modules
 import netCDF4
 import matplotlib
@@ -18,32 +19,6 @@ import split_dialog
 
 logger = logging.getLogger("pfp_log")
 # top level routines for the File menu
-def do_file_concatenate(cfg=None):
-    """
-    Purpose:
-     Top level routine for concatenating multiple, single-year files into
-     a single, multiple-year file.
-     NOTE: The input files must be listed in the control file in chronological
-           order.
-    Usage:
-     pfp_top_level.do_file_concatenate()
-    Side effects:
-     Creates a single netCDF file containing the contents of the input files.
-    Author: PRI
-    Date: Back in the day
-    Mods:
-     June 2018: rewrite for use with new GUI.
-    """
-    logger.info(" Starting concatenation of netCDF files")
-    if not cfg:
-        cfg = pfp_io.load_controlfile(path="controlfiles")
-        if len(cfg) == 0:
-            logger.info("Quitting concatenation (no control file)")
-            return
-    pfp_io.nc_concatenate(cfg)
-    logger.info(" Finished concatenating files")
-    logger.info("")
-    return
 def do_file_convert_biomet():
     logger.warning("File/Convert/nc to biomet not implemented yet")
     return
@@ -60,37 +35,43 @@ def do_file_convert_nc2ecostress(cfg=None):
      September 2018: rewrite for use with new GUI
     """
     logger.info(" Starting conversion to ECOSTRESS file")
-    if not cfg:
-        # check to see if there is an nc2ecostress.txt control file in controlfiles/standard
-        #  if there is
-        #   open controlfiles/standard/nc2csv_ecostress.txt
-        #   ask for netCDF file name
-        #   add [Files] section to control file
-        stdname = "controlfiles/standard/nc2csv_ecostress.txt"
-        if os.path.exists(stdname):
-            cfg = pfp_io.get_controlfilecontents(stdname)
-            filename = pfp_io.get_filename_dialog(file_path="../Sites", title="Choose a netCDF file")
-            if len(filename) == 0:
-                return
-            if "Files" not in dir(cfg):
-                cfg["Files"] = {}
-            cfg["Files"]["file_path"] = os.path.join(os.path.split(filename)[0], "")
-            cfg["Files"]["in_filename"] = os.path.split(filename)[1]
+    try:
+        if not cfg:
+            # check to see if there is an nc2ecostress.txt control file in controlfiles/standard
+            #  if there is
+            #   open controlfiles/standard/nc2csv_ecostress.txt
+            #   ask for netCDF file name
+            #   add [Files] section to control file
+            stdname = "controlfiles/standard/nc2csv_ecostress.txt"
+            if os.path.exists(stdname):
+                cfg = pfp_io.get_controlfilecontents(stdname)
+                filename = pfp_io.get_filename_dialog(file_path="../Sites", title="Choose a netCDF file")
+                if len(filename) == 0:
+                    return
+                if "Files" not in dir(cfg):
+                    cfg["Files"] = {}
+                cfg["Files"]["file_path"] = os.path.join(os.path.split(filename)[0], "")
+                cfg["Files"]["in_filename"] = os.path.split(filename)[1]
+            else:
+                cfg = pfp_io.load_controlfile(path="controlfiles")
+                if len(cfg) == 0:
+                    return
+        if "Options" not in cfg:
+            cfg["Options"]={}
+        cfg["Options"]["call_mode"] = "interactive"
+        result = pfp_io.write_csv_ecostress(cfg)
+        if result == 0:
+            logger.info(" Finished converting netCDF file")
+            logger.info("")
         else:
-            cfg = pfp_io.load_controlfile(path="controlfiles")
-            if len(cfg) == 0:
-                return
-    if "Options" not in cfg:
-        cfg["Options"]={}
-    cfg["Options"]["call_mode"] = "interactive"
-    result = pfp_io.write_csv_ecostress(cfg)
-    if result == 0:
-        logger.info(" Finished converting netCDF file")
-        logger.info("")
-    else:
-        logger.error("")
-        logger.error(" An error occured, check the log messages")
-        logger.error("")
+            logger.error("")
+            logger.error(" An error occurred, check the log messages")
+            logger.error("")
+    except Exception:
+        error_message = " Error converting to ECOSTRESS format, see below for details ... "
+        logger.error(error_message)
+        error_message = traceback.format_exc()
+        logger.error(error_message)
     return
 def do_file_convert_nc2xls():
     """
@@ -105,13 +86,20 @@ def do_file_convert_nc2xls():
      August 2018: rewrite for use with new GUI
     """
     logger.info(" Starting conversion to Excel file")
-    ncfilename = pfp_io.get_filename_dialog(file_path="../Sites",title="Choose a netCDF file", ext="*.nc")
-    if len(ncfilename)==0:
-        return
-    logger.info(" Converting netCDF file to Excel file")
-    pfp_io.nc_2xls(ncfilename, outputlist=None)
-    logger.info(" Finished converting netCDF file")
-    logger.info("")
+    try:
+        ncfilename = pfp_io.get_filename_dialog(file_path="../Sites", title="Choose a netCDF file", ext="*.nc")
+        if len(ncfilename) == 0:
+            logger.info(" No file selected, cancelling ...")
+            return
+        logger.info(" Converting netCDF file to Excel file")
+        pfp_io.nc_2xls(ncfilename, outputlist=None)
+        logger.info(" Finished converting netCDF file")
+        logger.info("")
+    except Exception:
+        msg = " Error converting to Excel file, see below for details ..."
+        logger.error(msg)
+        error_message = traceback.format_exc()
+        logger.error(error_message)
     return
 def do_file_convert_nc2fluxnet():
     logger.warning("File/Convert/nc to Fluxnet not implemented yet")
@@ -200,8 +188,13 @@ def do_file_split_run(ui):
         file_path = os.path.split(ui.info["input_file_path"])[0]
         file_name = str(ui.lineEdit_OutputFileName.text())
         ui.info["output_file_path"] = os.path.join(file_path, file_name)
-    pfp_io.ncsplit_run(ui)
-
+    try:
+        pfp_io.ncsplit_run(ui)
+    except Exception:
+        msg = " Error splitting netCDF file, see below for details ..."
+        logger.error(msg)
+        error_message = traceback.format_exc()
+        logger.error(error_message)
 # top level routines for the Run menu
 def do_run_l1(cfg=None):
     """
@@ -216,22 +209,28 @@ def do_run_l1(cfg=None):
     Mods:
      December 2017: rewrite for use with new GUI
     """
-    logger.info("Starting L1 processing")
-    if not cfg:
-        cfg = pfp_io.load_controlfile()
-        if len(cfg)==0:
-            logger.info("Quiting L1 processing (no control file)")
-            return
-    ds1 = pfp_levels.l1qc(cfg)
-    if ds1.returncodes["value"] == 0:
-        outfilename = pfp_io.get_outfilenamefromcf(cfg)
-        ncFile = pfp_io.nc_open_write(outfilename)
-        pfp_io.nc_write_series(ncFile, ds1)
-        logger.info("Finished L1 processing")
+    try:
+        logger.info("Starting L1 processing")
+        if not cfg:
+            cfg = pfp_io.load_controlfile()
+            if len(cfg)==0:
+                logger.info("Quiting L1 processing (no control file)")
+                return
+        ds1 = pfp_levels.l1qc(cfg)
+        if ds1.returncodes["value"] == 0:
+            outfilename = pfp_io.get_outfilenamefromcf(cfg)
+            ncFile = pfp_io.nc_open_write(outfilename)
+            pfp_io.nc_write_series(ncFile, ds1)
+            logger.info("Finished L1 processing")
+        else:
+            msg = "An error occurred during L1 processing"
+            logger.error(msg)
         logger.info("")
-    else:
-        msg = "An error occurred during L1 processing"
+    except Exception:
+        msg = " Error running L1, see below for details ..."
         logger.error(msg)
+        error_message = traceback.format_exc()
+        logger.error(error_message)
     return
 def do_run_l2(cfg=None):
     """
@@ -246,38 +245,44 @@ def do_run_l2(cfg=None):
     Mods:
      December 2017: rewrite for use with new GUI
     """
-    logger.info("Starting L2 processing")
-    if not cfg:
-        cfg = pfp_io.load_controlfile()
-        if len(cfg)==0:
-            logger.info("Quiting L2 processing (no control file)")
+    try:
+        logger.info("Starting L2 processing")
+        if not cfg:
+            cfg = pfp_io.load_controlfile()
+            if len(cfg)==0:
+                logger.info("Quiting L2 processing (no control file)")
+                return
+        in_filepath = pfp_io.get_infilenamefromcf(cfg)
+        if not pfp_utils.file_exists(in_filepath):
+            in_filename = os.path.split(in_filepath)
+            logger.error("File "+in_filename[1]+" not found")
             return
-    in_filepath = pfp_io.get_infilenamefromcf(cfg)
-    if not pfp_utils.file_exists(in_filepath):
-        in_filename = os.path.split(in_filepath)
-        logger.error("File "+in_filename[1]+" not found")
-        return
-    ds1 = pfp_io.nc_read_series(in_filepath)
-    ds2 = pfp_levels.l2qc(cfg, ds1)
-    if ds2.returncodes["value"] != 0:
-        logger.error("An error occurred during L2 processing")
-        logger.error("")
-        return
-    out_filepath = pfp_io.get_outfilenamefromcf(cfg)
-    nc_file = pfp_io.nc_open_write(out_filepath)
-    pfp_io.nc_write_series(nc_file, ds2)
-    logger.info("Finished L2 processing")
-    logger.info("Plotting L1 and L2 data")
-    for nFig in cfg['Plots'].keys():
-        plt_cf = cfg['Plots'][str(nFig)]
-        if 'Type' in plt_cf.keys():
-            if str(plt_cf['Type']).lower() =='xy':
-                pfp_plot.plotxy(cfg, nFig, plt_cf, ds1, ds2)
+        ds1 = pfp_io.nc_read_series(in_filepath)
+        ds2 = pfp_levels.l2qc(cfg, ds1)
+        if ds2.returncodes["value"] != 0:
+            logger.error("An error occurred during L2 processing")
+            logger.error("")
+            return
+        out_filepath = pfp_io.get_outfilenamefromcf(cfg)
+        nc_file = pfp_io.nc_open_write(out_filepath)
+        pfp_io.nc_write_series(nc_file, ds2)
+        logger.info("Finished L2 processing")
+        logger.info("Plotting L1 and L2 data")
+        for nFig in cfg['Plots'].keys():
+            plt_cf = cfg['Plots'][str(nFig)]
+            if 'Type' in plt_cf.keys():
+                if str(plt_cf['Type']).lower() =='xy':
+                    pfp_plot.plotxy(cfg, nFig, plt_cf, ds1, ds2)
+                else:
+                    pfp_plot.plottimeseries(cfg, nFig, ds1, ds2)
             else:
                 pfp_plot.plottimeseries(cfg, nFig, ds1, ds2)
-        else:
-            pfp_plot.plottimeseries(cfg, nFig, ds1, ds2)
-    logger.info("Finished plotting L1 and L2 data")
+        logger.info("Finished plotting L1 and L2 data")
+    except Exception:
+        msg = " Error running L2, see below for details ..."
+        logger.error(msg)
+        error_message = traceback.format_exc()
+        logger.error(error_message)
     logger.info("")
     return
 def do_run_l3(cfg=None):
@@ -293,38 +298,44 @@ def do_run_l3(cfg=None):
     Mods:
      December 2017: rewrite for use with new GUI
     """
-    logger.info("Starting L3 processing")
-    if not cfg:
-        cfg = pfp_io.load_controlfile()
-        if len(cfg) == 0:
-            logger.info("Quiting L3 processing (no control file)")
+    try:
+        logger.info("Starting L3 processing")
+        if not cfg:
+            cfg = pfp_io.load_controlfile()
+            if len(cfg) == 0:
+                logger.info("Quiting L3 processing (no control file)")
+                return
+        in_filepath = pfp_io.get_infilenamefromcf(cfg)
+        if not pfp_utils.file_exists(in_filepath):
+            in_filename = os.path.split(in_filepath)
+            logger.error("File "+in_filename[1]+" not found")
             return
-    in_filepath = pfp_io.get_infilenamefromcf(cfg)
-    if not pfp_utils.file_exists(in_filepath):
-        in_filename = os.path.split(in_filepath)
-        logger.error("File "+in_filename[1]+" not found")
-        return
-    ds2 = pfp_io.nc_read_series(in_filepath)
-    ds3 = pfp_levels.l3qc(cfg, ds2)
-    if ds3.returncodes["value"] != 0:
-        logger.error("An error occurred during L3 processing")
-        logger.error("")
-        return
-    out_filepath = pfp_io.get_outfilenamefromcf(cfg)
-    nc_file = pfp_io.nc_open_write(out_filepath)
-    pfp_io.nc_write_series(nc_file, ds3)
-    logger.info("Finished L3 processing")
-    logger.info("Plotting L3 data")
-    for nFig in cfg['Plots'].keys():
-        plt_cf = cfg['Plots'][str(nFig)]
-        if 'Type' in plt_cf.keys():
-            if str(plt_cf['Type']).lower() =='xy':
-                pfp_plot.plotxy(cfg, nFig, plt_cf, ds2, ds3)
+        ds2 = pfp_io.nc_read_series(in_filepath)
+        ds3 = pfp_levels.l3qc(cfg, ds2)
+        if ds3.returncodes["value"] != 0:
+            logger.error("An error occurred during L3 processing")
+            logger.error("")
+            return
+        out_filepath = pfp_io.get_outfilenamefromcf(cfg)
+        nc_file = pfp_io.nc_open_write(out_filepath)
+        pfp_io.nc_write_series(nc_file, ds3)
+        logger.info("Finished L3 processing")
+        logger.info("Plotting L3 data")
+        for nFig in cfg['Plots'].keys():
+            plt_cf = cfg['Plots'][str(nFig)]
+            if 'Type' in plt_cf.keys():
+                if str(plt_cf['Type']).lower() =='xy':
+                    pfp_plot.plotxy(cfg, nFig, plt_cf, ds2, ds3)
+                else:
+                    pfp_plot.plottimeseries(cfg, nFig, ds2, ds3)
             else:
                 pfp_plot.plottimeseries(cfg, nFig, ds2, ds3)
-        else:
-            pfp_plot.plottimeseries(cfg, nFig, ds2, ds3)
-    logger.info("Finished plotting L3 data")
+        logger.info("Finished plotting L3 data")
+    except Exception:
+        msg = " Error running L3, see below for details ..."
+        logger.error(msg)
+        error_message = traceback.format_exc()
+        logger.error(error_message)
     logger.info("")
     return
 def do_run_l4(main_gui, cfg=None):
@@ -340,33 +351,39 @@ def do_run_l4(main_gui, cfg=None):
     Mods:
      December 2017: rewrite for use with new GUI
     """
-    logger.info("Starting L4 processing")
-    if not cfg:
-        cfg = pfp_io.load_controlfile(path='controlfiles')
-        if len(cfg) == 0:
-            logger.info("Quiting L4 processing (no control file)")
+    try:
+        logger.info("Starting L4 processing")
+        if not cfg:
+            cfg = pfp_io.load_controlfile(path='controlfiles')
+            if len(cfg) == 0:
+                logger.info("Quiting L4 processing (no control file)")
+                return
+        in_filepath = pfp_io.get_infilenamefromcf(cfg)
+        if not pfp_utils.file_exists(in_filepath):
+            in_filename = os.path.split(in_filepath)
+            logger.error("File "+in_filename[1]+" not found")
             return
-    in_filepath = pfp_io.get_infilenamefromcf(cfg)
-    if not pfp_utils.file_exists(in_filepath):
-        in_filename = os.path.split(in_filepath)
-        logger.error("File "+in_filename[1]+" not found")
-        return
-    ds3 = pfp_io.nc_read_series(in_filepath)
-    #ds3.globalattributes['controlfile_name'] = cfg['controlfile_name']
-    sitename = ds3.globalattributes['site_name']
-    if "Options" not in cfg:
-        cfg["Options"]={}
-    cfg["Options"]["call_mode"] = "interactive"
-    ds4 = pfp_levels.l4qc(main_gui, cfg, ds3)
-    if ds4.returncodes["value"] != 0:
-        logger.info("Quitting L4: " + sitename)
-    else:
-        logger.info("Finished L4: " + sitename)
-        out_filepath = pfp_io.get_outfilenamefromcf(cfg)
-        nc_file = pfp_io.nc_open_write(out_filepath)
-        pfp_io.nc_write_series(nc_file, ds4)         # save the L4 data
-        logger.info("Finished saving L4 gap filled data")
-    logger.info("")
+        ds3 = pfp_io.nc_read_series(in_filepath)
+        #ds3.globalattributes['controlfile_name'] = cfg['controlfile_name']
+        sitename = ds3.globalattributes['site_name']
+        if "Options" not in cfg:
+            cfg["Options"]={}
+        cfg["Options"]["call_mode"] = "interactive"
+        ds4 = pfp_levels.l4qc(main_gui, cfg, ds3)
+        if ds4.returncodes["value"] != 0:
+            logger.info("Quitting L4: " + sitename)
+        else:
+            logger.info("Finished L4: " + sitename)
+            out_filepath = pfp_io.get_outfilenamefromcf(cfg)
+            nc_file = pfp_io.nc_open_write(out_filepath)
+            pfp_io.nc_write_series(nc_file, ds4)         # save the L4 data
+            logger.info("Finished saving L4 gap filled data")
+        logger.info("")
+    except Exception:
+        msg = " Error running L4, see below for details ..."
+        logger.error(msg)
+        error_message = traceback.format_exc()
+        logger.error(error_message)
     return
 def do_run_l5(main_gui, cfg=None):
     """
@@ -381,33 +398,39 @@ def do_run_l5(main_gui, cfg=None):
     Mods:
      December 2017: rewrite for use with new GUI
     """
-    logger.info("Starting L5 processing")
-    if not cfg:
-        cfg = pfp_io.load_controlfile(path='controlfiles')
-        if len(cfg) == 0:
-            logger.info("Quiting L5 processing (no control file)")
+    try:
+        logger.info("Starting L5 processing")
+        if not cfg:
+            cfg = pfp_io.load_controlfile(path='controlfiles')
+            if len(cfg) == 0:
+                logger.info("Quiting L5 processing (no control file)")
+                return
+        in_filepath = pfp_io.get_infilenamefromcf(cfg)
+        if not pfp_utils.file_exists(in_filepath):
+            in_filename = os.path.split(in_filepath)
+            logger.error("File "+in_filename[1]+" not found")
             return
-    in_filepath = pfp_io.get_infilenamefromcf(cfg)
-    if not pfp_utils.file_exists(in_filepath):
-        in_filename = os.path.split(in_filepath)
-        logger.error("File "+in_filename[1]+" not found")
-        return
-    ds4 = pfp_io.nc_read_series(in_filepath)
-    #ds4.globalattributes['controlfile_name'] = cfg['controlfile_name']
-    sitename = ds4.globalattributes['site_name']
-    if "Options" not in cfg:
-        cfg["Options"] = {}
-    cfg["Options"]["call_mode"] = "interactive"
-    ds5 = pfp_levels.l5qc(main_gui, cfg, ds4)
-    if ds5.returncodes["value"] != 0:
-        logger.info("Quitting L5: "+sitename)
-    else:
-        logger.info("Finished L5: "+sitename)
-        out_filepath = pfp_io.get_outfilenamefromcf(cfg)
-        nc_file = pfp_io.nc_open_write(out_filepath)
-        pfp_io.nc_write_series(nc_file, ds5)
-        logger.info("Finished saving L5 gap filled data")
-    logger.info("")
+        ds4 = pfp_io.nc_read_series(in_filepath)
+        #ds4.globalattributes['controlfile_name'] = cfg['controlfile_name']
+        sitename = ds4.globalattributes['site_name']
+        if "Options" not in cfg:
+            cfg["Options"] = {}
+        cfg["Options"]["call_mode"] = "interactive"
+        ds5 = pfp_levels.l5qc(main_gui, cfg, ds4)
+        if ds5.returncodes["value"] != 0:
+            logger.info("Quitting L5: "+sitename)
+        else:
+            logger.info("Finished L5: "+sitename)
+            out_filepath = pfp_io.get_outfilenamefromcf(cfg)
+            nc_file = pfp_io.nc_open_write(out_filepath)
+            pfp_io.nc_write_series(nc_file, ds5)
+            logger.info("Finished saving L5 gap filled data")
+        logger.info("")
+    except Exception:
+        msg = " Error running L5, see below for details ..."
+        logger.error(msg)
+        error_message = traceback.format_exc()
+        logger.error(error_message)
     return
 def do_run_l6(main_gui, cfg=None):
     """
@@ -422,53 +445,41 @@ def do_run_l6(main_gui, cfg=None):
     Mods:
      December 2017: rewrite for use with new GUI
     """
-    logger.info("Starting L6 processing")
-    if not cfg:
-        cfg = pfp_io.load_controlfile(path='controlfiles')
-        if len(cfg) == 0:
-            logger.info("Quiting L6 processing (no control file)")
+    try:
+        logger.info("Starting L6 processing")
+        if not cfg:
+            cfg = pfp_io.load_controlfile(path='controlfiles')
+            if len(cfg) == 0:
+                logger.info("Quiting L6 processing (no control file)")
+                return
+        in_filepath = pfp_io.get_infilenamefromcf(cfg)
+        if not pfp_utils.file_exists(in_filepath):
+            in_filename = os.path.split(in_filepath)
+            logger.error("File "+in_filename[1]+" not found")
             return
-    in_filepath = pfp_io.get_infilenamefromcf(cfg)
-    if not pfp_utils.file_exists(in_filepath):
-        in_filename = os.path.split(in_filepath)
-        logger.error("File "+in_filename[1]+" not found")
-        return
-    ds5 = pfp_io.nc_read_series(in_filepath)
-    #ds5.globalattributes['controlfile_name'] = cfg['controlfile_name']
-    sitename = ds5.globalattributes['site_name']
-    if "Options" not in cfg:
-        cfg["Options"] = {}
-    cfg["Options"]["call_mode"] = "interactive"
-    ds6 = pfp_levels.l6qc(main_gui, cfg, ds5)
-    if ds6.returncodes["value"] != 0:
-        logger.info("Quitting L6: "+sitename)
-    else:
-        logger.info("Finished L6: "+sitename)
-        out_filepath = pfp_io.get_outfilenamefromcf(cfg)
-        nc_file = pfp_io.nc_open_write(out_filepath)
-        pfp_io.nc_write_series(nc_file, ds6)
-        logger.info("Finished saving L6 gap filled data")
-    logger.info("")
+        ds5 = pfp_io.nc_read_series(in_filepath)
+        #ds5.globalattributes['controlfile_name'] = cfg['controlfile_name']
+        sitename = ds5.globalattributes['site_name']
+        if "Options" not in cfg:
+            cfg["Options"] = {}
+        cfg["Options"]["call_mode"] = "interactive"
+        ds6 = pfp_levels.l6qc(main_gui, cfg, ds5)
+        if ds6.returncodes["value"] != 0:
+            logger.info("Quitting L6: "+sitename)
+        else:
+            logger.info("Finished L6: "+sitename)
+            out_filepath = pfp_io.get_outfilenamefromcf(cfg)
+            nc_file = pfp_io.nc_open_write(out_filepath)
+            pfp_io.nc_write_series(nc_file, ds6)
+            logger.info("Finished saving L6 gap filled data")
+        logger.info("")
+    except Exception:
+        msg = " Error running L6, see below for details ..."
+        logger.error(msg)
+        error_message = traceback.format_exc()
+        logger.error(error_message)
     return
 # top level routines for the Plot menu
-def do_plot_l1():
-    logger.warning("L1 plotting not implemented yet")
-    return
-def do_plot_l2():
-    logger.warning("L2 plotting not implemented yet")
-    return
-def do_plot_l3():
-    logger.warning("L3 plotting not implemented yet")
-    return
-def do_plot_l4():
-    logger.warning("L4 plotting not implemented yet")
-    return
-def do_plot_l5():
-    logger.warning("L5 plotting not implemented yet")
-    return
-def do_plot_l6():
-    logger.warning("L6 plotting not implemented yet")
-    return
 def do_plot_fcvsustar():
     """
     Purpose:
@@ -484,15 +495,21 @@ def do_plot_fcvsustar():
      December 2017: rewrite for use with new GUI
     """
     logger.info("Starting Fc versus u* plots")
-    file_path = pfp_io.get_filename_dialog(file_path="../Sites",title="Choose a netCDF file")
-    if len(file_path) == 0 or not os.path.isfile(file_path):
-        return
-    # read the netCDF file
-    ds = pfp_io.nc_read_series(file_path)
-    logger.info(" Plotting Fc versus u* ...")
-    pfp_plot.plot_fcvsustar(ds)
-    logger.info("Finished plotting Fc versus u*")
-    logger.info("")
+    try:
+        file_path = pfp_io.get_filename_dialog(file_path="../Sites",title="Choose a netCDF file")
+        if len(file_path) == 0 or not os.path.isfile(file_path):
+            return
+        # read the netCDF file
+        ds = pfp_io.nc_read_series(file_path)
+        logger.info("Plotting Fc versus u* ...")
+        pfp_plot.plot_fcvsustar(ds)
+        logger.info(" Finished plotting Fc versus u*")
+        logger.info("")
+    except Exception:
+        error_message = " An error occured while plotting Fc versus u*, see below for details ..."
+        logger.error(error_message)
+        error_message = traceback.format_exc()
+        logger.error(error_message)
     return
 def do_plot_fingerprints():
     """
@@ -509,26 +526,32 @@ def do_plot_fingerprints():
      December 2017: rewrite for use with new GUI
     """
     logger.info("Starting fingerprint plot")
-    stdname = "controlfiles/standard/fingerprint.txt"
-    if os.path.exists(stdname):
-        cf = pfp_io.get_controlfilecontents(stdname)
-        filename = pfp_io.get_filename_dialog(file_path="../Sites",title="Choose a netCDF file")
-        if len(filename)==0:
-            return
-        if "Files" not in dir(cf): cf["Files"] = {}
-        cf["Files"]["file_path"] = os.path.split(filename)[0]+"/"
-        cf["Files"]["in_filename"] = os.path.split(filename)[1]
-    else:
-        cf = pfp_io.load_controlfile(path="controlfiles")
-        if len(cf)==0:
-            return
-    logger.info("Loaded control file ...")
-    if "Options" not in cf: cf["Options"]={}
-    cf["Options"]["call_mode"] = "interactive"
-    logger.info(" Plotting fingerprint ...")
-    pfp_plot.plot_fingerprint(cf)
-    logger.info("Finished plotting fingerprint")
-    logger.info("")
+    try:
+        stdname = "controlfiles/standard/fingerprint.txt"
+        if os.path.exists(stdname):
+            cf = pfp_io.get_controlfilecontents(stdname)
+            filename = pfp_io.get_filename_dialog(file_path="../Sites",title="Choose a netCDF file")
+            if len(filename)==0:
+                return
+            if "Files" not in dir(cf): cf["Files"] = {}
+            cf["Files"]["file_path"] = os.path.split(filename)[0]+"/"
+            cf["Files"]["in_filename"] = os.path.split(filename)[1]
+        else:
+            cf = pfp_io.load_controlfile(path="controlfiles")
+            if len(cf) == 0:
+                return
+        logger.info("Loaded control file ...")
+        if "Options" not in cf: cf["Options"]={}
+        cf["Options"]["call_mode"] = "interactive"
+        logger.info("Plotting fingerprint ...")
+        pfp_plot.plot_fingerprint(cf)
+        logger.info(" Finished plotting fingerprint")
+        logger.info("")
+    except Exception:
+        error_message = " An error occured while plotting fingerprints, see below for details ..."
+        logger.error(error_message)
+        error_message = traceback.format_exc()
+        logger.error(error_message)
     return
 def do_plot_quickcheck():
     """
@@ -544,27 +567,33 @@ def do_plot_quickcheck():
     Mods:
      December 2017: rewrite for use with new GUI
     """
-    logger.info("Starting summary plots")
-    stdname = "controlfiles/standard/quickcheck.txt"
-    if os.path.exists(stdname):
-        cf = pfp_io.get_controlfilecontents(stdname)
-        filename = pfp_io.get_filename_dialog(file_path="../Sites",title="Choose a netCDF file")
-        if len(filename)==0:
-            return
-        if "Files" not in dir(cf): cf["Files"] = {}
-        cf["Files"]["file_path"] = os.path.split(filename)[0]+"/"
-        cf["Files"]["in_filename"] = os.path.split(filename)[1]
-    else:
-        cf = pfp_io.load_controlfile(path="controlfiles")
-        if len(cf)==0:
-            return
-    logger.info("Loaded control file ...")
-    if "Options" not in cf: cf["Options"]={}
-    cf["Options"]["call_mode"] = "interactive"
-    logger.info(" Plotting summary plots ...")
-    pfp_plot.plot_quickcheck(cf)
-    logger.info("Finished plotting summaries")
-    logger.info("")
+    try:
+        logger.info("Starting summary plots")
+        stdname = "controlfiles/standard/quickcheck.txt"
+        if os.path.exists(stdname):
+            cf = pfp_io.get_controlfilecontents(stdname)
+            filename = pfp_io.get_filename_dialog(file_path="../Sites",title="Choose a netCDF file")
+            if len(filename)==0:
+                return
+            if "Files" not in dir(cf): cf["Files"] = {}
+            cf["Files"]["file_path"] = os.path.split(filename)[0]+"/"
+            cf["Files"]["in_filename"] = os.path.split(filename)[1]
+        else:
+            cf = pfp_io.load_controlfile(path="controlfiles")
+            if len(cf)==0:
+                return
+        logger.info("Loaded control file ...")
+        if "Options" not in cf: cf["Options"]={}
+        cf["Options"]["call_mode"] = "interactive"
+        logger.info("Plotting summary plots ...")
+        pfp_plot.plot_quickcheck(cf)
+        logger.info(" Finished plotting summaries")
+        logger.info("")
+    except Exception:
+        error_message = " An error occured while plotting quickcheck, see below for details ..."
+        logger.error(error_message)
+        error_message = traceback.format_exc()
+        logger.error(error_message)
     return
 def do_plot_timeseries():
     """
@@ -580,27 +609,33 @@ def do_plot_timeseries():
     Mods:
      December 2017: rewrite for use with new GUI
     """
-    logger.info("Starting timeseries plot")
-    stdname = "controlfiles/standard/fluxnet.txt"
-    if os.path.exists(stdname):
-        cf = pfp_io.get_controlfilecontents(stdname)
-        filename = pfp_io.get_filename_dialog(file_path="../Sites",title="Choose a netCDF file")
-        if len(filename)==0:
-            return
-        if "Files" not in dir(cf): cf["Files"] = {}
-        cf["Files"]["file_path"] = os.path.split(filename)[0]+"/"
-        cf["Files"]["in_filename"] = os.path.split(filename)[1]
-    else:
-        cf = pfp_io.load_controlfile(path="controlfiles")
-        if len(cf)==0:
-            return
-    logger.info("Loaded control file ...")
-    if "Options" not in cf: cf["Options"]={}
-    cf["Options"]["call_mode"] = "interactive"
-    logger.info(" Plotting time series ...")
-    pfp_plot.plot_fluxnet(cf)
-    logger.info("Finished plotting fingerprint")
-    logger.info("")
+    try:
+        logger.info("Starting timeseries plot")
+        stdname = "controlfiles/standard/fluxnet.txt"
+        if os.path.exists(stdname):
+            cf = pfp_io.get_controlfilecontents(stdname)
+            filename = pfp_io.get_filename_dialog(file_path="../Sites",title="Choose a netCDF file")
+            if len(filename)==0:
+                return
+            if "Files" not in dir(cf): cf["Files"] = {}
+            cf["Files"]["file_path"] = os.path.split(filename)[0]+"/"
+            cf["Files"]["in_filename"] = os.path.split(filename)[1]
+        else:
+            cf = pfp_io.load_controlfile(path="controlfiles")
+            if len(cf)==0:
+                return
+        logger.info("Loaded control file ...")
+        if "Options" not in cf: cf["Options"]={}
+        cf["Options"]["call_mode"] = "interactive"
+        logger.info("Plotting time series ...")
+        pfp_plot.plot_fluxnet(cf)
+        logger.info(" Finished plotting time series")
+        logger.info("")
+    except Exception:
+        error_message = " An error occured while plotting time series, see below for details ..."
+        logger.error(error_message)
+        error_message = traceback.format_exc()
+        logger.error(error_message)
     return
 def do_plot_closeplots():
     """
@@ -611,99 +646,117 @@ def do_plot_closeplots():
     return
 # top level routines for the Utilities menu
 def do_utilities_climatology(mode="standard"):
-    logger.info(" Starting climatology")
-    if mode == "standard":
-        stdname = "controlfiles/standard/climatology.txt"
-        if os.path.exists(stdname):
-            cf = pfp_io.get_controlfilecontents(stdname)
-            filename = pfp_io.get_filename_dialog(file_path="../Sites", title='Choose a netCDF file')
-            if not os.path.exists(filename):
-                logger.info( " Climatology: no input file chosen")
-                return
-            if "Files" not in cf:
-                cf["Files"] = {}
-            cf["Files"]["file_path"] = os.path.join(os.path.split(filename)[0],"")
-            in_filename = os.path.split(filename)[1]
-            cf["Files"]["in_filename"] = in_filename
-            cf["Files"]["out_filename"] = in_filename.replace(".nc", "_Climatology.xls")
+    try:
+        logger.info(" Starting climatology")
+        if mode == "standard":
+            stdname = "controlfiles/standard/climatology.txt"
+            if os.path.exists(stdname):
+                cf = pfp_io.get_controlfilecontents(stdname)
+                filename = pfp_io.get_filename_dialog(file_path="../Sites", title='Choose a netCDF file')
+                if not os.path.exists(filename):
+                    logger.info( " Climatology: no input file chosen")
+                    return
+                if "Files" not in cf:
+                    cf["Files"] = {}
+                cf["Files"]["file_path"] = os.path.join(os.path.split(filename)[0],"")
+                in_filename = os.path.split(filename)[1]
+                cf["Files"]["in_filename"] = in_filename
+                cf["Files"]["out_filename"] = in_filename.replace(".nc", "_Climatology.xls")
+            else:
+                cf = pfp_io.load_controlfile(path="controlfiles")
+                if len(cf) == 0:
+                    return
         else:
-            cf = pfp_io.load_controlfile(path="controlfiles")
+            logger.info("Loading control file ...")
+            cf = pfp_io.load_controlfile(path='controlfiles')
             if len(cf) == 0:
                 return
-    else:
-        logger.info("Loading control file ...")
-        cf = pfp_io.load_controlfile(path='controlfiles')
-        if len(cf) == 0:
-            return
-    logger.info("Doing the climatology")
-    pfp_clim.climatology(cf)
-    logger.info(' Finished climatology')
-    logger.info("")
+        logger.info("Doing the climatology")
+        pfp_clim.climatology(cf)
+        logger.info(" Finished climatology")
+        logger.info("")
+    except Exception:
+        error_message = " An error occured while doing climatology, see below for details ..."
+        logger.error(error_message)
+        error_message = traceback.format_exc()
+        logger.error(error_message)
     return
 def do_utilities_ustar_cpd(mode="standard"):
-    logger.info(" Starting u* threshold detection (CPD)")
-    if mode == "standard":
-        stdname = "controlfiles/standard/cpd.txt"
-        if os.path.exists(stdname):
-            cf = pfp_io.get_controlfilecontents(stdname)
-            filename = pfp_io.get_filename_dialog(file_path="../Sites", title="Choose a netCDF file")
-            if not os.path.exists(filename):
-                logger.info( " CPD: no input file chosen")
-                return
-            if "Files" not in cf:
-                cf["Files"] = {}
-            cf["Files"]["file_path"] = os.path.join(os.path.split(filename)[0],"")
-            in_filename = os.path.split(filename)[1]
-            cf["Files"]["in_filename"] = in_filename
-            cf["Files"]["out_filename"] = in_filename.replace(".nc", "_CPD.xls")
+    try:
+        logger.info(" Starting u* threshold detection (CPD)")
+        if mode == "standard":
+            stdname = "controlfiles/standard/cpd.txt"
+            if os.path.exists(stdname):
+                cf = pfp_io.get_controlfilecontents(stdname)
+                filename = pfp_io.get_filename_dialog(file_path="../Sites", title="Choose a netCDF file")
+                if not os.path.exists(filename):
+                    logger.info( " CPD: no input file chosen")
+                    return
+                if "Files" not in cf:
+                    cf["Files"] = {}
+                cf["Files"]["file_path"] = os.path.join(os.path.split(filename)[0],"")
+                in_filename = os.path.split(filename)[1]
+                cf["Files"]["in_filename"] = in_filename
+                cf["Files"]["out_filename"] = in_filename.replace(".nc", "_CPD.xls")
+            else:
+                cf = pfp_io.load_controlfile(path="controlfiles")
+                if len(cf) == 0:
+                    return
         else:
-            cf = pfp_io.load_controlfile(path="controlfiles")
+            logger.info("Loading control file ...")
+            cf = pfp_io.load_controlfile(path='controlfiles')
             if len(cf) == 0:
                 return
-    else:
-        logger.info("Loading control file ...")
-        cf = pfp_io.load_controlfile(path='controlfiles')
-        if len(cf) == 0:
-            return
-    logger.info("Doing u* threshold detection (CPD)")
-    pfp_cpd.cpd_main(cf)
-    logger.info(" Finished u* threshold detection (CPD)")
-    logger.info("")
+        logger.info("Doing u* threshold detection (CPD)")
+        pfp_cpd.cpd_main(cf)
+        logger.info(" Finished u* threshold detection (CPD)")
+        logger.info("")
+    except Exception:
+        error_message = " An error occured while doing CPD u* threshold, see below for details ..."
+        logger.error(error_message)
+        error_message = traceback.format_exc()
+        logger.error(error_message)
     return
 def do_utilities_ustar_mpt(mode="standard"):
     """
     Calls pfp_mpt.mpt_main
     Calculate the u* threshold using the Moving Point Threshold (MPT) method.
     """
-    logger.info(" Starting u* threshold detection (MPT)")
-    if mode == "standard":
-        stdname = "controlfiles/standard/mpt.txt"
-        if os.path.exists(stdname):
-            cf = pfp_io.get_controlfilecontents(stdname)
-            filename = pfp_io.get_filename_dialog(file_path='../Sites', title="Choose a netCDF file")
-            if not os.path.exists(filename):
-                logger.info( " MPT: no input file chosen")
-                return
-            if "Files" not in dir(cf):
-                cf["Files"] = {}
-            cf["Files"]["file_path"] = os.path.join(os.path.split(filename)[0], "")
-            in_filename = os.path.split(filename)[1]
-            cf["Files"]["in_filename"] = in_filename
-            cf["Files"]["out_filename"] = in_filename.replace(".nc", "_MPT.xls")
+    try:
+        logger.info(" Starting u* threshold detection (MPT)")
+        if mode == "standard":
+            stdname = "controlfiles/standard/mpt.txt"
+            if os.path.exists(stdname):
+                cf = pfp_io.get_controlfilecontents(stdname)
+                filename = pfp_io.get_filename_dialog(file_path='../Sites', title="Choose a netCDF file")
+                if not os.path.exists(filename):
+                    logger.info( " MPT: no input file chosen")
+                    return
+                if "Files" not in dir(cf):
+                    cf["Files"] = {}
+                cf["Files"]["file_path"] = os.path.join(os.path.split(filename)[0], "")
+                in_filename = os.path.split(filename)[1]
+                cf["Files"]["in_filename"] = in_filename
+                cf["Files"]["out_filename"] = in_filename.replace(".nc", "_MPT.xls")
+            else:
+                cf = pfp_io.load_controlfile(path="controlfiles")
+                if len(cf) == 0:
+                    return
         else:
+            logger.info("Loading control file ...")
             cf = pfp_io.load_controlfile(path="controlfiles")
             if len(cf) == 0:
                 return
-    else:
-        logger.info("Loading control file ...")
-        cf = pfp_io.load_controlfile(path="controlfiles")
-        if len(cf) == 0:
-            return
-    logger.info(" Doing u* threshold detection (MPT)")
-    if "Options" not in cf:
-        cf["Options"] = {}
-    cf["Options"]["call_mode"] = "interactive"
-    pfp_mpt.mpt_main(cf)
-    logger.info(" Finished u* threshold detection (MPT)")
-    logger.info("")
+        logger.info(" Doing u* threshold detection (MPT)")
+        if "Options" not in cf:
+            cf["Options"] = {}
+        cf["Options"]["call_mode"] = "interactive"
+        pfp_mpt.mpt_main(cf)
+        logger.info(" Finished u* threshold detection (MPT)")
+        logger.info("")
+    except Exception:
+        error_message = " An error occured while doing MPT u* threshold, see below for details ..."
+        logger.error(error_message)
+        error_message = traceback.format_exc()
+        logger.error(error_message)
     return
