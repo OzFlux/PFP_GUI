@@ -5,6 +5,7 @@ import logging
 import os
 import sys
 import time
+import traceback
 import warnings
 # force QVariant API to V2 to avoid AttributeErrors on Mac OS X
 import sip
@@ -102,8 +103,6 @@ class pfp_main_ui(QtWidgets.QWidget):
         self.actionFileSaveAs = QtWidgets.QAction(self)
         self.actionFileSaveAs.setText("Save As...")
         self.actionFileSaveAs.setShortcut('Shift+Ctrl+S')
-        self.actionFileConcatenate = QtWidgets.QAction(self)
-        self.actionFileConcatenate.setText("Concatenate")
         self.actionFileSplit = QtWidgets.QAction(self)
         self.actionFileSplit.setText("Split")
         self.actionFileQuit = QtWidgets.QAction(self)
@@ -160,7 +159,6 @@ class pfp_main_ui(QtWidgets.QWidget):
         self.menuFile.addAction(self.actionFileSave)
         self.menuFile.addAction(self.actionFileSaveAs)
         self.menuFile.addSeparator()
-        self.menuFile.addAction(self.actionFileConcatenate)
         self.menuFile.addAction(self.menuFileConvert.menuAction())
         self.menuFile.addAction(self.actionFileSplit)
         self.menuFile.addSeparator()
@@ -225,7 +223,6 @@ class pfp_main_ui(QtWidgets.QWidget):
         self.actionFileOpen.triggered.connect(self.open_controlfile)
         self.actionFileSave.triggered.connect(self.save_controlfile)
         self.actionFileSaveAs.triggered.connect(self.saveas_controlfile)
-        self.actionFileConcatenate.triggered.connect(pfp_top_level.do_file_concatenate)
         self.actionFileSplit.triggered.connect(pfp_top_level.do_file_split)
         self.actionFileQuit.triggered.connect(QtWidgets.QApplication.quit)
         # Edit menu actions
@@ -256,7 +253,14 @@ class pfp_main_ui(QtWidgets.QWidget):
             return
         # read the contents of the control file
         logger.info(" Opening " + cfgpath)
-        self.cfg = ConfigObj(cfgpath, indent_type="    ", list_values=False)
+        try:
+            self.cfg = ConfigObj(cfgpath, indent_type="    ", list_values=False)
+        except Exception:
+            msg = "Syntax error in control file, see below for line number"
+            logger.error(msg)
+            error_message = traceback.format_exc()
+            logger.error(error_message)
+            return
         self.cfg["level"] = self.get_cf_level()
         # create a QtTreeView to edit the control file
         if self.cfg["level"] in ["L1"]:
@@ -293,12 +297,14 @@ class pfp_main_ui(QtWidgets.QWidget):
             self.tabs.cfg_dict[self.tabs.tab_index_all]["controlfile_name"] = cfgpath
         else:
             logger.error(" Unrecognised control file type: "+self.cfg["level"])
+            return
         # add a tab for the control file
         self.tabs.addTab(self.tabs.tab_dict[self.tabs.tab_index_all], os.path.basename(str(cfgpath)))
         self.tabs.setCurrentIndex(self.tabs.tab_index_all)
         if self.tabs.tab_dict[self.tabs.tab_index_all].cfg_changed:
             self.update_tab_text()
         self.tabs.tab_index_all = self.tabs.tab_index_all + 1
+        return
 
     def get_cf_level(self):
         """ Sniff the control file to find out it's type."""
