@@ -1,0 +1,25 @@
+# make SOFM, install and clean
+cd solo/sofm/
+make -f sofm_nix.mak
+make -f sofm_nix.mak install
+make -f sofm_nix.mak clean
+# make SOLO
+cd ../solo/
+make -f solo_nix.mak
+make -f solo_nix.mak install
+make -f solo_nix.mak clean
+# make SEQSOLO
+cd ../seqsolo/
+make -f seqsolo_nix.mak
+make -f seqsolo_nix.mak install
+make -f seqsolo_nix.mak clean
+# make MPT
+cd ../../mpt/src/
+make -f mpt_nix.mak
+make -f mpt_nix.mak install
+make -f mpt_nix.mak clean
+# make MDS
+cd ../../mds/src/
+make -f mds_nix.mak
+make -f mds_nix.mak install
+make -f mds_nix.mak clean

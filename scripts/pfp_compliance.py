@@ -1,9 +1,12 @@
 # standard modules
 import copy
 import logging
+import os
+import platform
 # 3rd party modules
 import timezonefinder
 # PFP modules
+import pfp_gui
 import pfp_io
 import pfp_utils
 
@@ -25,6 +28,27 @@ def change_variable_names(cfg, ds):
         if label in rename_list:
             new_name = cfg["Variables"][label]["rename"]
             ds.series[new_name] = ds.series.pop(label)
+    return
+
+def check_executables():
+    # check for the executable files required
+    if platform.system() == "Windows":
+        executable_extension = ".exe"
+    else:
+        executable_extension = ""
+    executable_names = ["solo/bin/sofm", "solo/bin/solo", "solo/bin/seqsolo",
+                        "mds/bin/gf_mds", "mpt/bin/ustar_mp"]
+    missing_executable = False
+    for executable_name in executable_names:
+        executable_name = executable_name + executable_extension
+        if not os.path.isfile(executable_name):
+            missing_executable = True
+    if missing_executable:
+        msg = "One or more of the required executable files could not be found.\n"
+        msg = msg + "If you are running on Windows, clone the repository again.\n"
+        msg = msg + "If you are running on OSX or Linux, use the make_nix script\n"
+        msg = msg + "to compile the executables."
+        result = pfp_gui.MsgBox_Quit(msg, title="Critical")
     return
 
 def copy_ws_wd(ds):

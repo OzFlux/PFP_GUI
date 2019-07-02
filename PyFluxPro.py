@@ -3,6 +3,7 @@ import copy
 import datetime
 import logging
 import os
+import platform
 import sys
 import time
 import traceback
@@ -18,6 +19,7 @@ import matplotlib.pyplot as plt
 from PyQt5 import QtCore, QtGui, QtWidgets
 # PFP modules
 sys.path.append('scripts')
+import pfp_compliance
 import pfp_gui
 import pfp_log
 import pfp_top_level
@@ -43,25 +45,6 @@ for item in dir_list:
         os.makedirs(item)
 
 logger = pfp_log.init_logger()
-
-## show all warnings, not just the first
-#warnings.simplefilter("always")
-## overload warnings.showwarnings to get traceback with warnings
-#def warn_with_traceback(message, category, filename, lineno, file=None, line=None):
-
-    #log = file if hasattr(file,'write') else sys.stderr
-    #traceback.print_stack(file=log)
-    #log.write(warnings.formatwarning(message, category, filename, lineno, line))
-#warnings.showwarning = warn_with_traceback
-
-class myMessageBox(QtWidgets.QMessageBox):
-    def __init__(self, msg, title="Information", parent=None):
-        super(myMessageBox, self).__init__(parent)
-        self.setIcon(QtWidgets.QMessageBox.Information)
-        self.setText(msg)
-        self.setWindowTitle(title)
-        self.setStandardButtons(QtWidgets.QMessageBox.Ok)
-        self.exec_()
 
 class pfp_main_ui(QtWidgets.QWidget):
     def __init__(self):
@@ -488,7 +471,7 @@ class pfp_main_ui(QtWidgets.QWidget):
         else:
             msg = " You are trying to write to the template folder.\n"
             msg = msg + "Please save this control file to a different location."
-            msgbox = myMessageBox(msg)
+            msgbox = pfp_gui.myMessageBox(msg)
             # put up a "Save as ..." dialog
             cfg_filename = QtWidgets.QFileDialog.getSaveFileName(self, "Save as ...")[0]
             # return without doing anything if cancel used
@@ -609,5 +592,6 @@ if (__name__ == '__main__'):
     app = QtWidgets.QApplication(["PyFluxPro"])
     ui = pfp_main_ui()
     ui.show()
+    pfp_compliance.check_executables()
     app.exec_()
     del ui

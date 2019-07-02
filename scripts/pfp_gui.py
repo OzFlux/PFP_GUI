@@ -16,27 +16,6 @@ import pfp_rpNN
 
 logger = logging.getLogger("pfp_log")
 
-#class custom_treeview(QtGui.QTreeView):
-    #def __init__(self, parent=None):
-        #super(custom_treeview, self).__init__()
-        ##QtGui.QTreeView.__init__(self, parent)
-        #self.setItemsExpandable(True)
-        #self.setAnimated(True)
-        #self.setDragEnabled(True)
-        #self.setDropIndicatorShown(True)
-        #self.setDragDropMode(QtGui.QAbstractItemView.InternalMove)
-
-    #def dragMoveEvent(self, event):
-        #print "moving"
-        #super(custom_treeview, self).dragMoveEvent(event)
-
-    #def dropEvent(self, event):
-        #print "dropping"
-        ##super(custom_treeview, self).dropEvent(event)
-
-    #def dragEnterEvent(self, event):
-        #print "entering"
-        #event.accept()
 class myMessageBox(QtWidgets.QMessageBox):
     def __init__(self, msg, title="Information", parent=None):
         super(myMessageBox, self).__init__(parent)
@@ -65,6 +44,21 @@ class MsgBox_ContinueOrQuit(QtWidgets.QMessageBox):
         self.setStandardButtons(QtWidgets.QMessageBox.Yes |
                                 QtWidgets.QMessageBox.No)
         self.button(QtWidgets.QMessageBox.Yes).setText("Continue")
+        self.button(QtWidgets.QMessageBox.No).setText("Quit")
+        self.exec_()
+
+class MsgBox_Quit(QtWidgets.QMessageBox):
+    def __init__(self, msg, title="Information", parent=None):
+        super(MsgBox_Quit, self).__init__(parent)
+        if title == "Critical":
+            self.setIcon(QtWidgets.QMessageBox.Critical)
+        elif title == "Warning":
+            self.setIcon(QtWidgets.QMessageBox.Warning)
+        else:
+            self.setIcon(QtWidgets.QMessageBox.Information)
+        self.setText(msg)
+        self.setWindowTitle(title)
+        self.setStandardButtons(QtWidgets.QMessageBox.No)
         self.button(QtWidgets.QMessageBox.No).setText("Quit")
         self.exec_()
 
