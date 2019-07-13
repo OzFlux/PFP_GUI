@@ -1,10 +1,19 @@
 # standard modules
 import logging
 import os
+import platform
 import sys
 import traceback
 # 3rd party modules
 from configobj import ConfigObj
+import matplotlib
+# check the OS and set the matplotlib backend accordingly
+if platform.system() == "Darwin":
+    # set backend to "macosx" on Macs
+    matplotlib.use("macosx")
+else:
+    # set backend to "QT5Agg" for Windows and Linux
+    matplotlib.use("QT5Agg")
 from PyQt5 import QtWidgets
 # PFP modules
 sys.path.append('scripts')
