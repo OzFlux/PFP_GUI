@@ -1,22 +1,11 @@
 # standard modules
-import copy
-import datetime
 import logging
 import os
-import platform
 import sys
-import time
 import traceback
-import warnings
-# force QVariant API to V2 to avoid AttributeErrors on Mac OS X
-import sip
-sip.setapi('QVariant', 2)
 # 3rd party modules
 from configobj import ConfigObj
-import matplotlib
-matplotlib.use("QT5Agg")
-import matplotlib.pyplot as plt
-from PyQt5 import QtCore, QtGui, QtWidgets
+from PyQt5 import QtWidgets
 # PFP modules
 sys.path.append('scripts')
 import pfp_compliance
