@@ -1,7 +1,6 @@
 # the following line needed for unicode character in convert_anglestring
 # -*- coding: latin-1 -*-
 # standard modules
-import ast
 import copy
 import datetime
 import logging
@@ -11,7 +10,6 @@ import os
 import platform
 import sys
 import time
-import Tkinter,tkSimpleDialog
 # third party modules
 import dateutil
 import netCDF4
@@ -2251,13 +2249,6 @@ def get_timezone(site_name,prompt="no"):
         if item in site_name.lower():
             time_zone = c.tz_dict[item]
             found = True
-        else:
-            # cant find the site in the dictionary so ask the user
-            if prompt.lower()=="yes":
-                root = Tkinter.Tk(); root.withdraw()
-                time_zone = tkSimpleDialog.askstring("Time zone","Enter time zone eg Australia/Melbourne")
-                root.destroy()
-                found = True
     return time_zone,found
 
 def get_UTCfromlocaltime(ds):
