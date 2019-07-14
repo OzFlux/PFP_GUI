@@ -46,7 +46,8 @@ def get_bootstrap_results(contents):
     for i in range(0, number_seasons):
         bootstrap_values[i] = numpy.array([])
         bootstrap_counts[i] = numpy.array([])
-    while len(contents[n]) >= 1:
+    # on Windows machines, len(contents[n]) == 1 for the first empty line after thhe bootstrap section
+    while len(contents[n]) > 1:
         season_values = numpy.array([float(s) for s in contents[n][0:contents[n].index("forward")].split()])
         season_counts = numpy.array([int(s) for s in contents[n+1][0:].split()])
         for i in range(0, number_seasons):

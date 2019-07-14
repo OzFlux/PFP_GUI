@@ -2,7 +2,7 @@
 rem
 rem Remember the good old days of DOS batch files ... ?
 rem
-call activate pfp_env
+call conda activate pfp_env
 python PyFluxPro.py
-call deactivate
+call conda deactivate
 @echo on
