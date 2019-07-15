@@ -397,7 +397,8 @@ class edit_cfg_L1(QtWidgets.QWidget):
         # quit if cancel button pressed
         if len(str(new_dir)) > 0:
             # make sure the string ends with a path delimiter
-            new_dir = os.path.join(str(new_dir), "")
+            tmp_dir = QtCore.QDir.toNativeSeparators(str(new_dir))
+            new_dir = os.path.join(tmp_dir, "")
             # update the model
             parent.child(selected_item.row(), 1).setText(new_dir)
             self.update_tab_text()
@@ -749,7 +750,8 @@ class edit_cfg_L2(QtWidgets.QWidget):
         # quit if cancel button pressed
         if len(str(new_dir)) > 0:
             # make sure the string ends with a path delimiter
-            new_dir = os.path.join(str(new_dir), "")
+            tmp_dir = QtCore.QDir.toNativeSeparators(str(new_dir))
+            new_dir = os.path.join(tmp_dir, "")
             # update the model
             parent.child(selected_item.row(), 1).setText(new_dir)
 
@@ -806,7 +808,8 @@ class edit_cfg_L2(QtWidgets.QWidget):
         # quit if cancel button pressed
         if len(str(new_dir)) > 0:
             # make sure the string ends with a path delimiter
-            new_dir = os.path.join(str(new_dir), "")
+            tmp_dir = QtCore.QDir.toNativeSeparators(str(new_dir))
+            new_dir = os.path.join(tmp_dir, "")
             # update the model
             parent.child(selected_item.row(), 1).setText(new_dir)
 
@@ -1690,7 +1693,8 @@ class edit_cfg_L3(QtWidgets.QWidget):
         # quit if cancel button pressed
         if len(str(new_dir)) > 0:
             # make sure the string ends with a path delimiter
-            new_dir = os.path.join(str(new_dir), "")
+            tmp_dir = QtCore.QDir.toNativeSeparators(str(new_dir))
+            new_dir = os.path.join(tmp_dir, "")
             # update the model
             parent.child(selected_item.row(), 1).setText(new_dir)
 
@@ -2672,6 +2676,7 @@ class edit_cfg_concatenate(QtWidgets.QWidget):
                                                               directory=file_path)[0]
         # update the model
         if len(str(new_file_path)) > 0:
+            new_file_path = QtCore.QDir.toNativeSeparators(str(new_file_path))
             parent.child(selected_item.row(), 1).setText(new_file_path)
 
     def browse_output_file(self):
@@ -2690,6 +2695,7 @@ class edit_cfg_concatenate(QtWidgets.QWidget):
                                                           directory=file_path, filter="*.nc")[0]
         # update the model
         if len(str(new_file_path)) > 0:
+            new_file_path = QtCore.QDir.toNativeSeparators(str(new_file_path))
             parent.child(selected_item.row(), 1).setText(new_file_path)
 
     def parse_cfg_values(self, k, v, strip_list):
@@ -3375,6 +3381,7 @@ class edit_cfg_L4(QtWidgets.QWidget):
         # quit if cancel button pressed
         if len(str(new_file)) > 0:
             # update the model
+            new_file = QtCore.QDir.toNativeSeparators(str(new_file))
             parent.child(selected_item.row(), 1).setText(new_file)
 
     def browse_file_path(self):
@@ -3393,7 +3400,8 @@ class edit_cfg_L4(QtWidgets.QWidget):
         # quit if cancel button pressed
         if len(str(new_dir)) > 0:
             # make sure the string ends with a path delimiter
-            new_dir = os.path.join(str(new_dir), "")
+            tmp_dir = QtCore.QDir.toNativeSeparators(str(new_dir))
+            new_dir = os.path.join(tmp_dir, "")
             # update the model
             parent.child(selected_item.row(), 1).setText(new_dir)
 
@@ -4495,6 +4503,7 @@ class edit_cfg_L5(QtWidgets.QWidget):
                                                           directory=file_path, filter=file_filter)[0]
         # update the model
         if len(str(new_file_path)) > 0:
+            new_file_path = QtCore.QDir.toNativeSeparators(str(new_file_path))
             new_file_parts = os.path.split(str(new_file_path))
             parent.child(selected_item.row(), 1).setText(new_file_parts[1])
 
@@ -4514,7 +4523,8 @@ class edit_cfg_L5(QtWidgets.QWidget):
         # quit if cancel button pressed
         if len(str(new_dir)) > 0:
             # make sure the string ends with a path delimiter
-            new_dir = os.path.join(str(new_dir), "")
+            tmp_dir = QtCore.QDir.toNativeSeparators(str(new_dir))
+            new_dir = os.path.join(tmp_dir, "")
             # update the model
             parent.child(selected_item.row(), 1).setText(new_dir)
 
@@ -4536,6 +4546,7 @@ class edit_cfg_L5(QtWidgets.QWidget):
                                                      directory=file_path, filter=file_filter)[0]
         # update the model
         if len(str(new_file)) > 0:
+            new_file = QtCore.QDir.toNativeSeparators(str(new_file))
             parent.child(selected_item.row(), 1).setText(new_file)
 
     def browse_input_file(self):

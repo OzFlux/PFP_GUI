@@ -103,6 +103,8 @@ def run_mpt_code(ds, nc_file_name):
     in_base_path = os.path.join("mpt", "input", "")
     out_base_path = os.path.join("mpt", "output", "")
     for current_year in range(first_year, last_year+1):
+        msg = " MPT: processing year " + str(current_year)
+        logger.info(msg)
         in_name = nc_file_name.replace(".nc","_"+str(current_year)+"_MPT.csv")
         in_full_path = os.path.join(in_base_path, in_name)
         out_full_path = in_full_path.replace("input", "output").replace(".csv", "_ut.txt")
