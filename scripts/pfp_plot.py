@@ -191,7 +191,7 @@ def plot_fcvsustar(ds):
             elif season == "Spring":
                 start = datetime.datetime(year, 9, 1, 0, 0, 0) + datetime.timedelta(minutes=ts)
                 end = datetime.datetime(year, 12, 1, 0, 0, 0)
-            if end < ldt["Data"][0] or start > ldt["Data"][-1]:
+            if (end < ldt["Data"][0]) or (start > ldt["Data"][-1]):
                 fig.delaxes(axs[row, col])
                 continue
             # get the variables from the data structure
@@ -213,6 +213,10 @@ def plot_fcvsustar(ds):
             # remove masked elements
             ustar["Data"] = numpy.ma.compressed(ustar["Data"])
             Fc["Data"] = numpy.ma.compressed(Fc["Data"])
+            # if no data, skip this plot and delete the axes
+            if (len(ustar["Data"]) == 0) or (len(Fc["Data"]) == 0):
+                fig.delaxes(axs[row, col])
+                continue
             # get the binned statistics
             count, edges, numbers = stats.binned_statistic(ustar["Data"],Fc["Data"], statistic='count', bins=nbins)
             means, edges, numbers = stats.binned_statistic(ustar["Data"],Fc["Data"], statistic='mean', bins=nbins)
