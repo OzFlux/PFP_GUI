@@ -5053,7 +5053,8 @@ class edit_cfg_L6(QtWidgets.QWidget):
         # quit if cancel button pressed
         if len(str(new_dir)) > 0:
             # make sure the string ends with a path delimiter
-            new_dir = os.path.join(str(new_dir), "")
+            tmp_dir = QtCore.QDir.toNativeSeparators(str(new_dir))
+            new_dir = os.path.join(tmp_dir, "")
             # update the model
             parent.child(selected_item.row(), 1).setText(new_dir)
 
@@ -5405,7 +5406,8 @@ class edit_cfg_nc2csv_ecostress(QtWidgets.QWidget):
         # quit if cancel button pressed
         if len(str(new_dir)) > 0:
             # make sure the string ends with a path delimiter
-            new_dir = os.path.join(str(new_dir), "")
+            tmp_dir = QtCore.QDir.toNativeSeparators(str(new_dir))
+            new_dir = os.path.join(tmp_dir, "")
             # update the model
             parent.child(selected_item.row(), 1).setText(new_dir)
 
