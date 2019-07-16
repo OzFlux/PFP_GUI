@@ -220,7 +220,7 @@ def ParseL4ControlFile(cf, ds):
     # check to make sure at least 1 output is defined
     outputs = []
     for method in ["GapFillFromAlternate", "GapFillFromClimatology"]:
-        outputs.append(l4_info[method]["outputs"].keys())
+        outputs = outputs + l4_info[method]["outputs"].keys()
     if len(outputs) == 0:
         msg = " No output variables defined, quitting L4 ,,,"
         logger.warning(msg)
@@ -474,25 +474,39 @@ def gfClimatology_createdict(cf, ds, l4_info, label, called_by):
     if called_by not in l4_info.keys():
         l4_info[called_by] = {"outputs": {}}
     # name of alternate output series in ds
-    outputs = cf["Drivers"][label]["GapFillFromClimatology"].keys()
+    outputs = cf["Drivers"][label][called_by].keys()
     # loop over the outputs listed in the control file
     l4co = l4_info[called_by]["outputs"]
-    cfcli = cf["Drivers"][label]["GapFillFromClimatology"]
+    cfcli = cf["Drivers"][label][called_by]
     for output in outputs:
         # create the dictionary keys for this output
         l4co[output] = {}
-        l4co[output]["target"] = label
+        # get the target
+        sl = ["Drivers", label, called_by, output]
+        l4co[output]["target"] = pfp_utils.get_keyvaluefromcf(cf, sl, "target", default=label)
+        # get the source
+        l4co[output]["source"] = pfp_utils.get_keyvaluefromcf(cf, sl, "source", default="")
         # Climatology file name
         file_list = cf["Files"].keys()
         lower_file_list = [item.lower() for item in file_list]
         # first, look in the [Files] section for a generic file name
-        if "climatology" in lower_file_list:
+        if l4co[output]["source"] in lower_file_list:
             # found a generic file name
-            i = lower_file_list.index("climatology")
+            i = lower_file_list.index(l4co[output]["source"].lower())
             l4co[output]["file_name"] = cf["Files"][file_list[i]]
-        else:
+        elif "file_name" in cfcli[output]:
             # no generic file name found, look for a file name in the variable section
             l4co[output]["file_name"] = cfcli[output]["file_name"]
+        else:
+            # put up some warning messages
+            msg = " Unable to resolve climatology source " + l4co[output]["source"] + " for output " + output
+            msg = msg + " of variable " + l4co[output]["target"]
+            logger.warning(msg)
+            msg = " Output " + output + " for variable " + l4co[output]["target"] + " will be skipped!"
+            logger.warning(msg)
+            # remove the entry in the l4ao dictionary
+            l4co.pop(output, None)
+            continue
         # climatology variable name if different from name used in control file
         if "climatology_name" in cfcli[output]:
             l4co[output]["climatology_name"] = cfcli[output]["climatology_name"]
