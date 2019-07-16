@@ -263,7 +263,7 @@ def gfalternate_createdict(cf, ds, l4_info, label, called_by):
     # get the outputs section
     gfalternate_createdict_outputs(cf, ds, l4_info, label, called_by)
     # create an empty series in ds if the alternate output series doesn't exist yet
-    outputs = cf["Drivers"][label][called_by].keys()
+    outputs = l4_info[called_by]["outputs"].keys()
     for output in outputs:
         if output not in ds.series.keys():
             variable = pfp_utils.CreateEmptyVariable(output, nrecs)
@@ -319,9 +319,19 @@ def gfalternate_createdict_outputs(cf, ds, l4_info, label, called_by):
             # found a generic file name
             i = lower_file_list.index(l4ao[output]["source"].lower())
             l4ao[output]["file_name"] = cf["Files"][file_list[i]]
-        else:
+        elif "file_name" in cfalt[output]:
             # no generic file name found, look for a file name in the variable section
             l4ao[output]["file_name"] = cfalt[output]["file_name"]
+        else:
+            # put up some warning messages
+            msg = " Unable to resolve alternate source " + l4ao[output]["source"] + " for output " + output
+            msg = msg + " of variable " + l4ao[output]["target"]
+            logger.warning(msg)
+            msg = " Output " + output + " for variable " + l4ao[output]["target"] + " will be skipped!"
+            logger.warning(msg)
+            # remove the entry in the l4ao dictionary
+            l4ao.pop(output, None)
+            continue
         # get the type of fit
         l4ao[output]["fit_type"] = "OLS"
         if "fit" in cfalt[output]:
