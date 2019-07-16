@@ -485,7 +485,7 @@ def gfClimatology_createdict(cf, ds, l4_info, label, called_by):
         sl = ["Drivers", label, called_by, output]
         l4co[output]["target"] = pfp_utils.get_keyvaluefromcf(cf, sl, "target", default=label)
         # get the source
-        l4co[output]["source"] = pfp_utils.get_keyvaluefromcf(cf, sl, "source", default="")
+        l4co[output]["source"] = pfp_utils.get_keyvaluefromcf(cf, sl, "source", default="climatology")
         # Climatology file name
         file_list = cf["Files"].keys()
         lower_file_list = [item.lower() for item in file_list]
