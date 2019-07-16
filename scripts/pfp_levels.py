@@ -276,6 +276,8 @@ def l4qc(main_gui, cf, ds3):
     # now do the meteorological driver gap filling
     # parse the control file for information on how the user wants to do the gap filling
     l4_info = pfp_gf.ParseL4ControlFile(cf, ds4)
+    if ds4.returncodes["value"] != 0:
+        return ds4
     # *** start of the section that does the gap filling of the drivers ***
     # read the alternate data files
     ds_alt = pfp_gf.ReadAlternateFiles(ds4, l4_info)

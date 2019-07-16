@@ -198,7 +198,9 @@ def CheckGapLengths(cf, ds, l5_info):
         result = pfp_gui.MsgBox_ContinueOrQuit(msg, title="Warning")
         if result.clickedButton().text() == "Quit":
             # user wants to edit the control file
-            ds.returncodes["message"] = "Quitting L5 to edit control file"
+            msg = " Quitting L5 to edit control file"
+            logger.warning(msg)
+            ds.returncodes["message"] = msg
             ds.returncodes["value"] = 1
         else:
             # user wants to continue, turn on auto-complete for SOLO
@@ -215,6 +217,15 @@ def ParseL4ControlFile(cf, ds):
             gfClimatology_createdict(cf, ds, l4_info, target, "GapFillFromClimatology")
         if "MergeSeries" in cf["Drivers"][target].keys():
             gfMergeSeries_createdict(cf, ds, l4_info, target, "MergeSeries")
+    # check to make sure at least 1 output is defined
+    outputs = []
+    for method in ["GapFillFromAlternate", "GapFillFromClimatology"]:
+        outputs.append(l4_info[method]["outputs"].keys())
+    if len(outputs) == 0:
+        msg = " No output variables defined, quitting L4 ,,,"
+        logger.warning(msg)
+        ds.returncodes["message"] = msg
+        ds.returncodes["value"] = 1
     return l4_info
 
 def ParseL5ControlFile(cf, ds):
