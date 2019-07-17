@@ -333,6 +333,8 @@ def l5qc(main_gui, cf, ds4):
     # now do the flux gap filling methods
     # parse the control file for information on how the user wants to do the gap filling
     l5_info = pfp_gf.ParseL5ControlFile(cf, ds5)
+    if ds5.returncodes["value"] != 0:
+        return ds5
     # *** start of the section that does the gap filling of the fluxes ***
     pfp_gf.CheckGapLengths(cf, ds5, l5_info)
     if ds5.returncodes["value"] != 0:
