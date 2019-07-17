@@ -14,6 +14,7 @@ import numpy
 # PFP modules
 import constants as c
 import pfp_cfg
+import pfp_gui
 import pfp_io
 import pfp_utils
 
@@ -92,8 +93,15 @@ def rp_getdiurnalstats(dt, data, solo):
     return diel_stats
 
 def rpSOLO_createdict(cf, ds, l6_info, label, called_by):
-    """ Creates a dictionary in ds to hold information about the SOLO data used
-        to gap fill the tower data."""
+    """
+    Purpose:
+     Creates a dictionary in l6_info to hold information about the SOLO data
+     used to estimate ecosystem respiration.
+    Usage:
+    Side effects:
+    Author: PRI
+    Date: Back in the day
+    """
     nrecs = int(ds.globalattributes["nc_nrecs"])
     # get the target and output labels
     target = pfp_utils.get_keyvaluefromcf(cf, ["ER", label, "ERUsingSOLO"], "target", default="ER")
@@ -132,15 +140,34 @@ def rpSOLO_createdict(cf, ds, l6_info, label, called_by):
         pfp_utils.CreateVariable(ds, variable)
     # local pointer to the datetime series
     ldt = ds.series["DateTime"]["Data"]
-    startdate = ldt[0]
-    enddate = ldt[-1]
     # check to see if this is a batch or an interactive run
     call_mode = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "call_mode", default="interactive")
-    l6_info["ER"][called_by]["info"] = {"file_startdate": startdate.strftime("%Y-%m-%d %H:%M"),
-                                        "file_enddate": enddate.strftime("%Y-%m-%d %H:%M"),
-                                        "startdate": startdate.strftime("%Y-%m-%d %H:%M"),
-                                        "enddate": enddate.strftime("%Y-%m-%d %H:%M"),
-                                        "plot_path": cf["Files"]["plot_path"],
+    # get the plot path
+    plot_path = pfp_utils.get_keyvaluefromcf(cf, ["Files"], "plot_path", default="./plots/")
+    plot_path = os.path.join(plot_path, "L6", "")
+    if not os.path.exists(plot_path):
+        try:
+            os.makedirs(plot_path)
+        except OSError:
+            msg = "Unable to create the plot path " + plot_path + "\n"
+            msg = msg + "Press 'Quit' to edit the control file.\n"
+            msg = msg + "Press 'Continue' to use the default path.\n"
+            result = pfp_gui.MsgBox_ContinueOrQuit(msg, title="Warning: L6 plot path")
+            if result.clickedButton().text() == "Quit":
+                # user wants to edit the control file
+                msg = " Quitting L6 to edit control file"
+                logger.warning(msg)
+                ds.returncodes["message"] = msg
+                ds.returncodes["value"] = 1
+            else:
+                plot_path = "./plots/"
+                cf["Files"]["plot_path"] = "./plots/"
+    # make the info dictionary
+    l6_info["ER"][called_by]["info"] = {"file_startdate": ldt[0].strftime("%Y-%m-%d %H:%M"),
+                                        "file_enddate": ldt[-1].strftime("%Y-%m-%d %H:%M"),
+                                        "startdate": ldt[0].strftime("%Y-%m-%d %H:%M"),
+                                        "enddate": ldt[-1].strftime("%Y-%m-%d %H:%M"),
+                                        "plot_path": plot_path,
                                         "call_mode": call_mode,
                                         "called_by": called_by}
     return
