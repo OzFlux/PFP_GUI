@@ -282,6 +282,13 @@ def gfMDS_mask_long_gaps(ds, mds_label, l5_info, called_by):
     return
 
 def gfMDS_plot(pd, ds, mds_label, l5_info, called_by):
+    """
+    Purpose:
+     Plot the drivers, target and gap filled variable.
+    Usage:
+    Author: PRI
+    Date: Back in the day
+    """
     ts = int(ds.globalattributes["time_step"])
     drivers = l5_info[called_by]["outputs"][mds_label]["drivers"]
     target = l5_info[called_by]["outputs"][mds_label]["target"]
@@ -376,12 +383,9 @@ def gfMDS_plot(pd, ds, mds_label, l5_info, called_by):
     # save a hard copy
     sdt = obs["DateTime"][0].strftime("%Y%m%d")
     edt = obs["DateTime"][-1].strftime("%Y%m%d")
-    plot_path = os.path.join(l5_info[called_by]["info"]["plot_path"], "L5", "")
-    if not os.path.exists(plot_path):
-        os.makedirs(plot_path)
     figure_name = pd["site_name"].replace(" ","") + "_MDS_" + pd["label"]
     figure_name = figure_name + "_" + sdt + "_" + edt + ".png"
-    figure_path = os.path.join(plot_path, figure_name)
+    figure_path = os.path.join(l5_info[called_by]["info"]["plot_path"], figure_name)
     fig.savefig(figure_path, format='png')
     if pd["show_plots"]:
         plt.draw()

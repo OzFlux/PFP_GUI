@@ -5,6 +5,7 @@ import datetime
 import os
 import logging
 import sys
+import traceback
 # 3rd party modules
 import dateutil
 import numpy
@@ -195,7 +196,7 @@ def CheckGapLengths(cf, ds, l5_info):
         msg = msg + "    " + ",".join(targets_without) + "\n"
         msg = msg + "To add a long gap fill method, press 'Quit' and edit the control file\n"
         msg = msg + "or press 'Continue' to ignore this warning."
-        result = pfp_gui.MsgBox_ContinueOrQuit(msg, title="Warning")
+        result = pfp_gui.MsgBox_ContinueOrQuit(msg, title="Warning: Long gaps")
         if result.clickedButton().text() == "Quit":
             # user wants to edit the control file
             msg = " Quitting L5 to edit control file"
@@ -203,9 +204,12 @@ def CheckGapLengths(cf, ds, l5_info):
             ds.returncodes["message"] = msg
             ds.returncodes["value"] = 1
         else:
-            # user wants to continue, turn on auto-complete for SOLO
+            # user wants to continue, turn on auto-complete for SOLO ...
             if "GapFillUsingSOLO" in l5_info:
                 l5_info["GapFillUsingSOLO"]["gui"]["auto_complete"] = True
+            # ... and disable masking of long gaps with MDS
+            if "GapFillUsingMDS" in l5_info:
+                l5_info["GapFillUsingMDS"]["info"].pop("MaxShortGapRecords", None)
     return
 
 def ParseL4ControlFile(cf, ds):
@@ -213,8 +217,14 @@ def ParseL4ControlFile(cf, ds):
     for target in cf["Drivers"].keys():
         if "GapFillFromAlternate" in cf["Drivers"][target].keys():
             gfalternate_createdict(cf, ds, l4_info, target, "GapFillFromAlternate")
+            # check to see if something went wrong
+            if ds.returncodes["value"] != 0:
+                # if it has, return to calling routine
+                return l4_info
         if "GapFillFromClimatology" in cf["Drivers"][target].keys():
             gfClimatology_createdict(cf, ds, l4_info, target, "GapFillFromClimatology")
+            if ds.returncodes["value"] != 0:
+                return l4_info
         if "MergeSeries" in cf["Drivers"][target].keys():
             gfMergeSeries_createdict(cf, ds, l4_info, target, "MergeSeries")
     # check to make sure at least 1 output is defined
@@ -222,8 +232,8 @@ def ParseL4ControlFile(cf, ds):
     for method in ["GapFillFromAlternate", "GapFillFromClimatology"]:
         outputs = outputs + l4_info[method]["outputs"].keys()
     if len(outputs) == 0:
-        msg = " No output variables defined, quitting L4 ,,,"
-        logger.warning(msg)
+        msg = " No output variables defined, quitting L4 ..."
+        logger.error(msg)
         ds.returncodes["message"] = msg
         ds.returncodes["value"] = 1
     return l4_info
@@ -233,10 +243,18 @@ def ParseL5ControlFile(cf, ds):
     for target in cf["Fluxes"].keys():
         if "GapFillUsingSOLO" in cf["Fluxes"][target].keys():
             gfSOLO_createdict(cf, ds, l5_info, target, "GapFillUsingSOLO")
+            # check to see if something went wrong
+            if ds.returncodes["value"] != 0:
+                # if it has, return to calling routine
+                return l5_info
         if "GapFillLongSOLO" in cf["Fluxes"][target].keys():
             gfSOLO_createdict(cf, ds, l5_info, target, "GapFillLongSOLO")
+            if ds.returncodes["value"] != 0:
+                return l5_info
         if "GapFillUsingMDS" in cf["Fluxes"][target].keys():
             gfMDS_createdict(cf, ds, l5_info, target, "GapFillUsingMDS")
+            if ds.returncodes["value"] != 0:
+                return l5_info
         if "MergeSeries" in cf["Fluxes"][target].keys():
             gfMergeSeries_createdict(cf, ds, l5_info, target, "MergeSeries")
     return l5_info
@@ -271,6 +289,8 @@ def gfalternate_createdict(cf, ds, l4_info, label, called_by):
         l4_info[called_by] = {"outputs": {}, "info": {}, "gui": {}}
     # get the info section
     gfalternate_createdict_info(cf, ds, l4_info, called_by)
+    if ds.returncodes["value"] != 0:
+        return
     # get the outputs section
     gfalternate_createdict_outputs(cf, ds, l4_info, label, called_by)
     # create an empty series in ds if the alternate output series doesn't exist yet
@@ -284,20 +304,38 @@ def gfalternate_createdict(cf, ds, l4_info, label, called_by):
     return
 
 def gfalternate_createdict_info(cf, ds, l4_info, called_by):
+    # reset the return message and code
+    ds.returncodes["message"] = "OK"
+    ds.returncodes["value"] = 0
     # get a local pointer to the tower datetime series
-    ldt_tower = ds.series["DateTime"]["Data"]
-    # get the start and end datetime of the tower data
-    startdate = ldt_tower[0]
-    enddate = ldt_tower[-1]
-    plot_path = pfp_utils.get_keyvaluefromcf(cf, ["Files"], "plot_path", default="plots")
+    ldt = ds.series["DateTime"]["Data"]
+    plot_path = pfp_utils.get_keyvaluefromcf(cf, ["Files"], "plot_path", default="./plots/")
+    plot_path = os.path.join(plot_path, "L4", "")
+    if not os.path.exists(plot_path):
+        try:
+            os.makedirs(plot_path)
+        except OSError:
+            msg = "Unable to create the plot path " + plot_path + "\n"
+            msg = msg + "Press 'Quit' to edit the control file.\n"
+            msg = msg + "Press 'Continue' to use the default path.\n"
+            result = pfp_gui.MsgBox_ContinueOrQuit(msg, title="Warning: L4 plot path")
+            if result.clickedButton().text() == "Quit":
+                # user wants to edit the control file
+                msg = " Quitting L4 to edit control file"
+                logger.warning(msg)
+                ds.returncodes["message"] = msg
+                ds.returncodes["value"] = 1
+            else:
+                plot_path = "./plots/"
+                cf["Files"]["plot_path"] = "./plots/"
     # check to see if this is a batch or an interactive run
     call_mode = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "call_mode", default="interactive")
     # create the alternate_info dictionary, this will hold much useful information
     l4a = l4_info[called_by]
-    l4a["info"] = {"overlap_startdate": startdate.strftime("%Y-%m-%d %H:%M"),
-                   "overlap_enddate": enddate.strftime("%Y-%m-%d %H:%M"),
-                   "startdate": startdate.strftime("%Y-%m-%d %H:%M"),
-                   "enddate": enddate.strftime("%Y-%m-%d %H:%M"),
+    l4a["info"] = {"overlap_startdate": ldt[0].strftime("%Y-%m-%d %H:%M"),
+                   "overlap_enddate": ldt[-1].strftime("%Y-%m-%d %H:%M"),
+                   "startdate": ldt[0].strftime("%Y-%m-%d %H:%M"),
+                   "enddate": ldt[-1].strftime("%Y-%m-%d %H:%M"),
                    "called_by": called_by,
                    "plot_path": plot_path,
                    "call_mode": call_mode,
@@ -538,8 +576,27 @@ def gfMDS_createdict(cf, ds, l5_info, label, called_by):
     # file path and input file name
     l5_info[called_by]["info"]["file_path"] = cf["Files"]["file_path"]
     l5_info[called_by]["info"]["in_filename"] = cf["Files"]["in_filename"]
-    opt = pfp_utils.get_keyvaluefromcf(cf, ["Files"], "plot_path", default="plots")
-    l5_info[called_by]["info"]["plot_path"] = opt
+    # get the plot path
+    opt = pfp_utils.get_keyvaluefromcf(cf, ["Files"], "plot_path", default="./plots/")
+    plot_path = os.path.join(opt, "L5", "")
+    if not os.path.exists(plot_path):
+        try:
+            os.makedirs(plot_path)
+        except OSError:
+            msg = "Unable to create the plot path " + plot_path + "\n"
+            msg = msg + "Press 'Quit' to edit the control file.\n"
+            msg = msg + "Press 'Continue' to use the default path.\n"
+            result = pfp_gui.MsgBox_ContinueOrQuit(msg, title="Warning: L5 plot path")
+            if result.clickedButton().text() == "Quit":
+                # user wants to edit the control file
+                msg = " Quitting L5 to edit control file"
+                logger.warning(msg)
+                ds.returncodes["message"] = msg
+                ds.returncodes["value"] = 1
+            else:
+                plot_path = "./plots/"
+                cf["Files"]["plot_path"] = "./plots/"
+    l5_info[called_by]["info"]["plot_path"] = plot_path
     # get the maximum length for "short" gaps in days
     opt = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "MaxShortGapDays", default=14)
     max_short_gap_days = int(opt)
@@ -674,6 +731,8 @@ def gfSOLO_createdict(cf, ds, l5_info, target, called_by):
         l5_info[called_by] = {"outputs": {}, "info": {}, "gui": {}}
     # get the info section
     gfSOLO_createdict_info(cf, ds, l5_info[called_by], called_by)
+    if ds.returncodes["value"] != 0:
+        return
     # get the outputs section
     gfSOLO_createdict_outputs(cf, l5_info[called_by], target, called_by)
     # the gui section is done in pfp_gfSOLO.gfSOLO_run_gui
@@ -695,6 +754,9 @@ def gfSOLO_createdict(cf, ds, l5_info, target, called_by):
     return
 
 def gfSOLO_createdict_info(cf, ds, solo, called_by):
+    # reset the return message and code
+    ds.returncodes["message"] = "OK"
+    ds.returncodes["value"] = 0
     # local pointer to the datetime series
     ldt = ds.series["DateTime"]["Data"]
     # add an info section to the info["solo"] dictionary
@@ -711,6 +773,24 @@ def gfSOLO_createdict_info(cf, ds, solo, called_by):
     solo["info"]["truncate_to_imports"] = truncate
     # get the plot path
     plot_path = pfp_utils.get_keyvaluefromcf(cf, ["Files"], "plot_path", default="./plots/")
+    plot_path = os.path.join(plot_path, "L5", "")
+    if not os.path.exists(plot_path):
+        try:
+            os.makedirs(plot_path)
+        except OSError:
+            msg = "Unable to create the plot path " + plot_path + "\n"
+            msg = msg + "Press 'Quit' to edit the control file.\n"
+            msg = msg + "Press 'Continue' to use the default path.\n"
+            result = pfp_gui.MsgBox_ContinueOrQuit(msg, title="Warning: L5 plot path")
+            if result.clickedButton().text() == "Quit":
+                # user wants to edit the control file
+                msg = " Quitting L5 to edit control file"
+                logger.warning(msg)
+                ds.returncodes["message"] = msg
+                ds.returncodes["value"] = 1
+            else:
+                plot_path = "./plots/"
+                cf["Files"]["plot_path"] = "./plots/"
     solo["info"]["plot_path"] = plot_path
     return
 

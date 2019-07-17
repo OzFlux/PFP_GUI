@@ -996,10 +996,9 @@ def gfalternate_plotcomposite(nfig, data_dict, stat_dict, diel_avg, l4a, pd):
     # save a hard copy of the plot
     sdt = data_dict["DateTime"]["data"][0].strftime("%Y%m%d")
     edt = data_dict["DateTime"]["data"][-1].strftime("%Y%m%d")
-    plot_path = os.path.join(l4a["info"]["plot_path"], "L4", "")
-    if not os.path.exists(plot_path): os.makedirs(plot_path)
-    figname = plot_path + l4a["info"]["site_name"].replace(" ", "") + "_Alternate_" + label_tower
+    figname = l4a["info"]["site_name"].replace(" ", "") + "_Alternate_" + label_tower
     figname = figname + "_" + sdt + "_" + edt + '.png'
+    figname = os.path.join(l4a["info"]["plot_path"], figname)
     fig.savefig(figname, format='png')
     # draw the plot on the screen
     if l4a["gui"]["show_plots"]:

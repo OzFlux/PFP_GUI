@@ -397,11 +397,9 @@ def gfSOLO_plot(pd, ds, drivers, target, output, solo, si=0, ei=-1):
     # save a hard copy of the plot
     sdt = xdt[0].strftime("%Y%m%d")
     edt = xdt[-1].strftime("%Y%m%d")
-    plot_path = os.path.join(solo["info"]["plot_path"], "L5", "")
-    if not os.path.exists(plot_path):
-        os.makedirs(plot_path)
-    figname = plot_path + pd["site_name"].replace(" ", "") + "_SOLO_" + pd["label"]
+    figname = pd["site_name"].replace(" ", "") + "_SOLO_" + pd["label"]
     figname = figname + "_" + sdt + "_" + edt + '.png'
+    figname = os.path.join(solo["info"]["plot_path"], figname)
     fig.savefig(figname, format='png')
     # draw the plot on the screen
     if solo["gui"]["show_plots"]:
