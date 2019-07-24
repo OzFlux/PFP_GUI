@@ -18,7 +18,7 @@ class QPlainTextEditLogger(logging.Handler):
         self.textBox.appendPlainText(msg)
         QtWidgets.QApplication.processEvents()
 
-def init_logger(logger_name="pfp_log", to_file=True):
+def init_logger(logger_name, log_file_name, to_file=True, to_console=False):
     """
     Purpose:
      Returns a logger object.
@@ -34,8 +34,6 @@ def init_logger(logger_name="pfp_log", to_file=True):
     logger.setLevel(logging.DEBUG)
     if to_file:
         # create file handler for all messages
-        now = datetime.datetime.now()
-        log_file_name = "pfp_" + now.strftime("%Y%m%d%H%M") + ".log"
         log_file_path = os.path.join("logfiles", log_file_name)
         fh1 = logging.FileHandler(log_file_path)
         fh1.setLevel(logging.DEBUG)
@@ -49,4 +47,9 @@ def init_logger(logger_name="pfp_log", to_file=True):
         fh2.setLevel(logging.ERROR)
         fh2.setFormatter(formatter)
         logger.addHandler(fh2)
+    if to_console:
+        console = logging.StreamHandler()
+        console.setFormatter(formatter)
+        console.setLevel(logging.DEBUG)
+        logger.addHandler(console)
     return logger

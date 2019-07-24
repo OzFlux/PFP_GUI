@@ -177,7 +177,7 @@ def l3qc(cf,ds2):
     # *** Calculate fluxes from covariances section ***
     # *************************************************
     # check to see if the user wants to use the fluxes in the L2 file
-    if not pfp_utils.cfoptionskeylogical(cf, Key="UseL2Fluxes", default=False):
+    if not pfp_utils.get_optionskeyaslogical(cf, "UseL2Fluxes", default=False):
         # check the covariance units and change if necessary
         pfp_ts.CheckCovarianceUnits(ds3)
         # do the 2D coordinate rotation
@@ -231,7 +231,7 @@ def l3qc(cf,ds2):
     #        and then do the correction (OzFlux "standard")
     pfp_ts.AverageSeriesByElements(cf,ds3,'Ts')
     pfp_ts.AverageSeriesByElements(cf,ds3,'Sws')
-    if pfp_utils.cfoptionskeylogical(cf,Key='CorrectIndividualFg'):
+    if pfp_utils.get_optionskeyaslogical(cf, "CorrectIndividualFg"):
         #    ... or correct the individual ground heat flux measurements (James' method)
         pfp_ts.CorrectIndividualFgForStorage(cf,ds3)
         pfp_ts.AverageSeriesByElements(cf,ds3,'Fg')

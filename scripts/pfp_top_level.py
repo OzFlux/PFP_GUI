@@ -85,6 +85,7 @@ def do_file_convert_nc2ecostress(cfg=None):
         if "Options" not in cfg:
             cfg["Options"]={}
         cfg["Options"]["call_mode"] = "interactive"
+        cf["Options"]["show_plots"] = "Yes"
         result = pfp_io.write_csv_ecostress(cfg)
         if result == 0:
             logger.info(" Finished converting netCDF file")
@@ -165,6 +166,7 @@ def do_file_convert_ncupdate(cfg=None):
     if "Options" not in cfg:
         cfg["Options"]={}
     cfg["Options"]["call_mode"] = "interactive"
+    cf["Options"]["show_plots"] = "Yes"
     result = pfp_compliance.nc_update(cfg)
     if result == 0:
         logger.info(" Finished converting netCDF file")
@@ -489,6 +491,7 @@ def do_run_l6(main_gui, cfg=None):
         if "Options" not in cfg:
             cfg["Options"] = {}
         cfg["Options"]["call_mode"] = "interactive"
+        cf["Options"]["show_plots"] = "Yes"
         ds6 = pfp_levels.l6qc(main_gui, cfg, ds5)
         if ds6.returncodes["value"] != 0:
             logger.info("Quitting L6: "+sitename)
@@ -567,8 +570,10 @@ def do_plot_fingerprints():
             if len(cf) == 0:
                 return
         logger.info("Loaded control file ...")
-        if "Options" not in cf: cf["Options"]={}
+        if "Options" not in cf:
+            cf["Options"]={}
         cf["Options"]["call_mode"] = "interactive"
+        cf["Options"]["show_plots"] = "Yes"
         logger.info("Plotting fingerprint ...")
         pfp_plot.plot_fingerprint(cf)
         logger.info(" Finished plotting fingerprint")
@@ -609,8 +614,10 @@ def do_plot_quickcheck():
             if len(cf)==0:
                 return
         logger.info("Loaded control file ...")
-        if "Options" not in cf: cf["Options"]={}
+        if "Options" not in cf:
+            cf["Options"]={}
         cf["Options"]["call_mode"] = "interactive"
+        cf["Options"]["show_plots"] = "Yes"
         logger.info("Plotting summary plots ...")
         pfp_plot.plot_quickcheck(cf)
         logger.info(" Finished plotting summaries")
@@ -651,8 +658,10 @@ def do_plot_timeseries():
             if len(cf)==0:
                 return
         logger.info("Loaded control file ...")
-        if "Options" not in cf: cf["Options"]={}
+        if "Options" not in cf:
+            cf["Options"]={}
         cf["Options"]["call_mode"] = "interactive"
+        cf["Options"]["show_plots"] = "Yes"
         logger.info("Plotting time series ...")
         pfp_plot.plot_fluxnet(cf)
         logger.info(" Finished plotting time series")

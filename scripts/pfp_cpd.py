@@ -398,7 +398,7 @@ def CPD_run(cf):
     d['flux_period']=int(ds.globalattributes["time_step"])
     d['site_name']=ds.globalattributes["site_name"]
     d["call_mode"]=pfp_utils.get_keyvaluefromcf(cf,["Options"],"call_mode",default="interactive",mode="quiet")
-    d["show_plots"]=pfp_utils.get_keyvaluefromcf(cf,["Options"],"show_plots",default=True,mode="quiet")
+    d["show_plots"] = pfp_utils.get_optionskeyaslogical(cf, "show_plots", default=True)
     d['plot_tclass'] = False
     if cf['Options']['Plot_TClass'] == 'True': d['plot_tclass'] = True
     if cf['Options']['Output_plots']=='True':

@@ -1045,7 +1045,7 @@ def CoordRotation2D(cf,ds):
     flag = numpy.where(numpy.ma.getmaskarray(ww)==True,ones,zeros)
     pfp_utils.CreateSeries(ds,'W_SONIC_Vr',ww,flag,attr)
 
-    if pfp_utils.cfoptionskeylogical(cf,Key='RelaxRotation'):
+    if pfp_utils.get_optionskeyaslogical(cf, "RelaxRotation"):
         RotatedSeriesList = ['wT','wA','wC','uw','vw']
         NonRotatedSeriesList = ['UzT','UzA','UzC','UxUz','UyUz']
         for ThisOne, ThatOne in zip(RotatedSeriesList,NonRotatedSeriesList):
@@ -1151,7 +1151,7 @@ def CorrectFcForStorage(cf,ds,Fc_out='Fc',Fc_in='Fc',Fc_storage_in='Fc_single'):
     # if no individual series have been specified, do the default
     if len(apply_storage.keys()) == 0:
         # check to see if correction for storage has been requested in [Options]
-        if not pfp_utils.cfoptionskeylogical(cf,Key="ApplyFcStorage"):
+        if not pfp_utils.get_optionskeyaslogical(cf, "ApplyFcStorage"):
             return
         # check to see if we have the required data series
         if (Fc_in not in ds.series.keys()) or (Fc_storage_in not in ds.series.keys()):
@@ -1170,7 +1170,7 @@ def CorrectFcForStorage(cf,ds,Fc_out='Fc',Fc_in='Fc',Fc_storage_in='Fc_single'):
             logger.error("CorrectFcForStorage: units of Fc do not match those of storage term, storage not applied")
             return
         Fc = Fc_raw + Fc_storage
-        if pfp_utils.cfoptionskeylogical(cf,Key="RelaxFcStorage"):
+        if pfp_utils.get_optionskeyaslogical(cf, "RelaxFcStorage"):
             idx=numpy.where(numpy.ma.getmaskarray(Fc)==True)[0]
             Fc[idx]=Fc_raw[idx]
             logger.info(" Replaced corrected Fc with "+str(len(idx))+" raw values")
@@ -1213,7 +1213,7 @@ def CorrectFcForStorage(cf,ds,Fc_out='Fc',Fc_in='Fc',Fc_storage_in='Fc_single'):
             # correct Fc by adding the storage
             Fc["Data"] = Fc_un["Data"] + Sc["Data"]
             # check to see if the user wants to relax the correct
-            if pfp_utils.cfoptionskeylogical(cf,Key="RelaxFcStorage"):
+            if pfp_utils.get_optionskeyaslogical(cf, "RelaxFcStorage"):
                 # if so, replace missing corrected Fc with uncorrected Fc
                 idx = numpy.where(numpy.ma.getmaskarray(Fc["Data"])==True)[0]
                 Fc[idx] = Fc_un[idx]
@@ -1253,7 +1253,7 @@ def CorrectFgForStorage(cf,ds,Fg_out='Fg',Fg_in='Fg',Ts_in='Ts',Sws_in='Sws'):
     zeros = numpy.zeros(nRecs,dtype=numpy.int32)
     ones = numpy.ones(nRecs,dtype=numpy.int32)
     # check to see if the user wants to skip the correction
-    if not pfp_utils.cfoptionskeylogical(cf,Key="CorrectFgForStorage",default=True):
+    if not pfp_utils.get_optionskeyaslogical(cf, "CorrectFgForStorage", default=True):
         logger.info(' CorrectFgForStorage: storage correction disabled in control file')
         return
     # check to see if there is a [Soil] section in the control file
@@ -1334,7 +1334,7 @@ def CorrectFgForStorage(cf,ds,Fg_out='Fg',Fg_in='Fg',Ts_in='Ts',Sws_in='Sws'):
     flag = numpy.where(numpy.ma.getmaskarray(Cs)==True,ones,zeros)
     attr = pfp_utils.MakeAttributeDictionary(long_name='Specific heat capacity',units='J/m3/K')
     pfp_utils.CreateSeries(ds,'Cs',Cs,flag,attr)
-    if pfp_utils.cfoptionskeylogical(cf,Key='RelaxFgStorage'):
+    if pfp_utils.get_optionskeyaslogical(cf, "RelaxFgStorage"):
         ReplaceWhereMissing(ds.series['Fg'],ds.series['Fg'],ds.series['Fg_Av'],FlagValue=20)
         if 'RelaxFgStorage' not in ds.globalattributes['Functions']:
             ds.globalattributes['Functions'] = ds.globalattributes['Functions']+', RelaxFgStorage'
@@ -1373,7 +1373,8 @@ def CorrectSWC(cf,ds):
             TDR_b1: parameter in exponential model, actual = b0 * exp(b1 * sensor)
             TDR_t: threshold parameter for switching from exponential to logarithmic model
         """
-    if not pfp_utils.cfoptionskeylogical(cf,Key='CorrectSWC'): return
+    if not pfp_utils.get_optionskeyaslogical(cf, "CorrectSWC"):
+        return
     logger.info(' Correcting soil moisture data ...')
     nRecs = int(ds.globalattributes["nc_nrecs"])
     zeros = numpy.zeros(nRecs,dtype=numpy.int32)
@@ -1908,7 +1909,7 @@ def Fe_WPL(cf,ds,Fe_wpl_out='Fe',Fe_raw_in='Fe',Fh_in='Fh',Ta_in='Ta',Ah_in='Ah'
     attr = pfp_utils.MakeAttributeDictionary(long_name='Fe (uncorrected for WPL)',units='W/m2')
     if "height" in Fe_raw_attr: attr["height"] = Fe_raw_attr["height"]
     pfp_utils.CreateSeries(ds,'Fe_raw',Fe_raw,Fe_raw_flag,attr)
-    if pfp_utils.cfoptionskeylogical(cf,Key='RelaxFeWPL'):
+    if pfp_utils.get_optionskeyaslogical(cf, "RelaxFeWPL"):
         ReplaceWhereMissing(ds.series['Fe'],ds.series['Fe'],ds.series['Fe_raw'],FlagValue=20)
         if 'RelaxFeWPL' not in ds.globalattributes['Functions']:
             ds.globalattributes['Functions'] = ds.globalattributes['Functions']+', RelaxFeWPL'
@@ -1969,7 +1970,7 @@ def FhvtoFh(cf,ds,Fh_out='Fh',Fhv_in='Fhv',Tv_in='Tv_SONIC_Av',q_in='q',wA_in='w
     pfp_utils.CreateSeries(ds,"Fh_PFP",Fh,flag,attr)
     if 'FhvtoFh' not in ds.globalattributes['Functions']:
         ds.globalattributes['Functions'] = ds.globalattributes['Functions']+', FhvtoFh'
-    if pfp_utils.cfoptionskeylogical(cf,Key='RelaxFhvtoFh'):
+    if pfp_utils.get_optionskeyaslogical(cf, "RelaxFhvtoFh"):
         ReplaceWhereMissing(ds.series['Fh'],ds.series['Fh'],ds.series['Fhv'],FlagValue=20)
         if 'RelaxFhvtoFh' not in ds.globalattributes['Functions']:
             ds.globalattributes['Functions'] = ds.globalattributes['Functions']+', RelaxFhvtoFh'

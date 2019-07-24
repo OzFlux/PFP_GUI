@@ -1,4 +1,5 @@
 # standard modules
+import datetime
 import logging
 import os
 import platform
@@ -17,6 +18,7 @@ else:
 from PyQt5 import QtWidgets
 # PFP modules
 sys.path.append('scripts')
+import pfp_batch
 import pfp_compliance
 import pfp_gui
 import pfp_log
@@ -42,7 +44,9 @@ for item in dir_list:
     if not os.path.exists(item):
         os.makedirs(item)
 
-logger = pfp_log.init_logger()
+now = datetime.datetime.now()
+log_file_name = "pfp_" + now.strftime("%Y%m%d%H%M") + ".log"
+logger = pfp_log.init_logger("pfp_log", log_file_name)
 
 class pfp_main_ui(QtWidgets.QWidget):
     def __init__(self):
@@ -276,8 +280,12 @@ class pfp_main_ui(QtWidgets.QWidget):
             self.tabs.tab_dict[self.tabs.tab_index_all] = pfp_gui.edit_cfg_nc2csv_ecostress(self)
             self.tabs.cfg_dict[self.tabs.tab_index_all] = self.tabs.tab_dict[self.tabs.tab_index_all].get_data_from_model()
             self.tabs.cfg_dict[self.tabs.tab_index_all]["controlfile_name"] = cfgpath
+        elif self.cfg["level"] in ["batch"]:
+            self.tabs.tab_dict[self.tabs.tab_index_all] = pfp_gui.edit_cfg_batch(self)
+            self.tabs.cfg_dict[self.tabs.tab_index_all] = self.tabs.tab_dict[self.tabs.tab_index_all].get_data_from_model()
+            self.tabs.cfg_dict[self.tabs.tab_index_all]["controlfile_name"] = cfgpath
         else:
-            logger.error(" Unrecognised control file type: "+self.cfg["level"])
+            logger.error(" Unrecognised control file type: " + self.cfg["level"])
             return
         # add a tab for the control file
         self.tabs.addTab(self.tabs.tab_dict[self.tabs.tab_index_all], os.path.basename(str(cfgpath)))

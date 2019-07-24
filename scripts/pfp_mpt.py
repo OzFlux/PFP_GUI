@@ -118,41 +118,6 @@ def run_mpt_code(ds, nc_file_name):
     mptlogfile.close()
     return out_file_paths
 
-#def read_mpt_output(out_file_paths):
-    #ustar_results = {"Annual":{}, "Years":{}}
-    #seasons = ["Summer", "Autumn", "Winter", "Spring"]
-    #ura = ustar_results["Annual"]
-    #ury = ustar_results["Years"]
-    #year_list = sorted(out_file_paths.keys())
-    #for year in year_list:
-        #ury[year] = {}
-        #out_file_path = out_file_paths[year]
-        #with open(out_file_path) as file:
-            #lines = file.readlines()
-        ## pick out the annual data
-        #season_values = lines[2].strip().split()
-        #season_count = lines[3].strip().split()
-        ## entry 0 for the year is the observation run, 1 onwards are bootstraps
-        #ury[year][0] = {}
-        #for i in range(len(season_values)):
-            #ury[year][0][seasons[i]] = {"value":float(season_values[i]),"count":int(season_count[i])}
-        #annual_value = max([ury[year][0][season]["value"] for season in ury[year][0].keys()])
-        #annual_count = sum([ury[year][0][season]["count"] for season in ury[year][0].keys()])
-        #ura[year] = {"value":annual_value,"count":annual_count}
-        #n = 17
-        #i = 1
-        #while len(lines[n].strip()) > 0:
-            #ury[year][i] = {}
-            #if "forward" in lines[n]:
-                #lines[n] = lines[n][:lines[n].index("forward")]
-            #season_values = lines[n].strip().split()
-            #season_count = lines[n+1].strip().split()
-            #for j in range(len(season_values)):
-                #ury[year][i][seasons[j]] = {"value":float(season_values[j]),"count":int(season_count[j])}
-            #n += 2
-            #i += 1
-    #return ustar_results
-
 def read_mpt_output(out_file_paths):
     ustar_results = {"Annual":{}, "Years":{}}
     seasons = ["Summer", "Autumn", "Winter", "Spring"]
@@ -172,7 +137,7 @@ def read_mpt_output(out_file_paths):
         ury[year]["seasonal"] = get_seasonal_results(contents)
         ury[year]["annual"] = get_annual_results(contents)
         ury[year]["temperature_classes"] = get_temperature_class_results(contents)
-        ury[year]["bootstraps"] = get_bootstrap_results(contents)        
+        ury[year]["bootstraps"] = get_bootstrap_results(contents)
     return ustar_results
 
 def write_mpt_year_results(xl_sheet, mpt_results):

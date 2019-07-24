@@ -332,9 +332,7 @@ def gfalternate_createdict_info(cf, ds, l4_info, called_by):
     call_mode = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "call_mode", default="interactive")
     # create the alternate_info dictionary, this will hold much useful information
     l4a = l4_info[called_by]
-    l4a["info"] = {"overlap_startdate": ldt[0].strftime("%Y-%m-%d %H:%M"),
-                   "overlap_enddate": ldt[-1].strftime("%Y-%m-%d %H:%M"),
-                   "startdate": ldt[0].strftime("%Y-%m-%d %H:%M"),
+    l4a["info"] = {"startdate": ldt[0].strftime("%Y-%m-%d %H:%M"),
                    "enddate": ldt[-1].strftime("%Y-%m-%d %H:%M"),
                    "called_by": called_by,
                    "plot_path": plot_path,
