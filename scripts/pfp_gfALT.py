@@ -4,6 +4,7 @@ import datetime
 import logging
 import os
 import sys
+import traceback
 import warnings
 # 3rd party modules
 import dateutil
@@ -39,13 +40,14 @@ def GapFillFromAlternate(main_gui, ds4, ds_alt, l4_info, called_by):
     # set the default return code
     ds4.returncodes["message"] = "normal"
     # get the alternate data information
-    alternate = l4_info[called_by]
-    if alternate["info"]["call_mode"] == "interactive":
+    if l4_info[called_by]["info"]["call_mode"] == "interactive":
         # put up a plot of the data coverage at L3
         gfalternate_plotcoveragelines(ds4, l4_info, called_by)
         # call the GapFillFromAlternate GUI
         gfalternate_gui(main_gui, ds4, ds_alt, l4_info, called_by)
-    #else:
+    else:
+        # ["gui"] settings dictionary done in pfp_gf.ParseL4ControlFile()
+        gfalternate_run(ds4, ds_alt, l4_info, called_by)
         #gfalternate_run_nogui(ds4, ds_alt, l4_info, called_by)
 
 def gfalternate_gui(main_gui, ds4, ds_alt, l4_info, called_by):
@@ -95,8 +97,8 @@ def gfalternate_autocomplete(ds_tower, ds_alt, l4_info, called_by, mode="verbose
     dt_tower = ds_tower.series["DateTime"]["Data"]
     nRecs = len(dt_tower)
     ts = int(ds_tower.globalattributes["time_step"])
-    si_tower = pfp_utils.GetDateIndex(dt_tower, l4a["info"]["gui_startdate"], ts=ts, default=0)
-    ei_tower = pfp_utils.GetDateIndex(dt_tower, l4a["info"]["gui_enddate"], ts=ts, default=nRecs-1)
+    si_tower = pfp_utils.GetDateIndex(dt_tower, l4a["gui"]["startdate"], ts=ts, default=0)
+    ei_tower = pfp_utils.GetDateIndex(dt_tower, l4a["gui"]["enddate"], ts=ts, default=nRecs-1)
     ldt_tower = dt_tower[si_tower: ei_tower + 1]
     nRecs_gui = len(ldt_tower)
     label_tower_list = l4a["gui"]["series_list"]
@@ -120,8 +122,8 @@ def gfalternate_autocomplete(ds_tower, ds_alt, l4_info, called_by, mode="verbose
             alt_filename = l4a["outputs"][label_output]["file_name"]
             ds_alternate = ds_alt[alt_filename]
             dt_alternate = ds_alternate.series["DateTime"]["Data"]
-            si_alternate = pfp_utils.GetDateIndex(dt_alternate, l4a["info"]["gui_startdate"], ts=ts, default=0)
-            ei_alternate = pfp_utils.GetDateIndex(dt_alternate, l4a["info"]["gui_enddate"], ts=ts, default=nRecs-1)
+            si_alternate = pfp_utils.GetDateIndex(dt_alternate, l4a["gui"]["startdate"], ts=ts, default=0)
+            ei_alternate = pfp_utils.GetDateIndex(dt_alternate, l4a["gui"]["enddate"], ts=ts, default=nRecs-1)
             alt_series_list = [item for item in ds_alternate.series.keys() if "_QCFlag" not in item]
             alt_series_list = [item for item in alt_series_list if l4a["outputs"][label_output]["target"] in item]
             for label_alternate in alt_series_list:
@@ -192,8 +194,8 @@ def gfalternate_autocomplete(ds_tower, ds_alt, l4_info, called_by, mode="verbose
             if mode.lower() != "quiet":
                 msg = " autocomplete: gap fill period is " + gapfillperiod_startdate + " to " + gapfillperiod_enddate
                 logger.info(msg)
-            l4a["info"]["startdate"] = ldt_tower[gap[0]].strftime("%Y-%m-%d %H:%M")
-            l4a["info"]["enddate"] = ldt_tower[gap[1]].strftime("%Y-%m-%d %H:%M")
+            l4a["run"]["startdate"] = ldt_tower[gap[0]].strftime("%Y-%m-%d %H:%M")
+            l4a["run"]["enddate"] = ldt_tower[gap[1]].strftime("%Y-%m-%d %H:%M")
             gfalternate_main(ds_tower, ds_alt, l4_info, called_by, label_tower_list=[label_tower])
             gfalternate_plotcoveragelines(ds_tower, l4_info, called_by)
             if not_enough_points: break
@@ -221,10 +223,10 @@ def gfalternate_createdataandstatsdict(ldt_tower, data_tower, attr_tower, l4a):
     data_dict[label_composite] = {"data": numpy.ma.masked_all_like(data_tower),
                                   "fitcorr": numpy.ma.masked_all_like(data_tower),
                                   "attr": attr_tower}
-    stat_dict[label_tower] = {"startdate": l4a["info"]["startdate"],
-                              "enddate": l4a["info"]["enddate"]}
-    stat_dict[label_composite] = {"startdate": l4a["info"]["startdate"],
-                                  "enddate":l4a["info"]["enddate"]}
+    stat_dict[label_tower] = {"startdate": l4a["run"]["startdate"],
+                              "enddate": l4a["run"]["enddate"]}
+    stat_dict[label_composite] = {"startdate": l4a["run"]["startdate"],
+                                  "enddate":l4a["run"]["enddate"]}
     return data_dict, stat_dict
 
 def gfalternate_done(alt_gui):
@@ -265,8 +267,8 @@ def gfalternate_getalternatevaratmaxr(ds_tower, ds_alternate, l4a, mode="verbose
     # get a list of alternate variables for this tower variable
     label_tower = l4a["run"]["label_tower"]
     label_output = l4a["run"]["label_output"]
-    startdate = l4a["info"]["startdate"]
-    enddate = l4a["info"]["enddate"]
+    startdate = l4a["run"]["startdate"]
+    enddate = l4a["run"]["enddate"]
     ts = int(ds_tower.globalattributes["time_step"])
     ldt_tower = ds_tower.series["DateTime"]["Data"]
     si_tower = pfp_utils.GetDateIndex(ldt_tower, startdate, ts=ts)
@@ -456,8 +458,8 @@ def gfalternate_getlagcorrecteddata(ds_alternate, data_dict, stat_dict, l4a):
     data_tower = data_dict[label_tower]["data"]
     data_alternate = data_dict[label_output][label_alternate]["data"]
     ldt_alternate = ds_alternate.series["DateTime"]["Data"]
-    startdate = l4a["info"]["startdate"]
-    enddate = l4a["info"]["enddate"]
+    startdate = l4a["run"]["startdate"]
+    enddate = l4a["run"]["enddate"]
     ts = l4a["info"]["time_step"]
     si_alternate = pfp_utils.GetDateIndex(ldt_alternate, startdate, ts=ts)
     ei_alternate = pfp_utils.GetDateIndex(ldt_alternate, enddate, ts=ts)
@@ -700,14 +702,14 @@ def gfalternate_gotdataforgaps(data, data_alternate, l4a, mode="verbose"):
         return_code = False
     return return_code
 
-def gfalternate_gotnogaps(data,label,mode="verbose"):
+def gfalternate_gotnogaps(data, label, mode="verbose"):
     """
     Returns true if the data series has no gaps, false if there are gaps
     """
     return_code = True
-    if numpy.ma.count_masked(data)==0:
-        if mode=="verbose":
-            msg = " No gaps in "+label
+    if numpy.ma.count_masked(data) == 0:
+        if mode == "verbose":
+            msg = " No gaps in " + label
             logger.info(msg)
         return_code = True
     else:
@@ -771,8 +773,8 @@ def gfalternate_loadoutputdata(ds_tower, data_dict, l4a):
     label_composite = l4a["run"]["label_composite"]
     label_alternate = l4a["run"]["label_alternate"]
     ts = l4a["info"]["time_step"]
-    si = pfp_utils.GetDateIndex(ldt_tower, l4a["info"]["startdate"], ts=ts, default=0)
-    ei = pfp_utils.GetDateIndex(ldt_tower, l4a["info"]["enddate"], ts=ts, default=len(ldt_tower))
+    si = pfp_utils.GetDateIndex(ldt_tower, l4a["run"]["startdate"], ts=ts, default=0)
+    ei = pfp_utils.GetDateIndex(ldt_tower, l4a["run"]["enddate"], ts=ts, default=len(ldt_tower))
     if l4a["gui"]["overwrite"]:
         ind1 = numpy.where(numpy.ma.getmaskarray(data_dict[label_output][label_alternate]["data"]) == False)[0]
     else:
@@ -1196,11 +1198,9 @@ def gfalternate_run_interactive(alt_gui):
     # local pointers to useful things
     ds_tower = alt_gui.ds4
     ds_alt = alt_gui.ds_alt
-    l4_info = alt_gui.l4_info
     called_by = alt_gui.called_by
+    l4_info = alt_gui.l4_info
     l4a = l4_info[called_by]
-    # local pointer to tower datetime variable
-    ldt_tower = pfp_utils.GetVariable(ds_tower, "DateTime")
     # populate the l4_info["gui"] dictionary with things that will be useful
     ts = int(ds_tower.globalattributes["time_step"])
     l4a["gui"]["nperhr"] = int(float(60)/ts + 0.5)
@@ -1279,7 +1279,9 @@ def gfalternate_run(ds_tower, ds_alt, l4_info, called_by):
         logger.info("Starting auto (days) run ...")
         # get the start datetime entered in the alternate GUI
         startdate = dateutil.parser.parse(l4a["run"]["startdate"])
+        # get the end datetime from the start datetime
         enddate = startdate + dateutil.relativedelta.relativedelta(days=l4a["gui"]["number_days"])
+        # clip end datetime to last datetime in tower file
         enddate = min([dateutil.parser.parse(l4a["info"]["enddate"]), enddate])
         l4a["run"]["enddate"] = enddate.strftime("%Y-%m-%d %H:%M")
         while startdate < enddate:
