@@ -186,7 +186,7 @@ def write_mpt_year_results(xl_sheet, mpt_results):
         row = row + 1
         xl_sheet.write(row, 0, n)
         xl_sheet.write(row, 1, mpt_results["seasonal"]["value"][n])
-        xl_sheet.write(row, 2, mpt_results["seasonal"]["count"][n])
+        xl_sheet.write(row, 2, float(mpt_results["seasonal"]["count"][n]))
         values = mpt_results["bootstraps"][n]["values"]
         values = numpy.ma.masked_values(values, -9999)
         if numpy.ma.count(values) > 0:
