@@ -1,12 +1,10 @@
 # standard modules
-import ast
 import csv
 import datetime
 import logging
 import os
 import platform
 import subprocess
-import warnings
 # 3rd party modules
 import dateutil
 import numpy
@@ -23,7 +21,6 @@ import pfp_io
 import pfp_ts
 import pfp_utils
 
-warnings.filterwarnings("ignore",".*GUI is implemented.*")
 logger = logging.getLogger("pfp_log")
 
 # functions for GapFillUsingSOLO

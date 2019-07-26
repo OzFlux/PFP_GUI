@@ -1,14 +1,10 @@
 # standard modules
-import ast
-import datetime
 import logging
 import os
-import warnings
 # 3rd party modules
 import dateutil
 import numpy
 import matplotlib
-import matplotlib.dates as mdt
 import matplotlib.pyplot as plt
 import pylab
 import scipy
@@ -19,8 +15,6 @@ import pfp_io
 import pfp_ts
 import pfp_utils
 
-#warnings.filterwarnings("ignore",".*GUI is implemented.*")
-warnings.filterwarnings('error', 'UserWarning')
 logger = logging.getLogger("pfp_log")
 
 # functions for GapFillFromAlternate
@@ -1048,101 +1042,6 @@ def gfalternate_plotcoveragelines(ds_tower, l4_info, called_by):
     fig.tight_layout()
     plt.draw()
     plt.ioff()
-
-def gfalternate_plotsummary(ds,alternate_info):
-    """ Plot single pages of summary results for groups of variables. """
-    # get a list of variables for which alternate data is available
-    output_list = ds.alternate.keys()
-    if len(ds.alternate[output_list[0]]["results"]["startdate"])==0:
-        logger.info("gfalternate: no summary data to plot")
-        return
-    # get the Excel datemode, needed to convert the Excel datetime to Python datetimes
-    datemode = int(ds.globalattributes['xl_datemode'])
-    # site name for titles
-    site_name = ds.globalattributes["site_name"]
-    # datetimes are stored in ds.alternate as Excel datetimes, here we convert to Python datetimes
-    # for ease of handling and plotting.
-    # start datetimes of the periods compared first
-    basedate = datetime.datetime(1899, 12, 30)
-    dt_start = []
-    for xldt in ds.alternate[output_list[0]]["results"]["startdate"]:
-        dt_start.append(basedate+datetime.timedelta(days=xldt+1462*datemode))
-    startdate = min(dt_start)
-    # and then the end datetimes
-    dt_end = []
-    for xldt in ds.alternate[output_list[0]]["results"]["enddate"]:
-        dt_end.append(basedate+datetime.timedelta(days=xldt+1462*datemode))
-    enddate = max(dt_end)
-    # get the major tick locator and label format
-    MTLoc = mdt.AutoDateLocator(minticks=3,maxticks=5)
-    MTFmt = mdt.DateFormatter('%b')
-    # group lists of the resuts to be plotted
-    result_list = ["r","Bias","RMSE","Var ratio","Lag (uncorrected)","Slope","Offset"]
-    ylabel_list = ["r","Bias","RMSE","Var ratio","Lag","Slope","Offset"]
-    # turn on interactive plotting
-    plt.ion()
-    # now loop over the group lists
-    for nFig in ds.cf["Alternate_Summary"].keys():
-        plot_title = ds.cf["Alternate_Summary"][str(nFig)]["Title"]
-        var_list = ast.literal_eval(ds.cf["Alternate_Summary"][str(nFig)]["Variables"])
-        # set up the subplots on the page
-        fig,axs = plt.subplots(len(result_list),len(var_list),figsize=(13,8))
-        fig.canvas.set_window_title("Alternate summary: "+plot_title)
-        # make a title string for the plot and render it
-        title_str = "Alternate: "+plot_title+"; "+site_name+" "+datetime.datetime.strftime(startdate,"%Y-%m-%d")
-        title_str = title_str+" to "+datetime.datetime.strftime(enddate,"%Y-%m-%d")
-        fig.suptitle(title_str, fontsize=14, fontweight='bold')
-        # initialise a string to take the concatenated variable names, used in the name of the hard-copy of the plot
-        figlab = ""
-        # now loop over the variables in the group list
-        for col,output in enumerate(var_list):
-            if output not in output_list:
-                logger.error("Series %s requested for summary plot is not available", output)
-                continue
-            # append the variable name to the variable name string
-            figlab = figlab+output
-            # and loop over rows in plot
-            for row,rlabel,ylabel in zip(range(len(result_list)),result_list,ylabel_list):
-                # if this is the first row, add the column title
-                #if row==0: axs[row,col].set_title(output+" ("+source+")")
-                if row==0: axs[row,col].set_title(output)
-                # if this is the left-most column, add the Y axis labels
-                if col==0: axs[row,col].set_ylabel(ylabel,visible=True)
-                # get the results to be plotted
-                result = numpy.ma.masked_equal(ds.alternate[output]["results"][rlabel],float(c.missing_value))
-                if numpy.ma.count(result)==0: result = numpy.ma.ones(len(dt_start),dtype=numpy.float32)*float(c.large_value)
-                # put the data into the right order to be plotted
-                dt,data = gfalternate_plotsummary_getdata(dt_start,dt_end,result)
-                # plot the results
-                axs[row,col].plot(dt,data)
-                # put in the major ticks
-                axs[row,col].xaxis.set_major_locator(MTLoc)
-                # if this is not the last row, hide the tick mark labels
-                if row<len(result_list)-1: plt.setp(axs[row,col].get_xticklabels(),visible=False)
-                # if this is the last row, add the major tick mark and axis labels
-                if row==len(result_list)-1:
-                    axs[row,col].xaxis.set_major_formatter(MTFmt)
-                    axs[row,col].set_xlabel('Month',visible=True)
-        # draw the plot
-        plt.draw()
-        # make the hard-copy file name and save the plot as a PNG file
-        sdt = startdate.strftime("%Y%m%d")
-        edt = enddate.strftime("%Y%m%d")
-        plot_path = os.path.join(alternate_info["plot_path"], "L4", "")
-        if not os.path.exists(plot_path): os.makedirs(plot_path)
-        figname = plot_path+site_name.replace(" ","")+"_Alternate_FitStatistics_"+figlab
-        figname = figname+"_"+sdt+"_"+edt+".png"
-        fig.savefig(figname,format="png")
-
-def gfalternate_plotsummary_getdata(dt_start,dt_end,result):
-    dt = []
-    data = []
-    for s,e,r in zip(dt_start,dt_end,result):
-        dt.append(s)
-        data.append(r)
-        dt.append(e)
-        data.append(r)
-    return dt,data
 
 def gfalternate_quit(alt_gui):
     """ Quit the GapFillFromAlternate GUI."""
