@@ -1,98 +1,93 @@
+level = fingerprint
 [Variables]
     [[Fsd]]
-        nc_varname = "Fsd"
+        nc_varname = Fsd
         Lower = -10
         Upper = 1200
     [[Ta]]
-        nc_varname = "Ta"
+        nc_varname = Ta
         Lower = -10
         Upper = 50
     [[Fa]]
-        nc_varname = "Fa"
+        nc_varname = Fa
         Lower = -200
         Upper = 1000
     [[Fe]]
-        nc_varname = "Fe"
+        nc_varname = Fe
         Lower = -200
         Upper = 600
     [[Fc]]
-        nc_varname = "Fc"
+        nc_varname = Fc
         Lower = -40
         Upper = 20
     [[Fsu]]
-        nc_varname = "Fsu"
+        nc_varname = Fsu
         Lower = -10
         Upper = 750
     [[Fld]]
-        nc_varname = "Fld"
+        nc_varname = Fld
         Lower = 150
         Upper = 600
     [[Flu]]
-        nc_varname = "Flu"
+        nc_varname = Flu
         Lower = 200
         Upper = 800
     [[Fn]]
-        nc_varname = "Fn"
+        nc_varname = Fn
         Lower = -200
         Upper = 1000
     [[H2O]]
-        nc_varname = "Ah"
+        nc_varname = Ah
         Lower = 0
         Upper = 40
     [[CO2]]
-        nc_varname = "CO2"
+        nc_varname = CO2
         Lower = 300
         Upper = 900
     [[Ws]]
-        nc_varname = "Ws"
+        nc_varname = Ws
         Lower = 0
         Upper = 15
     [[Wd]]
-        nc_varname = "Wd"
+        nc_varname = Wd
         Lower = 0
         Upper = 360
     [[ustar]]
-        nc_varname = "ustar"
+        nc_varname = ustar
         Lower = 0
         Upper = 2.0
     [[Fh]]
-        nc_varname = "Fh"
+        nc_varname = Fh
         Lower = -150
         Upper = 800
     [[Fg]]
-        nc_varname = "Fg"
+        nc_varname = Fg
         Lower = -300
         Upper = 450
     [[Ts]]
-        nc_varname = "Ts"
+        nc_varname = Ts
         Lower = -10
         Upper = 60
     [[Sws]]
-        nc_varname = "Sws"
+        nc_varname = Sws
         Lower = 0
         Upper = 0.6
     [[Precip]]
-        nc_varname = "Precip"
+        nc_varname = Precip
         Lower = 0
         Upper = 20
     [[ps]]
-        nc_varname = "ps"
+        nc_varname = ps
         Lower = 80
         Upper = 105
-
 [Plots]
-    [[1]]
-        Title = "Composite fingerprint"
-        Variables = "['Fsd','Ta','H2O','Fe','Fc']"
-    [[2]]
-        Title = "Radiation fingerprint"
-        Variables = "['Fsd','Fsu','Fld','Flu','Fn']"
-    [[3]]
-        Title = "Meteorology fingerprint"
-        Variables = "['Ta','H2O','CO2','Ws','Wd']"
-    [[4]]
-        Title = "Flux fingerprint"
-        Variables = "['ustar','Fh','Fe','Fc','Fa']"
-    [[5]]
-        Title = "Soil fingerprint"
-        Variables = "['Fg','Ts','Sws','Precip','ps']"
+    [[Composite fingerprint]]
+        Variables = Fsd,Ta,H2O,Fe,Fc
+    [[Radiation fingerprint]]
+        Variables = Fsd,Fsu,Fld,Flu,Fn
+    [[Meteorology fingerprint]]
+        Variables = Ta,H2O,CO2,Ws,Wd
+    [[Flux fingerprint]]
+        Variables = ustar,Fh,Fe,Fc,Fa
+    [[Soil fingerprint]]
+        Variables = Fg,Ts,Sws,Precip,ps

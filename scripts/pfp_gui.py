@@ -5578,7 +5578,7 @@ class pfp_l4_ui(QtWidgets.QDialog):
         self.label_DataStartDate_value.setText("YYYY-MM-DD HH:mm")
         self.label_DataEndDate_value.setText("YYYY-MM-DD HH:mm")
         # connect signals to slots
-        self.RunButton.clicked.connect(lambda:pfp_gfALT.gfalternate_run_gui(self))
+        self.RunButton.clicked.connect(lambda:pfp_gfALT.gfalternate_run_interactive(self))
         self.DoneButton.clicked.connect(lambda:pfp_gfALT.gfalternate_done(self))
         self.QuitButton.clicked.connect(lambda:pfp_gfALT.gfalternate_quit(self))
 

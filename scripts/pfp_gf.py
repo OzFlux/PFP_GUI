@@ -286,11 +286,14 @@ def gfalternate_createdict(cf, ds, l4_info, label, called_by):
     nrecs = int(ds.globalattributes["nc_nrecs"])
     # create the alternate data settings directory
     if called_by not in l4_info.keys():
+        # create the GapFillFromAlternate dictionary
         l4_info[called_by] = {"outputs": {}, "info": {}, "gui": {}}
-    # get the info section
-    gfalternate_createdict_info(cf, ds, l4_info, called_by)
-    if ds.returncodes["value"] != 0:
-        return
+        # only need to create the ["info"] dictionary on the first pass
+        gfalternate_createdict_info(cf, ds, l4_info, called_by)
+        if ds.returncodes["value"] != 0:
+            return
+        # only need to create the ["gui"] dictionary on the first pass
+        gfalternate_createdict_gui(cf, ds, l4_info, called_by)
     # get the outputs section
     gfalternate_createdict_outputs(cf, ds, l4_info, label, called_by)
     # create an empty series in ds if the alternate output series doesn't exist yet
@@ -332,9 +335,7 @@ def gfalternate_createdict_info(cf, ds, l4_info, called_by):
     call_mode = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "call_mode", default="interactive")
     # create the alternate_info dictionary, this will hold much useful information
     l4a = l4_info[called_by]
-    l4a["info"] = {"overlap_startdate": ldt[0].strftime("%Y-%m-%d %H:%M"),
-                   "overlap_enddate": ldt[-1].strftime("%Y-%m-%d %H:%M"),
-                   "startdate": ldt[0].strftime("%Y-%m-%d %H:%M"),
+    l4a["info"] = {"startdate": ldt[0].strftime("%Y-%m-%d %H:%M"),
                    "enddate": ldt[-1].strftime("%Y-%m-%d %H:%M"),
                    "called_by": called_by,
                    "plot_path": plot_path,
@@ -411,6 +412,73 @@ def gfalternate_createdict_outputs(cf, ds, l4_info, label, called_by):
                                    "r":[], "Bias":[], "RMSE":[], "Frac Bias":[], "NMSE":[],
                                    "Avg (Tower)":[], "Avg (Alt)":[],
                                    "Var (Tower)":[], "Var (Alt)":[], "Var ratio":[]}
+
+def gfalternate_createdict_gui(cf, ds, l4_info, called_by):
+    """
+    Purpose:
+     Get settings for the GapFillFromAlternate routine from the [GUI]
+     section of the L4 control file.
+    Usage:
+    Side effects:
+    Author: PRI
+    Date: July 2019
+    """
+    # local pointer to l4_info["GapFillFromAlternate"]
+    l4a = l4_info[called_by]
+    # local pointer to datetime
+    ldt_tower = pfp_utils.GetVariable(ds, "DateTime")
+    # populate the l4_info["gui"] dictionary with things that will be useful
+    ts = int(ds.globalattributes["time_step"])
+    l4a["gui"]["nperhr"] = int(float(60)/ts + 0.5)
+    l4a["gui"]["nperday"] = int(float(24)*l4a["gui"]["nperhr"] + 0.5)
+    l4a["gui"]["max_lags"] = int(float(12)*l4a["gui"]["nperhr"] + 0.5)
+    # window length
+    opt = pfp_utils.get_keyvaluefromcf(cf, ["GUI", "GapFillFromAlternate"], "period_option", default="manual")
+    if opt == "manual":
+        l4a["gui"]["period_option"] = 1
+    elif opt == "monthly":
+        l4a["gui"]["period_option"] = 2
+        opt = pfp_utils.get_keyvaluefromcf(cf, ["GUI", "GapFillFromAlternate"], "number_months", default=3)
+        l4a["gui"]["number_months"] = int(opt)
+    elif opt == "days":
+        l4a["gui"]["period_option"] = 3
+        opt = pfp_utils.get_keyvaluefromcf(cf, ["GUI", "GapFillFromAlternate"], "number_days", default=90)
+        l4a["gui"]["number_days"] = int(opt)
+    # overwrite option
+    l4a["gui"]["overwrite"] = False
+    opt = pfp_utils.get_keyvaluefromcf(cf, ["GUI", "GapFillFromAlternate"], "overwrite", default="no")
+    if opt.lower() == "yes": l4a["gui"]["overwrite"] = True
+    # show plots option
+    l4a["gui"]["show_plots"] = True
+    opt = pfp_utils.get_keyvaluefromcf(cf, ["GUI", "GapFillFromAlternate"], "show_plots", default="yes")
+    if opt.lower() == "no": l4a["gui"]["show_plots"] = False
+    # show all plots option
+    l4a["gui"]["show_all"] = False
+    opt = pfp_utils.get_keyvaluefromcf(cf, ["GUI", "GapFillFromAlternate"], "show_all", default="no")
+    if opt.lower() == "yes": l4a["gui"]["show_all"] = True
+    # auto-complete option
+    l4a["gui"]["auto_complete"] = True
+    opt = pfp_utils.get_keyvaluefromcf(cf, ["GUI", "GapFillFromAlternate"], "auto_complete", default="yes")
+    if opt.lower() == "no": l4a["gui"]["auto_complete"] = False
+    l4a["gui"]["autoforce"] = False
+    # minimum percentage of good points required
+    opt = pfp_utils.get_keyvaluefromcf(cf, ["GUI", "GapFillFromAlternate"], "min_percent", default=50)
+    l4a["gui"]["min_percent"] = max(int(opt), 1)
+    # start date of period to be gap filled
+    opt = pfp_utils.get_keyvaluefromcf(cf, ["GUI", "GapFillFromAlternate"], "start_date", default="YYYY-MM-DD HH:mm")
+    try:
+        sd = dateutil.parser.parse(opt)
+    except (ValueError, TypeError):
+        sd = ldt_tower["Data"][0].strftime("%Y-%m-%d %H:%M")
+    l4a["gui"]["startdate"] = sd
+    # end date of period to be gap filled
+    opt = pfp_utils.get_keyvaluefromcf(cf, ["GUI", "GapFillFromAlternate"], "end_date", default="YYYY-MM-DD HH:mm")
+    try:
+        ed = dateutil.parser.parse(opt)
+    except (ValueError, TypeError):
+        ed = ldt_tower["Data"][-1].strftime("%Y-%m-%d %H:%M")
+    l4a["gui"]["enddate"] = ed
+    return
 
 def gfalternate_matchstartendtimes(ds,ds_alternate):
     """

@@ -269,7 +269,8 @@ def cliptorange(data, lower, upper):
 
 def CoordinateAh7500AndFcGaps(cf,ds,Fcvar='Fc'):
     '''Cleans up Ah_7500_Av based upon Fc gaps to for QA check on Ah_7500_Av v Ah_HMP.'''
-    if not pfp_utils.cfoptionskeylogical(cf,Key='CoordinateAh7500&FcGaps'): return
+    if not pfp_utils.get_optionskeyaslogical(cf, "CoordinateAh7500&FcGaps"):
+        return
     logger.info(' Doing the Ah_7500 check')
     if pfp_utils.cfkeycheck(cf,Base='FunctionArgs',ThisOne='AhcheckFc'):
         Fclist = ast.literal_eval(cf['FunctionArgs']['AhcheckFc'])
@@ -288,7 +289,8 @@ def CoordinateAh7500AndFcGaps(cf,ds,Fcvar='Fc'):
         ds.globalattributes['Functions'] = ds.globalattributes['Functions']+',CoordinateAh7500AndFcGaps'
 
 def CoordinateFluxGaps(cf,ds,Fc_in='Fc',Fe_in='Fe',Fh_in='Fh'):
-    if not pfp_utils.cfoptionskeylogical(cf,Key='CoordinateFluxGaps'): return
+    if not pfp_utils.get_optionskeyaslogical(cf, "CoordinateFluxGaps"):
+        return
     if pfp_utils.cfkeycheck(cf,Base='FunctionArgs',ThisOne='gapsvars'):
         vars = ast.literal_eval(cf['FunctionArgs']['gapsvars'])
         Fc_in = vars[0]

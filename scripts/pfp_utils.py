@@ -71,18 +71,11 @@ def cfkeycheck(cf,Base='Variables',ThisOne=[],key=[]):
         else:
             return
 
-def cfoptionskeylogical(cf,Key='',default=False):
-    if 'Options' in cf:
-        if Key in cf['Options']:
-            returnValue = cf.get('Options').as_bool(Key)
-            #if str(cf['Options'][Key]).lower()=="true" or str(cf['Options'][Key]).lower()=="yes":
-                #returnValue = True
-            #else:
-                #returnValue = False
-        else:
-            returnValue = default
-    else:
-        returnValue = default
+def get_optionskeyaslogical(cf, key, default=False):
+    returnValue = default
+    if "Options" in cf:
+        if key in cf["Options"]:
+            returnValue = cf.get("Options").as_bool(key)
     return returnValue
 
 def CheckQCFlags(ds):

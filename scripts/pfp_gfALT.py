@@ -1,28 +1,20 @@
 # standard modules
-import ast
-import datetime
 import logging
 import os
-import sys
-import warnings
 # 3rd party modules
 import dateutil
 import numpy
 import matplotlib
-import matplotlib.dates as mdt
 import matplotlib.pyplot as plt
 import pylab
 import scipy
 import statsmodels.api as sm
 # PFP modules
 import constants as c
-import pfp_ck
 import pfp_io
 import pfp_ts
 import pfp_utils
 
-#warnings.filterwarnings("ignore",".*GUI is implemented.*")
-warnings.filterwarnings('error', 'UserWarning')
 logger = logging.getLogger("pfp_log")
 
 # functions for GapFillFromAlternate
@@ -39,14 +31,14 @@ def GapFillFromAlternate(main_gui, ds4, ds_alt, l4_info, called_by):
     # set the default return code
     ds4.returncodes["message"] = "normal"
     # get the alternate data information
-    alternate = l4_info[called_by]
-    if alternate["info"]["call_mode"] == "interactive":
+    if l4_info[called_by]["info"]["call_mode"] == "interactive":
         # put up a plot of the data coverage at L3
         gfalternate_plotcoveragelines(ds4, l4_info, called_by)
         # call the GapFillFromAlternate GUI
         gfalternate_gui(main_gui, ds4, ds_alt, l4_info, called_by)
     else:
-        gfalternate_run_nogui(ds4, ds_alt, l4_info, called_by)
+        # ["gui"] settings dictionary done in pfp_gf.ParseL4ControlFile()
+        gfalternate_run(ds4, ds_alt, l4_info, called_by)
 
 def gfalternate_gui(main_gui, ds4, ds_alt, l4_info, called_by):
     # put up the start and end dates
@@ -95,8 +87,8 @@ def gfalternate_autocomplete(ds_tower, ds_alt, l4_info, called_by, mode="verbose
     dt_tower = ds_tower.series["DateTime"]["Data"]
     nRecs = len(dt_tower)
     ts = int(ds_tower.globalattributes["time_step"])
-    si_tower = pfp_utils.GetDateIndex(dt_tower, l4a["info"]["gui_startdate"], ts=ts, default=0)
-    ei_tower = pfp_utils.GetDateIndex(dt_tower, l4a["info"]["gui_enddate"], ts=ts, default=nRecs-1)
+    si_tower = pfp_utils.GetDateIndex(dt_tower, l4a["gui"]["startdate"], ts=ts, default=0)
+    ei_tower = pfp_utils.GetDateIndex(dt_tower, l4a["gui"]["enddate"], ts=ts, default=nRecs-1)
     ldt_tower = dt_tower[si_tower: ei_tower + 1]
     nRecs_gui = len(ldt_tower)
     label_tower_list = l4a["gui"]["series_list"]
@@ -120,8 +112,8 @@ def gfalternate_autocomplete(ds_tower, ds_alt, l4_info, called_by, mode="verbose
             alt_filename = l4a["outputs"][label_output]["file_name"]
             ds_alternate = ds_alt[alt_filename]
             dt_alternate = ds_alternate.series["DateTime"]["Data"]
-            si_alternate = pfp_utils.GetDateIndex(dt_alternate, l4a["info"]["gui_startdate"], ts=ts, default=0)
-            ei_alternate = pfp_utils.GetDateIndex(dt_alternate, l4a["info"]["gui_enddate"], ts=ts, default=nRecs-1)
+            si_alternate = pfp_utils.GetDateIndex(dt_alternate, l4a["gui"]["startdate"], ts=ts, default=0)
+            ei_alternate = pfp_utils.GetDateIndex(dt_alternate, l4a["gui"]["enddate"], ts=ts, default=nRecs-1)
             alt_series_list = [item for item in ds_alternate.series.keys() if "_QCFlag" not in item]
             alt_series_list = [item for item in alt_series_list if l4a["outputs"][label_output]["target"] in item]
             for label_alternate in alt_series_list:
@@ -192,8 +184,8 @@ def gfalternate_autocomplete(ds_tower, ds_alt, l4_info, called_by, mode="verbose
             if mode.lower() != "quiet":
                 msg = " autocomplete: gap fill period is " + gapfillperiod_startdate + " to " + gapfillperiod_enddate
                 logger.info(msg)
-            l4a["info"]["startdate"] = ldt_tower[gap[0]].strftime("%Y-%m-%d %H:%M")
-            l4a["info"]["enddate"] = ldt_tower[gap[1]].strftime("%Y-%m-%d %H:%M")
+            l4a["run"]["startdate"] = ldt_tower[gap[0]].strftime("%Y-%m-%d %H:%M")
+            l4a["run"]["enddate"] = ldt_tower[gap[1]].strftime("%Y-%m-%d %H:%M")
             gfalternate_main(ds_tower, ds_alt, l4_info, called_by, label_tower_list=[label_tower])
             gfalternate_plotcoveragelines(ds_tower, l4_info, called_by)
             if not_enough_points: break
@@ -221,10 +213,10 @@ def gfalternate_createdataandstatsdict(ldt_tower, data_tower, attr_tower, l4a):
     data_dict[label_composite] = {"data": numpy.ma.masked_all_like(data_tower),
                                   "fitcorr": numpy.ma.masked_all_like(data_tower),
                                   "attr": attr_tower}
-    stat_dict[label_tower] = {"startdate": l4a["info"]["startdate"],
-                              "enddate": l4a["info"]["enddate"]}
-    stat_dict[label_composite] = {"startdate": l4a["info"]["startdate"],
-                                  "enddate":l4a["info"]["enddate"]}
+    stat_dict[label_tower] = {"startdate": l4a["run"]["startdate"],
+                              "enddate": l4a["run"]["enddate"]}
+    stat_dict[label_composite] = {"startdate": l4a["run"]["startdate"],
+                                  "enddate":l4a["run"]["enddate"]}
     return data_dict, stat_dict
 
 def gfalternate_done(alt_gui):
@@ -265,8 +257,8 @@ def gfalternate_getalternatevaratmaxr(ds_tower, ds_alternate, l4a, mode="verbose
     # get a list of alternate variables for this tower variable
     label_tower = l4a["run"]["label_tower"]
     label_output = l4a["run"]["label_output"]
-    startdate = l4a["info"]["startdate"]
-    enddate = l4a["info"]["enddate"]
+    startdate = l4a["run"]["startdate"]
+    enddate = l4a["run"]["enddate"]
     ts = int(ds_tower.globalattributes["time_step"])
     ldt_tower = ds_tower.series["DateTime"]["Data"]
     si_tower = pfp_utils.GetDateIndex(ldt_tower, startdate, ts=ts)
@@ -357,25 +349,6 @@ def gfalternate_getdataas2d(odt, data, l4a):
     ndays = len(data_wholedays)/nperday
     return numpy.ma.reshape(data_wholedays, [ndays, nperday])
 
-def gfalternate_getdateindices(ldt_tower,ldt_alternate,alternate_info,match):
-    if match=="exact":
-        si_match = "exact"
-        ei_match = "exact"
-    elif match=="wholedays":
-        si_match = "startnextday"
-        ei_match = "endpreviousday"
-    else:
-        msg = "gfalternate_getdateindices: unrecognised match option ("+match+")"
-        logger.error(msg)
-    startdate = alternate_info["startdate"]
-    enddate = alternate_info["enddate"]
-    ts = alternate_info["time_step"]
-    # get the indices of the start and end datetimes in the tower and the alternate data.
-    si_tower = pfp_utils.GetDateIndex(ldt_tower,startdate,ts=ts,match=si_match,default=0)
-    ei_tower = pfp_utils.GetDateIndex(ldt_tower,enddate,ts=ts,match=ei_match,default=len(ldt_tower)-1)
-    si_alternate = pfp_utils.GetDateIndex(ldt_alternate,startdate,ts=ts,match=si_match,default=0)
-    ei_alternate = pfp_utils.GetDateIndex(ldt_alternate,enddate,ts=ts,match=ei_match,default=len(ldt_alternate)-1)
-
 def gfalternate_getdielaverage(data_dict, l4a):
     odt = data_dict["DateTime"]["data"]
     label_tower = l4a["run"]["label_tower"]
@@ -456,8 +429,8 @@ def gfalternate_getlagcorrecteddata(ds_alternate, data_dict, stat_dict, l4a):
     data_tower = data_dict[label_tower]["data"]
     data_alternate = data_dict[label_output][label_alternate]["data"]
     ldt_alternate = ds_alternate.series["DateTime"]["Data"]
-    startdate = l4a["info"]["startdate"]
-    enddate = l4a["info"]["enddate"]
+    startdate = l4a["run"]["startdate"]
+    enddate = l4a["run"]["enddate"]
     ts = l4a["info"]["time_step"]
     si_alternate = pfp_utils.GetDateIndex(ldt_alternate, startdate, ts=ts)
     ei_alternate = pfp_utils.GetDateIndex(ldt_alternate, enddate, ts=ts)
@@ -700,14 +673,14 @@ def gfalternate_gotdataforgaps(data, data_alternate, l4a, mode="verbose"):
         return_code = False
     return return_code
 
-def gfalternate_gotnogaps(data,label,mode="verbose"):
+def gfalternate_gotnogaps(data, label, mode="verbose"):
     """
     Returns true if the data series has no gaps, false if there are gaps
     """
     return_code = True
-    if numpy.ma.count_masked(data)==0:
-        if mode=="verbose":
-            msg = " No gaps in "+label
+    if numpy.ma.count_masked(data) == 0:
+        if mode == "verbose":
+            msg = " No gaps in " + label
             logger.info(msg)
         return_code = True
     else:
@@ -771,8 +744,8 @@ def gfalternate_loadoutputdata(ds_tower, data_dict, l4a):
     label_composite = l4a["run"]["label_composite"]
     label_alternate = l4a["run"]["label_alternate"]
     ts = l4a["info"]["time_step"]
-    si = pfp_utils.GetDateIndex(ldt_tower, l4a["info"]["startdate"], ts=ts, default=0)
-    ei = pfp_utils.GetDateIndex(ldt_tower, l4a["info"]["enddate"], ts=ts, default=len(ldt_tower))
+    si = pfp_utils.GetDateIndex(ldt_tower, l4a["run"]["startdate"], ts=ts, default=0)
+    ei = pfp_utils.GetDateIndex(ldt_tower, l4a["run"]["enddate"], ts=ts, default=len(ldt_tower))
     if l4a["gui"]["overwrite"]:
         ind1 = numpy.where(numpy.ma.getmaskarray(data_dict[label_output][label_alternate]["data"]) == False)[0]
     else:
@@ -812,30 +785,25 @@ def gfalternate_loadoutputdata(ds_tower, data_dict, l4a):
     ds_tower.series[label_output]["Data"][si:ei+1][ind6] = numpy.ma.filled(data_dict[label_output][label_alternate]["fitcorr"][ind6], c.missing_value)
     ds_tower.series[label_output]["Flag"][si:ei+1][ind6] = numpy.int32(20)
 
-def gfalternate_main(ds_tower, ds_alt, l4_info, called_by, label_tower_list=[]):
+def gfalternate_main(ds_tower, ds_alt, l4_info, called_by, label_tower_list=None):
     """
     This is the main routine for using alternate data to gap fill drivers.
     """
     l4a = l4_info[called_by]
     mode = "quiet" #"quiet"  #"verbose"
     ts = int(ds_tower.globalattributes["time_step"])
-    startdate = l4a["info"]["startdate"]
-    enddate = l4a["info"]["enddate"]
+    startdate = l4a["run"]["startdate"]
+    enddate = l4a["run"]["enddate"]
     logger.info(" Gap fill with alternate: " + startdate + " to " + enddate)
-    ## close any open plot windows
-    #if len(plt.get_fignums()) != 0:
-        #for i in plt.get_fignums():
-            #if i != 0: plt.close(i)
     # get local pointer to the datetime series
     dt_tower = ds_tower.series["DateTime"]["Data"]
     si_tower = pfp_utils.GetDateIndex(dt_tower, startdate, ts=ts, default=0)
     ei_tower = pfp_utils.GetDateIndex(dt_tower, enddate, ts=ts, default=len(dt_tower)-1)
     ldt_tower = dt_tower[si_tower:ei_tower + 1]
     # now loop over the variables to be gap filled using the alternate data
-    if len(label_tower_list) == 0:
+    if label_tower_list == None:
         label_tower_list = l4a["gui"]["series_list"]
-    l4a["run"] = {}
-    for fig_num, label_tower in enumerate(label_tower_list):
+    for label_tower in label_tower_list:
         l4a["run"]["label_tower"] = label_tower
         label_composite = label_tower + "_composite"
         l4a["run"]["label_composite"] = label_composite
@@ -857,8 +825,8 @@ def gfalternate_main(ds_tower, ds_alt, l4_info, called_by, label_tower_list=[]):
             # update the alternate_info dictionary
             gfalternate_update_alternate_info(l4a)
             # update the dictionaries
-            stat_dict[label_output] = {"startdate": l4a["info"]["startdate"],
-                                       "enddate": l4a["info"]["enddate"]}
+            stat_dict[label_output] = {"startdate": startdate,
+                                       "enddate": enddate}
             data_dict[label_output] = {"data": numpy.ma.masked_all_like(data_tower),
                                        "fitcorr": numpy.ma.masked_all_like(data_tower),
                                        "attr": attr_tower,
@@ -867,8 +835,8 @@ def gfalternate_main(ds_tower, ds_alt, l4_info, called_by, label_tower_list=[]):
             ds_alternate = ds_alt[l4a["outputs"][label_output]["file_name"]]
             ldt_alternate = ds_alternate.series["DateTime"]["Data"]
             # start and end idices for this time range in the alternate data
-            si_alternate = pfp_utils.GetDateIndex(ldt_alternate, l4a["info"]["startdate"], ts=ts, default=0)
-            ei_alternate = pfp_utils.GetDateIndex(ldt_alternate, l4a["info"]["enddate"], ts=ts, default=len(ldt_alternate)-1)
+            si_alternate = pfp_utils.GetDateIndex(ldt_alternate, startdate, ts=ts, default=0)
+            ei_alternate = pfp_utils.GetDateIndex(ldt_alternate, enddate, ts=ts, default=len(ldt_alternate)-1)
             # get the alternate series that has the highest correlation with the tower data
             label_alternate_list = gfalternate_getalternatevaratmaxr(ds_tower, ds_alternate, l4a, mode=mode)
             # loop over alternate variables
@@ -881,8 +849,8 @@ def gfalternate_main(ds_tower, ds_alt, l4_info, called_by, label_tower_list=[]):
                 l4a["run"]["gotdataforgaps_alternate"] = gfalternate_gotdataforgaps(data_dict[label_output]["data"], data_alternate, l4a, mode=mode)
                 l4a["run"]["gotminpoints_both"] = gfalternate_gotminpointsboth(data_tower, data_alternate, l4a, label_tower, label_alternate, mode=mode)
                 # update the data and sata dictionaries
-                stat_dict[label_output][label_alternate] = {"startdate": l4a["info"]["startdate"],
-                                                            "enddate":l4a["info"]["enddate"]}
+                stat_dict[label_output][label_alternate] = {"startdate": startdate,
+                                                            "enddate": enddate}
                 if label_output not in data_dict[label_tower]["output_list"]:
                     data_dict[label_tower]["output_list"].append(label_output)
                 data_dict[label_output][label_alternate] = {"data": data_alternate,
@@ -908,10 +876,9 @@ def gfalternate_main(ds_tower, ds_alt, l4_info, called_by, label_tower_list=[]):
         pd = gfalternate_initplot(data_dict, l4a)
         diel_avg = gfalternate_getdielaverage(data_dict, l4a)
         # reserve figure number 0 for the coverage lines/progress plot
-        fig_num = fig_num + 1
-        gfalternate_plotcomposite(fig_num, data_dict, stat_dict, diel_avg, l4a, pd)
+        gfalternate_plotcomposite(data_dict, stat_dict, diel_avg, l4a, pd)
 
-def gfalternate_plotcomposite(nfig, data_dict, stat_dict, diel_avg, l4a, pd):
+def gfalternate_plotcomposite(data_dict, stat_dict, diel_avg, l4a, pd):
     # set up some local pointers
     label_tower = l4a["run"]["label_tower"]
     label_composite = l4a["run"]["label_composite"]
@@ -924,8 +891,7 @@ def gfalternate_plotcomposite(nfig, data_dict, stat_dict, diel_avg, l4a, pd):
         plt.ion()
     else:
         plt.ioff()
-    # create the figure canvas
-    #fig = plt.figure(nfig, figsize=(13,8))
+    # create the figure canvas or re-use existing
     if plt.fignum_exists(1):
         fig = plt.figure(1)
         plt.clf()
@@ -1036,9 +1002,7 @@ def gfalternate_plotcoveragelines(ds_tower, l4_info, called_by):
     site_name = ds_tower.globalattributes["site_name"]
     start_date = ldt[0].strftime("%Y-%m-%d")
     end_date = ldt[-1].strftime("%Y-%m-%d")
-    # list of outputs to plot
-    outputs = l4ia["outputs"].keys()
-    # ist of targets
+    # list of targets to plot
     targets = [l4ia["outputs"][output]["target"] for output in l4ia["outputs"].keys()]
     targets = list(set(targets))
     ylabel_list = [""] + targets + [""]
@@ -1079,101 +1043,6 @@ def gfalternate_plotcoveragelines(ds_tower, l4_info, called_by):
     plt.draw()
     plt.ioff()
 
-def gfalternate_plotsummary(ds,alternate_info):
-    """ Plot single pages of summary results for groups of variables. """
-    # get a list of variables for which alternate data is available
-    output_list = ds.alternate.keys()
-    if len(ds.alternate[output_list[0]]["results"]["startdate"])==0:
-        logger.info("gfalternate: no summary data to plot")
-        return
-    # get the Excel datemode, needed to convert the Excel datetime to Python datetimes
-    datemode = int(ds.globalattributes['xl_datemode'])
-    # site name for titles
-    site_name = ds.globalattributes["site_name"]
-    # datetimes are stored in ds.alternate as Excel datetimes, here we convert to Python datetimes
-    # for ease of handling and plotting.
-    # start datetimes of the periods compared first
-    basedate = datetime.datetime(1899, 12, 30)
-    dt_start = []
-    for xldt in ds.alternate[output_list[0]]["results"]["startdate"]:
-        dt_start.append(basedate+datetime.timedelta(days=xldt+1462*datemode))
-    startdate = min(dt_start)
-    # and then the end datetimes
-    dt_end = []
-    for xldt in ds.alternate[output_list[0]]["results"]["enddate"]:
-        dt_end.append(basedate+datetime.timedelta(days=xldt+1462*datemode))
-    enddate = max(dt_end)
-    # get the major tick locator and label format
-    MTLoc = mdt.AutoDateLocator(minticks=3,maxticks=5)
-    MTFmt = mdt.DateFormatter('%b')
-    # group lists of the resuts to be plotted
-    result_list = ["r","Bias","RMSE","Var ratio","Lag (uncorrected)","Slope","Offset"]
-    ylabel_list = ["r","Bias","RMSE","Var ratio","Lag","Slope","Offset"]
-    # turn on interactive plotting
-    plt.ion()
-    # now loop over the group lists
-    for nFig in ds.cf["Alternate_Summary"].keys():
-        plot_title = ds.cf["Alternate_Summary"][str(nFig)]["Title"]
-        var_list = ast.literal_eval(ds.cf["Alternate_Summary"][str(nFig)]["Variables"])
-        # set up the subplots on the page
-        fig,axs = plt.subplots(len(result_list),len(var_list),figsize=(13,8))
-        fig.canvas.set_window_title("Alternate summary: "+plot_title)
-        # make a title string for the plot and render it
-        title_str = "Alternate: "+plot_title+"; "+site_name+" "+datetime.datetime.strftime(startdate,"%Y-%m-%d")
-        title_str = title_str+" to "+datetime.datetime.strftime(enddate,"%Y-%m-%d")
-        fig.suptitle(title_str, fontsize=14, fontweight='bold')
-        # initialise a string to take the concatenated variable names, used in the name of the hard-copy of the plot
-        figlab = ""
-        # now loop over the variables in the group list
-        for col,output in enumerate(var_list):
-            if output not in output_list:
-                logger.error("Series %s requested for summary plot is not available", output)
-                continue
-            # append the variable name to the variable name string
-            figlab = figlab+output
-            # and loop over rows in plot
-            for row,rlabel,ylabel in zip(range(len(result_list)),result_list,ylabel_list):
-                # if this is the first row, add the column title
-                #if row==0: axs[row,col].set_title(output+" ("+source+")")
-                if row==0: axs[row,col].set_title(output)
-                # if this is the left-most column, add the Y axis labels
-                if col==0: axs[row,col].set_ylabel(ylabel,visible=True)
-                # get the results to be plotted
-                result = numpy.ma.masked_equal(ds.alternate[output]["results"][rlabel],float(c.missing_value))
-                if numpy.ma.count(result)==0: result = numpy.ma.ones(len(dt_start),dtype=numpy.float32)*float(c.large_value)
-                # put the data into the right order to be plotted
-                dt,data = gfalternate_plotsummary_getdata(dt_start,dt_end,result)
-                # plot the results
-                axs[row,col].plot(dt,data)
-                # put in the major ticks
-                axs[row,col].xaxis.set_major_locator(MTLoc)
-                # if this is not the last row, hide the tick mark labels
-                if row<len(result_list)-1: plt.setp(axs[row,col].get_xticklabels(),visible=False)
-                # if this is the last row, add the major tick mark and axis labels
-                if row==len(result_list)-1:
-                    axs[row,col].xaxis.set_major_formatter(MTFmt)
-                    axs[row,col].set_xlabel('Month',visible=True)
-        # draw the plot
-        plt.draw()
-        # make the hard-copy file name and save the plot as a PNG file
-        sdt = startdate.strftime("%Y%m%d")
-        edt = enddate.strftime("%Y%m%d")
-        plot_path = os.path.join(alternate_info["plot_path"], "L4", "")
-        if not os.path.exists(plot_path): os.makedirs(plot_path)
-        figname = plot_path+site_name.replace(" ","")+"_Alternate_FitStatistics_"+figlab
-        figname = figname+"_"+sdt+"_"+edt+".png"
-        fig.savefig(figname,format="png")
-
-def gfalternate_plotsummary_getdata(dt_start,dt_end,result):
-    dt = []
-    data = []
-    for s,e,r in zip(dt_start,dt_end,result):
-        dt.append(s)
-        data.append(r)
-        dt.append(e)
-        data.append(r)
-    return dt,data
-
 def gfalternate_quit(alt_gui):
     """ Quit the GapFillFromAlternate GUI."""
     # put the return code into ds.returncodes
@@ -1182,254 +1051,120 @@ def gfalternate_quit(alt_gui):
     # destroy the alternate GUI
     alt_gui.close()
 
-def gfalternate_run_gui(alt_gui):
-    """ Run the GapFillFromAlternate GUI."""
+def gfalternate_run_interactive(alt_gui):
+    """
+    Purpose:
+     Gets settings from the GapFillFromAlternate GUI and loads them
+     into the l4_info["gui"] dictionary
+    Usage:
+     Called when the "Run" button is clicked.
+    Side effects:
+     Loads settings into the l4_info["gui"] dictionary.
+    Author: PRI
+    Date: Re-written July 2019
+    """
+    # local pointers to useful things
     ds_tower = alt_gui.ds4
     ds_alt = alt_gui.ds_alt
-    l4_info = alt_gui.l4_info
     called_by = alt_gui.called_by
+    l4_info = alt_gui.l4_info
     l4a = l4_info[called_by]
-    # populate the l4_info dictionary with things that will be useful
-    if str(alt_gui.radioButtons.checkedButton().text()) == "Manual":
-        l4a["gui"]["period_option"] = 1
-    elif str(alt_gui.radioButtons.checkedButton().text()) == "Months":
-        l4a["gui"]["period_option"] = 2
-    elif str(alt_gui.radioButtons.checkedButton().text()) == "Days":
-        l4a["gui"]["period_option"] = 3
-
-    l4a["gui"]["overwrite"] = alt_gui.checkBox_Overwrite.isChecked()
-    l4a["gui"]["show_plots"] = alt_gui.checkBox_ShowPlots.isChecked()
-    l4a["gui"]["show_all"] = alt_gui.checkBox_PlotAll.isChecked()
-    l4a["gui"]["auto_complete"] = alt_gui.checkBox_AutoComplete.isChecked()
-    l4a["gui"]["autoforce"] = False
-    l4a["gui"]["min_percent"] = max(int(str(alt_gui.lineEdit_MinPercent.text())),1)
-
+    # populate the l4_info["gui"] dictionary with things that will be useful
     ts = int(ds_tower.globalattributes["time_step"])
     l4a["gui"]["nperhr"] = int(float(60)/ts + 0.5)
     l4a["gui"]["nperday"] = int(float(24)*l4a["gui"]["nperhr"] + 0.5)
     l4a["gui"]["max_lags"] = int(float(12)*l4a["gui"]["nperhr"] + 0.5)
-    #l4a["gui"]["tower"] = {}
-    #l4a["gui"]["alternate"] = {}
+    # window period length
+    if str(alt_gui.radioButtons.checkedButton().text()) == "Manual":
+        l4a["gui"]["period_option"] = 1
+    elif str(alt_gui.radioButtons.checkedButton().text()) == "Months":
+        l4a["gui"]["period_option"] = 2
+        l4a["gui"]["number_months"] = int(alt_gui.lineEdit_NumberMonths.text())
+    elif str(alt_gui.radioButtons.checkedButton().text()) == "Days":
+        l4a["gui"]["period_option"] = 3
+        l4a["gui"]["number_days"] = int(alt_gui.lineEdit_NumberDays.text())
+    # plot settings
+    l4a["gui"]["overwrite"] = alt_gui.checkBox_Overwrite.isChecked()
+    l4a["gui"]["show_plots"] = alt_gui.checkBox_ShowPlots.isChecked()
+    l4a["gui"]["show_all"] = alt_gui.checkBox_PlotAll.isChecked()
+    # auto-complete settings
+    l4a["gui"]["auto_complete"] = alt_gui.checkBox_AutoComplete.isChecked()
+    l4a["gui"]["autoforce"] = False
+    # minimum percentage of good data required
+    l4a["gui"]["min_percent"] = max(int(str(alt_gui.lineEdit_MinPercent.text())),1)
+    # get the start and end datetimes entered in the alternate GUI
+    if len(str(alt_gui.lineEdit_StartDate.text())) != 0:
+        l4a["gui"]["startdate"] = str(alt_gui.lineEdit_StartDate.text())
+    else:
+        l4a["gui"]["startdate"] = l4a["info"]["startdate"]
+    if len(str(alt_gui.lineEdit_EndDate.text())) != 0:
+        l4a["gui"]["enddate"] = str(alt_gui.lineEdit_EndDate.text())
+    else:
+        l4a["gui"]["enddate"] = l4a["info"]["enddate"]
+    # now do the work
+    gfalternate_run(ds_tower, ds_alt, l4_info, called_by)
+    return
+
+def gfalternate_run(ds_tower, ds_alt, l4_info, called_by):
+    """ Run the GapFillFromAlternate GUI."""
+    l4a = l4_info[called_by]
+    # get a list of target variables
     series_list = [l4a["outputs"][item]["target"] for item in l4a["outputs"].keys()]
     l4a["gui"]["series_list"] = sorted(list(set(series_list)))
     logger.info(" Gap filling %s using alternate data", l4a["gui"]["series_list"])
+    # initialise the l4_info["run"] dictionary
+    l4a["run"] = {"startdate": l4a["gui"]["startdate"],
+                  "enddate": l4a["gui"]["enddate"]}
+    # run the main gap filling routine depending on window period
     if l4a["gui"]["period_option"] == 1:
+        # manual run, window specified in GUI start and end datetime boxes
         logger.info(" Starting manual run ...")
-        # get the start and end datetimes entered in the alternate GUI
-        if len(str(alt_gui.lineEdit_StartDate.text())) != 0:
-            l4a["info"]["startdate"] = str(alt_gui.lineEdit_StartDate.text())
-        if len(str(alt_gui.lineEdit_EndDate.text())) != 0:
-            l4a["info"]["enddate"] = str(alt_gui.lineEdit_EndDate.text())
         gfalternate_main(ds_tower, ds_alt, l4_info, called_by)
-        gfalternate_plotcoveragelines(ds_tower, l4_info, called_by)
-        logger.info(" Finished manual run ...")
-        # get the start and end datetime of the tower data
-        ldt_tower = ds_tower.series["DateTime"]["Data"]
-        startdate = ldt_tower[0]
-        enddate = ldt_tower[-1]
-        # reset entries in l4_info dictionary
-        l4a["info"]["overlap_startdate"] = startdate.strftime("%Y-%m-%d %H:%M")
-        l4a["info"]["overlap_enddate"] = enddate.strftime("%Y-%m-%d %H:%M")
-        l4a["info"]["startdate"] = startdate.strftime("%Y-%m-%d %H:%M")
-        l4a["info"]["enddate"] = enddate.strftime("%Y-%m-%d %H:%M")
-    elif l4a["gui"]["period_option"] == 2:
-        logger.info("Starting auto (months) run ...")
-        # get the start datetime entered in the alternate GUI
-        nMonths = int(alt_gui.lineEdit_NumberMonths.text())
-        if len(str(alt_gui.lineEdit_StartDate.text())) != 0:
-            l4a["info"]["startdate"] = str(alt_gui.lineEdit_StartDate.text())
-        if len(str(alt_gui.lineEdit_EndDate.text())) != 0:
-            l4a["info"]["enddate"] = str(alt_gui.lineEdit_EndDate.text())
-        l4a["info"]["gui_startdate"] = l4a["info"]["startdate"]
-        l4a["info"]["gui_enddate"] = l4a["info"]["enddate"]
-        startdate = dateutil.parser.parse(l4a["info"]["startdate"])
-        overlap_enddate = dateutil.parser.parse(l4a["info"]["overlap_enddate"])
-        enddate = startdate + dateutil.relativedelta.relativedelta(months=nMonths)
-        enddate = min([overlap_enddate, enddate])
-        l4a["info"]["enddate"] = datetime.datetime.strftime(enddate, "%Y-%m-%d %H:%M")
-        while startdate < overlap_enddate:
-            gfalternate_main(ds_tower, ds_alt, l4_info, called_by)
+        if l4a["info"]["call_mode"] == "interactive":
             gfalternate_plotcoveragelines(ds_tower, l4_info, called_by)
+        logger.info(" Finished manual run ...")
+    elif l4a["gui"]["period_option"] == 2:
+        # automated run with window length in months
+        logger.info("Starting auto (months) run ...")
+        startdate = dateutil.parser.parse(l4a["run"]["startdate"])
+        enddate = startdate + dateutil.relativedelta.relativedelta(months=l4a["gui"]["number_months"])
+        enddate = min([dateutil.parser.parse(l4a["info"]["enddate"]), enddate])
+        l4a["run"]["enddate"] = enddate.strftime("%Y-%m-%d %H:%M")
+        while startdate < enddate:
+            gfalternate_main(ds_tower, ds_alt, l4_info, called_by)
+            if l4a["info"]["call_mode"] == "interactive":
+                gfalternate_plotcoveragelines(ds_tower, l4_info, called_by)
             startdate = enddate
-            enddate = startdate + dateutil.relativedelta.relativedelta(months=nMonths)
-            l4a["info"]["startdate"] = startdate.strftime("%Y-%m-%d %H:%M")
-            enddate = min([enddate, overlap_enddate])
-            l4a["info"]["enddate"] = enddate.strftime("%Y-%m-%d %H:%M")
+            l4a["run"]["startdate"] = startdate.strftime("%Y-%m-%d %H:%M")
+            enddate = startdate + dateutil.relativedelta.relativedelta(months=l4a["gui"]["number_months"])
+            enddate = min([dateutil.parser.parse(l4a["info"]["enddate"]), enddate])
+            l4a["run"]["enddate"] = enddate.strftime("%Y-%m-%d %H:%M")
+        # fill long gaps with autocomplete
         gfalternate_autocomplete(ds_tower, ds_alt, l4_info, called_by)
         logger.info(" Finished auto (months) run ...")
-        # get the start and end datetime of the tower data
-        ldt_tower = ds_tower.series["DateTime"]["Data"]
-        startdate = ldt_tower[0]
-        enddate = ldt_tower[-1]
-        # reset entries in l4_info dictionary
-        l4a["info"]["overlap_startdate"] = startdate.strftime("%Y-%m-%d %H:%M")
-        l4a["info"]["overlap_enddate"] = enddate.strftime("%Y-%m-%d %H:%M")
-        l4a["info"]["startdate"] = startdate.strftime("%Y-%m-%d %H:%M")
-        l4a["info"]["enddate"] = enddate.strftime("%Y-%m-%d %H:%M")
     elif l4a["gui"]["period_option"] == 3:
+        # automated run with window length in days
         logger.info("Starting auto (days) run ...")
         # get the start datetime entered in the alternate GUI
-        nDays = int(alt_gui.lineEdit_NumberDays.text())
-        if len(str(alt_gui.lineEdit_StartDate.text())) != 0:
-            l4a["info"]["startdate"] = str(alt_gui.lineEdit_StartDate.text())
-        if len(str(alt_gui.lineEdit_EndDate.text())) != 0:
-            l4a["info"]["enddate"] = str(alt_gui.lineEdit_EndDate.text())
-        l4a["info"]["gui_startdate"] = l4a["info"]["startdate"]
-        l4a["info"]["gui_enddate"] = l4a["info"]["enddate"]
-        startdate = dateutil.parser.parse(l4a["info"]["startdate"])
-        gui_enddate = dateutil.parser.parse(l4a["info"]["gui_enddate"])
-        overlap_enddate = dateutil.parser.parse(l4a["info"]["overlap_enddate"])
-        enddate = startdate + dateutil.relativedelta.relativedelta(days=nDays)
-        enddate = min([overlap_enddate,enddate, gui_enddate])
-        l4a["info"]["enddate"] = datetime.datetime.strftime(enddate, "%Y-%m-%d %H:%M")
-        l4a["info"]["startdate"] = datetime.datetime.strftime(startdate, "%Y-%m-%d %H:%M")
-        stopdate = min([overlap_enddate, gui_enddate])
-        while startdate < stopdate:
+        startdate = dateutil.parser.parse(l4a["run"]["startdate"])
+        # get the end datetime from the start datetime
+        enddate = startdate + dateutil.relativedelta.relativedelta(days=l4a["gui"]["number_days"])
+        # clip end datetime to last datetime in tower file
+        enddate = min([dateutil.parser.parse(l4a["info"]["enddate"]), enddate])
+        l4a["run"]["enddate"] = enddate.strftime("%Y-%m-%d %H:%M")
+        while startdate < enddate:
             gfalternate_main(ds_tower, ds_alt, l4_info, called_by)
-            gfalternate_plotcoveragelines(ds_tower, l4_info, called_by)
+            if l4a["info"]["call_mode"] == "interactive":
+                gfalternate_plotcoveragelines(ds_tower, l4_info, called_by)
             startdate = enddate
-            enddate = startdate + dateutil.relativedelta.relativedelta(days=nDays)
-            run_enddate = min([stopdate, enddate])
-            l4a["info"]["startdate"] = startdate.strftime("%Y-%m-%d %H:%M")
-            l4a["info"]["enddate"] = run_enddate.strftime("%Y-%m-%d %H:%M")
+            l4a["run"]["startdate"] = startdate.strftime("%Y-%m-%d %H:%M")
+            enddate = startdate + dateutil.relativedelta.relativedelta(days=l4a["gui"]["number_days"])
+            enddate = min([dateutil.parser.parse(l4a["info"]["enddate"]), enddate])
+            l4a["run"]["enddate"] = enddate.strftime("%Y-%m-%d %H:%M")
         gfalternate_autocomplete(ds_tower, ds_alt, l4_info, called_by)
         logger.info(" Finished auto (days) run ...")
-        # get the start and end datetime of the tower data
-        ldt_tower = ds_tower.series["DateTime"]["Data"]
-        startdate = ldt_tower[0]
-        enddate = ldt_tower[-1]
-        # reset entries in l4_info dictionary
-        l4a["info"]["overlap_startdate"] = startdate.strftime("%Y-%m-%d %H:%M")
-        l4a["info"]["overlap_enddate"] = enddate.strftime("%Y-%m-%d %H:%M")
-        l4a["info"]["startdate"] = startdate.strftime("%Y-%m-%d %H:%M")
-        l4a["info"]["enddate"] = enddate.strftime("%Y-%m-%d %H:%M")
     else:
         logger.error("GapFillFromAlternate: unrecognised period option")
-    # write Excel spreadsheet with fit statistics
-    #pfp_io.xl_write_AlternateStats(ds_tower)
-
-def gfalternate_run_nogui(ds_tower, ds_alt, l4_info, called_by):
-    # populate the alternate_info dictionary with things that will be useful
-    l4a = l4_info[called_by]
-    # autoforce is used by gfalternate_autocomplete
-    l4a["gui"]["autoforce"] = False
-    # period option
-    dt_tower = ds_tower.series["DateTime"]["Data"]
-    opt = pfp_utils.get_keyvaluefromcf(cf, ["GUI", "Alternate"], "period_option", default="manual")
-    if opt == "manual":
-        l4a["gui"]["period_option"] = 1
-    elif opt == "monthly":
-        l4a["gui"]["period_option"] = 2
-    elif opt == "days":
-        l4a["gui"]["period_option"] = 3
-    sd = dt_tower[0].strftime("%Y-%m-%d %H:%M")
-    sd = pfp_utils.get_keyvaluefromcf(cf, ["GUI", "Alternate"], "start_date", default=sd)
-    l4a["info"]["startdate"] = sd
-    ed = dt_tower[-1].strftime("%Y-%m-%d %H:%M")
-    ed = pfp_utils.get_keyvaluefromcf(cf, ["GUI", "Alternate"], "end_date", default=ed)
-    l4a["info"]["enddate"] = ed
-    # overwrite option
-    l4a["gui"]["overwrite"] = False
-    opt = pfp_utils.get_keyvaluefromcf(cf, ["GUI", "Alternate"], "overwrite", default="no")
-    if opt.lower() == "yes": l4a["gui"]["overwrite"] = True
-    # show plots option
-    l4a["gui"]["show_plots"] = True
-    opt = pfp_utils.get_keyvaluefromcf(cf, ["GUI", "Alternate"], "show_plots", default="yes")
-    if opt.lower() == "no": l4a["gui"]["show_plots"] = False
-    # show all plots option
-    l4a["gui"]["show_all"] = False
-    opt = pfp_utils.get_keyvaluefromcf(cf, ["GUI", "Alternate"], "show_all", default="no")
-    if opt.lower() == "yes": l4a["gui"]["show_all"] = True
-    # auto-complete option
-    l4a["gui"]["auto_complete"] = True
-    opt = pfp_utils.get_keyvaluefromcf(cf, ["GUI", "Alternate"], "auto_complete", default="yes")
-    if opt.lower() == "no": l4a["gui"]["auto_complete"] = False
-    # minimum percentage of good points required
-    opt = pfp_utils.get_keyvaluefromcf(cf, ["GUI", "Alternate"], "min_percent", default=50)
-    l4a["gui"]["min_percent"] = max(int(opt), 1)
-    # number of months
-    opt = pfp_utils.get_keyvaluefromcf(cf, ["GUI", "Alternate"], "number_months", default=3)
-    l4a["gui"]["number_months"] = int(opt)
-    # number of days
-    opt = pfp_utils.get_keyvaluefromcf(cf, ["GUI", "Alternate"], "number_days", default=90)
-    l4a["gui"]["number_days"] = int(opt)
-    # now set up the rest of the alternate_info dictionary
-    l4a["info"]["site_name"] = ds_tower.globalattributes["site_name"]
-    l4a["info"]["time_step"] = int(ds_tower.globalattributes["time_step"])
-    l4a["gui"]["nperhr"] = int(float(60)/l4a["info"]["time_step"] + 0.5)
-    l4a["gui"]["nperday"] = int(float(24)*l4a["gui"]["nperhr"] + 0.5)
-    l4a["gui"]["max_lags"] = int(float(12)*l4a["gui"]["nperhr"] + 0.5)
-    #alternate_info["tower"] = {}
-    #alternate_info["alternate"] = {}
-    series_list = [l4a["outputs"][item]["label_tower"] for item in l4a["outputs"].keys()]
-    l4a["gui"]["series_list"] = sorted(list(set(series_list)))
-    logger.info(" Gap filling %s using alternate data", str(l4a["gui"]["series_list"]))
-    if l4a["gui"]["period_option"] == 1:
-        gfalternate_main(ds_tower, ds_alt, l4_info)
-        # get the start and end datetime of the tower data
-        startdate = dt_tower[0]
-        enddate = dt_tower[-1]
-        # create the alternate_info dictionary, this will hold much useful information
-        l4a["info"]["overlap_startdate"] = startdate.strftime("%Y-%m-%d %H:%M")
-        l4a["info"]["overlap_enddate"] = enddate.strftime("%Y-%m-%d %H:%M")
-        l4a["info"]["startdate"] = startdate.strftime("%Y-%m-%d %H:%M")
-        l4a["info"]["enddate"] = enddate.strftime("%Y-%m-%d %H:%M")
-    elif l4a["gui"]["period_option"] == 2:
-        nMonths = l4a["gui"]["number_months"]
-        startdate = dateutil.parser.parse(l4a["info"]["startdate"])
-        overlap_enddate = dateutil.parser.parse(l4a["info"]["overlap_enddate"])
-        enddate = startdate + dateutil.relativedelta.relativedelta(months=nMonths)
-        enddate = min([overlap_enddate, enddate])
-        l4a["info"]["enddate"] = datetime.datetime.strftime(enddate, "%Y-%m-%d %H:%M")
-        while startdate < overlap_enddate:
-            gfalternate_main(ds_tower, ds_alt, l4_info)
-            startdate = enddate
-            enddate = startdate + dateutil.relativedelta.relativedelta(months=nMonths)
-            l4a["info"]["startdate"] = startdate.strftime("%Y-%m-%d %H:%M")
-            l4a["info"]["enddate"] = enddate.strftime("%Y-%m-%d %H:%M")
-        gfalternate_autocomplete(ds_tower, ds_alt, l4_info)
-        # get the start and end datetime of the tower data
-        ldt_tower = ds_tower.series["DateTime"]["Data"]
-        startdate = ldt_tower[0]
-        enddate = ldt_tower[-1]
-        # create the alternate_info dictionary, this will hold much useful information
-        l4a["info"]["overlap_startdate"] = startdate.strftime("%Y-%m-%d %H:%M")
-        l4a["info"]["overlap_enddate"] = enddate.strftime("%Y-%m-%d %H:%M")
-        l4a["info"]["startdate"] = startdate.strftime("%Y-%m-%d %H:%M")
-        l4a["info"]["enddate"] = enddate.strftime("%Y-%m-%d %H:%M")
-    elif l4a["gui"]["period_option"] == 3:
-        nDays = l4a["gui"]["number_days"]
-        l4a["info"]["gui_startdate"] = l4a["info"]["startdate"]
-        l4a["info"]["gui_enddate"] = l4a["info"]["enddate"]
-        startdate = dateutil.parser.parse(l4a["info"]["startdate"])
-        gui_enddate = dateutil.parser.parse(l4a["info"]["gui_enddate"])
-        overlap_enddate = dateutil.parser.parse(l4a["info"]["overlap_enddate"])
-        enddate = startdate + dateutil.relativedelta.relativedelta(days=nDays)
-        enddate = min([overlap_enddate, enddate, gui_enddate])
-        l4a["info"]["enddate"] = datetime.datetime.strftime(enddate, "%Y-%m-%d %H:%M")
-        l4a["info"]["startdate"] = datetime.datetime.strftime(startdate, "%Y-%m-%d %H:%M")
-        stopdate = min([overlap_enddate, gui_enddate])
-        while startdate < stopdate:
-            gfalternate_main(ds_tower, ds_alt, l4_info)
-            startdate = enddate
-            enddate = startdate + dateutil.relativedelta.relativedelta(days=nDays)
-            run_enddate = min([stopdate, enddate])
-            l4a["info"]["startdate"] = startdate.strftime("%Y-%m-%d %H:%M")
-            l4a["info"]["enddate"] = run_enddate.strftime("%Y-%m-%d %H:%M")
-        gfalternate_autocomplete(ds_tower, ds_alt, l4_info)
-        # get the start and end datetime of the tower data
-        ldt_tower = ds_tower.series["DateTime"]["Data"]
-        startdate = ldt_tower[0]
-        enddate = ldt_tower[-1]
-        # create the alternate_info dictionary, this will hold much useful information
-        l4a["info"]["overlap_startdate"] = startdate.strftime("%Y-%m-%d %H:%M")
-        l4a["info"]["overlap_enddate"] = enddate.strftime("%Y-%m-%d %H:%M")
-        l4a["info"]["startdate"] = startdate.strftime("%Y-%m-%d %H:%M")
-        l4a["info"]["enddate"] = enddate.strftime("%Y-%m-%d %H:%M")
-    else:
-        logger.error("GapFillFromAlternate: unrecognised period option")
-    # write Excel spreadsheet with fit statistics
-    pfp_io.xl_write_AlternateStats(ds_tower, l4_info)
 
 def gfalternate_update_alternate_info(l4a):
     """Update the l4_info dictionary."""

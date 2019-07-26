@@ -1083,11 +1083,12 @@ def fn_write_csv(cf):
     csvfile.close()
     return
 
-def get_controlfilecontents(ControlFileName,mode="verbose"):
-    if mode!="quiet": logger.info(' Processing the control file ')
-    if len(ControlFileName)!=0:
-        cf = ConfigObj(ControlFileName)
-        cf['controlfile_name'] = ControlFileName
+def get_controlfilecontents(ControlFileName, mode="verbose"):
+    if mode != "quiet":
+        logger.info(" Processing the control file")
+    if len(ControlFileName) != 0:
+        cf = ConfigObj(ControlFileName, indent_type="    ", list_values=False)
+        cf["controlfile_name"] = ControlFileName
     else:
         cf = ConfigObj()
     if "Files" in cf:
