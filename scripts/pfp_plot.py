@@ -44,19 +44,19 @@ def get_ticks(start, end):
         loc = mdt.MinuteLocator()
         fmt = mdt.DateFormatter('%H:%M')
     elif delta <= td(minutes=30):
-        loc = mdt.MinuteLocator(byminute=range(0,60,5))
+        loc = mdt.MinuteLocator(byminute=list(range(0,60,5)))
         fmt = mdt.DateFormatter('%H:%M')
     elif delta <= td(hours=1):
-        loc = mdt.MinuteLocator(byminute=range(0,60,15))
+        loc = mdt.MinuteLocator(byminute=list(range(0,60,15)))
         fmt = mdt.DateFormatter('%H:%M')
     elif delta <= td(hours=6):
         loc = mdt.HourLocator()
         fmt = mdt.DateFormatter('%H:%M')
     elif delta <= td(days=1):
-        loc = mdt.HourLocator(byhour=range(0,24,3))
+        loc = mdt.HourLocator(byhour=list(range(0,24,3)))
         fmt = mdt.DateFormatter('%H:%M')
     elif delta <= td(days=3):
-        loc = mdt.HourLocator(byhour=range(0,24,12))
+        loc = mdt.HourLocator(byhour=list(range(0,24,12)))
         fmt = mdt.DateFormatter('%d/%m %H')
     elif delta <= td(weeks=2):
         loc = mdt.DayLocator()
@@ -86,7 +86,7 @@ def get_yarray(ds,ThisOne):
     return yarray,nRecs,nNotM,nMskd
 
 def get_yaxislimitsfromcf(cf,nFig,maxkey,minkey,nSer,YArray):
-    if maxkey in cf['Plots'][str(nFig)].keys():                               # Y axis minima specified
+    if maxkey in list(cf['Plots'][str(nFig)].keys()):                               # Y axis minima specified
         maxlist = ast.literal_eval(cf['Plots'][str(nFig)][maxkey])     # Evaluate the minima list
         if str(maxlist[nSer])=='Auto':             # This entry is 'Auto' ...
             YAxMax = numpy.ma.maximum.reduce(YArray)                        # ... so take the array minimum value
@@ -94,7 +94,7 @@ def get_yaxislimitsfromcf(cf,nFig,maxkey,minkey,nSer,YArray):
             YAxMax = float(maxlist[nSer])         # Evaluate the entry for this series
     else:
         YAxMax = numpy.ma.maximum.reduce(YArray)                            # Y axis minima not given, use auto
-    if minkey in cf['Plots'][str(nFig)].keys():                               # Y axis minima specified
+    if minkey in list(cf['Plots'][str(nFig)].keys()):                               # Y axis minima specified
         minlist = ast.literal_eval(cf['Plots'][str(nFig)][minkey])     # Evaluate the minima list
         if str(minlist[nSer])=='Auto':             # This entry is 'Auto' ...
             YAxMin = numpy.ma.minimum.reduce(YArray)                        # ... so take the array minimum value
@@ -264,7 +264,7 @@ def pltfingerprint_createdict(cf,ds):
         else:
             fp_info["variables"][var]["Upper"] = c.large_value
     # get the start and end datetimes for all files and find the overlap period
-    var_list = fp_info["variables"].keys()
+    var_list = list(fp_info["variables"].keys())
     ds_0 = ds[fp_info["variables"][var_list[0]]["in_filename"]]
     fp_info["variables"][var_list[0]]["start_date"] = ds_0.series["DateTime"]["Data"][0]
     fp_info["variables"][var_list[0]]["end_date"] = ds_0.series["DateTime"]["Data"][-1]
@@ -293,7 +293,7 @@ def pltfingerprint_readncfiles(cf):
     if "Files" in cf:
         infilename = pfp_io.get_infilenamefromcf(cf)
         ds[infilename] = pfp_io.nc_read_series(infilename)
-    for var in cf["Variables"].keys():
+    for var in list(cf["Variables"].keys()):
         if "in_filename" in cf["Variables"][var]:
             if cf["Variables"][var]["in_filename"] not in ds:
                 infilename = cf["Variables"][var]["in_filename"]
@@ -312,7 +312,7 @@ def plot_fingerprint(cf):
     overlap_start = fp_info["general"]["overlap_start"]
     overlap_end = fp_info["general"]["overlap_end"]
     # get a list of site names and remove duplicates
-    var_list = fp_info["variables"].keys()
+    var_list = list(fp_info["variables"].keys())
     site_name_list = [fp_info["variables"][var]["site_name"] for var in var_list]
     site_name_list = list(set(site_name_list))
     site_name = ','.join(str(x) for x in site_name_list)
@@ -324,7 +324,7 @@ def plot_fingerprint(cf):
     title_str = title_str+' from '+str(overlap_start)+' to '+str(overlap_end)
     # loop over plots
     opt = pfp_utils.get_keyvaluefromcf(cf,["Options"],"show_plots",default="yes")
-    for nFig in cf["Plots"].keys():
+    for nFig in list(cf["Plots"].keys()):
         if opt.lower()=="yes":
             plt.ion()
         else:
@@ -348,12 +348,12 @@ def plot_fingerprint(cf):
             nPerDay = int(float(24)*nPerHr+0.5)
             nDays = len(ldt)/nPerDay
             # let's check the named variable is in the data structure
-            if nc_varname not in ds[infilename].series.keys():
+            if nc_varname not in list(ds[infilename].series.keys()):
                 # if it isn't, let's look for an alias
-                if nc_varname in aliases.keys():
+                if nc_varname in list(aliases.keys()):
                     found_alias = False
                     for alias in aliases[nc_varname]:
-                        if alias in ds[infilename].series.keys():
+                        if alias in list(ds[infilename].series.keys()):
                             nc_varname = alias
                             found_alias = True
                     if not found_alias:
@@ -415,7 +415,7 @@ def plot_fingerprint(cf):
 def plot_fluxnet(cf):
     """ Plot the FluxNet style plots. """
 
-    series_list = cf["Variables"].keys()
+    series_list = list(cf["Variables"].keys())
     infilename = pfp_io.get_infilenamefromcf(cf)
 
     ds = pfp_io.nc_read_series(infilename)
@@ -428,7 +428,7 @@ def plot_fluxnet(cf):
     sdt = ldt[0]
     edt = ldt[-1]
     # Tumbarumba doesn't have RH in the netCDF files
-    if "RH" not in ds.series.keys():
+    if "RH" not in list(ds.series.keys()):
         Ah,f,a = pfp_utils.GetSeriesasMA(ds,'Ah')
         Ta,f,a = pfp_utils.GetSeriesasMA(ds,'Ta')
         RH = pfp_mf.RHfromabsolutehumidity(Ah, Ta)
@@ -439,7 +439,7 @@ def plot_fluxnet(cf):
     nFig = 0
     plt.ion()
     for series in series_list:
-        if series not in ds.series.keys():
+        if series not in list(ds.series.keys()):
             logger.error("Series "+series+" not found in input file, skipping ...")
             continue
         logger.info(" Doing plot for "+series)
@@ -496,8 +496,8 @@ def plottimeseries(cf, nFig, dsa, dsb):
         fig = plt.figure(figsize=(p['PlotWidth'],p['PlotHeight']))
     fig.canvas.set_window_title(p['PlotDescription'])
     plt.figtext(0.5,0.95,SiteName+': '+p['PlotDescription'],ha='center',size=16)
-    for ThisOne, n in zip(p['SeriesList'],range(p['nGraphs'])):
-        if ThisOne in dsa.series.keys():
+    for ThisOne, n in zip(p['SeriesList'],list(range(p['nGraphs']))):
+        if ThisOne in list(dsa.series.keys()):
             aflag = dsa.series[ThisOne]['Flag']
             p['Units'] = dsa.series[ThisOne]['Attr']['units']
             p['YAxOrg'] = p['ts_YAxOrg'] + n*p['yaxOrgOffset']
@@ -506,7 +506,7 @@ def plottimeseries(cf, nFig, dsa, dsb):
             nSer = p['SeriesList'].index(ThisOne)
             p['LYAxMax'],p['LYAxMin'] = get_yaxislimitsfromcf(cf,nFig,'YLMax','YLMin',nSer,L1YArray)
             plot_onetimeseries_left(fig,n,ThisOne,L1XArray,L1YArray,p)
-        if ThisOne in dsb.series.keys():
+        if ThisOne in list(dsb.series.keys()):
             bflag = dsb.series[ThisOne]['Flag']
             p['Units'] = dsb.series[ThisOne]['Attr']['units']
             p['YAxOrg'] = p['ts_YAxOrg'] + n*p['yaxOrgOffset']
@@ -528,7 +528,7 @@ def plottimeseries(cf, nFig, dsa, dsb):
             hr2_ax.plot(Hr2,Av2,'y-',Hr2,Mx2,'r-',Hr2,Mn2,'b-')
             section = pfp_utils.get_cfsection(cf,series=ThisOne,mode='quiet')
             if len(section)!=0:
-                if 'DiurnalCheck' in cf[section][ThisOne].keys():
+                if 'DiurnalCheck' in list(cf[section][ThisOne].keys()):
                     NSdarr = numpy.array(pfp_ck.parse_rangecheck_limit(cf[section][ThisOne]['DiurnalCheck']['NumSd']))
                     nSd = NSdarr[Month-1]
                     hr2_ax.plot(Hr2,Av2+nSd*Sd2,'r.',Hr2,Av2-nSd*Sd2,'b.')
@@ -779,7 +779,7 @@ def plot_quickcheck(cf):
     ncfilename = pfp_io.get_infilenamefromcf(cf)
     # read the netCDF file and return the data structure "ds"
     ds = pfp_io.nc_read_series(ncfilename)
-    series_list = ds.series.keys()
+    series_list = list(ds.series.keys())
     # get the time step
     ts = int(ds.globalattributes["time_step"])
     # get the site name

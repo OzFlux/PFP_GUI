@@ -39,7 +39,7 @@ for n in range(xl_row,sheet.nrows):
             bom_sites_info[str(xlrow[0])][str(int(xlrow[i+1]))]["elevation"] = xlrow[i+4]
             bom_sites_info[str(xlrow[0])][str(int(xlrow[i+1]))]["distance"] = xlrow[i+5]
 
-site_list = bom_sites_info.keys()
+site_list = list(bom_sites_info.keys())
 # loop over sites
 for site in site_list:
     # create a data structure
@@ -59,7 +59,7 @@ for site in site_list:
     # get a Python datetime series from the netCDF time
     modis_time_units = getattr(nc_file.variables["time"],"units")
     modis_dt =  netCDF4.num2date(modis_time,modis_time_units)
-    print modis_dt[0],modis_dt[-1]
+    print(modis_dt[0],modis_dt[-1])
     # get the index of points within the latitude and longitude bounds
     lat_index = numpy.where((lat>=lat_bound_lower)&(lat<=lat_bound_upper))[0]
     lon_index = numpy.where((lon>=lon_bound_lower)&(lon<=lon_bound_upper))[0]

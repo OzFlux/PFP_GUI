@@ -41,7 +41,7 @@ def CalculateET(ds):
     Date: June 2015
     """
     ts = int(ds.globalattributes["time_step"])
-    series_list = ds.series.keys()
+    series_list = list(ds.series.keys())
     Fe_list = [item for item in series_list if "Fe" in item[0:2]]
     for label in Fe_list:
         Fe, flag, attr = pfp_utils.GetSeriesasMA(ds, label)
@@ -70,12 +70,12 @@ def CalculateNEE(cf, ds, l6_info):
     Fsd_threshold = float(pfp_utils.get_keyvaluefromcf(cf, ["Options"], "Fsd_threshold", default=10))
     # get the incoming shortwave radiation and friction velocity
     Fsd, Fsd_flag, Fsd_attr = pfp_utils.GetSeriesasMA(ds, "Fsd")
-    if "Fsd_syn" in ds.series.keys():
+    if "Fsd_syn" in list(ds.series.keys()):
         Fsd_syn, flag, attr = pfp_utils.GetSeriesasMA(ds, "Fsd_syn")
         index = numpy.where(numpy.ma.getmaskarray(Fsd) == True)[0]
         Fsd[index] = Fsd_syn[index]
     ustar, ustar_flag, ustar_attr = pfp_utils.GetSeriesasMA(ds, "ustar")
-    for label in l6_info["NEE"].keys():
+    for label in list(l6_info["NEE"].keys()):
         if "Fc" not in l6_info["NEE"][label] and "ER" not in l6_info["NEE"][label]:
             continue
         Fc_label = l6_info["NEE"][label]["Fc"]
@@ -112,7 +112,7 @@ def CalculateNEP(cf, ds):
     Author: PRI
     Date: May 2015
     """
-    for nee_name in cf["NEE"].keys():
+    for nee_name in list(cf["NEE"].keys()):
         nep_name = nee_name.replace("NEE", "NEP")
         nee, flag, attr = pfp_utils.GetSeriesasMA(ds, nee_name)
         nep = float(-1)*nee
@@ -131,8 +131,8 @@ def cleanup_ustar_dict(ldt,ustar_dict):
     """
     start_year = ldt[0].year
     end_year = ldt[-1].year
-    data_years = range(start_year,end_year+1)
-    ustar_years = ustar_dict.keys()
+    data_years = list(range(start_year,end_year+1))
+    ustar_years = list(ustar_dict.keys())
     ustar_list = ustar_dict[ustar_years[0]]
     for year in data_years:
         if str(year) not in ustar_years:
@@ -140,7 +140,7 @@ def cleanup_ustar_dict(ldt,ustar_dict):
             for item in ustar_list:
                 ustar_dict[str(year)][item] = float(c.missing_value)
     # loop over the list of ustar thresholds
-    year_list = ustar_dict.keys()
+    year_list = list(ustar_dict.keys())
     year_list.sort()
     # get the average of good ustar threshold values
     good_values = []
@@ -166,7 +166,7 @@ def ERUsingFFNET(cf, ds, info):
     Date: August 2014
     """
     if "ffnet" not in info["er"]: return
-    if "ffnet" not in sys.modules.keys():
+    if "ffnet" not in list(sys.modules.keys()):
         logger.error("ERUsingFFNET: I don't think ffnet is installed ...")
         return
     # local pointer to the datetime series
@@ -203,7 +203,7 @@ def ERUsingLasslop(cf, ds, l6_info):
     iel = l6_info["ER"]["ERUsingLasslop"]
     ielo = iel["outputs"]
     # get a list of the required outputs
-    outputs = iel["outputs"].keys()
+    outputs = list(iel["outputs"].keys())
     # need to loop over more than 1 output
     output = outputs[0]
     drivers = ielo[output]["drivers"]
@@ -372,7 +372,7 @@ def ERUsingLasslop(cf, ds, l6_info):
         fig_num = plt.get_fignums()[-1] + 1
     title = site_name+" : ER estimated using Lasslop et al"
     pd = pfp_rpLL.rpLL_initplot(site_name=site_name,label="ER",fig_num=fig_num,title=title,
-                         nDrivers=len(data.keys()),startdate=str(startdate),enddate=str(enddate))
+                         nDrivers=len(list(data.keys())),startdate=str(startdate),enddate=str(enddate))
     pfp_rpLL.rpLL_plot(pd, ds, output, drivers, target, l6_info)
 
 def ERUsingLloydTaylor(cf, ds, l6_info):
@@ -420,7 +420,7 @@ def ERUsingLloydTaylor(cf, ds, l6_info):
         logger.error("ERUsingLloydTaylor: error opening Excel file " + xl_name)
         return
     # loop over the series
-    outputs = iel["outputs"].keys()
+    outputs = list(iel["outputs"].keys())
     for output in outputs:
         # create dictionaries for the results
         E0_results = {"variables":{}}
@@ -444,9 +444,9 @@ def ERUsingLloydTaylor(cf, ds, l6_info):
         (step_date_index_dict,
          all_date_index_dict,
          year_index_dict) = pfp_rpLT.get_dates(datetime_array, configs_dict)
-        date_array = numpy.array(all_date_index_dict.keys())
+        date_array = numpy.array(list(all_date_index_dict.keys()))
         date_array.sort()
-        step_date_array = numpy.array(step_date_index_dict.keys())
+        step_date_array = numpy.array(list(step_date_index_dict.keys()))
         step_date_array.sort()
         # Create variable name lists for results output
         series_rslt_list = ['Nocturnally derived Re', 'GPP from nocturnal derived Re',
@@ -486,13 +486,13 @@ def ERUsingLloydTaylor(cf, ds, l6_info):
             index = numpy.where(year_array == yr)
             opt_params_dict['Eo'][index] = Eo_dict[yr]
             opt_params_dict['Eo error code'][index] = EoQC_dict[yr]
-        E0_results["variables"]["DateTime"] = {"data":[datetime.datetime(int(yr),1,1) for yr in Eo_dict.keys()],
+        E0_results["variables"]["DateTime"] = {"data":[datetime.datetime(int(yr),1,1) for yr in list(Eo_dict.keys())],
                                                "attr":{"units":"Year","format":"yyyy"}}
-        E0_results["variables"]["E0"] = {"data":[float(Eo_dict[yr]) for yr in Eo_dict.keys()],
+        E0_results["variables"]["E0"] = {"data":[float(Eo_dict[yr]) for yr in list(Eo_dict.keys())],
                                          "attr":{"units":"none","format":"0"}}
-        E0_raw_results["variables"]["DateTime"] = {"data":[datetime.datetime(int(yr),1,1) for yr in Eo_raw_dict.keys()],
+        E0_raw_results["variables"]["DateTime"] = {"data":[datetime.datetime(int(yr),1,1) for yr in list(Eo_raw_dict.keys())],
                                                    "attr":{"units":"Year","format":"yyyy"}}
-        E0_raw_results["variables"]["E0"] = {"data":[float(Eo_raw_dict[yr]) for yr in Eo_raw_dict.keys()],
+        E0_raw_results["variables"]["E0"] = {"data":[float(Eo_raw_dict[yr]) for yr in list(Eo_raw_dict.keys())],
                                              "attr":{"units":"none","format":"0"}}
         # write the E0 values to the Excel file
         pfp_io.xl_write_data(xl_sheet,E0_raw_results["variables"],xlCol=0)
@@ -612,7 +612,7 @@ def GetERFromFc(cf, ds, info):
         if item in info["ER"]:
             er_type_list.append(item)
     for er_type in er_type_list:
-        label_list = info["ER"][er_type]["outputs"].keys()
+        label_list = list(info["ER"][er_type]["outputs"].keys())
         for label in label_list:
             source = info["ER"][er_type]["outputs"][label]["source"]
             target = info["ER"][er_type]["outputs"][label]["target"]
@@ -696,7 +696,7 @@ def get_daynight_indicator(cf, ds):
         attr["Fsd_threshold"] = str(Fsd_threshold)
         # we are using Fsd only to define day/night
         if use_fsdsyn.lower() == "yes":
-            if "solar_altitude" not in ds.series.keys():
+            if "solar_altitude" not in list(ds.series.keys()):
                 pfp_ts.get_synthetic_fsd(ds)
             Fsd_syn, f, a = pfp_utils.GetSeriesasMA(ds, "Fsd_syn")
             idx = numpy.ma.where((Fsd <= Fsd_threshold) & (Fsd_syn <= Fsd_threshold))[0]
@@ -708,7 +708,7 @@ def get_daynight_indicator(cf, ds):
         sa_threshold = int(pfp_utils.get_keyvaluefromcf(cf, ["Options"], "sa_threshold", default="-5"))
         attr["sa_threshold"] = str(sa_threshold)
         # we are using solar altitude to define day/night
-        if "solar_altitude" not in ds.series.keys():
+        if "solar_altitude" not in list(ds.series.keys()):
             pfp_ts.get_synthetic_fsd(ds)
         sa, f, a = pfp_utils.GetSeriesasMA(ds, "solar_altitude")
         idx = numpy.ma.where(sa < sa_threshold)[0]
@@ -755,7 +755,7 @@ def get_day_indicator(cf, ds):
         attr["Fsd_threshold"] = str(Fsd_threshold)
         # we are using Fsd only to define day/night
         if use_fsdsyn.lower() == "yes":
-            if "solar_altitude" not in ds.series.keys():
+            if "solar_altitude" not in list(ds.series.keys()):
                 pfp_ts.get_synthetic_fsd(ds)
             Fsd_syn, f, a = pfp_utils.GetSeriesasMA(ds, "Fsd_syn")
             idx = numpy.ma.where((Fsd <= Fsd_threshold) & (Fsd_syn <= Fsd_threshold))[0]
@@ -767,7 +767,7 @@ def get_day_indicator(cf, ds):
         sa_threshold = int(pfp_utils.get_keyvaluefromcf(cf, ["Options"], "sa_threshold", default="-5"))
         attr["sa_threshold"] = str(sa_threshold)
         # we are using solar altitude to define day/night
-        if "solar_altitude" not in ds.series.keys():
+        if "solar_altitude" not in list(ds.series.keys()):
             pfp_ts.get_synthetic_fsd(ds)
         sa, f, a = pfp_utils.GetSeriesasMA(ds, "solar_altitude")
         index = numpy.ma.where(sa < sa_threshold)[0]
@@ -857,7 +857,7 @@ def get_night_indicator(cf, ds):
         attr["Fsd_threshold"] = str(Fsd_threshold)
         # we are using Fsd only to define day/night
         if use_fsdsyn.lower() == "yes":
-            if "solar_altitude" not in ds.series.keys():
+            if "solar_altitude" not in list(ds.series.keys()):
                 pfp_ts.get_synthetic_fsd(ds)
             Fsd_syn, f, a = pfp_utils.GetSeriesasMA(ds, "Fsd_syn")
             idx = numpy.ma.where((Fsd <= Fsd_threshold) & (Fsd_syn <= Fsd_threshold))[0]
@@ -869,7 +869,7 @@ def get_night_indicator(cf, ds):
         sa_threshold = int(pfp_utils.get_keyvaluefromcf(cf, ["Options"], "sa_threshold", default="-5"))
         attr["sa_threshold"] = str(sa_threshold)
         # we are using solar altitude to define day/night
-        if "solar_altitude" not in ds.series.keys():
+        if "solar_altitude" not in list(ds.series.keys()):
             pfp_ts.get_synthetic_fsd(ds)
         sa, f, a = pfp_utils.GetSeriesasMA(ds, "solar_altitude")
         index = numpy.ma.where(sa < sa_threshold)[0]
@@ -920,7 +920,7 @@ def get_turbulence_indicator_ustar(ldt,ustar,ustar_dict,ts):
     Author: PRI
     Date: March 2016
     """
-    year_list = ustar_dict.keys()
+    year_list = list(ustar_dict.keys())
     year_list.sort()
     # now loop over the years in the data to apply the ustar threshold
     turbulence_indicator = {"values":numpy.zeros(len(ldt)),"attr":{}}
@@ -971,7 +971,7 @@ def get_turbulence_indicator_ustar_evg(ldt,ind_day,ind_ustar,ustar,ustar_dict,ts
     # use this value to indicate the transition from day to night
     dinds = numpy.ediff1d(ind_day, to_begin=0)
     # get the list of years
-    year_list = ustar_dict.keys()
+    year_list = list(ustar_dict.keys())
     year_list.sort()
     # now loop over the years in the data to apply the ustar threshold
     # ustar >= threshold ==> ind_ustar = 1 else ind_ustar = 0
@@ -1013,10 +1013,10 @@ def get_ustarthreshold_from_cf(cf,ldt):
     """
     ustar_dict = collections.OrderedDict()
     ustar_threshold_list = []
-    if "ustar_threshold" in cf.keys():
+    if "ustar_threshold" in list(cf.keys()):
         msg = " Using values from ustar_threshold section"
         logger.info(msg)
-        for n in cf["ustar_threshold"].keys():
+        for n in list(cf["ustar_threshold"].keys()):
             ustar_string = cf["ustar_threshold"][str(n)]
             ustar_list = ustar_string.split(",")
             ustar_threshold_list.append(ustar_list)
@@ -1030,7 +1030,7 @@ def get_ustarthreshold_from_cf(cf,ldt):
         logger.error(" ... using default value of 0.25 m/s")
         startyear = ldt[0].year
         endyear = ldt[-1].year
-        years = range(startyear,endyear+1)
+        years = list(range(startyear,endyear+1))
         for year in years:
             ustar_dict[str(year)] = {}
             ustar_dict[str(year)]["ustar_mean"] = float(0.25)
@@ -1139,7 +1139,7 @@ def L6_summary(cf, ds):
     L6_summary_write_ncfile(nc_file, "Annual", annual_dict)
     # cumulative totals
     cumulative_dict = L6_summary_cumulative(ds, series_dict)
-    for year in cumulative_dict.keys():
+    for year in list(cumulative_dict.keys()):
         L6_summary_write_xlfile(xl_file, "Cummulative("+str(year)+")", cumulative_dict[str(year)])
         L6_summary_write_ncfile(nc_file, "Cummulative_"+str(year), cumulative_dict[str(year)])
     # close the Excel workbook
@@ -1163,7 +1163,7 @@ def L6_summary_plotdaily(cf, ds, daily_dict):
     """
     ddv = daily_dict["variables"]
     type_list = []
-    for item in ddv.keys():
+    for item in list(ddv.keys()):
         if item[0:2]=="ER": type_list.append(item[2:])
     for item in type_list:
         if "NEE"+item not in ddv or "GPP"+item not in ddv:
@@ -1245,11 +1245,11 @@ def L6_summary_plotcumulative(cf, ds, cumulative_dict):
     ts = int(ds.globalattributes["time_step"])
     # cumulative plots
     color_list = ["blue","red","green","yellow","magenta","black","cyan","brown"]
-    year_list = cumulative_dict.keys()
+    year_list = list(cumulative_dict.keys())
     year_list.sort()
     cdy0 = cumulative_dict[year_list[0]]
     type_list = []
-    for item in cdy0["variables"].keys():
+    for item in list(cdy0["variables"].keys()):
         if item[0:2]=="ER": type_list.append(item[2:])
     for item in type_list:
         if "NEE"+item not in cdy0["variables"] or "GPP"+item not in cdy0["variables"]:
@@ -1361,11 +1361,11 @@ def L6_summary_createseriesdict(cf,ds):
     series_dict = {"daily":{},"annual":{},"cumulative":{},"lists":{}}
     # adjust units of NEE, NEP, GPP and ER
     sdl = series_dict["lists"]
-    sdl["nee"] = [item for item in cf["NEE"].keys() if "NEE" in item[0:3] and item in ds.series.keys()]
-    sdl["gpp"] = [item for item in cf["GPP"].keys() if "GPP" in item[0:3] and item in ds.series.keys()]
-    sdl["fre"] = [item for item in cf["ER"].keys() if "ER" in item[0:2] and item in ds.series.keys()]
+    sdl["nee"] = [item for item in list(cf["NEE"].keys()) if "NEE" in item[0:3] and item in list(ds.series.keys())]
+    sdl["gpp"] = [item for item in list(cf["GPP"].keys()) if "GPP" in item[0:3] and item in list(ds.series.keys())]
+    sdl["fre"] = [item for item in list(cf["ER"].keys()) if "ER" in item[0:2] and item in list(ds.series.keys())]
     sdl["nep"] = [item.replace("NEE","NEP") for item in sdl["nee"]]
-    sdl["nep"] = [item for item in sdl["nep"] if item in ds.series.keys()]
+    sdl["nep"] = [item for item in sdl["nep"] if item in list(ds.series.keys())]
     sdl["co2"] = sdl["nee"]+sdl["nep"]+sdl["gpp"]+sdl["fre"]
     for item in sdl["co2"]:
         series_dict["daily"][item] = {}
@@ -1374,49 +1374,49 @@ def L6_summary_createseriesdict(cf,ds):
         series_dict["daily"][item]["format"] = "0.00"
         series_dict["cumulative"][item]["operator"] = "sum"
         series_dict["cumulative"][item]["format"] = "0.00"
-    sdl["ET"] = [item for item in ds.series.keys() if "ET" in item[0:2]]
-    sdl["Precip"] = [item for item in ds.series.keys() if "Precip" in item[0:6]]
+    sdl["ET"] = [item for item in list(ds.series.keys()) if "ET" in item[0:2]]
+    sdl["Precip"] = [item for item in list(ds.series.keys()) if "Precip" in item[0:6]]
     sdl["h2o"] = sdl["ET"]+sdl["Precip"]
     for item in sdl["h2o"]:
         series_dict["daily"][item] = {"operator":"sum","format":"0.00"}
         series_dict["cumulative"][item] = {"operator":"sum","format":"0.00"}
-    if "Ah" in ds.series.keys():
+    if "Ah" in list(ds.series.keys()):
         series_dict["daily"]["Ah"] = {"operator":"average","format":"0.00"}
-    if "Cc" in ds.series.keys():
+    if "Cc" in list(ds.series.keys()):
         series_dict["daily"]["Cc"] = {"operator":"average","format":"0.0"}
-    if "Fc" in ds.series.keys():
+    if "Fc" in list(ds.series.keys()):
         series_dict["daily"]["Fc"] = {"operator":"average","format":"0.00"}
-    if "Fe" in ds.series.keys():
+    if "Fe" in list(ds.series.keys()):
         series_dict["daily"]["Fe"] = {"operator":"average","format":"0.0"}
-    if "Fh" in ds.series.keys():
+    if "Fh" in list(ds.series.keys()):
         series_dict["daily"]["Fh"] = {"operator":"average","format":"0.0"}
-    if "Fg" in ds.series.keys():
+    if "Fg" in list(ds.series.keys()):
         series_dict["daily"]["Fg"] = {"operator":"average","format":"0.0"}
-    if "Fn" in ds.series.keys():
+    if "Fn" in list(ds.series.keys()):
         series_dict["daily"]["Fn"] = {"operator":"average","format":"0.0"}
-    if "Fsd" in ds.series.keys():
+    if "Fsd" in list(ds.series.keys()):
         series_dict["daily"]["Fsd"] = {"operator":"average","format":"0.0"}
-    if "Fsu" in ds.series.keys():
+    if "Fsu" in list(ds.series.keys()):
         series_dict["daily"]["Fsu"] = {"operator":"average","format":"0.0"}
-    if "Fld" in ds.series.keys():
+    if "Fld" in list(ds.series.keys()):
         series_dict["daily"]["Fld"] = {"operator":"average","format":"0.0"}
-    if "Flu" in ds.series.keys():
+    if "Flu" in list(ds.series.keys()):
         series_dict["daily"]["Flu"] = {"operator":"average","format":"0.0"}
-    if "ps" in ds.series.keys():
+    if "ps" in list(ds.series.keys()):
         series_dict["daily"]["ps"] = {"operator":"average","format":"0.00"}
-    if "q" in ds.series.keys():
+    if "q" in list(ds.series.keys()):
         series_dict["daily"]["q"] = {"operator":"average","format":"0.0000"}
-    if "RH" in ds.series.keys():
+    if "RH" in list(ds.series.keys()):
         series_dict["daily"]["RH"] = {"operator":"average","format":"0"}
-    if "Sws" in ds.series.keys():
+    if "Sws" in list(ds.series.keys()):
         series_dict["daily"]["Sws"] = {"operator":"average","format":"0.000"}
-    if "Ta" in ds.series.keys():
+    if "Ta" in list(ds.series.keys()):
         series_dict["daily"]["Ta"] = {"operator":"average","format":"0.00"}
-    if "Ts" in ds.series.keys():
+    if "Ts" in list(ds.series.keys()):
         series_dict["daily"]["Ts"] = {"operator":"average","format":"0.00"}
-    if "ustar" in ds.series.keys():
+    if "ustar" in list(ds.series.keys()):
         series_dict["daily"]["ustar"] = {"operator":"average","format":"0.00"}
-    if "Ws" in ds.series.keys():
+    if "Ws" in list(ds.series.keys()):
         series_dict["daily"]["Ws"] = {"operator":"average","format":"0.00"}
     series_dict["annual"] = series_dict["daily"]
     series_dict["monthly"] = series_dict["daily"]
@@ -1455,10 +1455,10 @@ def L6_summary_daily(ds, series_dict):
                                            "flag":f0,
                                            "attr":{"units":"Days","format":"dd/mm/yyyy",
                                                    "time_step":"Daily"}}
-    series_list = series_dict["daily"].keys()
+    series_list = list(series_dict["daily"].keys())
     series_list.sort()
     for item in series_list:
-        if item not in ds.series.keys(): continue
+        if item not in list(ds.series.keys()): continue
         daily_dict["variables"][item] = {"data":[],"attr":{}}
         variable = pfp_utils.GetVariable(ds, item, start=si, end=ei)
         if item in series_dict["lists"]["co2"]:
@@ -1555,7 +1555,7 @@ def L6_summary_monthly(ds,series_dict):
                                              "attr":{"units":"Months", "format":"dd/mm/yyyy",
                                                      "time_step":"Monthly"}}
     # create arrays in monthly_dict
-    series_list = series_dict["monthly"].keys()
+    series_list = list(series_dict["monthly"].keys())
     series_list.sort()
     # create the data arrays
     for item in series_list:
@@ -1573,7 +1573,7 @@ def L6_summary_monthly(ds,series_dict):
         ei = pfp_utils.GetDateIndex(dt, str(end_date), ts=ts, default=len(dt)-1)
         monthly_dict["variables"]["DateTime"]["data"].append(dt[si])
         for item in series_list:
-            if item not in ds.series.keys(): continue
+            if item not in list(ds.series.keys()): continue
             variable = pfp_utils.GetVariable(ds, item, start=si, end=ei)
             if item in series_dict["lists"]["co2"]:
                 variable = pfp_utils.convert_units_func(ds, variable, "gC/m2")
@@ -1617,7 +1617,7 @@ def L6_summary_annual(ds, series_dict):
     ldt = dt[si:ei+1]
     start_year = ldt[0].year
     end_year = ldt[-1].year
-    year_list = range(start_year, end_year+1, 1)
+    year_list = list(range(start_year, end_year+1, 1))
     nYears = len(year_list)
     annual_dict = {"globalattributes":{}, "variables":{}}
     # copy the global attributes
@@ -1630,7 +1630,7 @@ def L6_summary_annual(ds, series_dict):
                                          "flag":numpy.zeros(nYears, dtype=numpy.int32),
                                          "attr":{"units":"Number of days","format":"0"}}
     # create arrays in annual_dict
-    series_list = series_dict["annual"].keys()
+    series_list = list(series_dict["annual"].keys())
     series_list.sort()
     for item in series_list:
         annual_dict["variables"][item] = {"data":numpy.ma.array([float(-9999)]*len(year_list)),
@@ -1647,7 +1647,7 @@ def L6_summary_annual(ds, series_dict):
         nDays = int((ei-si+1)/nperDay+0.5)
         annual_dict["variables"]["nDays"]["data"][i] = nDays
         for item in series_list:
-            if item not in ds.series.keys(): continue
+            if item not in list(ds.series.keys()): continue
             variable = pfp_utils.GetVariable(ds, item, start=si, end=ei)
             if item in series_dict["lists"]["co2"]:
                 variable = pfp_utils.convert_units_func(ds, variable, "gC/m2")
@@ -1686,8 +1686,8 @@ def L6_summary_cumulative(ds, series_dict):
     ldt = dt[si:ei+1]
     start_year = ldt[0].year
     end_year = ldt[-1].year
-    year_list = range(start_year, end_year+1, 1)
-    series_list = series_dict["cumulative"].keys()
+    year_list = list(range(start_year, end_year+1, 1))
+    series_list = list(series_dict["cumulative"].keys())
     cumulative_dict = {}
     for i,year in enumerate(year_list):
         cumulative_dict[str(year)] = cdyr = {"globalattributes":{}, "variables":{}}
@@ -1728,30 +1728,30 @@ def ParseL6ControlFile(cf, ds):
     Date: Back in the day
     """
     # start with the repiration section
-    if "Respiration" in cf.keys() and "ER" not in cf.keys():
+    if "Respiration" in list(cf.keys()) and "ER" not in list(cf.keys()):
         cf["ER"] = cf.pop("Respiration")
     l6_info = {}
     #l6_info["cf"] = copy.deepcopy(cf)
-    if "ER" in cf.keys():
+    if "ER" in list(cf.keys()):
         l6_info["ER"] = {}
-        for output in cf["ER"].keys():
-            if "ERUsingSOLO" in cf["ER"][output].keys():
+        for output in list(cf["ER"].keys()):
+            if "ERUsingSOLO" in list(cf["ER"][output].keys()):
                 pfp_rpNN.rpSOLO_createdict(cf, ds, l6_info, output, "ERUsingSOLO")
-            if "ERUsingFFNET" in cf["ER"][output].keys():
+            if "ERUsingFFNET" in list(cf["ER"][output].keys()):
                 pfp_rpNN.rpFFNET_createdict(cf, ds, l6_info, output, "ERUsingFFNET")
-            if "ERUsingLloydTaylor" in cf["ER"][output].keys():
+            if "ERUsingLloydTaylor" in list(cf["ER"][output].keys()):
                 pfp_rpLT.rpLT_createdict(cf, ds, l6_info, output, "ERUsingLloydTaylor")
-            if "ERUsingLasslop" in cf["ER"][output].keys():
+            if "ERUsingLasslop" in list(cf["ER"][output].keys()):
                 pfp_rpLL.rpLL_createdict(cf, ds, l6_info, output, "ERUsingLasslop")
-            if "MergeSeries" in cf["ER"][output].keys():
+            if "MergeSeries" in list(cf["ER"][output].keys()):
                 rpMergeSeries_createdict(cf, ds, l6_info, output, "MergeSeries")
-    if "NEE" in cf.keys():
+    if "NEE" in list(cf.keys()):
         l6_info["NEE"] = {}
-        for output in cf["NEE"].keys():
+        for output in list(cf["NEE"].keys()):
             rpNEE_createdict(cf, ds, l6_info["NEE"], output)
-    if "GPP" in cf.keys():
+    if "GPP" in list(cf.keys()):
         l6_info["GPP"] = {}
-        for output in cf["GPP"].keys():
+        for output in list(cf["GPP"].keys()):
             rpGPP_createdict(cf, ds, l6_info["GPP"], output)
     return l6_info
 
@@ -1776,13 +1776,13 @@ def PartitionNEE(cf, ds, l6_info):
     Fsd_threshold = float(opt)
     # get the incoming shortwave radiation
     Fsd, Fsd_flag, Fsd_attr = pfp_utils.GetSeriesasMA(ds, "Fsd")
-    if "Fsd_syn" in ds.series.keys():
+    if "Fsd_syn" in list(ds.series.keys()):
         Fsd_syn,flag,attr = pfp_utils.GetSeriesasMA(ds,"Fsd_syn")
         index = numpy.where(numpy.ma.getmaskarray(Fsd)==True)[0]
         #index = numpy.ma.where(numpy.ma.getmaskarray(Fsd)==True)[0]
         Fsd[index] = Fsd_syn[index]
     # calculate GPP from NEE and ER
-    for label in l6_info["GPP"].keys():
+    for label in list(l6_info["GPP"].keys()):
         if "NEE" not in l6_info["GPP"][label] and "ER" not in l6_info["GPP"][label]:
             continue
         NEE_label = l6_info["GPP"][label]["NEE"]
@@ -1827,7 +1827,7 @@ def rpGPP_createdict(cf, ds, info, label):
     opt = pfp_utils.get_keyvaluefromcf(cf, ["GPP", label], "ER", default="ER_LT")
     info[label]["ER"] = opt
     # create an empty series in ds if the output series doesn't exist yet
-    if info[label]["output"] not in ds.series.keys():
+    if info[label]["output"] not in list(ds.series.keys()):
         data, flag, attr = pfp_utils.MakeEmptySeries(ds, info[label]["output"])
         pfp_utils.CreateSeries(ds, info[label]["output"], data, flag, attr)
     return
@@ -1845,7 +1845,7 @@ def rpNEE_createdict(cf, ds, info, label):
     opt = pfp_utils.get_keyvaluefromcf(cf, ["NEE", label], "ER", default="ER_LT")
     info[label]["ER"] = opt
     # create an empty series in ds if the output series doesn't exist yet
-    if info[label]["output"] not in ds.series.keys():
+    if info[label]["output"] not in list(ds.series.keys()):
         data, flag, attr = pfp_utils.MakeEmptySeries(ds, info[label]["output"])
         pfp_utils.CreateSeries(ds, info[label]["output"], data, flag, attr)
     return
@@ -1857,7 +1857,7 @@ def rpMergeSeries_createdict(cf, ds, l6_info, label, called_by):
     # create the merge directory in the info dictionary
     if called_by not in l6_info["ER"]:
         l6_info["ER"][called_by] = {}
-    if "standard" not in l6_info["ER"][called_by].keys():
+    if "standard" not in list(l6_info["ER"][called_by].keys()):
         l6_info["ER"][called_by]["standard"] = {}
     # create the dictionary keys for this series
     l6_info["ER"][called_by]["standard"][label] = {}
@@ -1868,7 +1868,7 @@ def rpMergeSeries_createdict(cf, ds, l6_info, label, called_by):
     sources = pfp_cfg.cfg_string_to_list(opt)
     l6_info["ER"][called_by]["standard"][label]["source"] = sources
     # create an empty series in ds if the output series doesn't exist yet
-    if l6_info["ER"][called_by]["standard"][label]["output"] not in ds.series.keys():
+    if l6_info["ER"][called_by]["standard"][label]["output"] not in list(ds.series.keys()):
         variable = pfp_utils.CreateEmptyVariable(label, nrecs)
         pfp_utils.CreateVariable(ds, variable)
     return

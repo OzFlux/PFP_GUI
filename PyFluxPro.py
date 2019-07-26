@@ -331,7 +331,7 @@ class pfp_main_ui(QtWidgets.QWidget):
         """ Return true if a control file is an L1 file."""
         result = False
         try:
-            cfg_sections = self.cfg.keys()
+            cfg_sections = list(self.cfg.keys())
             # remove the common sections
             common_sections = ["level", "controlfile_name", "Files", "Global", "Output",
                                "Plots", "General", "Options", "Soil", "Massman", "GUI"]
@@ -340,9 +340,9 @@ class pfp_main_ui(QtWidgets.QWidget):
                     cfg_sections.remove(section)
             # now loop over the remaining sections
             for section in cfg_sections:
-                subsections = self.cfg[section].keys()
+                subsections = list(self.cfg[section].keys())
                 for subsection in subsections:
-                    if "Attr" in self.cfg[section][subsection].keys():
+                    if "Attr" in list(self.cfg[section][subsection].keys()):
                         result = True
                         break
         except:
@@ -354,7 +354,7 @@ class pfp_main_ui(QtWidgets.QWidget):
         result = False
         try:
             got_sections = False
-            cfg_sections = self.cfg.keys()
+            cfg_sections = list(self.cfg.keys())
             if (("Files" in cfg_sections) and
                 ("Variables" in cfg_sections)):
                 got_sections = True
@@ -363,10 +363,10 @@ class pfp_main_ui(QtWidgets.QWidget):
             qc_list = ["RangeCheck", "DiurnalCheck", "ExcludeDates", "DependencyCheck", "UpperCheck",
                        "LowerCheck", "ExcludeHours", "Linear", "CorrectWindDirection"]
             for section in ["Variables"]:
-                subsections = self.cfg[section].keys()
+                subsections = list(self.cfg[section].keys())
                 for subsection in subsections:
                     for qc in qc_list:
-                        if qc in self.cfg[section][subsection].keys():
+                        if qc in list(self.cfg[section][subsection].keys()):
                             got_qc = True
                             break
             # final check
@@ -380,7 +380,7 @@ class pfp_main_ui(QtWidgets.QWidget):
         """ Return true if a control file is an L3 file."""
         result = False
         try:
-            cfg_sections = self.cfg.keys()
+            cfg_sections = list(self.cfg.keys())
             if ((("General" in cfg_sections) or
                 ("Soil" in cfg_sections) or
                 ("Massman" in cfg_sections)) and
@@ -394,10 +394,10 @@ class pfp_main_ui(QtWidgets.QWidget):
         """ Return true if control file is concatenation."""
         result = False
         try:
-            cfg_sections = self.cfg.keys()
+            cfg_sections = list(self.cfg.keys())
             if "Files" in cfg_sections:
-                if (("Out" in self.cfg["Files"].keys()) and
-                    ("In" in self.cfg["Files"].keys())):
+                if (("Out" in list(self.cfg["Files"].keys())) and
+                    ("In" in list(self.cfg["Files"].keys()))):
                     result = True
         except:
             result = False
@@ -407,13 +407,13 @@ class pfp_main_ui(QtWidgets.QWidget):
         """ Return true if control file is L4."""
         result = False
         try:
-            cfg_sections = self.cfg.keys()
+            cfg_sections = list(self.cfg.keys())
             for section in cfg_sections:
                 if section in ["Variables", "Drivers", "Fluxes"]:
-                    subsections = self.cfg[section].keys()
+                    subsections = list(self.cfg[section].keys())
                     for subsection in subsections:
-                        if (("GapFillFromAlternate" in self.cfg[section][subsection].keys()) or
-                            ("GapFillFromClimatology" in self.cfg[section][subsection].keys())):
+                        if (("GapFillFromAlternate" in list(self.cfg[section][subsection].keys())) or
+                            ("GapFillFromClimatology" in list(self.cfg[section][subsection].keys()))):
                             result = True
                             break
         except:
@@ -424,13 +424,13 @@ class pfp_main_ui(QtWidgets.QWidget):
         """ Return true if control file is L5."""
         result = False
         try:
-            cfg_sections = self.cfg.keys()
+            cfg_sections = list(self.cfg.keys())
             for section in cfg_sections:
                 if section in ["Variables", "Drivers", "Fluxes"]:
-                    subsections = self.cfg[section].keys()
+                    subsections = list(self.cfg[section].keys())
                     for subsection in subsections:
-                        if (("GapFillUsingSOLO" in self.cfg[section][subsection].keys()) or
-                            ("GapFillUsingMDS" in self.cfg[section][subsection].keys())):
+                        if (("GapFillUsingSOLO" in list(self.cfg[section][subsection].keys())) or
+                            ("GapFillUsingMDS" in list(self.cfg[section][subsection].keys()))):
                             result = True
                             break
         except:
@@ -441,7 +441,7 @@ class pfp_main_ui(QtWidgets.QWidget):
         """ Return true if control file is L6."""
         result = False
         try:
-            cfg_sections = self.cfg.keys()
+            cfg_sections = list(self.cfg.keys())
             if ("ER" in cfg_sections) or ("NEE" in cfg_sections) or ("GPP" in cfg_sections):
                 result = True
         except:
@@ -510,7 +510,7 @@ class pfp_main_ui(QtWidgets.QWidget):
         self.tabs.tab_dict[tab_index_current].cfg_changed = False
 
     def edit_preferences(self):
-        print "Edit/Preferences goes here"
+        print("Edit/Preferences goes here")
         pass
 
     def tabSelected(self, arg=None):
@@ -566,13 +566,13 @@ class pfp_main_ui(QtWidgets.QWidget):
         # remove the corresponding entry in cfg_dict
         self.tabs.cfg_dict.pop(currentIndex)
         # and renumber the keys
-        for n in self.tabs.cfg_dict.keys():
+        for n in list(self.tabs.cfg_dict.keys()):
             if n > currentIndex:
                 self.tabs.cfg_dict[n-1] = self.tabs.cfg_dict.pop(n)
         # remove the corresponding entry in tab_dict
         self.tabs.tab_dict.pop(currentIndex)
         # and renumber the keys
-        for n in self.tabs.tab_dict.keys():
+        for n in list(self.tabs.tab_dict.keys()):
             if n > currentIndex:
                 self.tabs.tab_dict[n-1] = self.tabs.tab_dict.pop(n)
         # decrement the tab index

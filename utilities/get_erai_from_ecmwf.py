@@ -18,11 +18,11 @@ erai_info["type"] = "fc"
 erai_info["format"] = "netcdf"
 
 if len(sys.argv)==1:
-    print "Command line syntax is:"
-    print " python get_erai.py <country>"
-    print "where <country> can be;"
-    print " Australia"
-    print " USA"
+    print("Command line syntax is:")
+    print(" python get_erai.py <country>")
+    print("where <country> can be;")
+    print(" Australia")
+    print(" USA")
     sys.exit
 
 if sys.argv[1].lower()=="australia":
@@ -36,10 +36,10 @@ elif sys.argv[1].lower()=="usa":
     start_date = "2016-01-01"
     end_date = "2017-01-01"
 else:
-    print "Unrecognised country option entered on command line"
-    print "Valid country options are:"
-    print " australia"
-    print " usa"
+    print("Unrecognised country option entered on command line")
+    print("Valid country options are:")
+    print(" australia")
+    print(" usa")
     sys.exit()
 
 server = ECMWFDataServer()
@@ -47,9 +47,9 @@ sd = dateutil.parser.parse(start_date)
 ed = dateutil.parser.parse(end_date)
 start_year = sd.year
 end_year = ed.year
-year_list = range(start_year,end_year+1)
+year_list = list(range(start_year,end_year+1))
 for year in year_list:
-    print " Processing year: ",str(year)
+    print(" Processing year: ",str(year))
     sds = str(year)+"-01-01"
     edc = datetime.datetime(year+1,1,1,0,0,0)
     eds = edc.strftime("%Y-%m-%d")

@@ -14,7 +14,7 @@ from scipy.interpolate import InterpolatedUnivariateSpline
 import xlrd
 # check the scripts directory is present
 if not os.path.exists("../scripts/"):
-    print "erai2nc: the scripts directory is missing"
+    print("erai2nc: the scripts directory is missing")
     sys.exit()
 # since the scripts directory is there, try importing the modules
 sys.path.append('../scripts')
@@ -66,7 +66,7 @@ site_sa_limit = cf["Options"]["site_sa_limit"]
 # get the site information from the site master spreadsheet
 site_info = read_site_master(xl_file_path, xl_sheet_name)
 # get a list of sites
-site_list = site_info.keys()
+site_list = list(site_info.keys())
 # and a list of the ERAI files to be processed
 erai_list = sorted(glob.glob(erai_path))
 #erai_list = ["/home/peter/OzFlux/ERAI/ERAI_2014.nc",

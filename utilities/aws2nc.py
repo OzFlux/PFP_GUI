@@ -60,7 +60,7 @@ for site_name in sorted(site_list):
     site_latitude = bom_sites_info[site_name]["latitude"]
     site_longitude = bom_sites_info[site_name]["longitude"]
     site_elevation = bom_sites_info[site_name]["elevation"]
-    site_number_list = bom_sites_info[site_name].keys()
+    site_number_list = list(bom_sites_info[site_name].keys())
     for item in ["latitude","longitude","elevation"]:
         if item in site_number_list: site_number_list.remove(item)
     # read the CSV files and put the contents into data_dict
@@ -94,7 +94,7 @@ for site_name in sorted(site_list):
     # now pull the data out and put it in separate data structures, one per station, all
     # of which are held in a data structure dictionary
     ds_dict = {}
-    for bom_id in data_dict.keys():
+    for bom_id in list(data_dict.keys()):
         log.info("Processing BoM station: "+str(bom_id))
         # create a data structure
         ds=qcio.DataStructure()
@@ -161,7 +161,7 @@ for site_name in sorted(site_list):
 
     # get the earliest start datetime and the latest end datetime
     log.info("Finding the start and end dates")
-    bom_id_list = ds_dict.keys()
+    bom_id_list = list(ds_dict.keys())
     ds0 = ds_dict[bom_id_list[0]]
     ldt = ds0.series["DateTime"]["Data"]
     #print bom_id_list[0],":",ldt[0],ldt[-1]
@@ -220,7 +220,7 @@ for site_name in sorted(site_list):
             qcutils.CreateSeries(ds_all,output_label,data_all,flag_all,attr)
     # get precipitation per time step
     # now get precipitation per time step from the interpolated precipitation accumulated over the day
-    precip_list = [x for x in ds_all.series.keys() if ("Precip" in x) and ("_QCFlag" not in x)]
+    precip_list = [x for x in list(ds_all.series.keys()) if ("Precip" in x) and ("_QCFlag" not in x)]
     #print precip_list
     log.info("Converting 24 hour accumulated precipitation")
     for output_label in precip_list:
@@ -261,9 +261,9 @@ for site_name in sorted(site_list):
         # put the precipitation per time step back into the data struicture
         qcutils.CreateSeries(ds_all,output_label,precip,accum_flag,accum_attr)
     # calculate missing humidities
-    RH_list = sorted([x for x in ds_all.series.keys() if ("RH" in x) and ("_QCFlag" not in x)])
-    Ta_list = sorted([x for x in ds_all.series.keys() if ("Ta" in x) and ("_QCFlag" not in x)])
-    ps_list = sorted([x for x in ds_all.series.keys() if ("ps" in x) and ("_QCFlag" not in x)])
+    RH_list = sorted([x for x in list(ds_all.series.keys()) if ("RH" in x) and ("_QCFlag" not in x)])
+    Ta_list = sorted([x for x in list(ds_all.series.keys()) if ("Ta" in x) and ("_QCFlag" not in x)])
+    ps_list = sorted([x for x in list(ds_all.series.keys()) if ("ps" in x) and ("_QCFlag" not in x)])
     for RH_label,Ta_label,ps_label in zip(RH_list,Ta_list,ps_list):
         Ta,f,a = qcutils.GetSeriesasMA(ds_all,Ta_label)
         RH,f,a = qcutils.GetSeriesasMA(ds_all,RH_label)
@@ -295,4 +295,4 @@ for site_name in sorted(site_list):
     qcio.nc_write_series(ncfile,ds_all,ndims=1)
     log.info("Finished site: "+site_name)
 
-print "aws2nc: All done"
+print("aws2nc: All done")

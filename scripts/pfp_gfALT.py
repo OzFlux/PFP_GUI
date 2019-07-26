@@ -122,7 +122,7 @@ def gfalternate_autocomplete(ds_tower, ds_alt, l4_info, called_by, mode="verbose
             dt_alternate = ds_alternate.series["DateTime"]["Data"]
             si_alternate = pfp_utils.GetDateIndex(dt_alternate, l4a["info"]["gui_startdate"], ts=ts, default=0)
             ei_alternate = pfp_utils.GetDateIndex(dt_alternate, l4a["info"]["gui_enddate"], ts=ts, default=nRecs-1)
-            alt_series_list = [item for item in ds_alternate.series.keys() if "_QCFlag" not in item]
+            alt_series_list = [item for item in list(ds_alternate.series.keys()) if "_QCFlag" not in item]
             alt_series_list = [item for item in alt_series_list if l4a["outputs"][label_output]["target"] in item]
             for label_alternate in alt_series_list:
                 data_alt, _, _ = pfp_utils.GetSeriesasMA(ds_alternate, label_alternate, si=si_alternate, ei=ei_alternate)
@@ -161,8 +161,8 @@ def gfalternate_autocomplete(ds_tower, ds_alt, l4_info, called_by, mode="verbose
                 logger.info(msg)
             min_points = max([int(((gap[1]-gap[0])+1)*l4a["gui"]["min_percent"]/100), 3*l4a["gui"]["nperhr"]])
             num_good_points = 0
-            num_points_list = data_all.keys()
-            for label in data_all.keys():
+            num_points_list = list(data_all.keys())
+            for label in list(data_all.keys()):
                 if numpy.ma.count(data_all[label][gap[0]:gap[1]]) < min_points:
                     num_points_list.remove(label)
                     continue
@@ -324,7 +324,7 @@ def gfalternate_getalternatevarlist(ds_alternate, label):
     Author: PRI
     Date: August 2014
     """
-    alternate_var_list = [item for item in ds_alternate.series.keys() if label in item]
+    alternate_var_list = [item for item in list(ds_alternate.series.keys()) if label in item]
     # remove any extraneous Fn labels (alternate has Fn_lw and Fn_sw)
     if label=="Fn":
         alternate_var_list = [item for item in alternate_var_list if "lw" not in item]
@@ -354,7 +354,7 @@ def gfalternate_getdataas2d(odt, data, l4a):
     while abs(odt[ei].hour + float(odt[ei].minute)/60) > c.eps:
         ei = ei - 1
     data_wholedays = data[si: ei + 1]
-    ndays = len(data_wholedays)/nperday
+    ndays = len(data_wholedays)//nperday
     return numpy.ma.reshape(data_wholedays, [ndays, nperday])
 
 def gfalternate_getdateindices(ldt_tower,ldt_alternate,alternate_info,match):
@@ -383,10 +383,10 @@ def gfalternate_getdielaverage(data_dict, l4a):
     diel_avg = {}
     for label_output in output_list:
         diel_avg[label_output] = {}
-        if "data" in data_dict[label_output].keys():
+        if "data" in list(data_dict[label_output].keys()):
             data_2d = gfalternate_getdataas2d(odt, data_dict[label_output]["data"], l4a)
             diel_avg[label_output]["data"] = numpy.ma.average(data_2d, axis=0)
-        if "fitcorr" in data_dict[label_output].keys():
+        if "fitcorr" in list(data_dict[label_output].keys()):
             data_2d = gfalternate_getdataas2d(odt, data_dict[label_output]["fitcorr"], l4a)
             diel_avg[label_output]["fitcorr"] = numpy.ma.average(data_2d, axis=0)
     return diel_avg
@@ -411,9 +411,9 @@ def gfalternate_getfitcorrecteddata(data_dict, stat_dict, l4a):
 def gfalternate_getlabeloutputlist(l4_info, label_tower):
     l4a = l4_info["GapFillFromAlternate"]
     l4m = l4_info["MergeSeries"]
-    olist = [item for item in l4a["outputs"].keys() if l4a["outputs"][item]["target"] == label_tower]
-    for item in l4m.keys():
-        if label_tower in l4m[item].keys():
+    olist = [item for item in list(l4a["outputs"].keys()) if l4a["outputs"][item]["target"] == label_tower]
+    for item in list(l4m.keys()):
+        if label_tower in list(l4m[item].keys()):
             mlist = l4m[item][label_tower]["source"]
     label_output_list = []
     for item in mlist:
@@ -761,7 +761,7 @@ def gfalternate_initplot(data_dict, l4a, **kwargs):
     nts = len(output_list) + 1
     pd["ts_bottom"] = pd["margin_bottom"] + pd["xy_height"] + pd["xyts_space"]
     pd["ts_height"] = (1.0 - pd["margin_top"] - pd["ts_bottom"])/nts
-    for key, value in kwargs.iteritems():
+    for key, value in kwargs.items():
         pd[key] = value
     return pd
 
@@ -1037,9 +1037,9 @@ def gfalternate_plotcoveragelines(ds_tower, l4_info, called_by):
     start_date = ldt[0].strftime("%Y-%m-%d")
     end_date = ldt[-1].strftime("%Y-%m-%d")
     # list of outputs to plot
-    outputs = l4ia["outputs"].keys()
+    outputs = list(l4ia["outputs"].keys())
     # ist of targets
-    targets = [l4ia["outputs"][output]["target"] for output in l4ia["outputs"].keys()]
+    targets = [l4ia["outputs"][output]["target"] for output in list(l4ia["outputs"].keys())]
     targets = list(set(targets))
     ylabel_list = [""] + targets + [""]
     ylabel_right_list = [""]
@@ -1058,19 +1058,19 @@ def gfalternate_plotcoveragelines(ds_tower, l4_info, called_by):
     fig.canvas.set_window_title(title)
     plt.ylim([0, len(targets) + 1])
     plt.xlim([ldt[0], ldt[-1]])
-    for label, n in zip(targets, range(1, len(targets) + 1)):
+    for label, n in zip(targets, list(range(1, len(targets) + 1))):
         data_series, _, _ = pfp_utils.GetSeriesasMA(ds_tower, label)
         percent = 100*numpy.ma.count(data_series)/len(data_series)
         ylabel_right_list.append("{0:.0f}%".format(percent))
         ind_series = numpy.ma.ones(len(data_series))*float(n)
         ind_series = numpy.ma.masked_where(numpy.ma.getmaskarray(data_series) == True, ind_series)
         plt.plot(ldt, ind_series, color=colors[numpy.mod(n, 8)], linewidth=1)
-        if label+"_composite" in ds_tower.series.keys():
+        if label+"_composite" in list(ds_tower.series.keys()):
             data_composite, _, _ = pfp_utils.GetSeriesasMA(ds_tower, label+"_composite")
             ind_composite = numpy.ma.ones(len(data_composite))*float(n)
             ind_composite = numpy.ma.masked_where(numpy.ma.getmaskarray(data_composite) == True, ind_composite)
             plt.plot(ldt, ind_composite, color=colors[numpy.mod(n,8)], linewidth=4)
-    ylabel_posn = range(0, len(targets)+2)
+    ylabel_posn = list(range(0, len(targets)+2))
     pylab.yticks(ylabel_posn, ylabel_list)
     ylabel_right_list.append("")
     ax2 = ax1.twinx()
@@ -1082,7 +1082,7 @@ def gfalternate_plotcoveragelines(ds_tower, l4_info, called_by):
 def gfalternate_plotsummary(ds,alternate_info):
     """ Plot single pages of summary results for groups of variables. """
     # get a list of variables for which alternate data is available
-    output_list = ds.alternate.keys()
+    output_list = list(ds.alternate.keys())
     if len(ds.alternate[output_list[0]]["results"]["startdate"])==0:
         logger.info("gfalternate: no summary data to plot")
         return
@@ -1112,7 +1112,7 @@ def gfalternate_plotsummary(ds,alternate_info):
     # turn on interactive plotting
     plt.ion()
     # now loop over the group lists
-    for nFig in ds.cf["Alternate_Summary"].keys():
+    for nFig in list(ds.cf["Alternate_Summary"].keys()):
         plot_title = ds.cf["Alternate_Summary"][str(nFig)]["Title"]
         var_list = ast.literal_eval(ds.cf["Alternate_Summary"][str(nFig)]["Variables"])
         # set up the subplots on the page
@@ -1132,7 +1132,7 @@ def gfalternate_plotsummary(ds,alternate_info):
             # append the variable name to the variable name string
             figlab = figlab+output
             # and loop over rows in plot
-            for row,rlabel,ylabel in zip(range(len(result_list)),result_list,ylabel_list):
+            for row,rlabel,ylabel in zip(list(range(len(result_list))),result_list,ylabel_list):
                 # if this is the first row, add the column title
                 #if row==0: axs[row,col].set_title(output+" ("+source+")")
                 if row==0: axs[row,col].set_title(output)
@@ -1210,7 +1210,7 @@ def gfalternate_run_gui(alt_gui):
     l4a["gui"]["max_lags"] = int(float(12)*l4a["gui"]["nperhr"] + 0.5)
     #l4a["gui"]["tower"] = {}
     #l4a["gui"]["alternate"] = {}
-    series_list = [l4a["outputs"][item]["target"] for item in l4a["outputs"].keys()]
+    series_list = [l4a["outputs"][item]["target"] for item in list(l4a["outputs"].keys())]
     l4a["gui"]["series_list"] = sorted(list(set(series_list)))
     logger.info(" Gap filling %s using alternate data", l4a["gui"]["series_list"])
     if l4a["gui"]["period_option"] == 1:
@@ -1361,7 +1361,7 @@ def gfalternate_run_nogui(ds_tower, ds_alt, l4_info, called_by):
     l4a["gui"]["max_lags"] = int(float(12)*l4a["gui"]["nperhr"] + 0.5)
     #alternate_info["tower"] = {}
     #alternate_info["alternate"] = {}
-    series_list = [l4a["outputs"][item]["label_tower"] for item in l4a["outputs"].keys()]
+    series_list = [l4a["outputs"][item]["label_tower"] for item in list(l4a["outputs"].keys())]
     l4a["gui"]["series_list"] = sorted(list(set(series_list)))
     logger.info(" Gap filling %s using alternate data", str(l4a["gui"]["series_list"]))
     if l4a["gui"]["period_option"] == 1:

@@ -19,7 +19,7 @@ from configobj import ConfigObj
 import xlrd
 # check the scripts directory is present
 if not os.path.exists("../scripts/"):
-    print "erai2nc: the scripts directory is missing"
+    print("erai2nc: the scripts directory is missing")
     sys.exit()
 # since the scripts directory is there, try importing the modules
 sys.path.append('../scripts')
@@ -67,7 +67,7 @@ isd_base_path = cf["Files"]["isd_base_path"]
 logger.info("Processing site master spreadsheet")
 site_info = read_site_master(xl_file_path, xl_sheet_name)
 # get a list of sites
-site_list = site_info.keys()
+site_list = list(site_info.keys())
 # parse the control file to get a dictionary containing lists of the ISD sites
 # required for each year
 ftp_site_list = {}

@@ -28,11 +28,11 @@ def AhfromRH(ds, Ah_out, RH_in, Ta_in):
     zeros = numpy.zeros(nRecs,dtype=numpy.int32)
     ones = numpy.ones(nRecs,dtype=numpy.int32)
     for item in [RH_in,Ta_in]:
-        if item not in ds.series.keys():
+        if item not in list(ds.series.keys()):
             msg = " AhfromRH: Requested series "+item+" not found, "+Ah_out+" not calculated"
             logger.error(msg)
             return 0
-    if Ah_out in ds.series.keys():
+    if Ah_out in list(ds.series.keys()):
         msg = " AhfromRH: Output series "+Ah_out+" already exists, skipping ..."
         logger.error(msg)
         return 0
@@ -64,11 +64,11 @@ def AhfromMR(ds, Ah_out, MR_in, Ta_in, ps_in):
     zeros = numpy.zeros(nRecs,dtype=numpy.int32)
     ones = numpy.ones(nRecs,dtype=numpy.int32)
     for item in [MR_in,Ta_in,ps_in]:
-        if item not in ds.series.keys():
+        if item not in list(ds.series.keys()):
             msg = " AhfromMR: Requested series "+item+" not found, "+Ah_out+" not calculated"
             logger.error(msg)
             return 0
-    if Ah_out in ds.series.keys():
+    if Ah_out in list(ds.series.keys()):
         msg = " AhfromMR: Output series "+Ah_out+" already exists, skipping ..."
         logger.error(msg)
         return 0
@@ -93,7 +93,7 @@ def ConvertK2C(ds, T_out, T_in):
     Author: PRI
     Date: February 2018
     """
-    if T_in not in ds.series.keys():
+    if T_in not in list(ds.series.keys()):
         msg = " ConvertK2C: variable " + T_in + " not found, skipping ..."
         logger.warning(msg)
         return 0
@@ -160,7 +160,7 @@ def DateTimeFromDoY(ds, dt_out, Year_in, DoY_in, Hdh_in):
     ds.series[dt_out]["Attr"]["long_name"] = "Datetime in local timezone"
     ds.series[dt_out]["Attr"]["units"] = "None"
     # now remove any "data"" from empty lines
-    series_list = ds.series.keys()
+    series_list = list(ds.series.keys())
     if dt_out in series_list: series_list.remove(dt_out)
     for item in series_list:
         ds.series[item]["Data"] = ds.series[item]["Data"][idx]
@@ -169,7 +169,7 @@ def DateTimeFromDoY(ds, dt_out, Year_in, DoY_in, Hdh_in):
     return 1
 
 def DateTimeFromTimeStamp(ds, dt_out, TimeStamp_in, fmt=""):
-    if TimeStamp_in not in ds.series.keys():
+    if TimeStamp_in not in list(ds.series.keys()):
         logger.error(" Required series "+TimeStamp_in+" not found")
         return 0
     TimeStamp = ds.series[TimeStamp_in]["Data"]
@@ -194,7 +194,7 @@ def DateTimeFromTimeStamp(ds, dt_out, TimeStamp_in, fmt=""):
     ds.series[dt_out]["Attr"]["long_name"] = "Datetime in local timezone"
     ds.series[dt_out]["Attr"]["units"] = "None"
     # now remove any "data"" from empty lines
-    series_list = ds.series.keys()
+    series_list = list(ds.series.keys())
     if dt_out in series_list: series_list.remove(dt_out)
     for item in series_list:
         ds.series[item]["Data"] = ds.series[item]["Data"][idx]
@@ -216,10 +216,10 @@ def DateTimeFromExcelDateAndTime(ds, dt_out, xlDate, xlTime):
     return 1
 
 def DateTimeFromDateAndTimeString(ds, dt_out, Date, Time):
-    if Date not in ds.series.keys():
+    if Date not in list(ds.series.keys()):
         logger.error(" Requested date series "+Date+" not found")
         return 0
-    if Time not in ds.series.keys():
+    if Time not in list(ds.series.keys()):
         logger.error(" Requested time series "+Time+" not found")
         return 0
     DateString = ds.series[Date]["Data"]
@@ -237,7 +237,7 @@ def DateTimeFromDateAndTimeString(ds, dt_out, Date, Time):
     ds.series[dt_out]["Attr"]["long_name"] = "Datetime in local timezone"
     ds.series[dt_out]["Attr"]["units"] = "None"
     # now remove any "data"" from empty lines
-    series_list = ds.series.keys()
+    series_list = list(ds.series.keys())
     if dt_out in series_list: series_list.remove(dt_out)
     for item in series_list:
         ds.series[item]["Data"] = ds.series[item]["Data"][idx]
@@ -254,11 +254,11 @@ def MRfromAh(ds, MR_out, Ah_in, Ta_in, ps_in):
     zeros = numpy.zeros(nRecs,dtype=numpy.int32)
     ones = numpy.ones(nRecs,dtype=numpy.int32)
     for item in [Ah_in, Ta_in, ps_in]:
-        if item not in ds.series.keys():
+        if item not in list(ds.series.keys()):
             msg = " MRfromAh: Requested series "+item+" not found, "+MR_out+" not calculated"
             logger.error(msg)
             return 0
-    if MR_out in ds.series.keys():
+    if MR_out in list(ds.series.keys()):
         msg = " MRfromAh: Output series "+MR_out+" already exists, skipping ..."
         logger.error(msg)
         return 0
@@ -282,11 +282,11 @@ def MRfromRH(ds, MR_out, RH_in, Ta_in, ps_in):
     zeros = numpy.zeros(nRecs,dtype=numpy.int32)
     ones = numpy.ones(nRecs,dtype=numpy.int32)
     for item in [RH_in, Ta_in, ps_in]:
-        if item not in ds.series.keys():
+        if item not in list(ds.series.keys()):
             msg = " MRfromRH: Requested series "+item+" not found, "+MR_out+" not calculated"
             logger.error(msg)
             return 0
-    if MR_out in ds.series.keys():
+    if MR_out in list(ds.series.keys()):
         msg = " MRfromRH: Output series "+MR_out+" already exists, skipping ..."
         logger.error(msg)
         return 0

@@ -73,7 +73,7 @@ access_month_list = access_month_full_list[idx+1:]
 # read the site master file and get a list of sites to process
 logger.info("Reading the site master file")
 site_info = read_site_master(xl_file_path, sheet_name)
-site_list = site_info.keys()
+site_list = list(site_info.keys())
 for site in site_list:
     logger.info("Processing site "+site)
     access_file_path_list = []

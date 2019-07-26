@@ -66,7 +66,7 @@ def do_2dinterpolation(array_2d):
                       (coords_x, coords_y), method = 'linear')
 
     # Retrieve the central tile
-    array_2d_filled = grid_z[num_y / 3: num_y / 3 * 2, num_x / 3: num_x / 3 * 2]
+    array_2d_filled = grid_z[num_y // 3: num_y // 3 * 2, num_x // 3: num_x // 3 * 2]
 
     # Check something...
     if WasMA:
@@ -153,7 +153,7 @@ def do_diurnalstats(Month, Hdh, data, xlSheet, format_string='',ts=30):
         xlSheet.write(1,xlCol+3,'Mx')
         xlSheet.write(1,xlCol+4,'Mn')
         for j in range(len(Hr)):
-            xlSheet.write(j+2,xlCol,Num[j])
+            xlSheet.write(j+2,xlCol,float(Num[j]))
             xlSheet.write(j+2,xlCol+1,Av[j],d_xf)
             xlSheet.write(j+2,xlCol+2,Sd[j],d_xf)
             xlSheet.write(j+2,xlCol+3,Mx[j],d_xf)
@@ -186,8 +186,8 @@ def get_rangecheck_limit(cf,label,upr_def=1E10,lwr_def=-1E10):
     upper = float(upr_def)
     lower = float(lwr_def)
     for section in ['Variables']:
-        if label in cf[section].keys():
-            if 'RangeCheck' in cf[section][label].keys():
+        if label in list(cf[section].keys()):
+            if 'RangeCheck' in list(cf[section][label].keys()):
                 upper = float(cf[section][label]['RangeCheck']['Upper'])
                 lower = float(cf[section][label]['RangeCheck']['Lower'])
     return upper,lower
@@ -195,8 +195,8 @@ def get_rangecheck_limit(cf,label,upr_def=1E10,lwr_def=-1E10):
 def get_formatstring(cf,label,fmt_def=''):
     fmt_str = fmt_def
     for section in ['Variables']:
-        if label in cf[section].keys():
-            if 'Format' in cf[section][label].keys():
+        if label in list(cf[section].keys()):
+            if 'Format' in list(cf[section][label].keys()):
                 fmt_str = str(cf[section][label]['Format'])
     return fmt_str
 
@@ -208,8 +208,8 @@ def climatology(cf):
     ds = pfp_io.nc_read_series(nc_filename)
     # calculate Fa if it is not in the data structure
     got_Fa = True
-    if "Fa" not in ds.series.keys():
-        if "Fn" in ds.series.keys() and "Fg" in ds.series.keys():
+    if "Fa" not in list(ds.series.keys()):
+        if "Fn" in list(ds.series.keys()) and "Fg" in list(ds.series.keys()):
             pfp_ts.CalculateAvailableEnergy(ds,Fa_out='Fa',Fn_in='Fn',Fg_in='Fg')
         else:
             got_Fa = False
@@ -235,11 +235,11 @@ def climatology(cf):
     Month = Month[si:ei+1]
     # get the number of time steps in a day and the number of days in the data
     ntsInDay = int(24.0*60.0/float(ts))
-    nDays = int(len(ldt))/ntsInDay
+    nDays = int(len(ldt))//ntsInDay
 
-    for ThisOne in cf['Variables'].keys():
-        if "AltVarName" in cf['Variables'][ThisOne].keys(): ThisOne = cf['Variables'][ThisOne]["AltVarName"]
-        if ThisOne in ds.series.keys():
+    for ThisOne in list(cf['Variables'].keys()):
+        if "AltVarName" in list(cf['Variables'][ThisOne].keys()): ThisOne = cf['Variables'][ThisOne]["AltVarName"]
+        if ThisOne in list(ds.series.keys()):
             logger.info(" Doing climatology for "+ThisOne)
             data,f,a = pfp_utils.GetSeriesasMA(ds,ThisOne,si=si,ei=ei)
             if numpy.ma.count(data)==0:

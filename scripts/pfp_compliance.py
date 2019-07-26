@@ -142,7 +142,7 @@ def change_global_attributes(cfg, ds):
     for gattr in gattr_list:
         ds.globalattributes[gattr] = cfg["Global"][gattr]
     # remove deprecated global attributes
-    flag_list = [g for g in ds.globalattributes.keys() if "Flag" in g]
+    flag_list = [g for g in list(ds.globalattributes.keys()) if "Flag" in g]
     others_list = ["end_datetime", "start_datetime", "Functions", "doi"]
     remove_list = others_list + flag_list
     for gattr in list(ds.globalattributes.keys()):

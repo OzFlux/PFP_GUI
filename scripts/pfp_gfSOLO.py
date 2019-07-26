@@ -94,7 +94,7 @@ def gfSOLO_autocomplete(ds, solo):
         return
     ldt = ds.series["DateTime"]["Data"]
     nRecs = len(ldt)
-    for output in solo["outputs"].keys():
+    for output in list(solo["outputs"].keys()):
         not_enough_points = False
         target = solo["outputs"][output]["target"]
         data_solo, _, _ = pfp_utils.GetSeriesasMA(ds, output)
@@ -142,16 +142,16 @@ def gfSOLO_done(solo_gui):
 
 def gfSOLO_getserieslist(cf):
     series_list = []
-    if "Drivers" in cf.keys():
-        for series in cf["Drivers"].keys():
+    if "Drivers" in list(cf.keys()):
+        for series in list(cf["Drivers"].keys()):
             if "GapFillUsingSOLO" in cf["Drivers"][series]:
                 series_list.append(series)
-    elif "Fluxes" in cf.keys():
-        for series in cf["Fluxes"].keys():
+    elif "Fluxes" in list(cf.keys()):
+        for series in list(cf["Fluxes"].keys()):
             if "GapFillUsingSOLO" in cf["Fluxes"][series]:
                 series_list.append(series)
-    elif "Variables" in cf.keys():
-        for series in cf["Variables"].keys():
+    elif "Variables" in list(cf.keys()):
+        for series in list(cf["Variables"].keys()):
             if "GapFillUsingSOLO" in cf["Variables"][series]:
                 series_list.append(series)
     else:
@@ -165,7 +165,7 @@ def gfSOLO_initplot(**kwargs):
     pd = {"margin_bottom":0.075, "margin_top":0.075, "margin_left":0.05, "margin_right":0.05,
           "xy_height":0.20, "xy_width":0.20, "xyts_space":0.05, "ts_width":0.9}
     # set the keyword arguments
-    for key, value in kwargs.iteritems():
+    for key, value in kwargs.items():
         pd[key] = value
     # calculate bottom of the first time series and the height of the time series plots
     pd["ts_bottom"] = pd["margin_bottom"]+pd["xy_height"]+pd["xyts_space"]
@@ -177,7 +177,7 @@ def gfSOLO_main(ds, solo, outputs=[]):
     This is the main routine for running SOLO, an artifical neural network for gap filling fluxes.
     '''
     if len(outputs) == 0:
-        outputs = solo["outputs"].keys()
+        outputs = list(solo["outputs"].keys())
     startdate = solo["info"]["startdate"]
     enddate = solo["info"]["enddate"]
     logger.info(" Gap filling using SOLO: " + startdate + " to " + enddate)
@@ -219,7 +219,7 @@ def gfSOLO_main(ds, solo, outputs=[]):
             msg = "SOLO: Less than " + str(solo["gui"]["min_points"]) + " points available for target " + target
             logger.warning(msg)
             solo["outputs"][output]["results"]["No. points"].append(float(0))
-            results = solo["outputs"][output]["results"].keys()
+            results = list(solo["outputs"][output]["results"].keys())
             for item in ["startdate", "enddate", "No. points"]:
                 if item in results: results.remove(item)
             for item in results:
@@ -382,7 +382,7 @@ def gfSOLO_plot(pd, ds, drivers, target, output, solo, si=0, ei=-1):
     ts_axes[0].text(0.05, 0.85, TextStr, color='b', horizontalalignment='left', transform=ts_axes[0].transAxes)
     TextStr = output + '(' + ds.series[output]['Attr']['units'] + ')'
     ts_axes[0].text(0.85, 0.85, TextStr, color='r', horizontalalignment='right', transform=ts_axes[0].transAxes)
-    for label, i in zip(drivers, range(1, pd["nDrivers"] + 1)):
+    for label, i in zip(drivers, list(range(1, pd["nDrivers"] + 1))):
         this_bottom = pd["ts_bottom"] + i*pd["ts_height"]
         rect = [pd["margin_left"], this_bottom, pd["ts_width"], pd["ts_height"]]
         ts_axes.append(plt.axes(rect, sharex=ts_axes[0]))
@@ -436,9 +436,9 @@ def gfSOLO_plotcoveragelines(ds, solo):
     start_date = ldt[0].strftime("%Y-%m-%d")
     end_date = ldt[-1].strftime("%Y-%m-%d")
     # list of outputs to plot
-    outputs = solo["outputs"].keys()
+    outputs = list(solo["outputs"].keys())
     # list of targets
-    targets = [solo["outputs"][output]["target"] for output in solo["outputs"].keys()]
+    targets = [solo["outputs"][output]["target"] for output in list(solo["outputs"].keys())]
     ylabel_list = [""] + targets + [""]
     ylabel_right_list = [""]
     colors = ["blue", "red", "green", "yellow", "magenta", "black", "cyan", "brown"]
@@ -456,7 +456,7 @@ def gfSOLO_plotcoveragelines(ds, solo):
     fig.canvas.set_window_title(title)
     plt.ylim([0, len(outputs) + 1])
     plt.xlim([ldt[0], ldt[-1]])
-    for olabel, tlabel, n in zip(outputs, targets, range(1, len(outputs)+1)):
+    for olabel, tlabel, n in zip(outputs, targets, list(range(1, len(outputs)+1))):
         output = pfp_utils.GetVariable(ds, olabel)
         target = pfp_utils.GetVariable(ds, tlabel)
         percent = 100*numpy.ma.count(target["Data"])/len(target["Data"])
@@ -467,7 +467,7 @@ def gfSOLO_plotcoveragelines(ds, solo):
         ind_output = numpy.ma.masked_where(numpy.ma.getmaskarray(output["Data"]) == True, ind_output)
         plt.plot(ldt, ind_target, color=colors[numpy.mod(n, 8)], linewidth=1)
         plt.plot(ldt, ind_output, color=colors[numpy.mod(n, 8)], linewidth=4)
-    ylabel_posn = range(0, len(outputs)+2)
+    ylabel_posn = list(range(0, len(outputs)+2))
     pylab.yticks(ylabel_posn, ylabel_list)
     ylabel_right_list.append("")
     ax2 = ax1.twinx()
@@ -481,7 +481,7 @@ def gfSOLO_plotsummary(ds, solo):
     # find out who's calling
     called_by = solo["info"]["called_by"]
     # get a list of variables for which SOLO data is available
-    outputs = solo["outputs"].keys()
+    outputs = list(solo["outputs"].keys())
     # site name for titles
     site_name = ds.globalattributes["site_name"]
     # get the start and end dates of the SOLO windows
@@ -525,7 +525,7 @@ def gfSOLO_plotsummary(ds, solo):
     # now loop over the variables in the group list
     for col, label in enumerate(outputs):
         # and loop over rows in plot
-        for row, rlabel, ylabel in zip(range(len(result_list)), result_list, ylabel_list):
+        for row, rlabel, ylabel in zip(list(range(len(result_list))), result_list, ylabel_list):
             # get the results to be plotted
             #result = numpy.ma.masked_equal(ds.solo[label]["results"][rlabel],float(c.missing_value))
             # put the data into the right order to be plotted
@@ -624,7 +624,7 @@ def gfSOLO_run_gui(solo_gui):
     nperhr = int(float(60)/ts + 0.5)
     solo["info"]["nperday"] = int(float(24)*nperhr + 0.5)
     solo["info"]["maxlags"] = int(float(12)*nperhr + 0.5)
-    targets = [solo["outputs"][output]["target"] for output in solo["outputs"].keys()]
+    targets = [solo["outputs"][output]["target"] for output in list(solo["outputs"].keys())]
     logger.info(" Gap filling "+str(targets)+" using SOLO")
     if solo["gui"]["period_option"] == 1:
         logger.info(" Starting manual run ...")
@@ -768,10 +768,10 @@ def gfSOLO_run_nogui(cf,dsa,dsb,solo_info):
     solo_info["nperhr"] = int(float(60)/solo_info["time_step"]+0.5)
     solo_info["nperday"] = int(float(24)*solo_info["nperhr"]+0.5)
     solo_info["maxlags"] = int(float(12)*solo_info["nperhr"]+0.5)
-    solo_info["series"] = dsb.solo.keys()
+    solo_info["series"] = list(dsb.solo.keys())
     #solo_info["tower"] = {}
     #solo_info["alternate"] = {}
-    series_list = [dsb.solo[item]["label_tower"] for item in dsb.solo.keys()]
+    series_list = [dsb.solo[item]["label_tower"] for item in list(dsb.solo.keys())]
     logger.info(" Gap filling "+str(series_list)+" using SOLO")
     if solo_info["peropt"]==1:
         gfSOLO_main(dsa,dsb,solo_info)
@@ -853,7 +853,7 @@ def gfSOLO_runseqsolo(dsb, drivers, targetlabel, outputlabel, nRecs, si=0, ei=-1
     # keep track of the good data indices
     goodindex = iind[index]
     # and then write the seqsolo input file
-    seqsolofile = open('solo/input/seqsolo_input.csv', 'wb')
+    seqsolofile = open('solo/input/seqsolo_input.csv', 'w')
     wr = csv.writer(seqsolofile, delimiter=',')
     for i in range(gooddata.shape[0]):
         wr.writerow(gooddata[i, 0:ndrivers + 1])
@@ -862,7 +862,7 @@ def gfSOLO_runseqsolo(dsb, drivers, targetlabel, outputlabel, nRecs, si=0, ei=-1
     if os.path.exists('solo/output/seqOut2.out'):
         os.remove('solo/output/seqOut2.out')
     # now run SEQSOLO
-    seqsolologfile = open('solo/log/seqsolo.log', 'wb')
+    seqsolologfile = open('solo/log/seqsolo.log', 'w')
     if platform.system() == "Windows":
         subprocess.call(['./solo/bin/seqsolo.exe', 'solo/inf/seqsolo.inf'], stdout=seqsolologfile)
     else:
@@ -923,7 +923,7 @@ def gfSOLO_runsofm(dsb, drivers, targetlabel, nRecs, si=0, ei=-1):
         logger.info(msg)
         nRecs = len(goodlines)
     # now write the drivers to the SOFM input file
-    sofmfile = open('solo/input/sofm_input.csv', 'wb')
+    sofmfile = open('solo/input/sofm_input.csv', 'w')
     wr = csv.writer(sofmfile, delimiter=',')
     for i in range(sofminputdata.shape[0]):
         wr.writerow(sofminputdata[i, 0:ndrivers])
@@ -932,7 +932,7 @@ def gfSOLO_runsofm(dsb, drivers, targetlabel, nRecs, si=0, ei=-1):
     if os.path.exists('solo/output/sofm_4.out'):
         os.remove('solo/output/sofm_4.out')
     # now run SOFM
-    sofmlogfile = open('solo/log/sofm.log', 'wb')
+    sofmlogfile = open('solo/log/sofm.log', 'w')
     if platform.system() == "Windows":
         subprocess.call(['./solo/bin/sofm.exe', 'solo/inf/sofm.inf'], stdout=sofmlogfile)
     else:
@@ -975,7 +975,7 @@ def gfSOLO_runsolo(dsb, drivers, targetlabel, nRecs, si=0, ei=-1):
     for i in range(ndrivers + 1):
         gooddata[:, i] = soloinputdata[:, i][index]
     # and then write the solo input file, the name is assumed by the solo.inf control file
-    solofile = open('solo/input/solo_input.csv', 'wb')
+    solofile = open('solo/input/solo_input.csv', 'w')
     wr = csv.writer(solofile, delimiter=',')
     for i in range(gooddata.shape[0]):
         wr.writerow(gooddata[i, 0:ndrivers + 1])
@@ -984,7 +984,7 @@ def gfSOLO_runsolo(dsb, drivers, targetlabel, nRecs, si=0, ei=-1):
     if os.path.exists('solo/output/eigenValue.out'):
         os.remove('solo/output/eigenValue.out')
     # now run SOLO
-    solologfile = open('solo/log/solo.log', 'wb')
+    solologfile = open('solo/log/solo.log', 'w')
     if platform.system() == "Windows":
         subprocess.call(['./solo/bin/solo.exe', 'solo/inf/solo.inf'], stdout=solologfile)
     else:

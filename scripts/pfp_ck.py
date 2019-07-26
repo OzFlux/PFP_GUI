@@ -185,7 +185,7 @@ def ApplyTurbulenceFilter(cf,ds,ustar_threshold=None):
         idx = numpy.where(indicators["final"]["values"]==0)[0]
         flag_filtered[idx] = numpy.int32(61)
         # update the series attributes
-        for item in indicators["final"]["attr"].keys():
+        for item in list(indicators["final"]["attr"].keys()):
             attr[item] = indicators["final"]["attr"][item]
         # and write the filtered data to the data structure
         pfp_utils.CreateSeries(ds,series,data_filtered,flag_filtered,attr)
@@ -237,7 +237,7 @@ def ApplyTurbulenceFilter_checks(cf, ds):
             opt["filter_list"] = [filter_string]
     # check to see if the series are in the data structure
     for item in opt["filter_list"]:
-        if item not in ds.series.keys():
+        if item not in list(ds.series.keys()):
             msg = " Series "+item+" given in FilterList not found in data stucture"
             logger.warning(msg)
             opt["filter_list"].remove(item)
@@ -327,10 +327,10 @@ def CoordinateFluxGaps(cf,ds,Fc_in='Fc',Fe_in='Fe',Fh_in='Fh'):
 def CreateNewSeries(cf,ds):
     '''Create a new series using the MergeSeries or AverageSeries instructions.'''
     logger.info(' Checking for new series to create')
-    for ThisOne in cf['Variables'].keys():
-        if 'MergeSeries' in cf['Variables'][ThisOne].keys():
+    for ThisOne in list(cf['Variables'].keys()):
+        if 'MergeSeries' in list(cf['Variables'][ThisOne].keys()):
             pfp_ts.MergeSeries(cf,ds,ThisOne)
-        if 'AverageSeries' in cf['Variables'][ThisOne].keys():
+        if 'AverageSeries' in list(cf['Variables'][ThisOne].keys()):
             pfp_ts.AverageSeriesByElements(cf,ds,ThisOne)
 
 def do_SONICcheck(cf, ds, code=3):
@@ -349,7 +349,7 @@ def do_SONICcheck(cf, ds, code=3):
     if "Diag_SONIC" in series_list:
         pass
     elif "Diag_CSAT" in series_list:
-        ds.series[unicode("Diag_SONIC")] = copy.deepcopy(ds.series["Diag_CSAT"])
+        ds.series[str("Diag_SONIC")] = copy.deepcopy(ds.series["Diag_CSAT"])
     else:
         msg = " Sonic diagnostics not found in data, skipping sonic checks ..."
         logger.warning(msg)
@@ -370,7 +370,7 @@ def do_SONICcheck(cf, ds, code=3):
     msg = "  SONICCheck: Diag_SONIC rejected "+str(numpy.size(index))+" points"
     logger.info(msg)
     for label in sonic_list:
-        if label in ds.series.keys():
+        if label in list(ds.series.keys()):
             ds.series[label]["Data"][index] = numpy.float64(c.missing_value)
             ds.series[label]["Flag"][index] = numpy.int32(code)
         else:
@@ -386,7 +386,7 @@ def do_dependencycheck(cf, ds, section, series, code=23, mode="quiet"):
     """
     if len(section)==0 and len(series)==0: return
     if len(section)==0: section = pfp_utils.get_cfsection(cf,series=series,mode='quiet')
-    if "DependencyCheck" not in cf[section][series].keys(): return
+    if "DependencyCheck" not in list(cf[section][series].keys()): return
     if "Source" not in cf[section][series]["DependencyCheck"]:
         msg = " DependencyCheck: keyword Source not found for series "+series+", skipping ..."
         logger.error(msg)
@@ -410,7 +410,7 @@ def do_dependencycheck(cf, ds, section, series, code=23, mode="quiet"):
     # loop over the precursor source list
     for item in source_list:
         # check the precursor is in the data structure
-        if item not in ds.series.keys():
+        if item not in list(ds.series.keys()):
             msg = " DependencyCheck: "+series+" precursor series "+item+" not found, skipping ..."
             logger.warning(msg)
             continue
@@ -439,8 +439,8 @@ def do_dependencycheck(cf, ds, section, series, code=23, mode="quiet"):
     return
 
 def do_diurnalcheck(cf,ds,section,series,code=5):
-    if 'DiurnalCheck' not in cf[section][series].keys(): return
-    if 'NumSd' not in cf[section][series]['DiurnalCheck'].keys(): return
+    if 'DiurnalCheck' not in list(cf[section][series].keys()): return
+    if 'NumSd' not in list(cf[section][series]['DiurnalCheck'].keys()): return
     dt = float(ds.globalattributes['time_step'])
     n = int((60./dt) + 0.5)             #Number of timesteps per hour
     nInts = int((1440.0/dt)+0.5)        #Number of timesteps per day
@@ -479,7 +479,7 @@ def do_EC155check(cf,ds):
     Date: September 2015
     """
     # check to see if we have a Diag_IRGA series to work with
-    if "Diag_IRGA" not in ds.series.keys():
+    if "Diag_IRGA" not in list(ds.series.keys()):
         msg = " Diag_IRGA not found in data, skipping IRGA checks ..."
         logger.warning(msg)
         return
@@ -498,7 +498,7 @@ def do_EC155check(cf,ds):
     used_CO2 = False
     EC155_dependents = []
     for item in ['Signal_H2O','Signal_CO2','H2O_IRGA_Sd','CO2_IRGA_Sd']:
-        if item in ds.series.keys():
+        if item in list(ds.series.keys()):
             if ("Signal_H2O" in item) or ("Signal_CO2" in item):
                 used_Signal = True
             if ("H2O" in item) or ("Ah" in item):
@@ -525,7 +525,7 @@ def do_EC155check(cf,ds):
     msg = "  "+irga_type+"Check: Total rejected " + str(numpy.size(idx))
     logger.info(msg)
     for ThisOne in EC155_list:
-        if ThisOne in ds.series.keys():
+        if ThisOne in list(ds.series.keys()):
             ds.series[ThisOne]['Data'][idx] = numpy.float64(c.missing_value)
             ds.series[ThisOne]['Flag'][idx] = numpy.int32(4)
         #else:
@@ -539,7 +539,7 @@ def do_EPQCFlagCheck(cf,ds,section,series,code=9):
     Author: PRI
     Date: August 2017
     """
-    if 'EPQCFlagCheck' not in cf[section][series].keys(): return
+    if 'EPQCFlagCheck' not in list(cf[section][series].keys()): return
     nRecs = int(ds.globalattributes["nc_nrecs"])
     flag = numpy.zeros(nRecs, dtype=numpy.int32)
     source_list = ast.literal_eval(cf[section][series]['EPQCFlagCheck']["Source"])
@@ -558,10 +558,10 @@ def do_EPQCFlagCheck(cf,ds,section,series,code=9):
     return
 
 def do_excludedates(cf,ds,section,series,code=6):
-    if 'ExcludeDates' not in cf[section][series].keys():
+    if 'ExcludeDates' not in list(cf[section][series].keys()):
         return
     ldt = ds.series['DateTime']['Data']
-    ExcludeList = cf[section][series]['ExcludeDates'].keys()
+    ExcludeList = list(cf[section][series]['ExcludeDates'].keys())
     NumExclude = len(ExcludeList)
     for i in range(NumExclude):
         exclude_dates_string = cf[section][series]['ExcludeDates'][str(i)]
@@ -597,9 +597,9 @@ def do_excludedates(cf,ds,section,series,code=6):
     return
 
 def do_excludehours(cf,ds,section,series,code=7):
-    if 'ExcludeHours' not in cf[section][series].keys(): return
+    if 'ExcludeHours' not in list(cf[section][series].keys()): return
     ldt = ds.series['DateTime']['Data']
-    ExcludeList = cf[section][series]['ExcludeHours'].keys()
+    ExcludeList = list(cf[section][series]['ExcludeHours'].keys())
     NumExclude = len(ExcludeList)
     for i in range(NumExclude):
         exclude_hours_string = cf[section][series]['ExcludeHours'][str(i)]
@@ -678,7 +678,7 @@ def do_li7500check(cf, ds, code=4):
         pass
     elif "Diag_7500" in series_list:
         # backward compatibility with early OFQC
-        ds.series[unicode("Diag_IRGA")] = copy.deepcopy(ds.series["Diag_7500"])
+        ds.series[str("Diag_IRGA")] = copy.deepcopy(ds.series["Diag_7500"])
     else:
         msg = " IRGA diagnostics not found in data, skipping IRGA checks ..."
         logger.warning(msg)
@@ -761,7 +761,7 @@ def do_li7500acheck(cf,ds):
        LI75Lisat.  Additional checks are done for AGC_7500 (the LI-7500 AGC value),
        Ah_7500_Sd (standard deviation of absolute humidity) and Cc_7500_Sd (standard
        deviation of CO2 concentration).'''
-    if "Diag_IRGA" not in ds.series.keys():
+    if "Diag_IRGA" not in list(ds.series.keys()):
         msg = " Diag_IRGA not found in data, skipping IRGA checks ..."
         logger.warning(msg)
         return
@@ -776,7 +776,7 @@ def do_li7500acheck(cf,ds):
     used_CO2 = False
     LI75_dependents = []
     for item in ['Signal_H2O','Signal_CO2','H2O_IRGA_Sd','CO2_IRGA_Sd','H2O_IRGA_Vr','CO2_IRGA_Vr']:
-        if item in ds.series.keys():
+        if item in list(ds.series.keys()):
             if ("Signal_H2O" in item) or ("Signal_CO2" in item):
                 used_Signal = True
             if ("H2O" in item) or ("Ah" in label):
@@ -799,14 +799,14 @@ def do_li7500acheck(cf,ds):
         logger.warning(msg)
     flag = numpy.copy(ds.series['Diag_IRGA']['Flag'])
     for item in LI75_dependents:
-        if item in ds.series.keys():
+        if item in list(ds.series.keys()):
             idx = numpy.where(ds.series[item]['Flag']!=0)
             logger.info('  7500ACheck: '+item+' rejected '+str(numpy.size(idx))+' points')
             flag[idx] = numpy.int32(1)
     idx = numpy.where(flag != 0)[0]
     logger.info('  7500ACheck: Total ' + str(numpy.size(idx)))
     for ThisOne in LI75List:
-        if ThisOne in ds.series.keys():
+        if ThisOne in list(ds.series.keys()):
             ds.series[ThisOne]['Data'][idx] = numpy.float64(c.missing_value)
             ds.series[ThisOne]['Flag'][idx] = numpy.int32(4)
         else:
@@ -817,7 +817,7 @@ def do_li7500acheck(cf,ds):
 
 def do_linear(cf,ds):
     level = ds.globalattributes['nc_level']
-    for ThisOne in cf['Variables'].keys():
+    for ThisOne in list(cf['Variables'].keys()):
         if pfp_utils.haskey(cf,ThisOne,'Linear'):
             pfp_ts.ApplyLinear(cf,ds,ThisOne)
         if pfp_utils.haskey(cf,ThisOne,'Drift'):
@@ -867,11 +867,11 @@ def do_rangecheck(cf, ds, section, series, code=2):
     Date: Back in the day
     """
     # check that RangeCheck has been requested for this series
-    if 'RangeCheck' not in cf[section][series].keys():
+    if 'RangeCheck' not in list(cf[section][series].keys()):
         return
     # check that the upper and lower limits have been given
-    if ("Lower" not in cf[section][series]["RangeCheck"].keys() or
-        "Upper" not in cf[section][series]["RangeCheck"].keys()):
+    if ("Lower" not in list(cf[section][series]["RangeCheck"].keys()) or
+        "Upper" not in list(cf[section][series]["RangeCheck"].keys())):
         msg = "RangeCheck: key not found in control file for "+series+", skipping ..."
         logger.warning(msg)
         return
@@ -921,7 +921,7 @@ def do_qcchecks(cf,ds,mode="verbose"):
     for item in ["Variables","Drivers","Fluxes"]:
         if item in cf:
             section = item
-            series_list = cf[item].keys()
+            series_list = list(cf[item].keys())
     if len(series_list)==0:
         msg = " do_qcchecks: Variables, Drivers or Fluxes section not found in control file, skipping QC checks ..."
         logger.warning(msg)
@@ -930,7 +930,7 @@ def do_qcchecks(cf,ds,mode="verbose"):
     # first time for general QC checks
     for series in series_list:
         # check the series is in the data structure
-        if series not in ds.series.keys():
+        if series not in list(ds.series.keys()):
             if mode!="quiet":
                 msg = " do_qcchecks: series "+series+" not found in data structure, skipping ..."
                 logger.warning(msg)
@@ -941,7 +941,7 @@ def do_qcchecks(cf,ds,mode="verbose"):
     # second time for dependencies
     for series in series_list:
         # check the series is in the data structure
-        if series not in ds.series.keys():
+        if series not in list(ds.series.keys()):
             if mode!="quiet":
                 msg = " do_qcchecks: series "+series+" not found in data structure, skipping ..."
                 logger.warning(msg)
@@ -973,7 +973,7 @@ def do_qcchecks_oneseries(cf,ds,section,series):
         ds.globalattributes['Functions'] = ds.globalattributes['Functions']+',do_qcchecks'
 
 def do_winddirectioncorrection(cf, ds, section, series):
-    if "CorrectWindDirection" not in cf[section][series].keys():
+    if "CorrectWindDirection" not in list(cf[section][series].keys()):
         return
     pfp_ts.CorrectWindDirection(cf, ds, series)
 
@@ -1010,7 +1010,7 @@ def do_lowercheck(cf,ds,section,series,code=2):
     if "LowerCheck" not in cf[section][series]:
         return
     # Check to see if limits have been specified
-    if len(cf[section][series]["LowerCheck"].keys()) == 0:
+    if len(list(cf[section][series]["LowerCheck"].keys())) == 0:
         msg = "do_lowercheck: no date ranges specified"
         logger.info(msg)
         return
@@ -1057,7 +1057,7 @@ def do_uppercheck(cf,ds,section,series,code=2):
     if "UpperCheck" not in cf[section][series]:
         return
     # Check to see if limits have been specified
-    if len(cf[section][series]["UpperCheck"].keys()) == 0:
+    if len(list(cf[section][series]["UpperCheck"].keys())) == 0:
         msg = "do_uppercheck: no date ranges specified"
         logger.info(msg)
         return

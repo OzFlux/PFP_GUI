@@ -82,7 +82,7 @@ def rp_getdiurnalstats(dt, data, solo):
     while abs(dt[ei].hour+float(dt[ei].minute)/60)>c.eps:
         ei = ei - 1
     data_wholedays = data[si:ei+1]
-    ndays = len(data_wholedays)/nperday
+    ndays = len(data_wholedays)//nperday
     data_2d = numpy.ma.reshape(data_wholedays,[ndays,nperday])
     diel_stats = {}
     diel_stats["Hr"] = numpy.ma.array([i*ts/float(60) for i in range(0,nperday)])
@@ -116,7 +116,7 @@ def rpSOLO_createdict(cf, ds, l6_info, label, called_by):
             logger.error(msg)
             return
     # create the dictionary keys for this series
-    if called_by not in l6_info["ER"].keys():
+    if called_by not in list(l6_info["ER"].keys()):
         l6_info["ER"][called_by] = {"outputs": {}, "info": {}, "gui": {}}
     isol = l6_info["ER"][called_by]["outputs"][output] = {}
     # target series name
@@ -135,7 +135,7 @@ def rpSOLO_createdict(cf, ds, l6_info, label, called_by):
                        "Var (obs)":[], "Var (SOLO)":[], "Var ratio":[],
                        "m_ols":[], "b_ols":[]}
     # create an empty series in ds if the SOLO output series doesn't exist yet
-    if output not in ds.series.keys():
+    if output not in list(ds.series.keys()):
         variable = pfp_utils.CreateEmptyVariable(output, nrecs)
         pfp_utils.CreateVariable(ds, variable)
     # local pointer to the datetime series
@@ -182,7 +182,7 @@ def rpSOLO_initplot(**kwargs):
           "xy_height":0.20,"xy_width":0.20,"xyts_space":0.05,"xyts_space":0.05,
           "ts_width":0.9}
     # set the keyword arguments
-    for key, value in kwargs.iteritems():
+    for key, value in kwargs.items():
         pd[key] = value
     # calculate bottom of the first time series and the height of the time series plots
     pd["ts_bottom"] = pd["margin_bottom"]+pd["xy_height"]+pd["xyts_space"]
@@ -194,7 +194,7 @@ def rpSOLO_main(ds, solo, outputs=[]):
     This is the main routine for running SOLO, an artifical neural network for estimating ER.
     """
     if len(outputs) == 0:
-        outputs = solo["outputs"].keys()
+        outputs = list(solo["outputs"].keys())
     startdate = solo["info"]["startdate"]
     enddate = solo["info"]["enddate"]
     logger.info(" Estimating ER using SOLO: " + startdate + " to " + enddate)
@@ -235,7 +235,7 @@ def rpSOLO_main(ds, solo, outputs=[]):
             msg = "rpSOLO: Less than " + str(pts) + " points (" + str(pct) + "%) available for series " + target + " ..."
             logger.error(msg)
             solo["outputs"][output]["results"]["No. points"].append(float(0))
-            results = solo["outputs"][output]["results"].keys()
+            results = list(solo["outputs"][output]["results"].keys())
             for item in ["startdate", "enddate", "No. points"]:
                 if item in results: results.remove(item)
             for item in results:
@@ -399,7 +399,7 @@ def rpSOLO_plot(pd, ds, drivers, target, output, solo, si=0, ei=-1):
     ts_axes[0].text(0.05, 0.85, TextStr, color='b', horizontalalignment='left', transform=ts_axes[0].transAxes)
     TextStr = output + '(' + ds.series[output]['Attr']['units'] + ')'
     ts_axes[0].text(0.85, 0.85, TextStr, color='r', horizontalalignment='right', transform=ts_axes[0].transAxes)
-    for label, i in zip(drivers, range(1, pd["nDrivers"] + 1)):
+    for label, i in zip(drivers, list(range(1, pd["nDrivers"] + 1))):
         this_bottom = pd["ts_bottom"] + i*pd["ts_height"]
         rect = [pd["margin_left"], this_bottom, pd["ts_width"], pd["ts_height"]]
         ts_axes.append(plt.axes(rect, sharex=ts_axes[0]))
@@ -589,7 +589,7 @@ def rpSOLO_run_nogui(cf,ds,solo_info):
     solo_info["nperhr"] = int(float(60)/solo_info["time_step"]+0.5)
     solo_info["nperday"] = int(float(24)*solo_info["nperhr"]+0.5)
     solo_info["maxlags"] = int(float(12)*solo_info["nperhr"]+0.5)
-    solo_info["series"] = solo_info["er"].keys()
+    solo_info["series"] = list(solo_info["er"].keys())
     if solo_info["peropt"]==1:
         rpSOLO_main(ds,solo_info)
         #logger.info(" Finished manual run ...")

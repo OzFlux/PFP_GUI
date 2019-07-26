@@ -90,7 +90,7 @@ def get_accessdata(cf,ds_60minutes,f,info):
     ds_60minutes.globalattributes["latitude"] = f.variables["lat"][1]
     ds_60minutes.globalattributes["longitude"] = f.variables["lon"][1]
     # list of variables to process
-    var_list = cf["Variables"].keys()
+    var_list = list(cf["Variables"].keys())
     # get a series of Python datetimes and put this into the data structure
     valid_date = f.variables["valid_date"][:]
     nRecs = len(valid_date)
@@ -132,7 +132,7 @@ def get_accessdata(cf,ds_60minutes,f,info):
         # get the name of the variable in the ACCESS file
         access_name = qcutils.get_keyvaluefromcf(cf,["Variables",label],"access_name",default=label)
         # warn the user if the variable not found
-        if access_name not in f.variables.keys():
+        if access_name not in list(f.variables.keys()):
             msg = "Requested variable "+access_name
             msg = msg+" not found in ACCESS data"
             logging.error(msg)
@@ -342,7 +342,7 @@ def perdelta(start,end,delta):
 def interpolate_to_30minutes(ds_60minutes):
     ds_30minutes = qcio.DataStructure()
     # copy the global attributes
-    for this_attr in ds_60minutes.globalattributes.keys():
+    for this_attr in list(ds_60minutes.globalattributes.keys()):
         ds_30minutes.globalattributes[this_attr] = ds_60minutes.globalattributes[this_attr]
     # update the global attribute "time_step"
     ds_30minutes.globalattributes["time_step"] = 30
@@ -370,7 +370,7 @@ def interpolate_to_30minutes(ds_60minutes):
     nRecs_30 = len(ds_30minutes.series["DateTime"]["Data"])
     x_60minutes = numpy.arange(0,nRecs_60,1)
     x_30minutes = numpy.arange(0,nRecs_60-0.5,0.5)
-    varlist_60 = ds_60minutes.series.keys()
+    varlist_60 = list(ds_60minutes.series.keys())
     # strip out the date and time variables already done
     for item in ["DateTime","DateTime_UTC","xlDateTime","Year","Month","Day","Hour","Minute","Second","Hdh","Hr_UTC"]:
         if item in varlist_60: varlist_60.remove(item)
@@ -459,7 +459,7 @@ def access_read_mfiles2(file_list,var_list=[]):
     f = ACCESSData()
     # check that we have a list of files to process
     if len(file_list)==0:
-        print "access_read_mfiles: empty file_list received, returning ..."
+        print("access_read_mfiles: empty file_list received, returning ...")
         return f
     # make sure latitude and longitude are read
     if "lat" not in var_list: var_list.append("lat")
@@ -475,15 +475,15 @@ def access_read_mfiles2(file_list,var_list=[]):
         shape = (len(dims["time"]),len(dims["lat"]),len(dims["lon"]))
         # move to the next file if this file doesn't have 25 time records
         if shape[0]!=1:
-            print "access_read_mfiles: length of time dimension in "+file_name+" is "+str(shape[0])+" (expected 1)"
+            print("access_read_mfiles: length of time dimension in "+file_name+" is "+str(shape[0])+" (expected 1)")
             continue
         # move to the next file if this file doesn't have 3 latitude records
         if shape[1]!=3:
-            print "access_read_mfiles: length of lat dimension in "+file_name+" is "+str(shape[1])+" (expected 3)"
+            print("access_read_mfiles: length of lat dimension in "+file_name+" is "+str(shape[1])+" (expected 3)")
             continue
         # move to the next file if this file doesn't have 3 longitude records
         if shape[2]!=3:
-            print "access_read_mfiles: length of lon dimension in "+file_name+" is "+str(shape[2])+" (expected 3)"
+            print("access_read_mfiles: length of lon dimension in "+file_name+" is "+str(shape[2])+" (expected 3)")
             continue
         # seems OK to continue with this file ...
         # add the file name to the file_list in the global attributes
@@ -494,15 +494,15 @@ def access_read_mfiles2(file_list,var_list=[]):
                 f.globalattr[gattr] = getattr(ncfile,gattr)
         # if no variable list was passed to this routine, use all variables
         if len(var_list)==0:
-            var_list=ncfile.variables.keys()
+            var_list=list(ncfile.variables.keys())
         # load the data into the data structure
         for var in var_list:
             # get the name of the variable in the ACCESS file
             access_name = qcutils.get_keyvaluefromcf(cf,["Variables",var],"access_name",default=var)
             # check that the requested variable exists in the ACCESS file
-            if access_name in ncfile.variables.keys():
+            if access_name in list(ncfile.variables.keys()):
                 # check to see if the variable is already in the data structure
-                if access_name not in f.variables.keys():
+                if access_name not in list(f.variables.keys()):
                     f.variables[access_name] = ncfile.variables[access_name][:]
                 else:
                     f.variables[access_name] = numpy.concatenate((f.variables[access_name],ncfile.variables[access_name][:]),axis=0)
@@ -512,12 +512,12 @@ def access_read_mfiles2(file_list,var_list=[]):
                 # loop over the variable attributes
                 for this_attr in ncfile.variables[access_name].ncattrs():
                     # check to see if the attribute has already 
-                    if this_attr not in f.varattr[access_name].keys():
+                    if this_attr not in list(f.varattr[access_name].keys()):
                         # add the variable attribute if it's not there already
                         f.varattr[access_name][this_attr] = getattr(ncfile.variables[access_name],this_attr)
             else:
-                print "access_read_mfiles: ACCESS variable "+access_name+" not found in "+file_name
-                if access_name not in f.variables.keys():
+                print("access_read_mfiles: ACCESS variable "+access_name+" not found in "+file_name)
+                if access_name not in list(f.variables.keys()):
                     f.variables[access_name] = makedummyseries(shape)
                 else:
                     f.variables[access_name] = numpy.concatenate((f.variables[access_name],makedummyseries(shape)),axis=0)
@@ -546,8 +546,8 @@ logging.info('Reading the control file')
 cf = configobj.ConfigObj(cf_name)
 # get stuff from the control file
 logging.info('Getting control file contents')
-site_list = cf["Sites"].keys()
-var_list = cf["Variables"].keys()
+site_list = list(cf["Sites"].keys())
+var_list = list(cf["Variables"].keys())
 # loop over sites
 #site_list = ["AdelaideRiver"]
 for site in site_list:

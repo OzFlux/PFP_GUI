@@ -11,7 +11,7 @@ import scipy.interpolate, scipy.signal
 import sys
 # check the scripts directory is present
 if not os.path.exists("../scripts/"):
-    print "modis_evi2nc: the scripts directory is missing"
+    print("modis_evi2nc: the scripts directory is missing")
     sys.exit()
 # since the scripts directory is there, try importing the modules
 sys.path.append('../scripts')
@@ -50,7 +50,7 @@ ts = 30
 evi_time_units = "seconds since 1970-01-01 00:00:00.0"
 do_plots = True
 
-sites = cf["Sites"].keys()
+sites = list(cf["Sites"].keys())
 site = sites[0]
 site_timezone = cf["Sites"][site]["site_timezone"]
 site_latitude = float(cf["Sites"][site]["site_latitude"])
@@ -64,22 +64,22 @@ sgo = int(cf["Sites"][site]["sg_order"])
 mod_file_name = site+"_"+cf["Files"]["mod_file"]
 mod_file_path = os.path.join(cf["Files"]["base_path"],site,"Data","MODIS","MOD13Q1",mod_file_name)
 if not os.path.exists(mod_file_path):
-    print "modis_evi2nc: " + mod_file_path
-    print "modis_evi2nc: MOD13Q1 file not found"
+    print("modis_evi2nc: " + mod_file_path)
+    print("modis_evi2nc: MOD13Q1 file not found")
     sys.exit()
 evi_mod = read_evi_file(mod_file_path)
-names_mod = evi_mod.keys()
+names_mod = list(evi_mod.keys())
 # MYD13 (Aqua)
 myd_file_name = site+"_"+cf["Files"]["myd_file"]
 myd_file_path = os.path.join(cf["Files"]["base_path"],site,"Data","MODIS","MYD13Q1",myd_file_name)
 if not os.path.exists(myd_file_path):
-    print "modis_evi2nc: " + myd_file_path
-    print "modis_evi2nc: MYD13Q1 file not found"
+    print("modis_evi2nc: " + myd_file_path)
+    print("modis_evi2nc: MYD13Q1 file not found")
     sys.exit()
 evi_myd = read_evi_file(myd_file_path)
-names_myd = evi_myd.keys()
+names_myd = list(evi_myd.keys())
 if not (names_mod == names_myd):
-    print "modis_evi2nc: column names in MOD and MYD do not agree"
+    print("modis_evi2nc: column names in MOD and MYD do not agree")
     sys.exit()
 names = list(names_mod)
 if "DateTime" in names:
@@ -94,7 +94,7 @@ evi["DateTime"] = evi["DateTime"][idx]
 for item in names:
     evi[item] = evi[item][idx]
 # QC the pixel values
-pixels = [l for l in evi.keys() if "EVI_pixel" in l]
+pixels = [l for l in list(evi.keys()) if "EVI_pixel" in l]
 pixel_values = numpy.vstack([evi[p] for p in pixels])
 # mask if below 0.1 or above 0.45
 pixel_values = numpy.ma.masked_where((pixel_values < evi_min)|(pixel_values > evi_max), pixel_values)
@@ -222,4 +222,4 @@ out_name = os.path.join(cf["Files"]["base_path"],site,"Data","MODIS",site+"_EVI.
 out_file = pfp_io.nc_open_write(out_name)
 pfp_io.nc_write_series(out_file, ds, ndims=1)
 
-print "modis_evi2nc: finished"
+print("modis_evi2nc: finished")

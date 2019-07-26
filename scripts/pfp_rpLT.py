@@ -157,7 +157,7 @@ def get_dates(datetime_array, configs_dict):
     start_date = datetime_array[0].date()
     end_date = datetime_array[-1].date()
     num_days = (end_date - start_date).days + 1 # Add 1 so is inclusive of both end members
-    all_dates_array = numpy.array([start_date + datetime.timedelta(i) for i in xrange(num_days)])
+    all_dates_array = numpy.array([start_date + datetime.timedelta(i) for i in range(num_days)])
 
     # Create a shifted array
     shift_mins = 60 * configs_dict['measurement_interval']
@@ -278,7 +278,7 @@ def optimise_annual_Eo(data_dict, params_dict, configs_dict, year_index_dict):
     Eo_pass_keys = []
     Eo_range_fail_keys = []
     Eo_nan_fail_keys = []
-    year_list = year_index_dict.keys()
+    year_list = list(year_index_dict.keys())
     logger.info(" E0 optimised using whole year is as follows")
     for yr in year_list:
 
@@ -382,7 +382,7 @@ def rpLT_createdict(cf, ds, l6_info, label, called_by):
             logger.error(msg)
             return
     # create the dictionary keys for this series
-    if called_by not in l6_info["ER"].keys():
+    if called_by not in list(l6_info["ER"].keys()):
         l6_info["ER"][called_by] = {"outputs": {}, "info": {}, "gui": {}}
     ilol = l6_info["ER"][called_by]["outputs"][output] = {}
     # target series name
@@ -401,7 +401,7 @@ def rpLT_createdict(cf, ds, l6_info, label, called_by):
     # create the configuration dictionary
     ilol["configs_dict"] = get_configs_dict(cf, ds)
     # create an empty series in ds if the output series doesn't exist yet
-    if output not in ds.series.keys():
+    if output not in list(ds.series.keys()):
         variable = pfp_utils.CreateEmptyVariable(output, nrecs)
         pfp_utils.CreateVariable(ds, variable)
     return
@@ -412,7 +412,7 @@ def rpLT_initplot(**kwargs):
           "xy_height":0.20,"xy_width":0.20,"xyts_space":0.05,"xyts_space":0.05,
           "ts_width":0.9}
     # set the keyword arguments
-    for key, value in kwargs.iteritems():
+    for key, value in kwargs.items():
         pd[key] = value
     # calculate bottom of the first time series and the height of the time series plots
     pd["ts_bottom"] = pd["margin_bottom"]+pd["xy_height"]+pd["xyts_space"]
@@ -519,7 +519,7 @@ def rpLT_plot(pd, ds, output, drivers, target, iel, si=0, ei=-1):
     ts_axes[0].text(0.05, 0.85, TextStr, color='b', horizontalalignment='left', transform=ts_axes[0].transAxes)
     TextStr = output + '(' + ds.series[output]['Attr']['units'] + ')'
     ts_axes[0].text(0.85, 0.85, TextStr, color='r', horizontalalignment='right', transform=ts_axes[0].transAxes)
-    for ThisOne, i in zip(drivers, range(1, pd["nDrivers"] + 1)):
+    for ThisOne, i in zip(drivers, list(range(1, pd["nDrivers"] + 1))):
         this_bottom = pd["ts_bottom"] + i*pd["ts_height"]
         rect = [pd["margin_left"], this_bottom, pd["ts_width"], pd["ts_height"]]
         ts_axes.append(plt.axes(rect, sharex=ts_axes[0]))
@@ -564,7 +564,7 @@ def mypause(interval):
 def subset_window(data_dict, index_list):
     # Subset the arrays on basis of index list
     sub_dict = {}
-    for i in data_dict.keys():
+    for i in list(data_dict.keys()):
         sub_dict[i] = data_dict[i][index_list[0]: index_list[1] + 1]
 
     return sub_dict

@@ -194,14 +194,14 @@ def write_mpt_year_results(xl_sheet, mpt_results):
     # write the temperature class results
     row = 10
     # write the headers
-    number_seasons = len(mpt_results["bootstraps"].keys())
+    number_seasons = len(list(mpt_results["bootstraps"].keys()))
     header_list = ["Temperature classes"]
     for s in range(number_seasons):
         header_list.append(str(s))
     for col, item in enumerate(header_list):
         xl_sheet.write(row, col, item)
     # write the data
-    for i in range(len(mpt_results["temperature_classes"].keys())):
+    for i in range(len(list(mpt_results["temperature_classes"].keys()))):
         row = row + 1
         xl_sheet.write(row, 0, i)
         for j in range(len(mpt_results["temperature_classes"][0]["values"])):
@@ -245,7 +245,7 @@ def xl_write_mpt(mpt_full_path, ustar_results):
         xl_sheet.write(n+1, 0, year)
         if ustar_results["Years"][year]["annual"]["value"] != -9999:
             xl_sheet.write(n+1, 1, ustar_results["Years"][year]["annual"]["value"])
-            season_list = ustar_results["Years"][year]["bootstraps"].keys()
+            season_list = list(ustar_results["Years"][year]["bootstraps"].keys())
             values = ustar_results["Years"][year]["bootstraps"][0]["values"]
             season_list.remove(0)
             for s in season_list:

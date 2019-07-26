@@ -63,9 +63,9 @@ def l1qc(cf):
     ds1.globalattributes['nc_level'] = str("L1")
     # get the start and end date from the datetime series unless they were
     # given in the control file
-    if 'start_date' not in ds1.globalattributes.keys():
+    if 'start_date' not in list(ds1.globalattributes.keys()):
         ds1.globalattributes['start_date'] = str(ds1.series['DateTime']['Data'][0])
-    if 'end_date' not in ds1.globalattributes.keys():
+    if 'end_date' not in list(ds1.globalattributes.keys()):
         ds1.globalattributes['end_date'] = str(ds1.series['DateTime']['Data'][-1])
     # calculate variances from standard deviations and vice versa
     pfp_ts.CalculateStandardDeviations(cf,ds1)
@@ -203,7 +203,7 @@ def l3qc(cf,ds2):
     # convert Fc and Fc_storage units if required
     pfp_utils.ConvertFcUnits(cf, ds3)
     # merge Fc and Fc_storage series if required
-    merge_list = [label for label in cf["Variables"].keys() if label[0:2]=="Fc" and "MergeSeries" in cf["Variables"][label].keys()]
+    merge_list = [label for label in list(cf["Variables"].keys()) if label[0:2]=="Fc" and "MergeSeries" in list(cf["Variables"][label].keys())]
     for label in merge_list:
         pfp_ts.MergeSeries(cf, ds3, label, save_originals=True)
     # correct Fc for storage term - only recommended if storage calculated from profile available
@@ -380,7 +380,7 @@ def l6qc(main_gui, cf, ds5):
     # check to see if we have any imports
     pfp_gf.ImportSeries(cf, ds6)
     # check units of Fc
-    Fc_list = [label for label in ds6.series.keys() if label[0:2] == "Fc"]
+    Fc_list = [label for label in list(ds6.series.keys()) if label[0:2] == "Fc"]
     pfp_utils.CheckUnits(ds6, Fc_list, "umol/m2/s", convert_units=True)
     ## apply the turbulence filter (if requested)
     #pfp_ck.ApplyTurbulenceFilter(cf, ds6)

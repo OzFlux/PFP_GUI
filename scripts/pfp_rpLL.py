@@ -346,7 +346,7 @@ def rpLL_createdict(cf, ds, l6_info, label, called_by):
             logger.error(msg)
             return
     # create the dictionary keys for this series
-    if called_by not in l6_info["ER"].keys():
+    if called_by not in list(l6_info["ER"].keys()):
         l6_info["ER"][called_by] = {"outputs": {}, "info": {}, "gui": {}}
     ilol = l6_info["ER"][called_by]["outputs"][output] = {}
     # target series name
@@ -372,7 +372,7 @@ def rpLL_createdict(cf, ds, l6_info, label, called_by):
     opt = pfp_utils.get_keyvaluefromcf(cf, ["ER", label, called_by], "fsd_threshold", default=10)
     ilol["fsd_threshold"] = float(opt)
     # create an empty series in ds if the output series doesn't exist yet
-    if output not in ds.series.keys():
+    if output not in list(ds.series.keys()):
         variable = pfp_utils.CreateEmptyVariable(output, nrecs)
         pfp_utils.CreateVariable(ds, variable)
     return
@@ -383,7 +383,7 @@ def rpLL_initplot(**kwargs):
           "xy_height":0.20,"xy_width":0.20,"xyts_space":0.05,"xyts_space":0.05,
           "ts_width":0.9}
     # set the keyword arguments
-    for key, value in kwargs.iteritems():
+    for key, value in kwargs.items():
         pd[key] = value
     # calculate bottom of the first time series and the height of the time series plots
     pd["ts_bottom"] = pd["margin_bottom"]+pd["xy_height"]+pd["xyts_space"]
@@ -490,7 +490,7 @@ def rpLL_plot(pd, ds, output, drivers, target, l6_info, si=0, ei=-1):
     ts_axes[0].text(0.05, 0.85, TextStr, color='b', horizontalalignment='left', transform=ts_axes[0].transAxes)
     TextStr = output + '(' + ds.series[output]['Attr']['units'] + ')'
     ts_axes[0].text(0.85, 0.85, TextStr, color='r', horizontalalignment='right', transform=ts_axes[0].transAxes)
-    for ThisOne, i in zip(drivers, range(1, pd["nDrivers"] + 1)):
+    for ThisOne, i in zip(drivers, list(range(1, pd["nDrivers"] + 1))):
         this_bottom = pd["ts_bottom"] + i*pd["ts_height"]
         rect = [pd["margin_left"], this_bottom, pd["ts_width"], pd["ts_height"]]
         ts_axes.append(plt.axes(rect, sharex=ts_axes[0]))

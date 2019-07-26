@@ -8,7 +8,7 @@ import scipy
 import sys
 # check the scripts directory is present
 if not os.path.exists("../scripts/"):
-    print "erai2nc: the scripts directory is missing"
+    print("erai2nc: the scripts directory is missing")
     sys.exit()
 # since the scripts directory is there, try importing the modules
 sys.path.append('../scripts')
@@ -42,7 +42,7 @@ site_list = ["Calperum"]
 for site in site_list:
     # get the site information from the control file
     site_name = cf["Sites"][site]["site_name"]
-    print "Processing "+site_name
+    print("Processing "+site_name)
     out_filepath = cf["Sites"][site]["out_filepath"]
     if not os.path.exists(out_filepath):
         os.makedirs(out_filepath)
@@ -100,7 +100,7 @@ for site in site_list:
     elif evi_interpolate.lower()=="cubic":
         k = 3
     else:
-        print "Unrecognised interpolation option, using linear ..."
+        print("Unrecognised interpolation option, using linear ...")
         k = 1
     s = scipy.interpolate.InterpolatedUnivariateSpline(modis_time_raw,evi_raw,k=k)
     evi_interp = s(modis_time)
@@ -108,7 +108,7 @@ for site in site_list:
     if evi_smooth_filter.lower()=="savitsky-golay":
         evi_interp_smooth = scipy.signal.savgol_filter(evi_interp,sg_num_points,sg_order,mode="mirror")
     else:
-        print "No smoothing applied to EVI"
+        print("No smoothing applied to EVI")
         evi_interp_smooth = numpy.array(evi_interp)
     # interpolate the smoothed EVI from the MODIS 16 day time step to the tower time step
     start_date = modis_dt_raw[0]

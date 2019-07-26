@@ -22,7 +22,7 @@ import xlrd
 import xlwt
 # pfp modules
 if not os.path.exists("../scripts/"):
-    print "PyFluxPro: the scripts directory is missing"
+    print("PyFluxPro: the scripts directory is missing")
     sys.exit()
 # since the scripts directory is there, try importing the modules
 sys.path.append('../scripts')
@@ -184,7 +184,7 @@ def interpolate_ds(ds_in, ts, k=3):
     # instance the output data structure
     ds_out = qcio.DataStructure()
     # copy the global attributes
-    for key in ds_in.globalattributes.keys():
+    for key in list(ds_in.globalattributes.keys()):
         ds_out.globalattributes[key] = ds_in.globalattributes[key]
     # add the time step
     ds_out.globalattributes["time_step"] = str(ts)
@@ -359,9 +359,9 @@ def xl_write_ISD_timesteps(xl_file_path, data):
     # get a workbook
     xl_book = xlwt.Workbook()
     # get a list of the sheets to add
-    site_list = data.keys()
-    year_list = data[site_list[0]].keys()
-    stat_list = data[site_list[0]][year_list[0]].keys()
+    site_list = list(data.keys())
+    year_list = list(data[site_list[0]].keys())
+    stat_list = list(data[site_list[0]][year_list[0]].keys())
     # loop over the statistics
     for stat in stat_list:
         # add a worksheet for the statistics
@@ -373,7 +373,7 @@ def xl_write_ISD_timesteps(xl_file_path, data):
         for row, site in enumerate(site_list):
             xl_sheet.write(row+1,0,site)
             for col, year in enumerate(year_list):
-                if stat in data[site][year].keys():
+                if stat in list(data[site][year].keys()):
                     xl_sheet.write(row+1,col+1,data[site][year][stat])
                 else:
                     xl_sheet.write(row+1,col+1,"")
@@ -391,7 +391,7 @@ out_base_path = cf["Files"]["out_base_path"]
 # read the site master spreadsheet
 site_info = read_site_master(xl_file_path, xl_sheet_name)
 # get a list of sites
-site_list = site_info.keys()
+site_list = list(site_info.keys())
 # creat a dictionary to hold the ISD site time steps
 isd_time_steps = OrderedDict()
 
@@ -431,15 +431,15 @@ for site in site_list:
     start_year = int(site_info[site]["Start year"])
     end_year = int(site_info[site]["End year"])
     # get the list of years to process
-    year_list = range(start_year,end_year+1)
+    year_list = list(range(start_year,end_year+1))
     for n, year in enumerate(year_list):
         # we will collect the data for each site for this year into a single dictionary
         ds_out = {}
         isd_year_path = os.path.join(isd_base_path,str(year))
         for isd_site in isd_site_list:
-            if isd_site not in isd_time_steps.keys():
+            if isd_site not in list(isd_time_steps.keys()):
                 isd_time_steps[isd_site] = OrderedDict()
-            if year not in isd_time_steps[isd_site].keys():
+            if year not in list(isd_time_steps[isd_site].keys()):
                 isd_time_steps[isd_site][year] = OrderedDict()
             isd_file_path = os.path.join(isd_year_path,str(isd_site)+"-"+str(year)+".gz")
             if not os.path.isfile(isd_file_path):
@@ -485,7 +485,7 @@ for site in site_list:
         for i in list(ds_out.keys()):
             start_datetime.append(ds_out[i].series["DateTime"]["Data"][0])
             end_datetime.append(ds_out[i].series["DateTime"]["Data"][-1])
-        print site, year
+        print(site, year)
         start = min(start_datetime)
         end = max(end_datetime)
         # now make a datetime series at the required time step from the earliest start
@@ -521,7 +521,7 @@ for site in site_list:
             ldt_one = ds_out[i].series["DateTime"]["Data"]
             idx = numpy.searchsorted(ldt_all, numpy.intersect1d(ldt_all, ldt_one))
             # then we get a list of the variables to copy
-            series_list = ds_out[i].series.keys()
+            series_list = list(ds_out[i].series.keys())
             # and remove the datetime
             if "DateTime" in series_list:
                 series_list.remove("DateTime")

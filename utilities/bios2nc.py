@@ -17,8 +17,8 @@ cf = qcio.load_controlfile(path='../controlfiles')
 if len(cf)==0: sys.exit()
 start_date = cf["General"]["start_date"]
 end_date = cf["General"]["end_date"]
-var_list = cf["Variables"].keys()
-site_list = cf["Sites"].keys()
+var_list = list(cf["Variables"].keys())
+site_list = list(cf["Sites"].keys())
 for site in site_list:
     # get the input file mask
     infilename = cf["Sites"][site]["in_filepath"]+cf["Sites"][site]["in_filename"]
@@ -152,7 +152,7 @@ for site in site_list:
         ds_60.series["DateTime"]["Flag"] = flag_60
         ds_60.series["DateTime"]["Attr"] = ds_30.series["DateTime"]["Attr"]
         # copy across the global attributes
-        for gattr in ds_30.globalattributes.keys():
+        for gattr in list(ds_30.globalattributes.keys()):
             ds_60.globalattributes[gattr] = ds_30.globalattributes[gattr]
         # set some hourly specific global attributes
         ds_60.globalattributes["nc_nrecs"] = nRecs_60
@@ -169,7 +169,7 @@ for site in site_list:
         precip_60 = numpy.sum(precip_30_2d,axis=1)
         qcutils.CreateSeries(ds_60,"Precip",precip_60,flag_60,attr)
         # get a list of the variables, exclude the QC flags
-        series_list = [item for item in ds_30.series.keys() if "_QCFlag" not in item]
+        series_list = [item for item in list(ds_30.series.keys()) if "_QCFlag" not in item]
         # remove the datetime variables
         for item in ["DateTime","DateTime_UTC","time","Precip","xlDateTime","xlDateTime_UTC"
                      "Year","Month","Day","Hour","Minute","Second"]:
@@ -193,4 +193,4 @@ for site in site_list:
         qcio.nc_write_series(ncfile,ds_30,ndims=1)
     log.info("Finished site: "+site)
 
-print "All done"
+print("All done")

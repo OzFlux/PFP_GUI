@@ -161,7 +161,7 @@ def gfMDS_initplot(**kwargs):
     pd = {"margin_bottom":0.075, "margin_top":0.075, "margin_left":0.05, "margin_right":0.05,
           "xy_height":0.20, "xy_width":0.20, "xyts_space":0.05, "ts_width":0.9}
     # set the keyword arguments
-    for key, value in kwargs.iteritems():
+    for key, value in kwargs.items():
         pd[key] = value
     # calculate bottom of the first time series and the height of the time series plots
     pd["ts_bottom"] = pd["margin_bottom"]+pd["xy_height"]+pd["xyts_space"]

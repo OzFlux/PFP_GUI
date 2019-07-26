@@ -3,7 +3,7 @@ import os
 import sys
 # check the scripts directory is present
 if not os.path.exists("../scripts/"):
-    print "erai2nc: the scripts directory is missing"
+    print("erai2nc: the scripts directory is missing")
     sys.exit()
 # since the scripts directory is there, try importing the modules
 sys.path.append('../scripts')
@@ -15,12 +15,12 @@ aws_name=qcio.get_filename_dialog(path="/mnt/OzFlux/Sites")
 ds_aws_30minute = qcio.nc_read_series(aws_name)
 has_gaps = qcutils.CheckTimeStep(ds_aws_30minute)
 if has_gaps:
-    print "Problems found with time step"
+    print("Problems found with time step")
     qcutils.FixTimeStep(ds_aws_30minute)
     qcutils.get_ymdhmsfromdatetime(ds_aws_30minute)
 dt_aws_30minute = ds_aws_30minute.series["DateTime"]["Data"]
 ddt=[dt_aws_30minute[i+1]-dt_aws_30minute[i] for i in range(0,len(dt_aws_30minute)-1)]
-print "Minimum time step is",min(ddt)," Maximum time step is",max(ddt)
+print("Minimum time step is",min(ddt)," Maximum time step is",max(ddt))
 
 dt_aws_30minute = ds_aws_30minute.series["DateTime"]["Data"]
 start_date = dt_aws_30minute[0]
@@ -35,14 +35,14 @@ dt_aws_2d = numpy.reshape(dt_aws_30minute_array,(nRecs_30minute/2,2))
 dt_aws_60minute = list(dt_aws_2d[:,1])
 nRecs_60minute = len(dt_aws_60minute)
 
-series_list = ds_aws_30minute.series.keys()
+series_list = list(ds_aws_30minute.series.keys())
 for item in ["DateTime","Ddd","Day","Minute","xlDateTime","Hour","time","Month","Second","Year"]:
     if item in series_list: series_list.remove(item)
 
     # get the 60 minute data structure
     ds_aws_60minute = qcio.DataStructure()
     # get the global attributes
-    for item in ds_aws_30minute.globalattributes.keys():
+    for item in list(ds_aws_30minute.globalattributes.keys()):
         ds_aws_60minute.globalattributes[item] = ds_aws_30minute.globalattributes[item]
     # overwrite with 60 minute values as appropriate
     ds_aws_60minute.globalattributes["nc_nrecs"] = str(nRecs_60minute)

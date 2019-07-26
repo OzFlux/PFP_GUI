@@ -527,7 +527,7 @@ class edit_cfg_L2(QtWidgets.QWidget):
 
     def add_excludehours(self):
         """ Add an exclude hours check to a variable."""
-        print " add ExcludeHours here"
+        print(" add ExcludeHours here")
 
     def add_file_path(self):
         """ Add file_path to the 'Files' section."""
@@ -555,7 +555,7 @@ class edit_cfg_L2(QtWidgets.QWidget):
 
     def add_linear(self):
         """ Add a linear correction to a variable."""
-        print " add Linear here"
+        print(" add Linear here")
 
     def add_lowercheck(self):
         """ Add a lower range check to a variable."""

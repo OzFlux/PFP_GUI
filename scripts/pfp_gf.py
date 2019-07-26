@@ -36,13 +36,13 @@ def CheckDrivers(info, ds):
     ts = int(ds.globalattributes["time_step"])
     ldt = pfp_utils.GetVariable(ds, "DateTime")
     gf_drivers = []
-    for label in info["outputs"].keys():
+    for label in list(info["outputs"].keys()):
         gf_drivers = gf_drivers + info["outputs"][label]["drivers"]
     drivers = list(set(gf_drivers))
     drivers_with_missing = {}
     # loop over the drivers and check for missing data
     for label in drivers:
-        if label not in ds.series.keys():
+        if label not in list(ds.series.keys()):
             msg = "  Requested driver not found in data structure"
             logger.error(msg)
             ds.returncodes["message"] = msg
@@ -55,17 +55,17 @@ def CheckDrivers(info, ds):
             drivers_with_missing[label] = {"count": len(idx),
                                            "dates": ldt["Data"][idx]}
     # check to see if any of the drivers have missing data
-    if len(drivers_with_missing.keys()) == 0:
+    if len(list(drivers_with_missing.keys())) == 0:
         msg = "  No missing data found in drivers"
         logger.info(msg)
         return
     # deal with drivers that contain missing data points
     logger.warning("!!!!!")
-    s = ','.join(drivers_with_missing.keys())
+    s = ','.join(list(drivers_with_missing.keys()))
     msg = "!!!!! The following variables contain missing data " + s
     logger.warning(msg)
     logger.warning("!!!!!")
-    for label in drivers_with_missing.keys():
+    for label in list(drivers_with_missing.keys()):
         var = pfp_utils.GetVariable(ds, label)
         # check to see if this variable was imported
         if "end_date" in var["Attr"]:
@@ -74,10 +74,10 @@ def CheckDrivers(info, ds):
             # it was, so perhaps this variable finishes before the tower data
             drivers_with_missing[label]["end_date"].append(dateutil.parser.parse(var["Attr"]["end_date"]))
     # check to see if any variables with missing data have an end date
-    dwmwed = [l for l in drivers_with_missing.keys() if "end_date" in drivers_with_missing[l]]
+    dwmwed = [l for l in list(drivers_with_missing.keys()) if "end_date" in drivers_with_missing[l]]
     if len(dwmwed) == 0:
         # return with error message if no variables have end date
-        s = ','.join(drivers_with_missing.keys())
+        s = ','.join(list(drivers_with_missing.keys()))
         msg = "  Unable to resolve missing data in variables " + s
         logger.error(msg)
         ds.returncodes["message"] = msg
@@ -92,11 +92,11 @@ def CheckDrivers(info, ds):
         return
     msg = "  Truncating data to end date of imported variable"
     logger.info(msg)
-    dwmed = [drivers_with_missing[l]["end_date"] for l in drivers_with_missing.keys()]
+    dwmed = [drivers_with_missing[l]["end_date"] for l in list(drivers_with_missing.keys())]
     end_date = numpy.min(dwmed)
     ei = pfp_utils.GetDateIndex(ldt["Data"], end_date, ts=ts)
     # loop over the variables in the data structure
-    for label in ds.series.keys():
+    for label in list(ds.series.keys()):
         var = pfp_utils.GetVariable(ds, label, start=0, end=ei)
         pfp_utils.CreateVariable(ds, var)
     # update the global attributes
@@ -114,9 +114,9 @@ def CheckDrivers(info, ds):
                                            "dates": ldt["Data"][idx],
                                            "end_date":[]}
     # check to see if any of the drivers still have missing data
-    if len(drivers_with_missing.keys()) != 0:
+    if len(list(drivers_with_missing.keys())) != 0:
         # return with error message if no variables have end date
-        s = ','.join(drivers_with_missing.keys())
+        s = ','.join(list(drivers_with_missing.keys()))
         msg = "  Unable to resolve missing data in variables " + s
         logger.error(msg)
         ds.returncodes["message"] = msg
@@ -150,7 +150,7 @@ def CheckGapLengths(cf, ds, l5_info):
     nperday = 24 * 60/ts
     max_short_gap_records = max_short_gap_days * nperday
     # get a list of variables being gap filled
-    targets = cf["Fluxes"].keys()
+    targets = list(cf["Fluxes"].keys())
     targets_with_long_gaps = []
     # loop over the targets, get the duration and check to see if any exceed the maximum
     for target in targets:
@@ -159,7 +159,7 @@ def CheckGapLengths(cf, ds, l5_info):
                                               "got_long_gap_method": False}
         # loop over possible long gap filling methods
         for long_gap_method in ["GapFillLongSOLO"]:
-            if long_gap_method in cf["Fluxes"][target].keys():
+            if long_gap_method in list(cf["Fluxes"][target].keys()):
                 # set logical true if long gap filling method present
                 l5_info["CheckGapLengths"][target]["got_long_gap_method"] = True
         # get the data
@@ -214,23 +214,23 @@ def CheckGapLengths(cf, ds, l5_info):
 
 def ParseL4ControlFile(cf, ds):
     l4_info = {}
-    for target in cf["Drivers"].keys():
-        if "GapFillFromAlternate" in cf["Drivers"][target].keys():
+    for target in list(cf["Drivers"].keys()):
+        if "GapFillFromAlternate" in list(cf["Drivers"][target].keys()):
             gfalternate_createdict(cf, ds, l4_info, target, "GapFillFromAlternate")
             # check to see if something went wrong
             if ds.returncodes["value"] != 0:
                 # if it has, return to calling routine
                 return l4_info
-        if "GapFillFromClimatology" in cf["Drivers"][target].keys():
+        if "GapFillFromClimatology" in list(cf["Drivers"][target].keys()):
             gfClimatology_createdict(cf, ds, l4_info, target, "GapFillFromClimatology")
             if ds.returncodes["value"] != 0:
                 return l4_info
-        if "MergeSeries" in cf["Drivers"][target].keys():
+        if "MergeSeries" in list(cf["Drivers"][target].keys()):
             gfMergeSeries_createdict(cf, ds, l4_info, target, "MergeSeries")
     # check to make sure at least 1 output is defined
     outputs = []
     for method in ["GapFillFromAlternate", "GapFillFromClimatology"]:
-        outputs = outputs + l4_info[method]["outputs"].keys()
+        outputs = outputs + list(l4_info[method]["outputs"].keys())
     if len(outputs) == 0:
         msg = " No output variables defined, quitting L4 ..."
         logger.error(msg)
@@ -240,22 +240,22 @@ def ParseL4ControlFile(cf, ds):
 
 def ParseL5ControlFile(cf, ds):
     l5_info = {}
-    for target in cf["Fluxes"].keys():
-        if "GapFillUsingSOLO" in cf["Fluxes"][target].keys():
+    for target in list(cf["Fluxes"].keys()):
+        if "GapFillUsingSOLO" in list(cf["Fluxes"][target].keys()):
             gfSOLO_createdict(cf, ds, l5_info, target, "GapFillUsingSOLO")
             # check to see if something went wrong
             if ds.returncodes["value"] != 0:
                 # if it has, return to calling routine
                 return l5_info
-        if "GapFillLongSOLO" in cf["Fluxes"][target].keys():
+        if "GapFillLongSOLO" in list(cf["Fluxes"][target].keys()):
             gfSOLO_createdict(cf, ds, l5_info, target, "GapFillLongSOLO")
             if ds.returncodes["value"] != 0:
                 return l5_info
-        if "GapFillUsingMDS" in cf["Fluxes"][target].keys():
+        if "GapFillUsingMDS" in list(cf["Fluxes"][target].keys()):
             gfMDS_createdict(cf, ds, l5_info, target, "GapFillUsingMDS")
             if ds.returncodes["value"] != 0:
                 return l5_info
-        if "MergeSeries" in cf["Fluxes"][target].keys():
+        if "MergeSeries" in list(cf["Fluxes"][target].keys()):
             gfMergeSeries_createdict(cf, ds, l5_info, target, "MergeSeries")
     return l5_info
 
@@ -263,7 +263,7 @@ def ReadAlternateFiles(ds, l4_info):
     ds_alt = {}
     l4ao = l4_info["GapFillFromAlternate"]["outputs"]
     # get a list of file names
-    files = [l4ao[output]["file_name"] for output in l4ao.keys()]
+    files = [l4ao[output]["file_name"] for output in list(l4ao.keys())]
     # read the alternate files
     for f in files:
         # if the file has not already been read, do it now
@@ -285,7 +285,7 @@ def gfalternate_createdict(cf, ds, l4_info, label, called_by):
     """
     nrecs = int(ds.globalattributes["nc_nrecs"])
     # create the alternate data settings directory
-    if called_by not in l4_info.keys():
+    if called_by not in list(l4_info.keys()):
         l4_info[called_by] = {"outputs": {}, "info": {}, "gui": {}}
     # get the info section
     gfalternate_createdict_info(cf, ds, l4_info, called_by)
@@ -294,9 +294,9 @@ def gfalternate_createdict(cf, ds, l4_info, label, called_by):
     # get the outputs section
     gfalternate_createdict_outputs(cf, ds, l4_info, label, called_by)
     # create an empty series in ds if the alternate output series doesn't exist yet
-    outputs = l4_info[called_by]["outputs"].keys()
+    outputs = list(l4_info[called_by]["outputs"].keys())
     for output in outputs:
-        if output not in ds.series.keys():
+        if output not in list(ds.series.keys()):
             variable = pfp_utils.CreateEmptyVariable(output, nrecs)
             pfp_utils.CreateVariable(ds, variable)
             variable = pfp_utils.CreateEmptyVariable(label + "_composite", nrecs)
@@ -348,7 +348,7 @@ def gfalternate_createdict_info(cf, ds, l4_info, called_by):
 
 def gfalternate_createdict_outputs(cf, ds, l4_info, label, called_by):
     # name of alternate output series in ds
-    outputs = cf["Drivers"][label][called_by].keys()
+    outputs = list(cf["Drivers"][label][called_by].keys())
     # loop over the outputs listed in the control file
     l4ao = l4_info[called_by]["outputs"]
     cfalt = cf["Drivers"][label][called_by]
@@ -362,7 +362,7 @@ def gfalternate_createdict_outputs(cf, ds, l4_info, label, called_by):
         l4ao[output]["source"] = pfp_utils.get_keyvaluefromcf(cf, sl, "source", default="")
         # alternate data file name
         # first, look in the [Files] section for a generic file name
-        file_list = cf["Files"].keys()
+        file_list = list(cf["Files"].keys())
         lower_file_list = [item.lower() for item in file_list]
         if l4ao[output]["source"].lower() in lower_file_list:
             # found a generic file name
@@ -462,7 +462,7 @@ def gfalternate_matchstartendtimes(ds,ds_alternate):
             logger.error(" Something went badly wrong and I'm giving up")
             sys.exit()
         # get a list of alternate series
-        alternate_series_list = [item for item in ds_alternate.series.keys() if "_QCFlag" not in item]
+        alternate_series_list = [item for item in list(ds_alternate.series.keys()) if "_QCFlag" not in item]
         # number of records in truncated or padded alternate data
         nRecs_tower = len(ldt_tower)
         # force the alternate dattime to be the tower date time
@@ -488,7 +488,7 @@ def gfalternate_matchstartendtimes(ds,ds_alternate):
         nRecs = len(ldt_tower)
         ds_alternate.globalattributes["nc_nrecs"] = nRecs
         ds_alternate.series["DateTime"] = ds.series["DateTime"]
-        alternate_series_list = [item for item in ds_alternate.series.keys() if "_QCFlag" not in item]
+        alternate_series_list = [item for item in list(ds_alternate.series.keys()) if "_QCFlag" not in item]
         for series in alternate_series_list:
             if series in ["DateTime","DateTime_UTC"]:
                 continue
@@ -509,10 +509,10 @@ def gfClimatology_createdict(cf, ds, l4_info, label, called_by):
     Date: August 2014
     """
     # create the climatology directory in the data structure
-    if called_by not in l4_info.keys():
+    if called_by not in list(l4_info.keys()):
         l4_info[called_by] = {"outputs": {}}
     # name of alternate output series in ds
-    outputs = cf["Drivers"][label][called_by].keys()
+    outputs = list(cf["Drivers"][label][called_by].keys())
     # loop over the outputs listed in the control file
     l4co = l4_info[called_by]["outputs"]
     cfcli = cf["Drivers"][label][called_by]
@@ -525,7 +525,7 @@ def gfClimatology_createdict(cf, ds, l4_info, label, called_by):
         # get the source
         l4co[output]["source"] = pfp_utils.get_keyvaluefromcf(cf, sl, "source", default="climatology")
         # Climatology file name
-        file_list = cf["Files"].keys()
+        file_list = list(cf["Files"].keys())
         lower_file_list = [item.lower() for item in file_list]
         # first, look in the [Files] section for a generic file name
         if l4co[output]["source"] in lower_file_list:
@@ -551,13 +551,13 @@ def gfClimatology_createdict(cf, ds, l4_info, label, called_by):
         else:
             l4co[output]["climatology_name"] = label
         # climatology gap filling method
-        if "method" not in cfcli[output].keys():
+        if "method" not in list(cfcli[output].keys()):
             # default if "method" missing is "interpolated_daily"
             l4co[output]["method"] = "interpolated_daily"
         else:
             l4co[output]["method"] = cfcli[output]["method"]
         # create an empty series in ds if the climatology output series doesn't exist yet
-        if output not in ds.series.keys():
+        if output not in list(ds.series.keys()):
             data, flag, attr = pfp_utils.MakeEmptySeries(ds, output)
             pfp_utils.CreateSeries(ds, output, data, flag, attr)
 
@@ -606,7 +606,7 @@ def gfMDS_createdict(cf, ds, l5_info, label, called_by):
     nperday = 24 * 60/ts
     l5_info[called_by]["info"]["MaxShortGapRecords"] = max_short_gap_days * nperday
     # name of MDS output series in ds
-    outputs = cf["Fluxes"][label]["GapFillUsingMDS"].keys()
+    outputs = list(cf["Fluxes"][label]["GapFillUsingMDS"].keys())
     # loop over the outputs listed in the control file
     l5mo = l5_info[called_by]["outputs"]
     for output in outputs:
@@ -697,7 +697,7 @@ def gfMergeSeries_createdict(cf, ds, info, label, called_by):
     merge_order = "standard"
     if label in merge_prereq_list:
         merge_order = "prerequisite"
-    if merge_order not in info[called_by].keys():
+    if merge_order not in list(info[called_by].keys()):
         info[called_by][merge_order] = {}
     # create the dictionary keys for this series
     info[called_by][merge_order][label] = {}
@@ -711,7 +711,7 @@ def gfMergeSeries_createdict(cf, ds, info, label, called_by):
         src_list = [src_string]
     info[called_by][merge_order][label]["source"] = src_list
     # create an empty series in ds if the output series doesn't exist yet
-    if label not in ds.series.keys():
+    if label not in list(ds.series.keys()):
         data, flag, attr = pfp_utils.MakeEmptySeries(ds, label)
         pfp_utils.CreateSeries(ds, label, data, flag, attr)
 
@@ -727,7 +727,7 @@ def gfSOLO_createdict(cf, ds, l5_info, target, called_by):
     """
     nrecs = int(ds.globalattributes["nc_nrecs"])
     # create the solo settings directory
-    if called_by not in l5_info.keys():
+    if called_by not in list(l5_info.keys()):
         l5_info[called_by] = {"outputs": {}, "info": {}, "gui": {}}
     # get the info section
     gfSOLO_createdict_info(cf, ds, l5_info[called_by], called_by)
@@ -741,11 +741,11 @@ def gfSOLO_createdict(cf, ds, l5_info, target, called_by):
     if "SummaryPlots" in cf:
         l5_info[called_by]["SummaryPlots"] = cf["SummaryPlots"]
     # create an empty series in ds if the SOLO output series doesn't exist yet
-    outputs = cf["Fluxes"][target][called_by].keys()
+    outputs = list(cf["Fluxes"][target][called_by].keys())
     target_attr = copy.deepcopy(ds.series[target]["Attr"])
     target_attr["long_name"] = "Modeled by neural network (SOLO)"
     for output in outputs:
-        if output not in ds.series.keys():
+        if output not in list(ds.series.keys()):
             # create an empty variable
             variable = pfp_utils.CreateEmptyVariable(output, nrecs, attr=target_attr)
             variable["Attr"]["drivers"] = l5_info[called_by]["outputs"][output]["drivers"]
@@ -797,7 +797,7 @@ def gfSOLO_createdict_info(cf, ds, solo, called_by):
 def gfSOLO_createdict_outputs(cf, solo, target, called_by):
     so = solo["outputs"]
     # loop over the outputs listed in the control file
-    outputs = cf["Fluxes"][target][called_by].keys()
+    outputs = list(cf["Fluxes"][target][called_by].keys())
     for output in outputs:
         # create the dictionary keys for this series
         so[output] = {}
@@ -831,7 +831,7 @@ def GapFillFromClimatology(ds, l4_info, called_by):
     Gap fill missing data using data from the climatology spreadsheet produced by
     the climatology.py script.
     '''
-    if called_by not in l4_info.keys():
+    if called_by not in list(l4_info.keys()):
         return
     l4co = l4_info[called_by]["outputs"]
     # tell the user what we are going to do
@@ -839,7 +839,7 @@ def GapFillFromClimatology(ds, l4_info, called_by):
     logger.info(msg)
     # loop over the series to be gap filled using climatology
     cli_xlbooks = {}
-    for output in l4co.keys():
+    for output in list(l4co.keys()):
         # check to see if there are any gaps in "series"
         #index = numpy.where(abs(ds.series[label]['Data']-float(c.missing_value))<c.eps)[0]
         #if len(index)==0: continue                      # no gaps found in "series"
@@ -997,19 +997,19 @@ def gf_getdateticks(start, end):
         loc = mdt.MinuteLocator()
         fmt = mdt.DateFormatter('%H:%M')
     elif delta <= td(minutes=30):
-        loc = mdt.MinuteLocator(byminute=range(0,60,5))
+        loc = mdt.MinuteLocator(byminute=list(range(0,60,5)))
         fmt = mdt.DateFormatter('%H:%M')
     elif delta <= td(hours=1):
-        loc = mdt.MinuteLocator(byminute=range(0,60,15))
+        loc = mdt.MinuteLocator(byminute=list(range(0,60,15)))
         fmt = mdt.DateFormatter('%H:%M')
     elif delta <= td(hours=6):
         loc = mdt.HourLocator()
         fmt = mdt.DateFormatter('%H:%M')
     elif delta <= td(days=1):
-        loc = mdt.HourLocator(byhour=range(0,24,3))
+        loc = mdt.HourLocator(byhour=list(range(0,24,3)))
         fmt = mdt.DateFormatter('%H:%M')
     elif delta <= td(days=3):
-        loc = mdt.HourLocator(byhour=range(0,24,12))
+        loc = mdt.HourLocator(byhour=list(range(0,24,12)))
         fmt = mdt.DateFormatter('%d/%m %H')
     elif delta <= td(weeks=2):
         loc = mdt.DayLocator()
@@ -1030,7 +1030,7 @@ def gf_getdateticks(start, end):
 
 def ImportSeries(cf,ds):
     # check to see if there is an Imports section
-    if "Imports" not in cf.keys():
+    if "Imports" not in list(cf.keys()):
         return
     # number of records
     nRecs = int(ds.globalattributes["nc_nrecs"])
@@ -1039,7 +1039,7 @@ def ImportSeries(cf,ds):
     start_date = ldt[0]
     end_date = ldt[-1]
     # loop over the series in the Imports section
-    for label in cf["Imports"].keys():
+    for label in list(cf["Imports"].keys()):
         import_filename = pfp_utils.get_keyvaluefromcf(cf, ["Imports", label], "file_name", default="")
         if import_filename == "":
             msg = " ImportSeries: import filename not found in control file, skipping ..."

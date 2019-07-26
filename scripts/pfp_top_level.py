@@ -294,9 +294,9 @@ def do_run_l2(cfg=None):
         pfp_io.nc_write_series(nc_file, ds2)
         logger.info("Finished L2 processing")
         logger.info("Plotting L1 and L2 data")
-        for nFig in cfg['Plots'].keys():
+        for nFig in list(cfg['Plots'].keys()):
             plt_cf = cfg['Plots'][str(nFig)]
-            if 'Type' in plt_cf.keys():
+            if 'Type' in list(plt_cf.keys()):
                 if str(plt_cf['Type']).lower() =='xy':
                     pfp_plot.plotxy(cfg, nFig, plt_cf, ds1, ds2)
                 else:
@@ -347,9 +347,9 @@ def do_run_l3(cfg=None):
         pfp_io.nc_write_series(nc_file, ds3)
         logger.info("Finished L3 processing")
         logger.info("Plotting L3 data")
-        for nFig in cfg['Plots'].keys():
+        for nFig in list(cfg['Plots'].keys()):
             plt_cf = cfg['Plots'][str(nFig)]
-            if 'Type' in plt_cf.keys():
+            if 'Type' in list(plt_cf.keys()):
                 if str(plt_cf['Type']).lower() =='xy':
                     pfp_plot.plotxy(cfg, nFig, plt_cf, ds2, ds3)
                 else:

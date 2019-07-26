@@ -61,13 +61,13 @@ def cfkeycheck(cf,Base='Variables',ThisOne=[],key=[]):
     if len(ThisOne) == 0:
         return
     if len(key) == 0:
-        if Base in cf.keys() and ThisOne in cf[Base].keys():
-            return ThisOne in cf[Base].keys()
+        if Base in list(cf.keys()) and ThisOne in list(cf[Base].keys()):
+            return ThisOne in list(cf[Base].keys())
         else:
             return
     else:
-        if Base in cf.keys() and ThisOne in cf[Base].keys():
-            return key in cf[Base][ThisOne].keys()
+        if Base in list(cf.keys()) and ThisOne in list(cf[Base].keys()):
+            return key in list(cf[Base][ThisOne].keys())
         else:
             return
 
@@ -96,7 +96,7 @@ def CheckQCFlags(ds):
     """
     msg = " Checking missing data and QC flags are consistent"
     logger.info(msg)
-    labels = [label for label in ds.series.keys() if label not in ["DateTime"]]
+    labels = [label for label in list(ds.series.keys()) if label not in ["DateTime"]]
     # force any values of -9999 with QC flags of 0 to have a QC flag of 8
     for label in labels:
         var = GetVariable(ds, label)
@@ -164,7 +164,7 @@ def CheckUnits(ds, label, units, convert_units=False):
     Author: PRI
     Date: January 2016
     """
-    if isinstance(label, basestring):
+    if isinstance(label, str):
         label_list = [label]
     elif isinstance(label, list):
         label_list = label
@@ -173,7 +173,7 @@ def CheckUnits(ds, label, units, convert_units=False):
         logger.error(msg)
         return
     for label in label_list:
-        if label not in ds.series.keys():
+        if label not in list(ds.series.keys()):
             msg = "CheckUnits: requested series "+label+" not found"
             logger.error(msg)
             continue
@@ -265,7 +265,7 @@ def ConvertFcUnits(cf, ds):
     # get the Fc units requested by the user
     Fc_units_out = get_keyvaluefromcf(cf, ['Options'], "FcUnits", default="umol/m2/s")
     # get a list of Fc series
-    Fc_list = [label for label in ds.series.keys() if label[0:2] == "Fc"]
+    Fc_list = [label for label in list(ds.series.keys()) if label[0:2] == "Fc"]
     # convert units of Fc as required
     units_list = ["mg/m2/s", "umol/m2/s"]
     for label in Fc_list:
@@ -885,7 +885,7 @@ def convert_anglestring(anglestring):
     quadlist = ["N", "E", "S", "W"]
     direction = {'N':1, 'S':-1, 'E': 1, 'W':-1}
     # replace the degrees, minutes and seconds symbols with spaces
-    new = anglestring.replace(u'\B0', ' ').replace('\'', ' ').replace('"', ' ').strip()
+    new = anglestring.replace('\B0', ' ').replace('\'', ' ').replace('"', ' ').strip()
     try:
         # simple casting may work, who knows?
         anglefloat = float(new)
@@ -953,10 +953,10 @@ def convert_WSWDtoUV(WS, WD):
     V["Attr"]["long_name"] = "V component of wind velocity, positive north"
     V["Attr"]["units"] = "m/s"
     # copy the datetime if it is available
-    if "DateTime" in WS.keys():
+    if "DateTime" in list(WS.keys()):
         U["DateTime"] = copy.deepcopy(WS["DateTime"])
         V["DateTime"] = copy.deepcopy(WS["DateTime"])
-    elif "DateTime" in WD.keys():
+    elif "DateTime" in list(WD.keys()):
         U["DateTime"] = copy.deepcopy(WD["DateTime"])
         V["DateTime"] = copy.deepcopy(WD["DateTime"])
     return U, V
@@ -996,10 +996,10 @@ def convert_UVtoWSWD(U, V):
     WD["Attr"]["long_name"] = "Wind direction"
     WD["Attr"]["units"] = "deg"
     # copy the datetime if it is available
-    if "DateTime" in U.keys():
+    if "DateTime" in list(U.keys()):
         WS["DateTime"] = copy.deepcopy(U["DateTime"])
         WD["DateTime"] = copy.deepcopy(U["DateTime"])
-    elif "DateTime" in V.keys():
+    elif "DateTime" in list(V.keys()):
         WS["DateTime"] = copy.deepcopy(V["DateTime"])
         WD["DateTime"] = copy.deepcopy(V["DateTime"])
     return WS, WD
@@ -1035,19 +1035,19 @@ def CreateSeries(ds,Label,Data,Flag,Attr):
         ds.series['_tmp_']['Flag'] = Flag.astype(numpy.int32)
     # do the attributes
     ds.series['_tmp_']['Attr'] = {}
-    if Label in ds.series.keys():                 # check to see if the series already exists
+    if Label in list(ds.series.keys()):                 # check to see if the series already exists
         for attr in ds.series[Label]['Attr']:     # if it does, copy the existing attributes
             if attr in Attr and ds.series[Label]['Attr'][attr]!=Attr[attr]:
                 ds.series['_tmp_']['Attr'][attr] = Attr[attr]
             else:
                 ds.series['_tmp_']['Attr'][attr] = ds.series[Label]['Attr'][attr]
         for attr in Attr:
-            if attr not in ds.series['_tmp_']['Attr'].keys():
+            if attr not in list(ds.series['_tmp_']['Attr'].keys()):
                 ds.series['_tmp_']['Attr'][attr] = Attr[attr]
     else:
         for item in Attr:
             ds.series['_tmp_']['Attr'][item] = Attr[item]
-    ds.series[unicode(Label)] = ds.series['_tmp_']     # copy temporary series to new series
+    ds.series[str(Label)] = ds.series['_tmp_']     # copy temporary series to new series
     del ds.series['_tmp_']                        # delete the temporary series
 
 def CopyVariable(var):
@@ -1140,7 +1140,7 @@ def CreateVariable(ds,variable):
     # do the attributes
     ds.series["_tmp_"]["Attr"] = copy.deepcopy(variable["Attr"])
     # and copy the temporary series back to the original label
-    ds.series[unicode(label)] = copy.deepcopy(ds.series['_tmp_'])
+    ds.series[str(label)] = copy.deepcopy(ds.series['_tmp_'])
     # delete the temporary series
     del ds.series['_tmp_']
 
@@ -1222,7 +1222,7 @@ def RemoveDuplicateRecords(ds):
     """ Remove duplicate records."""
     # the ds.series["DateTime"]["Data"] series is actually a list
     for item in ["DateTime","DateTime_UTC"]:
-        if item in ds.series.keys():
+        if item in list(ds.series.keys()):
             ldt,ldt_flag,ldt_attr = GetSeries(ds,item)
             # ldt_nodups is returned as an ndarray
             ldt_nodups,idx_nodups = numpy.unique(ldt,return_index=True)
@@ -1230,7 +1230,7 @@ def RemoveDuplicateRecords(ds):
             ds.series[item]["Data"] = ldt_nodups
             ds.series[item]["Flag"] = ldt_flag[idx_nodups]
     # get a list of the series in the data structure
-    series_list = [item for item in ds.series.keys() if '_QCFlag' not in item]
+    series_list = [item for item in list(ds.series.keys()) if '_QCFlag' not in item]
     # remove the DateTime
     for item in ["DateTime","DateTime_UTC"]:
         if item in series_list: series_list.remove(item)
@@ -1263,7 +1263,7 @@ def FixNonIntegralTimeSteps(ds,fixtimestepmethod=""):
     dt_diffs = numpy.array([(ldt[i]-rounddttots(ldt[i],ts=ts)).total_seconds() for i in range(1,len(ldt))])
     logger.info(" Maximum drift is "+str(numpy.max(dt_diffs))+" seconds, minimum drift is "+str(numpy.min(dt_diffs))+" seconds")
     ans = fixtimestepmethod
-    if ans=="": ans = raw_input("Do you want to [Q]uit, [I]nterploate or [R]ound? ")
+    if ans=="": ans = input("Do you want to [Q]uit, [I]nterploate or [R]ound? ")
     if ans.lower()[0]=="q":
         msg = "Quiting ..."
         logger.error(msg)
@@ -1312,7 +1312,7 @@ def FixTimeGaps(ds):
     ds.series['DateTime']['Data'] = ldt_nogaps
     ds.series['DateTime']['Flag'] = numpy.zeros(len(ldt_nogaps),dtype=numpy.int32)
     # get a list of series in the data structure
-    series_list = [item for item in ds.series.keys() if '_QCFlag' not in item]
+    series_list = [item for item in list(ds.series.keys()) if '_QCFlag' not in item]
     # remove the datetime-related series from data structure
     datetime_list = ["DateTime","DateTime_UTC"]
     for item in datetime_list:
@@ -1384,7 +1384,7 @@ def GetAverageSeriesKeys(cf, label, section=""):
     """
     if len(section)==0:
         section = "Variables"
-    if "Source" in cf[section][label]["AverageSeries"].keys():
+    if "Source" in list(cf[section][label]["AverageSeries"].keys()):
         src_string = cf[section][label]["AverageSeries"]["Source"]
         if "," in src_string:
             src_list = src_string.split(",")
@@ -1403,10 +1403,10 @@ def GetAltName(cf,ds,ThisOne):
     If it isn't, check the control file to see if an alternate name has been specified
      and return the alternate name if one exists.
     '''
-    if ThisOne not in ds.series.keys():
-        if ThisOne in cf['Variables'].keys():
+    if ThisOne not in list(ds.series.keys()):
+        if ThisOne in list(cf['Variables'].keys()):
             ThisOne = cf['Variables'][ThisOne]['AltVarName']
-            if ThisOne not in ds.series.keys():
+            if ThisOne not in list(ds.series.keys()):
                 logger.error('GetAltName: alternate variable name not in ds')
         else:
             logger.error('GetAltName: cant find ',ThisOne,' in ds or control file')
@@ -1416,8 +1416,8 @@ def GetAltNameFromCF(cf,ThisOne):
     '''
     Get an alternate variable name from the control file.
     '''
-    if ThisOne in cf['Variables'].keys():
-        if 'AltVarName' in cf['Variables'][ThisOne].keys():
+    if ThisOne in list(cf['Variables'].keys()):
+        if 'AltVarName' in list(cf['Variables'][ThisOne].keys()):
             ThisOne = str(cf['Variables'][ThisOne]['AltVarName'])
         else:
             msg = 'GetAltNameFromCF: AltVarName key not in control file for '+str(ThisOne)
@@ -1430,7 +1430,7 @@ def GetAltNameFromCF(cf,ThisOne):
 def GetAttributeDictionary(ds,ThisOne):
     attr = {}
     # if series ThisOne is in the data structure
-    if ThisOne in ds.series.keys():
+    if ThisOne in list(ds.series.keys()):
         attr = ds.series[ThisOne]['Attr']
     else:
         attr = MakeAttributeDictionary()
@@ -1440,8 +1440,8 @@ def GetcbTicksFromCF(cf,ThisOne):
     '''
     Get colour bar tick labels from the control file.
     '''
-    if ThisOne in cf['Variables'].keys():
-        if 'Ticks' in cf['Variables'][ThisOne].keys():
+    if ThisOne in list(cf['Variables'].keys()):
+        if 'Ticks' in list(cf['Variables'][ThisOne].keys()):
             Ticks = eval(cf['Variables'][ThisOne]['Ticks'])
         else:
             msg = 'GetcbTicksFromCF: Ticks key not in control file for '+str(ThisOne)
@@ -1455,15 +1455,15 @@ def GetRangesFromCF(cf,ThisOne,mode="verbose"):
     '''
     Get lower and upper range limits from the control file.
     '''
-    if ThisOne in cf['Variables'].keys():
-        if 'Lower' in cf['Variables'][ThisOne].keys():
+    if ThisOne in list(cf['Variables'].keys()):
+        if 'Lower' in list(cf['Variables'][ThisOne].keys()):
             lower = float(cf['Variables'][ThisOne]['Lower'])
         else:
             if mode.lower()!="quiet":
                 msg = "GetRangesFromCF: Lower key not in control file for "+str(ThisOne)
                 logger.info(msg)
             lower = None
-        if 'Upper' in cf['Variables'][ThisOne].keys():
+        if 'Upper' in list(cf['Variables'][ThisOne].keys()):
             upper = float(cf['Variables'][ThisOne]['Upper'])
         else:
             if mode.lower()!="quiet":
@@ -1583,8 +1583,8 @@ def GetDateIndex(ldt,date,ts=30,default=0,match='exact'):
     return i
 
 def GetGlobalAttributeValue(cf,ds,ThisOne):
-    if ThisOne not in ds.globalattributes.keys():
-        if ThisOne in cf['General'].keys():
+    if ThisOne not in list(ds.globalattributes.keys()):
+        if ThisOne in list(cf['General'].keys()):
             ds.globalattributes[ThisOne] = cf['General'][ThisOne]
         else:
             logger.error('  GetGlobalAttributeValue: global attribute '+ThisOne+' was not found in the netCDF file or in the control file')
@@ -1601,7 +1601,7 @@ def GetMergeSeriesKeys(cf, ThisOne, section=''):
     """
     if len(section)==0:
         section = 'Variables'
-    if 'Source' in cf[section][ThisOne]['MergeSeries'].keys():
+    if 'Source' in list(cf[section][ThisOne]['MergeSeries'].keys()):
         src_string = cf[section][ThisOne]['MergeSeries']['Source']
         if "," in src_string:
             src_list = src_string.split(",")
@@ -1652,7 +1652,7 @@ def GetSeries(ds,ThisOne,si=0,ei=-1,mode="truncate"):
     else:
         nRecs = len(ds.series[ThisOne]["Data"])
     # check the series requested is in the data structure
-    if ThisOne in ds.series.keys():
+    if ThisOne in list(ds.series.keys()):
         # series is in the data structure
         if isinstance(ds.series[ThisOne]['Data'],list):
             # return a list if the series is a list
@@ -1661,14 +1661,14 @@ def GetSeries(ds,ThisOne,si=0,ei=-1,mode="truncate"):
             # return a numpy array if series is an array
             Series = ds.series[ThisOne]['Data'].copy()
         # now get the QC flag
-        if 'Flag' in ds.series[ThisOne].keys():
+        if 'Flag' in list(ds.series[ThisOne].keys()):
             # return the QC flag if it exists
             Flag = ds.series[ThisOne]['Flag'].copy()
         else:
             # create a QC flag if one does not exist
             Flag = numpy.zeros(nRecs,dtype=numpy.int32)
         # now get the attribute dictionary
-        if "Attr" in ds.series[ThisOne].keys():
+        if "Attr" in list(ds.series[ThisOne].keys()):
             Attr = GetAttributeDictionary(ds,ThisOne)
         else:
             Attr = MakeAttributeDictionary()
@@ -1840,7 +1840,7 @@ def get_cfsection(cf,series='',mode='quiet'):
         if mode!='quiet': logger.info(msgtxt)
         return section
     for ThisSection in sectionlist:
-        if ThisSection in cf.keys():
+        if ThisSection in list(cf.keys()):
             if series in cf[ThisSection]: section = ThisSection
     if len(section)==0:
         msgtxt = ' get_cfsection: series '+str(series)+' not found in control file'
@@ -1858,7 +1858,7 @@ def get_coverage_groups(ds,rad=None,met=None,flux=None,soil=None):
     for ThisGroup, ThisLabel in zip([rad,met,flux,soil],['radiation','meteorology','flux','soil']):
         sum_coverage = float(0); count = float(0)
         for ThisOne in ThisGroup:
-            if ThisOne in ds.series.keys():
+            if ThisOne in list(ds.series.keys()):
                 sum_coverage = sum_coverage + float(ds.series[ThisOne]['Attr']['coverage_'+level])
                 count = count + 1
         if count!=0:
@@ -1871,7 +1871,7 @@ def get_coverage_individual(ds):
     level = "L1"
     if "nc_level" in ds.globalattributes:
         level = str(ds.globalattributes["nc_level"])
-    SeriesList = ds.series.keys()
+    SeriesList = list(ds.series.keys())
     for ThisOne in ["DateTime","DateTime_UTC"]:
         if ThisOne in SeriesList: SeriesList.remove(ThisOne)
     for ThisOne in SeriesList:
@@ -1887,9 +1887,9 @@ def get_datetime(cf, ds):
     Author: PRI
     Date: August 2018
     """
-    if "xlDateTime" in ds.series.keys():
+    if "xlDateTime" in list(ds.series.keys()):
         get_datetimefromxldate(ds)
-    elif "DateTime" in cf["Variables"].keys():
+    elif "DateTime" in list(cf["Variables"].keys()):
         if "Function" in cf["Variables"]["DateTime"]:
             # call the function given in the control file to convert the date/time string to a datetime object
             # NOTE: the function being called needs to deal with missing date values and empty lines
@@ -1914,7 +1914,7 @@ def get_datetimefromnctime(ds,time,time_units):
     ts = int(ds.globalattributes["time_step"])
     nRecs = int(ds.globalattributes["nc_nrecs"])
     dt = netCDF4.num2date(time,time_units)
-    ds.series[unicode("DateTime")] = {}
+    ds.series[str("DateTime")] = {}
     ds.series["DateTime"]["Data"] = dt
     ds.series["DateTime"]["Flag"] = numpy.zeros(nRecs)
     ds.series["DateTime"]["Attr"] = {}
@@ -1930,7 +1930,7 @@ def get_datetimefromxldate(ds):
     xldate = ds.series['xlDateTime']['Data']
     nRecs = len(ds.series['xlDateTime']['Data'])
     datemode = int(ds.globalattributes['xl_datemode'])
-    ds.series[unicode('DateTime')] = {}
+    ds.series[str('DateTime')] = {}
     basedate = datetime.datetime(1899, 12, 30)
     dt = [None]*nRecs
     for i in range(nRecs):
@@ -1944,7 +1944,7 @@ def get_datetimefromxldate(ds):
 def get_datetimefromymdhms(ds):
     ''' Creates a series of Python datetime objects from the year, month,
     day, hour, minute and second series stored in the netCDF file.'''
-    SeriesList = ds.series.keys()
+    SeriesList = list(ds.series.keys())
     if ('Year' not in SeriesList or 'Month' not in SeriesList or 'Day' not in SeriesList or
         'Hour' not in SeriesList or 'Minute' not in SeriesList or 'Second' not in SeriesList):
         logger.info(' get_datetimefromymdhms: unable to find all datetime fields required')
@@ -1997,7 +1997,7 @@ def get_end_index(ldt, end, mode="quiet"):
     Author: PRI
     Date: October 2016
     """
-    if isinstance(end, basestring):
+    if isinstance(end, str):
         try:
             end = dateutil.parser.parse(end)
             if end <= ldt[-1] and end >= ldt[0]:
@@ -2082,11 +2082,11 @@ def get_label_list_from_cf(cf):
            label_list is a list of variable labels referenced in the control file.
     """
     if "Variables" in cf:
-        label_list = cf["Variables"].keys()
+        label_list = list(cf["Variables"].keys())
     elif "Drivers" in cf:
-        label_list = cf["Drivers"].keys()
+        label_list = list(cf["Drivers"].keys())
     elif "Fluxes" in cf:
-        label_list = cf["Fluxes"].keys()
+        label_list = list(cf["Fluxes"].keys())
     else:
         label_list = []
         msg = "No Variables, Drivers or Fluxes section found in control file"
@@ -2109,17 +2109,17 @@ def get_missingingapfilledseries(ds, l4_info):
     # create an empty list
     alt_list = []
     # check to see if there was any gap filling using data from alternate sources
-    if "GapFillFromAlternate" in l4_info.keys():
+    if "GapFillFromAlternate" in list(l4_info.keys()):
         l4a = l4_info["GapFillFromAlternate"]
         # if so, get a list of the quantities gap filled from alternate sources
-        alt_list = list(set([l4a["outputs"][item]["target"] for item in l4a["outputs"].keys()]))
+        alt_list = list(set([l4a["outputs"][item]["target"] for item in list(l4a["outputs"].keys())]))
     # create an empty list
     cli_list = []
     # check to see if there was any gap filling from climatology
-    if "GapFillFromClimatology" in l4_info.keys():
+    if "GapFillFromClimatology" in list(l4_info.keys()):
         l4c = l4_info["GapFillFromClimatology"]
         # if so, get a list of the quantities gap filled using climatology
-        cli_list = list(set([l4c["outputs"][item]["target"] for item in l4c["outputs"].keys()]))
+        cli_list = list(set([l4c["outputs"][item]["target"] for item in list(l4c["outputs"].keys())]))
     # one list to rule them, one list to bind them ...
     gf_list = list(set(alt_list + cli_list))
     # clear out if there was no gap filling
@@ -2128,7 +2128,7 @@ def get_missingingapfilledseries(ds, l4_info):
     # loop over the series to be checked
     gap_found = False
     for series in gf_list:
-        if series not in ds.series.keys(): continue
+        if series not in list(ds.series.keys()): continue
         data,flag,attr = GetSeriesasMA(ds,series)
         idx = numpy.ma.where(data.mask == True)[0]
         if len(idx) != 0:
@@ -2176,12 +2176,12 @@ def get_nctime_from_datetime(ds, time_units="seconds since 1970-01-01 00:00:00.0
     return
 
 def get_nrecs(ds):
-    if 'nc_nrecs' in ds.globalattributes.keys():
+    if 'nc_nrecs' in list(ds.globalattributes.keys()):
         nRecs = int(ds.globalattributes['nc_nrecs'])
-    elif 'NumRecs' in ds.globalattributes.keys():
+    elif 'NumRecs' in list(ds.globalattributes.keys()):
         nRecs = int(ds.globalattributes['NumRecs'])
     else:
-        series_list = ds.series.keys()
+        series_list = list(ds.series.keys())
         nRecs = len(ds.series[series_list[0]]['Data'])
     return nRecs
 
@@ -2192,7 +2192,7 @@ def get_start_index(ldt, start, mode="quiet"):
     Author: PRI
     Date: October 2016
     """
-    if isinstance(start, basestring):
+    if isinstance(start, str):
         try:
             start = dateutil.parser.parse(start)
             if start >= ldt[0] and start <= ldt[-1]:
@@ -2245,7 +2245,7 @@ def get_timezone(site_name,prompt="no"):
     found = False
     # strip out spaces and commas from the site name
     site_name = site_name.replace(" ","").replace(",","")
-    for item in c.tz_dict.keys():
+    for item in list(c.tz_dict.keys()):
         if item in site_name.lower():
             time_zone = c.tz_dict[item]
             found = True
@@ -2263,9 +2263,9 @@ def get_UTCfromlocaltime(ds):
     Author: PRI
     '''
     # check the time_zone global attribute is set, we cant continue without it
-    if "time_zone" not in ds.globalattributes.keys():
+    if "time_zone" not in list(ds.globalattributes.keys()):
         logger.warning("get_UTCfromlocaltime: time_zone not in global attributes, checking elsewhere ...")
-        if "site_name" in ds.globalattributes.keys():
+        if "site_name" in list(ds.globalattributes.keys()):
             site_name = ds.globalattributes["site_name"]
         else:
             logger.warning("get_UTCfromlocaltime: site_name not in global attributes, skipping UTC calculation ...")
@@ -2306,7 +2306,7 @@ def get_xldatefromdatetime(ds):
     Author: PRI
     '''
     # get the datemode of the original Excel spreadsheet
-    if "xl_datemode" in ds.globalattributes.keys():
+    if "xl_datemode" in list(ds.globalattributes.keys()):
         datemode = int(ds.globalattributes["xl_datemode"])
     else:
         datemode = int(0)
@@ -2420,10 +2420,10 @@ def get_ymdhmsfromxldate(ds):
     CreateSeries(ds,'Ddd',Ddd,flag,MakeAttributeDictionary(long_name='Decimal day of the year',units='none'))
 
 def haskey(cf,ThisOne,key):
-    return key in cf['Variables'][ThisOne].keys()
+    return key in list(cf['Variables'][ThisOne].keys())
 
 def incf(cf,ThisOne):
-    return ThisOne in cf['Variables'].keys()
+    return ThisOne in list(cf['Variables'].keys())
 
 def linear_function(B,x):
     """
@@ -2490,13 +2490,13 @@ def MakeQCFlag(ds,SeriesList):
         #log.info('  MakeQCFlag: no series list specified')
         pass
     if len(SeriesList)==1:
-        if SeriesList[0] in ds.series.keys():
+        if SeriesList[0] in list(ds.series.keys()):
             flag = ds.series[SeriesList[0]]['Flag'].copy()
         else:
             logger.error('  MakeQCFlag: series '+str(SeriesList[0])+' not in ds.series')
     if len(SeriesList)>1:
         for ThisOne in SeriesList:
-            if ThisOne in ds.series.keys():
+            if ThisOne in list(ds.series.keys()):
                 if len(flag)==0:
                     #flag = numpy.ones(numpy.size(ds.series[ThisOne]['Flag']))
                     flag = ds.series[ThisOne]['Flag'].copy()
@@ -2596,7 +2596,7 @@ def parse_rangecheck_limits(s):
     # initialise the returned list to an empty list
     l = []
     # check to see that a string was passed in
-    if not isinstance(s, basestring):
+    if not isinstance(s, str):
         # error message and return if input was not a string
         msg = "parse_rangecheck_limits: argument must be a string"
         logger.error(msg)
@@ -2776,8 +2776,8 @@ def UpdateGlobalAttributes(cf,ds,level):
     if "controlfile_name" in cf:
         ds.globalattributes["controlfile_name"] = cf["controlfile_name"]
     if "Global" in cf:
-        for item in cf["Global"].keys():
-            if item not in ds.globalattributes.keys():
+        for item in list(cf["Global"].keys()):
+            if item not in list(ds.globalattributes.keys()):
                 ds.globalattributes[item] = cf["Global"][item].replace("\n"," ").replace("\r","")
 
 def update_progress(progress):

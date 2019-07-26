@@ -4,7 +4,7 @@ import os
 import sys
 # check the scripts directory is present
 if not os.path.exists("../scripts/"):
-    print "erai2nc: the scripts directory is missing"
+    print("erai2nc: the scripts directory is missing")
     sys.exit()
 # since the scripts directory is there, try importing the modules
 sys.path.append('../scripts')
@@ -21,11 +21,11 @@ for in_filename in in_file_list:
     # open the output file
     out_file = open(out_filename,"a")
     # open the first input file and append
-    print "Adding contents of "+in_filename+" to "+out_filename
+    print("Adding contents of "+in_filename+" to "+out_filename)
     for line in open(in_filename):
         out_file.write(line)
     # now loop over the folders containing the files to be appended
-    add_path_list = [cf["Files"]["Add"][i] for i in cf["Files"]["Add"].keys()]
+    add_path_list = [cf["Files"]["Add"][i] for i in list(cf["Files"]["Add"].keys())]
     bom_id = in_filename.split("_")[2]
     for add_path in add_path_list:
         # build the file name
@@ -34,7 +34,7 @@ for in_filename in in_file_list:
         for add_filename in add_filename_list:
             #print "Appending contents of "+add_filename+" to "+out_filename
             add_file = open(add_filename)
-            add_file.next()
+            next(add_file)
             for line in add_file:
                 out_file.write(line)
             add_file.close()

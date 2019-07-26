@@ -41,7 +41,7 @@ def read_netcdf(nc_full_name,variable_list=[]):
     # was a variable list passed in as variable_list?
     if len(variable_list)==0:
         # if not, get the variable list from the netCDF file contents
-        variable_list = nc_file.variables.keys()
+        variable_list = list(nc_file.variables.keys())
     else:
         # if so, add the QC flags to the list entered as an argument
         flag_list = []
@@ -76,11 +76,11 @@ def read_netcdf(nc_full_name,variable_list=[]):
 # read the variables from the local netCDF file
 nc_full_name = "../../Sites/Whroo/Data/Processed/all/Whroo_2011_to_2014_L6.nc"
 variable_list = ['Fsd','Ta','VPD','NEE_SOLO']
-print "reading local netCDF file"
+print("reading local netCDF file")
 df,attr = read_netcdf(nc_full_name,variable_list=variable_list)
 
 # plot the variables
-print "plotting local netCDF file"
+print("plotting local netCDF file")
 fig = plt.figure(1)
 plt.figtext(0.5,0.95,"Local file",horizontalalignment='center')
 ax1 = plt.subplot(411)
@@ -96,11 +96,11 @@ plt.show()
 # read the variables from the remote netCDF file
 nc_dap_name = "http://dap.ozflux.org.au/thredds/dodsC/ozflux/sites/Whroo/L6/Whroo_2011_to_2014_L6.nc"
 variable_list = ['Fsd','Ta','VPD','NEE_SOLO']
-print "reading remote netCDF file"
+print("reading remote netCDF file")
 df,attr = read_netcdf(nc_dap_name,variable_list=variable_list)
 
 # plot the variables
-print "plotting remote netCDF file"
+print("plotting remote netCDF file")
 fig = plt.figure(2)
 plt.figtext(0.5,0.95,"OPeNDAP file",horizontalalignment='center')
 ax1 = plt.subplot(411)

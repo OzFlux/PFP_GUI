@@ -255,7 +255,7 @@ def cpd_main(cf):
         if bootstrap_flag == False:
             #if 'results_output_path' in d.keys():
                 #results_df.to_csv(os.path.join(d['results_output_path'],'Observational_ustar_threshold_statistics.csv'))
-            if 'plot_path' in d.keys() and d["plot_tclass"]:
+            if 'plot_path' in list(d.keys()) and d["plot_tclass"]:
                 logger.info('Doing plotting for observational data')
                 d["nFig"] = 0
                 fig_nums = plt.get_fignums()
@@ -308,7 +308,7 @@ def cpd_main(cf):
 
     # If requested by user, plot: 1) histograms of u* thresholds for each year;
     #                             2) normalised a1 and a2 values
-    if 'plot_path' in d.keys():
+    if 'plot_path' in list(d.keys()):
         logger.info(' Plotting u* histograms for all valid b model thresholds for all valid years')
         for j in output_stats_df.index:
             if j in all_results_df.index:
@@ -359,10 +359,10 @@ def CPD_run(cf):
     results_path = path_out
     if not os.path.isdir(results_path): os.makedirs(results_path)
     # get a dictionary of the variable names
-    var_list = cf["Variables"].keys()
+    var_list = list(cf["Variables"].keys())
     names = {}
     for item in var_list:
-        if "AltVarName" in cf["Variables"][item].keys():
+        if "AltVarName" in list(cf["Variables"][item].keys()):
             names[item] = cf["Variables"][item]["AltVarName"]
         else:
             names[item] = item
@@ -377,16 +377,16 @@ def CPD_run(cf):
     # now get the data
     d = {}
     f = {}
-    for item in names.keys():
+    for item in list(names.keys()):
         data,flag,attr = pfp_utils.GetSeries(ds,names[item])
         d[item] = np.where(data==c.missing_value,np.nan,data)
         f[item] = flag
     # set all data to NaNs if any flag not 0 or 10
-    for item in f.keys():
+    for item in list(f.keys()):
         for f_OK in [0,10]:
             idx = np.where(f[item]!=0)[0]
             if len(idx)!=0:
-                for itemd in d.keys():
+                for itemd in list(d.keys()):
                     d[itemd][idx] = np.nan
     df=pd.DataFrame(d,index=dates_list)
     # replace missing values with NaN
@@ -594,7 +594,7 @@ def sort(df, flux_period, years_index, i):
     # Create a df containing count stats for the variables for all available years
     years_df = pd.DataFrame(index=years_index)
     years_df['Fc_count'] = df['Fc'].groupby([lambda x: x.year]).count()
-    years_df['seasons'] = [years_df.loc[j, 'Fc_count']/(bin_size/2)-1 for j in years_df.index]
+    years_df['seasons'] = [years_df.loc[j, 'Fc_count']//(bin_size//2)-1 for j in years_df.index]
     years_df['seasons'].fillna(0, inplace=True)
     years_df['seasons'] = np.where(years_df['seasons'] < 0, 0, years_df['seasons'])
     years_df['seasons'] = years_df['seasons'].astype(int)
@@ -614,8 +614,8 @@ def sort(df, flux_period, years_index, i):
     for year in years_df.index:
         #for season in xrange(years_df.loc[year, 'seasons']):
         for season in range(int(years_df.loc[year, 'seasons'])):
-            start_ind = season * (bin_size / 2)
-            end_ind = season * (bin_size / 2) + bin_size
+            start_ind = season * (bin_size // 2)
+            end_ind = season * (bin_size // 2) + bin_size
             # ugly hack to avoid FutureWarning from pandas V0.16.2 and older
             try:
                 #lst.append(df.ix[str(year)].iloc[start_ind:end_ind].sort_values(by='Ta',axis = 0))
@@ -638,10 +638,10 @@ def sort(df, flux_period, years_index, i):
 
     #Tclass_index=np.tile(np.concatenate([np.int32(np.ones(bin_size/4)*(i+1)) for i in xrange(4)]),
                          #len(seasons_index)/bin_size)
-    Tclass_index=np.tile(np.concatenate([np.int32(np.ones(bin_size/4)*(i+1)) for i in range(4)]),
-                         len(seasons_index)/bin_size)
+    Tclass_index=np.tile(np.concatenate([np.int32(np.ones(bin_size//4)*(i+1)) for i in range(4)]),
+                         len(seasons_index)//bin_size)
 
-    bin_index=np.tile(np.int32(np.arange(bin_size/4)/(bin_size/200)),len(seasons_df)/(bin_size/4))
+    bin_index=np.tile(np.int32(np.arange(bin_size//4)//(bin_size//200)),len(seasons_df)//(bin_size//4))
 
     # Zip together hierarchical index and add to df
     arrays = [years_index, seasons_index, Tclass_index]
