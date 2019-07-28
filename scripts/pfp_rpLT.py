@@ -369,9 +369,38 @@ def rpLT_createdict(cf, ds, l6_info, label, called_by):
     Date October 2015
     """
     nrecs = int(ds.globalattributes["nc_nrecs"])
+    # create the solo settings directory
+    if called_by not in l6_info["EcosystemRespiration"].keys():
+        l6_info["EcosystemRespiration"][called_by] = {"outputs": {}, "info": {}, "gui": {}}
+
+    # get the info section
+    rpLT_createdict_info(cf, ds, l6_info, called_by)
+    if ds.returncodes["value"] != 0:
+        return
+
+    # get the outputs section
+    gfSOLO_createdict_outputs(cf, l5_info[called_by], target, called_by)
+    # the gui section is done in pfp_gfSOLO.gfSOLO_run_gui
+    l5_info[called_by]["gui"]["auto_complete"] = False
+    # add the summary plors section
+    if "SummaryPlots" in cf:
+        l5_info[called_by]["SummaryPlots"] = cf["SummaryPlots"]
+    # create an empty series in ds if the SOLO output series doesn't exist yet
+    outputs = cf["Fluxes"][target][called_by].keys()
+    target_attr = copy.deepcopy(ds.series[target]["Attr"])
+    target_attr["long_name"] = "Modeled by neural network (SOLO)"
+    for output in outputs:
+        if output not in ds.series.keys():
+            # create an empty variable
+            variable = pfp_utils.CreateEmptyVariable(output, nrecs, attr=target_attr)
+            variable["Attr"]["drivers"] = l5_info[called_by]["outputs"][output]["drivers"]
+            variable["Attr"]["target"] = target
+            pfp_utils.CreateVariable(ds, variable)
+
     # get the target
-    target = pfp_utils.get_keyvaluefromcf(cf, ["ER", label, called_by], "target", default="ER")
-    output = pfp_utils.get_keyvaluefromcf(cf, ["ER", label, called_by], "output", default="ER_LT_all")
+    sl = ["EcosystemRespiration", label, called_by]
+    target = pfp_utils.get_keyvaluefromcf(cf, sl, "target", default="ER")
+    output = pfp_utils.get_keyvaluefromcf(cf, sl, "output", default="ER_LT_all")
     # check that none of the drivers have missing data
     opt = pfp_utils.get_keyvaluefromcf(cf, ["ER", label, called_by], "drivers", default="Ta")
     drivers = pfp_cfg.cfg_string_to_list(opt)
@@ -381,6 +410,7 @@ def rpLT_createdict(cf, ds, l6_info, label, called_by):
             msg = "ERUsingLloydTaylor: driver " + driver + " contains missing data, skipping target " + target
             logger.error(msg)
             return
+
     # create the dictionary keys for this series
     if called_by not in l6_info["ER"].keys():
         l6_info["ER"][called_by] = {"outputs": {}, "info": {}, "gui": {}}
@@ -404,6 +434,58 @@ def rpLT_createdict(cf, ds, l6_info, label, called_by):
     if output not in ds.series.keys():
         variable = pfp_utils.CreateEmptyVariable(output, nrecs)
         pfp_utils.CreateVariable(ds, variable)
+    return
+
+def rpLT_createdict_info(cf, ds, l6_info, called_by):
+    """
+    Purpose:
+    Usage:
+    Side effects:
+    Author: PRI
+    Date: Back in the day
+          June 2019 - modified for new l5_info structure
+    """
+    iER = l6_info["EcosystemRespiration"]
+    # reset the return message and code
+    ds.returncodes["message"] = "OK"
+    ds.returncodes["value"] = 0
+    # get the level of processing
+    level = ds.globalattributes["nc_level"]
+    # local pointer to the datetime series
+    ldt = ds.series["DateTime"]["Data"]
+    # add an info section to the info["solo"] dictionary
+    iER["info"] = {"file_startdate": ldt[0].strftime("%Y-%m-%d %H:%M"),
+                   "file_enddate": ldt[-1].strftime("%Y-%m-%d %H:%M"),
+                   "startdate": ldt[0].strftime("%Y-%m-%d %H:%M"),
+                   "enddate": ldt[-1].strftime("%Y-%m-%d %H:%M"),
+                   "called_by": called_by}
+    # check to see if this is a batch or an interactive run
+    call_mode = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "call_mode", default="interactive")
+    solo["info"]["call_mode"] = call_mode
+    # truncate to last date in Imports?
+    truncate = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "TruncateToImports", default="Yes")
+    solo["info"]["truncate_to_imports"] = truncate
+    # get the plot path
+    plot_path = pfp_utils.get_keyvaluefromcf(cf, ["Files"], "plot_path", default="./plots/")
+    plot_path = os.path.join(plot_path, level, "")
+    if not os.path.exists(plot_path):
+        try:
+            os.makedirs(plot_path)
+        except OSError:
+            msg = "Unable to create the plot path " + plot_path + "\n"
+            msg = msg + "Press 'Quit' to edit the control file.\n"
+            msg = msg + "Press 'Continue' to use the default path.\n"
+            result = pfp_gui.MsgBox_ContinueOrQuit(msg, title="Warning: L5 plot path")
+            if result.clickedButton().text() == "Quit":
+                # user wants to edit the control file
+                msg = " Quitting L5 to edit control file"
+                logger.warning(msg)
+                ds.returncodes["message"] = msg
+                ds.returncodes["value"] = 1
+            else:
+                plot_path = "./plots/"
+                cf["Files"]["plot_path"] = "./plots/"
+    solo["info"]["plot_path"] = plot_path
     return
 
 def rpLT_initplot(**kwargs):

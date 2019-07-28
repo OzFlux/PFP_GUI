@@ -2764,7 +2764,7 @@ def startlog(loggername,loggerfile):
 
 def UpdateGlobalAttributes(cf,ds,level):
     ds.globalattributes["nc_level"] = str(level)
-    ds.globalattributes["EPDversion"] = sys.version
+    ds.globalattributes["python_version"] = sys.version
     # put the control file name into the global attributes
     if "controlfile_name" in cf:
         ds.globalattributes["controlfile_name"] = cf["controlfile_name"]

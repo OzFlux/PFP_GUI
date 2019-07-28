@@ -54,7 +54,7 @@ def CalculateNEE(cf, ds, l6_info):
     """
     Purpose:
      Calculate NEE from observed Fc and observed/modeled ER.
-     Input and output names are held in info["nee"].
+     Input and output names are held in info["NetEcosystemExchange"].
     Usage:
      pfp_rp.CalculateNEE(cf,ds)
       where cf is a conbtrol file object
@@ -75,12 +75,12 @@ def CalculateNEE(cf, ds, l6_info):
         index = numpy.where(numpy.ma.getmaskarray(Fsd) == True)[0]
         Fsd[index] = Fsd_syn[index]
     ustar, ustar_flag, ustar_attr = pfp_utils.GetSeriesasMA(ds, "ustar")
-    for label in l6_info["NEE"].keys():
-        if "Fc" not in l6_info["NEE"][label] and "ER" not in l6_info["NEE"][label]:
+    for label in l6_info["NetEcosystemExchange"].keys():
+        if "Fc" not in l6_info["NetEcosystemExchange"][label] and "ER" not in l6_info["NetEcosystemExchange"][label]:
             continue
-        Fc_label = l6_info["NEE"][label]["Fc"]
-        ER_label = l6_info["NEE"][label]["ER"]
-        output_label = l6_info["NEE"][label]["output"]
+        Fc_label = l6_info["NetEcosystemExchange"][label]["Fc"]
+        ER_label = l6_info["NetEcosystemExchange"][label]["ER"]
+        output_label = l6_info["NetEcosystemExchange"][label]["output"]
         Fc, Fc_flag, Fc_attr = pfp_utils.GetSeriesasMA(ds, Fc_label)
         ER, ER_flag, ER_attr = pfp_utils.GetSeriesasMA(ds, ER_label)
         # put the day time Fc into the NEE series
@@ -112,7 +112,7 @@ def CalculateNEP(cf, ds):
     Author: PRI
     Date: May 2015
     """
-    for nee_name in cf["NEE"].keys():
+    for nee_name in cf["NetEcosystemExchange"].keys():
         nep_name = nee_name.replace("NEE", "NEP")
         nee, flag, attr = pfp_utils.GetSeriesasMA(ds, nee_name)
         nep = float(-1)*nee
@@ -1361,9 +1361,9 @@ def L6_summary_createseriesdict(cf,ds):
     series_dict = {"daily":{},"annual":{},"cumulative":{},"lists":{}}
     # adjust units of NEE, NEP, GPP and ER
     sdl = series_dict["lists"]
-    sdl["nee"] = [item for item in cf["NEE"].keys() if "NEE" in item[0:3] and item in ds.series.keys()]
-    sdl["gpp"] = [item for item in cf["GPP"].keys() if "GPP" in item[0:3] and item in ds.series.keys()]
-    sdl["fre"] = [item for item in cf["ER"].keys() if "ER" in item[0:2] and item in ds.series.keys()]
+    sdl["nee"] = [item for item in cf["NetEcosystemExchange"].keys() if "NEE" in item[0:3] and item in ds.series.keys()]
+    sdl["gpp"] = [item for item in cf["GrossPrimaryProductivity"].keys() if "GPP" in item[0:3] and item in ds.series.keys()]
+    sdl["fre"] = [item for item in cf["EcosystemRespiration"].keys() if "ER" in item[0:2] and item in ds.series.keys()]
     sdl["nep"] = [item.replace("NEE","NEP") for item in sdl["nee"]]
     sdl["nep"] = [item for item in sdl["nep"] if item in ds.series.keys()]
     sdl["co2"] = sdl["nee"]+sdl["nep"]+sdl["gpp"]+sdl["fre"]
@@ -1727,32 +1727,29 @@ def ParseL6ControlFile(cf, ds):
     Author: PRI
     Date: Back in the day
     """
-    # start with the repiration section
-    if "Respiration" in cf.keys() and "ER" not in cf.keys():
-        cf["ER"] = cf.pop("Respiration")
+    # create the L6 information dictionary
     l6_info = {}
-    #l6_info["cf"] = copy.deepcopy(cf)
-    if "ER" in cf.keys():
-        l6_info["ER"] = {}
-        for output in cf["ER"].keys():
-            if "ERUsingSOLO" in cf["ER"][output].keys():
+    if "EcosystemRespiration" in cf.keys():
+        l6_info["EcosystemRespiration"] = {}
+        for output in cf["EcosystemRespiration"].keys():
+            if "ERUsingSOLO" in cf["EcosystemRespiration"][output].keys():
                 pfp_rpNN.rpSOLO_createdict(cf, ds, l6_info, output, "ERUsingSOLO")
-            if "ERUsingFFNET" in cf["ER"][output].keys():
+            if "ERUsingFFNET" in cf["EcosystemRespiration"][output].keys():
                 pfp_rpNN.rpFFNET_createdict(cf, ds, l6_info, output, "ERUsingFFNET")
-            if "ERUsingLloydTaylor" in cf["ER"][output].keys():
+            if "ERUsingLloydTaylor" in cf["EcosystemRespiration"][output].keys():
                 pfp_rpLT.rpLT_createdict(cf, ds, l6_info, output, "ERUsingLloydTaylor")
-            if "ERUsingLasslop" in cf["ER"][output].keys():
+            if "ERUsingLasslop" in cf["EcosystemRespiration"][output].keys():
                 pfp_rpLL.rpLL_createdict(cf, ds, l6_info, output, "ERUsingLasslop")
-            if "MergeSeries" in cf["ER"][output].keys():
+            if "MergeSeries" in cf["EcosystemRespiration"][output].keys():
                 rpMergeSeries_createdict(cf, ds, l6_info, output, "MergeSeries")
-    if "NEE" in cf.keys():
-        l6_info["NEE"] = {}
-        for output in cf["NEE"].keys():
-            rpNEE_createdict(cf, ds, l6_info["NEE"], output)
-    if "GPP" in cf.keys():
-        l6_info["GPP"] = {}
-        for output in cf["GPP"].keys():
-            rpGPP_createdict(cf, ds, l6_info["GPP"], output)
+    if "NetEcosystemExchange" in cf.keys():
+        l6_info["NetEcosystemExchange"] = {}
+        for output in cf["NetEcosystemExchange"].keys():
+            rpNEE_createdict(cf, ds, l6_info["NetEcosystemExchange"], output)
+    if "GrossPrimaryProductivity" in cf.keys():
+        l6_info["GrossPrimaryProductivity"] = {}
+        for output in cf["GrossPrimaryProductivity"].keys():
+            rpGPP_createdict(cf, ds, l6_info["GrossPrimaryProductivity"], output)
     return l6_info
 
 def PartitionNEE(cf, ds, l6_info):
@@ -1782,12 +1779,13 @@ def PartitionNEE(cf, ds, l6_info):
         #index = numpy.ma.where(numpy.ma.getmaskarray(Fsd)==True)[0]
         Fsd[index] = Fsd_syn[index]
     # calculate GPP from NEE and ER
-    for label in l6_info["GPP"].keys():
-        if "NEE" not in l6_info["GPP"][label] and "ER" not in l6_info["GPP"][label]:
+    for label in l6_info["GrossPrimaryProductivity"].keys():
+        if ("NEE" not in l6_info["GrossPrimaryProductivity"][label] and
+            "ER" not in l6_info["GrossPrimaryProductivity"][label]):
             continue
-        NEE_label = l6_info["GPP"][label]["NEE"]
-        ER_label = l6_info["GPP"][label]["ER"]
-        output_label = l6_info["GPP"][label]["output"]
+        NEE_label = l6_info["GrossPrimaryProductivity"][label]["NEE"]
+        ER_label = l6_info["GrossPrimaryProductivity"][label]["ER"]
+        output_label = l6_info["GrossPrimaryProductivity"][label]["output"]
         NEE, NEE_flag, NEE_attr = pfp_utils.GetSeriesasMA(ds, NEE_label)
         ER, ER_flag, ER_attr = pfp_utils.GetSeriesasMA(ds, ER_label)
         # calculate GPP
@@ -1839,10 +1837,11 @@ def rpNEE_createdict(cf, ds, info, label):
     # output series name
     info[label]["output"] = label
     # CO2 flux
-    opt = pfp_utils.get_keyvaluefromcf(cf, ["NEE", label], "Fc", default="Fc")
+    sl = ["NetEcosystemExchange", label]
+    opt = pfp_utils.get_keyvaluefromcf(cf, sl, "Fc", default="Fc")
     info[label]["Fc"] = opt
     # ecosystem respiration
-    opt = pfp_utils.get_keyvaluefromcf(cf, ["NEE", label], "ER", default="ER_LT")
+    opt = pfp_utils.get_keyvaluefromcf(cf, sl, "ER", default="ER_LT")
     info[label]["ER"] = opt
     # create an empty series in ds if the output series doesn't exist yet
     if info[label]["output"] not in ds.series.keys():

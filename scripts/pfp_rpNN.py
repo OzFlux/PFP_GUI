@@ -14,6 +14,7 @@ import numpy
 # PFP modules
 import constants as c
 import pfp_cfg
+import pfp_gf
 import pfp_gui
 import pfp_io
 import pfp_utils
@@ -103,73 +104,27 @@ def rpSOLO_createdict(cf, ds, l6_info, label, called_by):
     Date: Back in the day
     """
     nrecs = int(ds.globalattributes["nc_nrecs"])
-    # get the target and output labels
-    target = pfp_utils.get_keyvaluefromcf(cf, ["ER", label, "ERUsingSOLO"], "target", default="ER")
-    output = pfp_utils.get_keyvaluefromcf(cf, ["ER", label, "ERUsingSOLO"], "output", default="ER_SOLO_all")
-    # check that none of the drivers have missing data
-    opt = pfp_utils.get_keyvaluefromcf(cf, ["ER", label, "ERUsingSOLO"], "drivers", default="Ta,Ts,Sws")
-    drivers = pfp_cfg.cfg_string_to_list(opt)
-    for driver in drivers:
-        variable = pfp_utils.GetVariable(ds, driver)
-        if numpy.ma.count_masked(variable["Data"]) != 0:
-            msg = "ERUsingSOLO: driver " + driver + " contains missing data, skipping target " + target
-            logger.error(msg)
-            return
     # create the dictionary keys for this series
-    if called_by not in l6_info["ER"].keys():
-        l6_info["ER"][called_by] = {"outputs": {}, "info": {}, "gui": {}}
-    isol = l6_info["ER"][called_by]["outputs"][output] = {}
-    # target series name
-    isol["target"] = target
-    # list of drivers
-    isol["drivers"] = drivers
-    # source to use as CO2 flux
-    opt = pfp_utils.get_keyvaluefromcf(cf, ["ER", label, "ERUsingSOLO"], "source", default="Fc")
-    isol["source"] = opt
-    # name of SOLO output series in ds
-    isol["output"] = output
-    # results of best fit for plotting later on
-    isol["results"] = {"startdate":[], "enddate":[], "No. points":[], "r":[],
-                       "Bias":[], "RMSE":[], "Frac Bias":[], "NMSE":[],
-                       "Avg (obs)":[], "Avg (SOLO)":[],
-                       "Var (obs)":[], "Var (SOLO)":[], "Var ratio":[],
-                       "m_ols":[], "b_ols":[]}
+    if called_by not in l6_info["EcosystemRespiration"].keys():
+        l6_info["EcosystemRespiration"][called_by] = {"outputs": {}, "info": {}, "gui": {}}
+    # get the info section
+    pfp_gf.gfSOLO_createdict_info(cf, ds, l6_info["EcosystemRespiration"][called_by], called_by)
+    if ds.returncodes["value"] != 0:
+        return
+    # get the outputs section
+    pfp_gf.gfSOLO_createdict_outputs(cf, l6_info["EcosystemRespiration"][called_by], label, called_by)
     # create an empty series in ds if the SOLO output series doesn't exist yet
-    if output not in ds.series.keys():
-        variable = pfp_utils.CreateEmptyVariable(output, nrecs)
-        pfp_utils.CreateVariable(ds, variable)
-    # local pointer to the datetime series
-    ldt = ds.series["DateTime"]["Data"]
-    # check to see if this is a batch or an interactive run
-    call_mode = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "call_mode", default="interactive")
-    # get the plot path
-    plot_path = pfp_utils.get_keyvaluefromcf(cf, ["Files"], "plot_path", default="./plots/")
-    plot_path = os.path.join(plot_path, "L6", "")
-    if not os.path.exists(plot_path):
-        try:
-            os.makedirs(plot_path)
-        except OSError:
-            msg = "Unable to create the plot path " + plot_path + "\n"
-            msg = msg + "Press 'Quit' to edit the control file.\n"
-            msg = msg + "Press 'Continue' to use the default path.\n"
-            result = pfp_gui.MsgBox_ContinueOrQuit(msg, title="Warning: L6 plot path")
-            if result.clickedButton().text() == "Quit":
-                # user wants to edit the control file
-                msg = " Quitting L6 to edit control file"
-                logger.warning(msg)
-                ds.returncodes["message"] = msg
-                ds.returncodes["value"] = 1
-            else:
-                plot_path = "./plots/"
-                cf["Files"]["plot_path"] = "./plots/"
-    # make the info dictionary
-    l6_info["ER"][called_by]["info"] = {"file_startdate": ldt[0].strftime("%Y-%m-%d %H:%M"),
-                                        "file_enddate": ldt[-1].strftime("%Y-%m-%d %H:%M"),
-                                        "startdate": ldt[0].strftime("%Y-%m-%d %H:%M"),
-                                        "enddate": ldt[-1].strftime("%Y-%m-%d %H:%M"),
-                                        "plot_path": plot_path,
-                                        "call_mode": call_mode,
-                                        "called_by": called_by}
+    outputs = cf["EcosystemRespiration"][target][called_by].keys()
+    target_attr = copy.deepcopy(ds.series[target]["Attr"])
+    target_attr["long_name"] = "Modeled by neural network (SOLO)"
+    for output in outputs:
+        if output not in ds.series.keys():
+            # create an empty variable
+            variable = pfp_utils.CreateEmptyVariable(output, nrecs, attr=target_attr)
+            variable["Attr"]["drivers"] = l5_info[called_by]["outputs"][output]["drivers"]
+            variable["Attr"]["target"] = target
+            pfp_utils.CreateVariable(ds, variable)
+
     return
 
 def rpSOLO_done(solo_gui):

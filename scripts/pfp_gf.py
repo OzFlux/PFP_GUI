@@ -822,9 +822,19 @@ def gfSOLO_createdict(cf, ds, l5_info, target, called_by):
     return
 
 def gfSOLO_createdict_info(cf, ds, solo, called_by):
+    """
+    Purpose:
+    Usage:
+    Side effects:
+    Author: PRI
+    Date: Back in the day
+          June 2019 - modified for new l5_info structure
+    """
     # reset the return message and code
     ds.returncodes["message"] = "OK"
     ds.returncodes["value"] = 0
+    # get the level of processing
+    level = ds.globalattributes["nc_level"]
     # local pointer to the datetime series
     ldt = ds.series["DateTime"]["Data"]
     # add an info section to the info["solo"] dictionary
@@ -841,7 +851,7 @@ def gfSOLO_createdict_info(cf, ds, solo, called_by):
     solo["info"]["truncate_to_imports"] = truncate
     # get the plot path
     plot_path = pfp_utils.get_keyvaluefromcf(cf, ["Files"], "plot_path", default="./plots/")
-    plot_path = os.path.join(plot_path, "L5", "")
+    plot_path = os.path.join(plot_path, level, "")
     if not os.path.exists(plot_path):
         try:
             os.makedirs(plot_path)
@@ -863,18 +873,29 @@ def gfSOLO_createdict_info(cf, ds, solo, called_by):
     return
 
 def gfSOLO_createdict_outputs(cf, solo, target, called_by):
+    level = cf["level"]
     so = solo["outputs"]
     # loop over the outputs listed in the control file
-    outputs = cf["Fluxes"][target][called_by].keys()
+    if level == "L5":
+        section = "Fluxes"
+        drivers = "Fn,Fg,SHD,q,Ta,Ts"
+    elif level == "L6":
+        section = "Respiration"
+        drivers = "Ta,Ts,Sws"
+    else:
+        msg = "Unrecognised control file level (must be L5 or L6)"
+        logger.error(msg)
+        return
+    outputs = cf[section][target][called_by].keys()
     for output in outputs:
         # create the dictionary keys for this series
         so[output] = {}
         # get the target
-        sl = ["Fluxes", target, called_by, output]
+        sl = [section, target, called_by, output]
         so[output]["target"] = pfp_utils.get_keyvaluefromcf(cf, sl, "target", default=target)
         # list of SOLO settings
-        if "solo_settings" in cf["Fluxes"][target][called_by][output]:
-            src_string = cf["Fluxes"][target][called_by][output]["solo_settings"]
+        if "solo_settings" in cf[section][target][called_by][output]:
+            src_string = cf[section][target][called_by][output]["solo_settings"]
             src_list = src_string.split(",")
             so[output]["solo_settings"] = {}
             so[output]["solo_settings"]["nodes_target"] = int(src_list[0])
@@ -883,8 +904,8 @@ def gfSOLO_createdict_outputs(cf, solo, target, called_by):
             so[output]["solo_settings"]["learning_rate"] = float(src_list[3])
             so[output]["solo_settings"]["iterations"] = int(src_list[4])
         # list of drivers
-        drivers = pfp_utils.get_keyvaluefromcf(cf, sl, "drivers", default="Fn,Fg,SHD,q,Ta,Ts")
-        so[output]["drivers"] = pfp_cfg.cfg_string_to_list(drivers)
+        opt = pfp_utils.get_keyvaluefromcf(cf, sl, "drivers", default=drivers)
+        so[output]["drivers"] = pfp_cfg.cfg_string_to_list(opt)
         # fit statistics for plotting later on
         so[output]["results"] = {"startdate":[],"enddate":[],"No. points":[],"r":[],
                                  "Bias":[],"RMSE":[],"Frac Bias":[],"NMSE":[],
