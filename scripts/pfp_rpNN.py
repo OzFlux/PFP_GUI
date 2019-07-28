@@ -105,14 +105,14 @@ def rpSOLO_createdict(cf, ds, l6_info, label, called_by):
     """
     nrecs = int(ds.globalattributes["nc_nrecs"])
     # create the dictionary keys for this series
-    if called_by not in l6_info["EcosystemRespiration"].keys():
-        l6_info["EcosystemRespiration"][called_by] = {"outputs": {}, "info": {}, "gui": {}}
+    if called_by not in l6_info.keys():
+        l6_info[called_by] = {"outputs": {}, "info": {}, "gui": {}}
     # get the info section
-    pfp_gf.gfSOLO_createdict_info(cf, ds, l6_info["EcosystemRespiration"][called_by], called_by)
+    pfp_gf.gfSOLO_createdict_info(cf, ds, l6_info[called_by], called_by)
     if ds.returncodes["value"] != 0:
         return
     # get the outputs section
-    pfp_gf.gfSOLO_createdict_outputs(cf, l6_info["EcosystemRespiration"][called_by], label, called_by)
+    pfp_gf.gfSOLO_createdict_outputs(cf, l6_info[called_by], label, called_by)
     # create an empty series in ds if the SOLO output series doesn't exist yet
     outputs = cf["EcosystemRespiration"][target][called_by].keys()
     target_attr = copy.deepcopy(ds.series[target]["Attr"])

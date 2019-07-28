@@ -880,7 +880,7 @@ def gfSOLO_createdict_outputs(cf, solo, target, called_by):
         section = "Fluxes"
         drivers = "Fn,Fg,SHD,q,Ta,Ts"
     elif level == "L6":
-        section = "Respiration"
+        section = "EcosystemRespiration"
         drivers = "Ta,Ts,Sws"
     else:
         msg = "Unrecognised control file level (must be L5 or L6)"
