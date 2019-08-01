@@ -25,7 +25,7 @@ def get_data_dict(ds,configs_dict):
     target = configs_dict["target"]
     ER,ER_flag,a = pfp_utils.GetSeries(ds,target)
     Fsd,Fsd_flag,a = pfp_utils.GetSeries(ds,"Fsd")
-    T_label = configs_dict["drivers"]
+    T_label = configs_dict["drivers"][0]
     T,T_flag,a = pfp_utils.GetSeries(ds,T_label)
     VPD,VPD_flag,a = pfp_utils.GetSeries(ds,"VPD")
     ustar,ustar_flag,a = pfp_utils.GetSeries(ds,"ustar")
@@ -306,7 +306,7 @@ def rpLT_createdict(cf, ds, l6_info, output, called_by):
     nrecs = int(ds.globalattributes["nc_nrecs"])
     # create the LT settings directory
     if called_by not in l6_info.keys():
-        l6_info[called_by] = {"outputs": {}, "info": {}, "gui": {}}
+        l6_info[called_by] = {"outputs": {}, "info": {"source": "Fc", "target": "ER"}, "gui": {}}
     # get the info section
     rpLT_createdict_info(cf, ds, l6_info[called_by], called_by)
     if ds.returncodes["value"] != 0:
@@ -314,16 +314,18 @@ def rpLT_createdict(cf, ds, l6_info, output, called_by):
     # get the outputs section
     rpLT_createdict_outputs(cf, l6_info[called_by], output, called_by)
     # create an empty series in ds if the output series doesn't exist yet
-    outputs = cf["EcosystemRespiration"][output][called_by].keys()
-    for output in outputs:
-        target = l6_info[called_by]["outputs"][output]["target"]
-        target_attr = copy.deepcopy(ds.series[target]["Attr"])
-        target_attr["long_name"] = "Modeled by Lloyd-Taylor"
-        if output not in ds.series.keys():
+    Fc = pfp_utils.GetVariable(ds, l6_info[called_by]["info"]["source"])
+    model_outputs = cf["EcosystemRespiration"][output][called_by].keys()
+    for model_output in model_outputs:
+        if model_output not in ds.series.keys():
             # create an empty variable
-            variable = pfp_utils.CreateEmptyVariable(output, nrecs, attr=target_attr)
-            variable["Attr"]["drivers"] = l6_info[called_by]["outputs"][output]["drivers"]
-            variable["Attr"]["target"] = target
+            variable = pfp_utils.CreateEmptyVariable(model_output, nrecs)
+            variable["Attr"]["long_name"] = "Ecosystem respiration"
+            variable["Attr"]["drivers"] = l6_info[called_by]["outputs"][model_output]["drivers"]
+            variable["Attr"]["description_l6"] = "Modeled by Lloyd-Taylor"
+            variable["Attr"]["target"] = l6_info[called_by]["info"]["target"]
+            variable["Attr"]["source"] = l6_info[called_by]["info"]["source"]
+            variable["Attr"]["units"] = Fc["Attr"]["units"]
             pfp_utils.CreateVariable(ds, variable)
     return
 
@@ -339,22 +341,32 @@ def rpLT_createdict_info(cf, ds, erlt, called_by):
     # reset the return message and code
     ds.returncodes["message"] = "OK"
     ds.returncodes["value"] = 0
+    # time step
+    time_step = int(ds.globalattributes["time_step"])
     # get the level of processing
     level = ds.globalattributes["nc_level"]
     # local pointer to the datetime series
     ldt = ds.series["DateTime"]["Data"]
     # add an info section to the info["solo"] dictionary
-    erlt["info"] = {"file_startdate": ldt[0].strftime("%Y-%m-%d %H:%M"),
-                    "file_enddate": ldt[-1].strftime("%Y-%m-%d %H:%M"),
-                    "startdate": ldt[0].strftime("%Y-%m-%d %H:%M"),
-                    "enddate": ldt[-1].strftime("%Y-%m-%d %H:%M"),
-                    "called_by": called_by}
+    erlt["info"]["file_startdate"] = ldt[0].strftime("%Y-%m-%d %H:%M")
+    erlt["info"]["file_enddate"] = ldt[-1].strftime("%Y-%m-%d %H:%M")
+    erlt["info"]["startdate"] = ldt[0].strftime("%Y-%m-%d %H:%M")
+    erlt["info"]["enddate"] = ldt[-1].strftime("%Y-%m-%d %H:%M")
+    erlt["info"]["called_by"] = called_by
+    erlt["info"]["time_step"] = time_step
     # check to see if this is a batch or an interactive run
     call_mode = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "call_mode", default="interactive")
     erlt["info"]["call_mode"] = call_mode
+    erlt["info"]["show_plots"] = False
+    if call_mode.lower() == "interactive":
+        erlt["info"]["show_plots"] = True
     # truncate to last date in Imports?
     truncate = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "TruncateToImports", default="Yes")
     erlt["info"]["truncate_to_imports"] = truncate
+    # number of records per day and maximum lags
+    nperhr = int(float(60)/time_step + 0.5)
+    erlt["info"]["nperday"] = int(float(24)*nperhr + 0.5)
+    erlt["info"]["maxlags"] = int(float(12)*nperhr + 0.5)
     # get the plot path
     plot_path = pfp_utils.get_keyvaluefromcf(cf, ["Files"], "plot_path", default="./plots/")
     plot_path = os.path.join(plot_path, level, "")
@@ -365,10 +377,10 @@ def rpLT_createdict_info(cf, ds, erlt, called_by):
             msg = "Unable to create the plot path " + plot_path + "\n"
             msg = msg + "Press 'Quit' to edit the control file.\n"
             msg = msg + "Press 'Continue' to use the default path.\n"
-            result = pfp_gui.MsgBox_ContinueOrQuit(msg, title="Warning: L5 plot path")
+            result = pfp_gui.MsgBox_ContinueOrQuit(msg, title="Warning: L6 plot path")
             if result.clickedButton().text() == "Quit":
                 # user wants to edit the control file
-                msg = " Quitting L5 to edit control file"
+                msg = " Quitting L6 to edit control file"
                 logger.warning(msg)
                 ds.returncodes["message"] = msg
                 ds.returncodes["value"] = 1
@@ -390,6 +402,7 @@ def rpLT_createdict_outputs(cf, erlt, target, called_by):
         # get the target
         sl = [section, target, called_by, output]
         eo[output]["target"] = pfp_utils.get_keyvaluefromcf(cf, sl, "target", default=target)
+        eo[output]["source"] = pfp_utils.get_keyvaluefromcf(cf, sl, "source", default="Fc")
         # list of drivers
         opt = pfp_utils.get_keyvaluefromcf(cf, sl, "drivers", default="Ta")
         eo[output]["drivers"] = pfp_cfg.cfg_string_to_list(opt)

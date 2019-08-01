@@ -617,10 +617,6 @@ def gfSOLO_run_gui(solo_gui):
     solo["gui"]["learning_rate"] = str(solo_gui.lineEdit_Learning.text())
     solo["gui"]["iterations"] = str(solo_gui.lineEdit_Iterations.text())
 
-    ts = int(ds.globalattributes["time_step"])
-    nperhr = int(float(60)/ts + 0.5)
-    solo["info"]["nperday"] = int(float(24)*nperhr + 0.5)
-    solo["info"]["maxlags"] = int(float(12)*nperhr + 0.5)
     targets = [solo["outputs"][output]["target"] for output in solo["outputs"].keys()]
     logger.info(" Gap filling "+str(targets)+" using SOLO")
     if solo["gui"]["period_option"] == 1:

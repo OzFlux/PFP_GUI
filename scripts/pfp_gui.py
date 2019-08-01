@@ -5016,14 +5016,14 @@ class edit_cfg_L6(QtWidgets.QWidget):
 
     def add_er_variable(self):
         """ Add a variable to the [ER] section."""
-        dict_to_add = {"ERUsingSOLO":{"ER_SOLO_all": {"drivers": "[]",
+        dict_to_add = {"ERUsingSOLO":{"ER_SOLO_all": {"drivers": "Ta,Ts,Sws",
                                                       "target": "ER",
                                                       "output": "ER_SOLO_all"}}}
         subsection = QtGui.QStandardItem("ER_SOLO")
         self.add_subsubsubsection(subsection, dict_to_add)
-        dict_to_add = {"MergeSeries":{"Source":"ER,ER_SOLO_all"}}
+        dict_to_add = {"MergeSeries": {"Source": "ER,ER_SOLO_all"}}
         self.add_subsubsection(subsection, dict_to_add)
-        self.tree.sections["ER"].appendRow(subsection)
+        self.tree.sections["EcosystemRespiration"].appendRow(subsection)
         # update the tab text with an asterix if required
         self.update_tab_text()
 

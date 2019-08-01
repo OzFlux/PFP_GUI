@@ -64,7 +64,7 @@ def CalculateNEE(cf, ds, l6_info):
     Author: PRI
     Date: August 2014
     """
-    if "NEE" not in l6_info:
+    if "NetEcosystemExchange" not in l6_info:
         return
     # get the Fsd and ustar thresholds
     Fsd_threshold = float(pfp_utils.get_keyvaluefromcf(cf, ["Options"], "Fsd_threshold", default=10))
@@ -91,12 +91,13 @@ def CalculateNEE(cf, ds, l6_info):
         index = numpy.ma.where(Fsd < Fsd_threshold)[0]
         ds.series[output_label]["Data"][index] = ER[index]
         ds.series[output_label]["Flag"][index] = ER_flag[index]
-        # copy the attributes
+        # update the attributes
         attr = ds.series[output_label]["Attr"]
         attr["units"] = Fc_attr["units"]
-        attr["long_name"] = "Net Ecosystem Exchange calculated from "+Fc_label+" (Fc)"
-        attr["long_name"] = attr["long_name"]+" and "+ER_label+" (ER)"
-        attr["comment1"] = "Fsd threshold used was "+str(Fsd_threshold)
+        attr["long_name"] = "Net Ecosystem Exchange"
+        attr["description_l6"] = " Calculated from " + Fc_label + " and " + ER_label
+        attr["comment1"] = "Fsd threshold used was " + str(Fsd_threshold)
+        ds.series[output_label]["Attr"] = attr
     return
 
 def CalculateNEP(cf, ds):
@@ -116,7 +117,8 @@ def CalculateNEP(cf, ds):
         nep_name = nee_name.replace("NEE", "NEP")
         nee, flag, attr = pfp_utils.GetSeriesasMA(ds, nee_name)
         nep = float(-1)*nee
-        attr["long_name"] = "Net Ecosystem Productivity calculated as -1*"+nee_name
+        attr["long_name"] = "Net Ecosystem Productivity"
+        attr["description_l6"] = "Calculated as -1*" + nee_name
         pfp_utils.CreateSeries(ds, nep_name, nep, flag, attr)
 
 def cleanup_ustar_dict(ldt,ustar_dict):
@@ -154,40 +156,40 @@ def cleanup_ustar_dict(ldt,ustar_dict):
         if ustar_dict[year]["ustar_mean"]==float(c.missing_value):
             ustar_dict[year]["ustar_mean"] = ustar_threshold_mean
 
-def ERUsingFFNET(cf, ds, info):
-    """
-    Purpose:
-     Estimate ecosystem respiration using the ffnet neural network.
-    Usage:
-     pfp_rp.ERUsingFFNET(cf,ds)
-      where cf is a control file object
-            ds is a data structure
-    Author: PRI
-    Date: August 2014
-    """
-    if "ffnet" not in info["er"]: return
-    if "ffnet" not in sys.modules.keys():
-        logger.error("ERUsingFFNET: I don't think ffnet is installed ...")
-        return
-    # local pointer to the datetime series
-    ldt = ds.series["DateTime"]["Data"]
-    startdate = ldt[0]
-    enddate = ldt[-1]
-    FFNET_info = {"file_startdate":startdate.strftime("%Y-%m-%d %H:%M"),
-                  "file_enddate":enddate.strftime("%Y-%m-%d %H:%M"),
-                  "plot_path":cf["Files"]["plot_path"],
-                  "er":info["er"]["ffnet"]}
-    # check to see if this is a batch or an interactive run
-    call_mode = pfp_utils.get_keyvaluefromcf(cf,["Options"],"call_mode",default="interactive")
-    FFNET_info["call_mode"]= call_mode
-    if call_mode.lower()=="interactive":
-        #FFNET_info["show_plots"] = True
-        # call the FFNET GUI
-        pfp_rpNN.rpFFNET_gui(cf,ds,FFNET_info)
-    else:
-        if "GUI" in cf:
-            if "FFNET" in cf["GUI"]:
-                pfp_rpNN.rpFFNET_run_nogui(cf,ds,FFNET_info)
+#def ERUsingFFNET(cf, ds, info):
+    #"""
+    #Purpose:
+     #Estimate ecosystem respiration using the ffnet neural network.
+    #Usage:
+     #pfp_rp.ERUsingFFNET(cf,ds)
+      #where cf is a control file object
+            #ds is a data structure
+    #Author: PRI
+    #Date: August 2014
+    #"""
+    #if "ffnet" not in info["er"]: return
+    #if "ffnet" not in sys.modules.keys():
+        #logger.error("ERUsingFFNET: I don't think ffnet is installed ...")
+        #return
+    ## local pointer to the datetime series
+    #ldt = ds.series["DateTime"]["Data"]
+    #startdate = ldt[0]
+    #enddate = ldt[-1]
+    #FFNET_info = {"file_startdate":startdate.strftime("%Y-%m-%d %H:%M"),
+                  #"file_enddate":enddate.strftime("%Y-%m-%d %H:%M"),
+                  #"plot_path":cf["Files"]["plot_path"],
+                  #"er":info["er"]["ffnet"]}
+    ## check to see if this is a batch or an interactive run
+    #call_mode = pfp_utils.get_keyvaluefromcf(cf,["Options"],"call_mode",default="interactive")
+    #FFNET_info["call_mode"]= call_mode
+    #if call_mode.lower()=="interactive":
+        ##FFNET_info["show_plots"] = True
+        ## call the FFNET GUI
+        #pfp_rpNN.rpFFNET_gui(cf,ds,FFNET_info)
+    #else:
+        #if "GUI" in cf:
+            #if "FFNET" in cf["GUI"]:
+                #pfp_rpNN.rpFFNET_run_nogui(cf,ds,FFNET_info)
 
 def ERUsingLasslop(cf, ds, l6_info):
     """
@@ -197,10 +199,10 @@ def ERUsingLasslop(cf, ds, l6_info):
     Author: IMcH, PRI
     Date: Back in the day
     """
-    if "ERUsingLasslop" not in l6_info["ER"]:
+    if "ERUsingLasslop" not in l6_info:
         return
     logger.info("Estimating ER using Lasslop")
-    iel = l6_info["ER"]["ERUsingLasslop"]
+    iel = l6_info["ERUsingLasslop"]
     ielo = iel["outputs"]
     # get a list of the required outputs
     outputs = iel["outputs"].keys()
@@ -217,17 +219,17 @@ def ERUsingLasslop(cf, ds, l6_info):
     nperday = int(float(24)*nperhr+0.5)
     site_name = ds.globalattributes["site_name"]
     nrecs = int(ds.globalattributes["nc_nrecs"])
-    # add an info section
-    iel["info"] = {"file_startdate": startdate.strftime("%Y-%m-%d %H:%M"),
-                   "file_enddate": enddate.strftime("%Y-%m-%d %H:%M"),
-                   "plot_path": cf["Files"]["plot_path"],
-                   "show_plots": False,
-                   "time_step": ts,
-                   "nperday": nperday}
-    call_mode = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "call_mode", default="interactive")
-    iel["info"]["call_mode"] = call_mode
-    if call_mode.lower() == "interactive":
-        iel["info"]["show_plots"] = True
+    ## add an info section
+    #iel["info"] = {"file_startdate": startdate.strftime("%Y-%m-%d %H:%M"),
+                   #"file_enddate": enddate.strftime("%Y-%m-%d %H:%M"),
+                   #"plot_path": cf["Files"]["plot_path"],
+                   #"show_plots": False,
+                   #"time_step": ts,
+                   #"nperday": nperday}
+    #call_mode = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "call_mode", default="interactive")
+    #iel["info"]["call_mode"] = call_mode
+    #if call_mode.lower() == "interactive":
+        #iel["info"]["show_plots"] = True
     # get the data and synchronise the gaps
     # *** PUT INTO SEPARATE FUNCTION
     indicator = numpy.ones(nrecs, dtype=numpy.int)
@@ -385,7 +387,8 @@ def ERUsingLloydTaylor(cf, ds, l6_info):
     Author: IMcH, PRI
     Date: October 2015
     """
-    if "ERUsingLloydTaylor" not in l6_info["ER"]: return
+    if "ERUsingLloydTaylor" not in l6_info:
+        return
     logger.info("Estimating ER using Lloyd-Taylor")
     long_name = "Ecosystem respiration modelled by Lloyd-Taylor"
     ER_attr = pfp_utils.MakeAttributeDictionary(long_name=long_name, units="umol/m2/s")
@@ -396,17 +399,19 @@ def ERUsingLloydTaylor(cf, ds, l6_info):
     enddate = ldt[-1]
     nperhr = int(float(60)/ts+0.5)
     nperday = int(float(24)*nperhr+0.5)
-    iel = l6_info["ER"]["ERUsingLloydTaylor"]
-    iel["info"] = {"file_startdate": startdate.strftime("%Y-%m-%d %H:%M"),
-                   "file_enddate": enddate.strftime("%Y-%m-%d %H:%M"),
-                   "plot_path": cf["Files"]["plot_path"],
-                   "show_plots": False,
-                   "time_step": ts,
-                   "nperday": nperday}
-    call_mode = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "call_mode", default="interactive")
-    iel["info"]["call_mode"] = call_mode
-    if call_mode.lower() == "interactive":
-        iel["info"]["show_plots"] = True
+    iel = l6_info["ERUsingLloydTaylor"]
+    iel["time_step"] = ts
+    iel["nperday"] = nperday
+    #iel["info"] = {"file_startdate": startdate.strftime("%Y-%m-%d %H:%M"),
+                   #"file_enddate": enddate.strftime("%Y-%m-%d %H:%M"),
+                   #"plot_path": cf["Files"]["plot_path"],
+                   #"show_plots": False,
+                   #"time_step": ts,
+                   #"nperday": nperday}
+    #call_mode = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "call_mode", default="interactive")
+    #iel["info"]["call_mode"] = call_mode
+    #if call_mode.lower() == "interactive":
+        #iel["info"]["show_plots"] = True
     # set the figure number
     if len(plt.get_fignums()) == 0:
         fig_num = 0
@@ -429,7 +434,7 @@ def ERUsingLloydTaylor(cf, ds, l6_info):
         # add a sheet for this series
         xl_sheet = xl_file.add_sheet(output)
         # get a local copy of the config dictionary
-        configs_dict = iel["outputs"][output]["configs_dict"]
+        configs_dict = iel["outputs"][output]
         configs_dict["measurement_interval"] = float(ts)/60.0
         data_dict = pfp_rpLT.get_data_dict(ds, configs_dict)
         # *** start of code taken from Ian McHugh's Partition_NEE.main ***
@@ -564,7 +569,7 @@ def ERUsingLloydTaylor(cf, ds, l6_info):
             idx = numpy.where((ldt_year==param_year)&(ldt_month==param_month)&(ldt_day==param_day))[0]
             E0[idx] = E0_val
             rb[idx] = rb_val
-        T_label = configs_dict["drivers"]
+        T_label = configs_dict["drivers"][0]
         T,T_flag,a = pfp_utils.GetSeriesasMA(ds,T_label)
         ER_LT = pfp_rpLT.TRF(data_dict, E0, rb)
         ER_LT_flag = numpy.empty(len(ER_LT),dtype=numpy.int32)
@@ -573,7 +578,6 @@ def ERUsingLloydTaylor(cf, ds, l6_info):
         target = iel["outputs"][output]["target"]
         #drivers = str(configs_dict["drivers"])
         drivers = iel["outputs"][output]["drivers"]
-        output = str(configs_dict["output_label"])
         ER_attr["comment1"] = "Drivers were "+str(drivers)
         pfp_utils.CreateSeries(ds, output, ER_LT, ER_LT_flag, ER_attr)
         # plot the respiration estimated using Lloyd-Taylor
@@ -585,7 +589,7 @@ def ERUsingLloydTaylor(cf, ds, l6_info):
     # close the Excel workbook
     xl_file.save(xl_name)
 
-def GetERFromFc(cf, ds, info):
+def GetERFromFc(cf, ds):
     """
     Purpose:
      Get the observed ecosystem respiration from measurements of Fc by
@@ -597,7 +601,7 @@ def GetERFromFc(cf, ds, info):
      file.
      Re-write of the original penned in August 2014
     Usage:
-     pfp_rp.GetERFromFc(cf,ds)
+     pfp_rp.GetERFromFc(cf, ds)
      where cf is a control file object
            ds is a data structure
     Side effects:
@@ -605,58 +609,47 @@ def GetERFromFc(cf, ds, info):
     Author: PRI
     Date: October 2015
     """
-    ldt = ds.series["DateTime"]["Data"]
-    ts = int(ds.globalattributes["time_step"])
-    er_type_list = []
-    for item in ["ERUsingSOLO", "ERUsingLloydTaylor", "ERUsingLasslop"]:
-        if item in info["ER"]:
-            er_type_list.append(item)
-    for er_type in er_type_list:
-        label_list = info["ER"][er_type]["outputs"].keys()
-        for label in label_list:
-            source = info["ER"][er_type]["outputs"][label]["source"]
-            target = info["ER"][er_type]["outputs"][label]["target"]
-            ER = {"Label": target}
-            Fc = pfp_utils.GetVariable(ds, source)
-            # check to see if a turbulence filter has been applied to the CO2 flux
-            if "turbulence_filter" not in Fc["Attr"]:
-                # print error message to the log window
-                msg = "CO2 flux series " + source + " did not have a turbulence filter applied."
-                logger.error(msg)
-                msg = "Please repeat the L5 processing and apply a turbulence filter."
-                logger.error(msg)
-                msg = "Quiting L6 processing ..."
-                logger.error(msg)
-                # check to see if we are running in interactive mode
-                if cf["Options"]["call_mode"].lower() == "interactive":
-                    # if so, put up a message box
-                    msg = "CO2 flux series " + source + " did not have a turbulence filter applied.\n"
-                    msg = msg + "Please repeat the L5 processing and apply a turbulence filter.\n"
-                    msg = msg + "Quiting L6 processing ..."
-                    msgbox = pfp_gui.myMessageBox(msg, title="Critical")
-                # set the return code to non-zero ...
-                ds.returncodes["value"] = 1
-                ds.returncodes["message"] = "quit"
-                # ... and return
-                return
-            # get a copy of the Fc flag and make the attribute dictionary
-            ER["Flag"] = numpy.array(Fc["Flag"])
-            long_name = "Ecosystem respiration (observed) derived from " + source
-            units = Fc["Attr"]["units"]
-            ER["Attr"] = pfp_utils.MakeAttributeDictionary(long_name=long_name, units=units)
-            # only accept Fc with QC flag value of 0
-            Fc["Data"] = numpy.ma.masked_where((Fc["Flag"] != 0), Fc["Data"])
-            idx_notok = numpy.where((Fc["Flag"] != 0))[0]
-            ER["Flag"][idx_notok] = numpy.int32(61)
-            # get the indicator series
-            daynight_indicator = get_daynight_indicator(cf, ds)
-            idx = numpy.where(daynight_indicator["values"] == 0)[0]
-            ER["Flag"][idx] = numpy.int32(63)
-            # apply the filter to get ER from Fc
-            ER["Data"] = numpy.ma.masked_where(daynight_indicator["values"] == 0, Fc["Data"], copy=True)
-            for item in daynight_indicator["attr"]:
-                ER["Attr"][item] = daynight_indicator["attr"][item]
-            pfp_utils.CreateVariable(ds, ER)
+    ER = {"Label": "ER"}
+    Fc = pfp_utils.GetVariable(ds, "Fc")
+    # check to see if a turbulence filter has been applied to the CO2 flux
+    if "turbulence_filter" not in Fc["Attr"]:
+        # print error message to the log window
+        msg = "CO2 flux series Fc did not have a turbulence filter applied."
+        logger.error(msg)
+        msg = "Please repeat the L5 processing and apply a turbulence filter."
+        logger.error(msg)
+        msg = "Quiting L6 processing ..."
+        logger.error(msg)
+        # check to see if we are running in interactive mode
+        if cf["Options"]["call_mode"].lower() == "interactive":
+            # if so, put up a message box
+            msg = "CO2 flux series Fc did not have a turbulence filter applied.\n"
+            msg = msg + "Please repeat the L5 processing and apply a turbulence filter.\n"
+            msg = msg + "Quiting L6 processing ..."
+            msgbox = pfp_gui.myMessageBox(msg, title="Critical")
+        # set the return code to non-zero ...
+        ds.returncodes["value"] = 1
+        ds.returncodes["message"] = "quit"
+        # ... and return
+        return
+    # get a copy of the Fc flag and make the attribute dictionary
+    ER["Flag"] = numpy.array(Fc["Flag"])
+    long_name = "Ecosystem respiration (observed) derived from Fc"
+    units = Fc["Attr"]["units"]
+    ER["Attr"] = pfp_utils.MakeAttributeDictionary(long_name=long_name, units=units)
+    # only accept Fc with QC flag value of 0
+    Fc["Data"] = numpy.ma.masked_where((Fc["Flag"] != 0), Fc["Data"])
+    idx_notok = numpy.where((Fc["Flag"] != 0))[0]
+    ER["Flag"][idx_notok] = numpy.int32(61)
+    # get the indicator series
+    daynight_indicator = get_daynight_indicator(cf, ds)
+    idx = numpy.where(daynight_indicator["values"] == 0)[0]
+    ER["Flag"][idx] = numpy.int32(63)
+    # apply the filter to get ER from Fc
+    ER["Data"] = numpy.ma.masked_where(daynight_indicator["values"] == 0, Fc["Data"], copy=True)
+    for item in daynight_indicator["attr"]:
+        ER["Attr"][item] = daynight_indicator["attr"][item]
+    pfp_utils.CreateVariable(ds, ER)
     return
 
 def check_for_missing_data(series_list,label_list):
@@ -880,10 +873,10 @@ def get_night_indicator(cf, ds):
     return night_indicator
 
 def get_turbulence_indicator(cf,ldt,ustar,L,ustar_dict,ts,attr):
-    opt = pfp_utils.get_keyvaluefromcf(cf,["Options"],"TurbulenceFilter",default="ustar")
-    if opt.lower()=="ustar":
-        turbulence_indicator = get_turbulence_indicator_ustar(ldt,ustar,ustar_dict,ts,attr)
-    elif opt.lower()=="l":
+    opt = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "TurbulenceFilter", default="ustar")
+    if opt.lower() == "ustar":
+        turbulence_indicator = get_turbulence_indicator_ustar(ldt, ustar, ustar_dict, ts)
+    elif opt.lower() == "l":
         msg = " GetERfromFc: use of L as turbulence indicator not implemented yet"
         logger.warning(msg)
         #turbulence_indicator = get_turbulence_indicator_l(ldt,L,z,d,zmdonL_threshold)
@@ -892,14 +885,14 @@ def get_turbulence_indicator(cf,ldt,ustar,L,ustar_dict,ts,attr):
         raise Exception(msg)
     return turbulence_indicator
 
-def get_turbulence_indicator_l(ldt,L,z,d,zmdonL_threshold):
+def get_turbulence_indicator_l(ldt, L, z, d, zmdonL_threshold):
     turbulence_indicator = numpy.zeros(len(ldt),dtype=numpy.int32)
     zmdonL = (z-d)/L
-    idx = numpy.ma.where(zmdonL<=zmdonL_threshold)[0]
+    idx = numpy.ma.where(zmdonL <= zmdonL_threshold)[0]
     turbulence_indicator[idx] = numpy.int32(1)
     return turbulence_indicator
 
-def get_turbulence_indicator_ustar(ldt,ustar,ustar_dict,ts):
+def get_turbulence_indicator_ustar(ldt, ustar, ustar_dict, ts):
     """
     Purpose:
      Returns a dictionary containing an indicator series and some attributes.
@@ -923,7 +916,7 @@ def get_turbulence_indicator_ustar(ldt,ustar,ustar_dict,ts):
     year_list = ustar_dict.keys()
     year_list.sort()
     # now loop over the years in the data to apply the ustar threshold
-    turbulence_indicator = {"values":numpy.zeros(len(ldt)),"attr":{}}
+    turbulence_indicator = {"values":numpy.zeros(len(ldt)), "attr":{}}
     inds = turbulence_indicator["values"]
     attr = turbulence_indicator["attr"]
     attr["turbulence_filter"] = "ustar"
@@ -1164,9 +1157,9 @@ def L6_summary_plotdaily(cf, ds, daily_dict):
     ddv = daily_dict["variables"]
     type_list = []
     for item in ddv.keys():
-        if item[0:2]=="ER": type_list.append(item[2:])
+        if item[0:2] == "ER": type_list.append(item[2:])
     for item in type_list:
-        if "NEE"+item not in ddv or "GPP"+item not in ddv:
+        if "NEE" + item not in ddv or "GPP" + item not in ddv:
             type_list.remove(item)
     # plot time series of NEE, GPP and ER
     sdate = ddv["DateTime"]["data"][0].strftime("%d-%m-%Y")
@@ -1730,12 +1723,12 @@ def ParseL6ControlFile(cf, ds):
     # create the L6 information dictionary
     l6_info = {}
     if "EcosystemRespiration" in cf.keys():
-        l6_info["EcosystemRespiration"] = {}
+        #l6_info["EcosystemRespiration"] = {}
         for output in cf["EcosystemRespiration"].keys():
             if "ERUsingSOLO" in cf["EcosystemRespiration"][output].keys():
                 pfp_rpNN.rpSOLO_createdict(cf, ds, l6_info, output, "ERUsingSOLO")
-            if "ERUsingFFNET" in cf["EcosystemRespiration"][output].keys():
-                pfp_rpNN.rpFFNET_createdict(cf, ds, l6_info, output, "ERUsingFFNET")
+            #if "ERUsingFFNET" in cf["EcosystemRespiration"][output].keys():
+                #pfp_rpNN.rpFFNET_createdict(cf, ds, l6_info, output, "ERUsingFFNET")
             if "ERUsingLloydTaylor" in cf["EcosystemRespiration"][output].keys():
                 pfp_rpLT.rpLT_createdict(cf, ds, l6_info, output, "ERUsingLloydTaylor")
             if "ERUsingLasslop" in cf["EcosystemRespiration"][output].keys():
@@ -1766,7 +1759,7 @@ def PartitionNEE(cf, ds, l6_info):
     Author: PRI
     Date: August 2014
     """
-    if "GPP" not in l6_info:
+    if "GrossPrimaryProductivity" not in l6_info:
         return
     # get the Fsd threshold
     opt = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "Fsd_threshold", default=10)
@@ -1810,7 +1803,9 @@ def PartitionNEE(cf, ds, l6_info):
         # copy the attributes
         attr = ds.series[output_label]["Attr"]
         attr["units"] = NEE_attr["units"]
-        attr["long_name"] = "Gross Primary Productivity calculated as -1*"+NEE_label+"+"+ER_label
+        attr["long_name"] = "Gross Primary Productivity"
+        attr["description_l6"] = "Calculated as -1*" + NEE_label + " + " + ER_label
+        ds.series[output_label]["Attr"] = attr
 
 def rpGPP_createdict(cf, ds, info, label):
     """ Creates a dictionary in ds to hold information about calculating GPP."""
@@ -1819,10 +1814,12 @@ def rpGPP_createdict(cf, ds, info, label):
     # output series name
     info[label]["output"] = label
     # net ecosystem exchange
-    opt = pfp_utils.get_keyvaluefromcf(cf, ["GPP", label], "NEE", default="NEE_LT")
+    default = label.replace("GPP", "NEE")
+    opt = pfp_utils.get_keyvaluefromcf(cf, ["GrossPrimaryProductivity", label], "NEE", default=default)
     info[label]["NEE"] = opt
     # ecosystem respiration
-    opt = pfp_utils.get_keyvaluefromcf(cf, ["GPP", label], "ER", default="ER_LT")
+    default = label.replace("GPP", "ER")
+    opt = pfp_utils.get_keyvaluefromcf(cf, ["GrossPrimaryProductivity", label], "ER", default=default)
     info[label]["ER"] = opt
     # create an empty series in ds if the output series doesn't exist yet
     if info[label]["output"] not in ds.series.keys():
@@ -1840,12 +1837,16 @@ def rpNEE_createdict(cf, ds, info, label):
     sl = ["NetEcosystemExchange", label]
     opt = pfp_utils.get_keyvaluefromcf(cf, sl, "Fc", default="Fc")
     info[label]["Fc"] = opt
+    Fc = pfp_utils.GetVariable(ds, opt)
     # ecosystem respiration
-    opt = pfp_utils.get_keyvaluefromcf(cf, sl, "ER", default="ER_LT")
+    default = label.replace("NEE", "ER")
+    opt = pfp_utils.get_keyvaluefromcf(cf, sl, "ER", default=default)
     info[label]["ER"] = opt
     # create an empty series in ds if the output series doesn't exist yet
     if info[label]["output"] not in ds.series.keys():
         data, flag, attr = pfp_utils.MakeEmptySeries(ds, info[label]["output"])
+        attr["long_name"] = "Net Ecosystem Exchange"
+        attr["units"] = Fc["Attr"]["units"]
         pfp_utils.CreateSeries(ds, info[label]["output"], data, flag, attr)
     return
 
@@ -1854,20 +1855,20 @@ def rpMergeSeries_createdict(cf, ds, l6_info, label, called_by):
         and tower data."""
     nrecs = int(ds.globalattributes["nc_nrecs"])
     # create the merge directory in the info dictionary
-    if called_by not in l6_info["ER"]:
-        l6_info["ER"][called_by] = {}
-    if "standard" not in l6_info["ER"][called_by].keys():
-        l6_info["ER"][called_by]["standard"] = {}
+    if called_by not in l6_info:
+        l6_info[called_by] = {}
+    if "standard" not in l6_info[called_by].keys():
+        l6_info[called_by]["standard"] = {}
     # create the dictionary keys for this series
-    l6_info["ER"][called_by]["standard"][label] = {}
+    l6_info[called_by]["standard"][label] = {}
     # output series name
-    l6_info["ER"][called_by]["standard"][label]["output"] = label
+    l6_info[called_by]["standard"][label]["output"] = label
     # source
-    opt = pfp_utils.get_keyvaluefromcf(cf, ["ER", label, "MergeSeries"], "Source", default="ER,ER_SOLO_all")
+    opt = pfp_utils.get_keyvaluefromcf(cf, ["EcosystemRespiration", label, "MergeSeries"], "Source", default="ER,ER_SOLO_all")
     sources = pfp_cfg.cfg_string_to_list(opt)
-    l6_info["ER"][called_by]["standard"][label]["source"] = sources
+    l6_info[called_by]["standard"][label]["source"] = sources
     # create an empty series in ds if the output series doesn't exist yet
-    if l6_info["ER"][called_by]["standard"][label]["output"] not in ds.series.keys():
+    if l6_info[called_by]["standard"][label]["output"] not in ds.series.keys():
         variable = pfp_utils.CreateEmptyVariable(label, nrecs)
         pfp_utils.CreateVariable(ds, variable)
     return

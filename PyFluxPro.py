@@ -450,7 +450,9 @@ class pfp_main_ui(QtWidgets.QWidget):
         result = False
         try:
             cfg_sections = self.cfg.keys()
-            if ("ER" in cfg_sections) or ("NEE" in cfg_sections) or ("GPP" in cfg_sections):
+            if ("EcosystemRespiration" in cfg_sections or
+                "NetEcosystemExchange" in cfg_sections or
+                "GrossPrimaryProductivity" in cfg_sections):
                 result = True
         except:
             result = False

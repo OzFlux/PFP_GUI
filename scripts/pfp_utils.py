@@ -2440,7 +2440,7 @@ def MakeAttributeDictionary(**kwargs):
     Author: PRI
     Date: Back in the day
     """
-    default_list = ["ancillary_variables","height","instrument","long_name","serial_number","standard_name",
+    default_list = ["height","instrument","long_name","serial_number","standard_name",
                     "units","valid_range"]
     attr = {}
     for item in kwargs:

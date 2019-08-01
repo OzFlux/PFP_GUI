@@ -34,10 +34,13 @@ def ERUsingSOLO(main_gui, cf, ds, l6_info):
                  ER estimation routines to allow for multiple sources
                  of ER.
     """
+    # check to see if we are doing ERUsingSOLO
+    if "ERUsingSOLO" not in l6_info:
+        return
     # set the default return code
     ds.returncodes["message"] = "normal"
     # get the SOLO information
-    solo = l6_info["ER"]["ERUsingSOLO"]
+    solo = l6_info["ERUsingSOLO"]
     if solo["info"]["call_mode"].lower() == "interactive":
         # call the ERUsingSOLO GUI
         rpSOLO_gui(main_gui, ds, solo)
@@ -93,7 +96,7 @@ def rp_getdiurnalstats(dt, data, solo):
     diel_stats["Mn"] = numpy.ma.min(data_2d,axis=0)
     return diel_stats
 
-def rpSOLO_createdict(cf, ds, l6_info, label, called_by):
+def rpSOLO_createdict(cf, ds, l6_info, output, called_by):
     """
     Purpose:
      Creates a dictionary in l6_info to hold information about the SOLO data
@@ -106,25 +109,27 @@ def rpSOLO_createdict(cf, ds, l6_info, label, called_by):
     nrecs = int(ds.globalattributes["nc_nrecs"])
     # create the dictionary keys for this series
     if called_by not in l6_info.keys():
-        l6_info[called_by] = {"outputs": {}, "info": {}, "gui": {}}
+        l6_info[called_by] = {"outputs": {}, "info": {"source": "Fc", "target": "ER"}, "gui": {}}
     # get the info section
     pfp_gf.gfSOLO_createdict_info(cf, ds, l6_info[called_by], called_by)
     if ds.returncodes["value"] != 0:
         return
     # get the outputs section
-    pfp_gf.gfSOLO_createdict_outputs(cf, l6_info[called_by], label, called_by)
+    pfp_gf.gfSOLO_createdict_outputs(cf, l6_info[called_by], output, called_by)
     # create an empty series in ds if the SOLO output series doesn't exist yet
-    outputs = cf["EcosystemRespiration"][target][called_by].keys()
-    target_attr = copy.deepcopy(ds.series[target]["Attr"])
-    target_attr["long_name"] = "Modeled by neural network (SOLO)"
-    for output in outputs:
-        if output not in ds.series.keys():
+    Fc = pfp_utils.GetVariable(ds, l6_info[called_by]["info"]["source"])
+    model_outputs = cf["EcosystemRespiration"][output][called_by].keys()
+    for model_output in model_outputs:
+        if model_output not in ds.series.keys():
             # create an empty variable
-            variable = pfp_utils.CreateEmptyVariable(output, nrecs, attr=target_attr)
-            variable["Attr"]["drivers"] = l5_info[called_by]["outputs"][output]["drivers"]
-            variable["Attr"]["target"] = target
+            variable = pfp_utils.CreateEmptyVariable(model_output, nrecs)
+            variable["Attr"]["long_name"] = "Ecosystem respiration"
+            variable["Attr"]["drivers"] = l6_info[called_by]["outputs"][model_output]["drivers"]
+            variable["Attr"]["description_l6"] = "Modeled by neural network (SOLO)"
+            variable["Attr"]["target"] = l6_info[called_by]["info"]["target"]
+            variable["Attr"]["source"] = l6_info[called_by]["info"]["source"]
+            variable["Attr"]["units"] = Fc["Attr"]["units"]
             pfp_utils.CreateVariable(ds, variable)
-
     return
 
 def rpSOLO_done(solo_gui):
@@ -180,7 +185,7 @@ def rpSOLO_main(ds, solo, outputs=[]):
     for output in outputs:
         # get the target series label
         target = solo["outputs"][output]["target"]
-        output_all = solo["outputs"][output]["output"]
+        #output_all = solo["outputs"][output]["output"]
         solo["outputs"][output]["results"]["startdate"].append(ldt[si])
         solo["outputs"][output]["results"]["enddate"].append(ldt[ei])
         d, f, a = pfp_utils.GetSeriesasMA(ds, target, si=si, ei=ei)
@@ -219,7 +224,7 @@ def rpSOLO_main(ds, solo, outputs=[]):
         if result != 1:
             return
         # run SEQSOLO and put the SOLO data into the data structure
-        result = rpSOLO_runseqsolo(ds, drivers, target, output_all, nRecs, si=si, ei=ei)
+        result = rpSOLO_runseqsolo(ds, drivers, target, output, nRecs, si=si, ei=ei)
         if result != 1:
             return
         # plot the results
@@ -228,7 +233,7 @@ def rpSOLO_main(ds, solo, outputs=[]):
         pd = rpSOLO_initplot(site_name=site_name, label=target, fig_num=fig_num,
                              title=title, nDrivers=len(drivers),
                              startdate=startdate, enddate=enddate)
-        rpSOLO_plot(pd, ds, drivers, target, output_all, solo, si=si, ei=ei)
+        rpSOLO_plot(pd, ds, drivers, target, output, solo, si=si, ei=ei)
 
 def rpSOLO_plot(pd, ds, drivers, target, output, solo, si=0, ei=-1):
     """ Plot the results of the SOLO run. """

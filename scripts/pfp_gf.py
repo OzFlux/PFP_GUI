@@ -833,22 +833,29 @@ def gfSOLO_createdict_info(cf, ds, solo, called_by):
     # reset the return message and code
     ds.returncodes["message"] = "OK"
     ds.returncodes["value"] = 0
+    # time step
+    time_step = int(ds.globalattributes["time_step"])
     # get the level of processing
     level = ds.globalattributes["nc_level"]
     # local pointer to the datetime series
     ldt = ds.series["DateTime"]["Data"]
     # add an info section to the info["solo"] dictionary
-    solo["info"] = {"file_startdate": ldt[0].strftime("%Y-%m-%d %H:%M"),
-                    "file_enddate": ldt[-1].strftime("%Y-%m-%d %H:%M"),
-                    "startdate": ldt[0].strftime("%Y-%m-%d %H:%M"),
-                    "enddate": ldt[-1].strftime("%Y-%m-%d %H:%M"),
-                    "called_by": called_by}
+    solo["info"]["file_startdate"] = ldt[0].strftime("%Y-%m-%d %H:%M")
+    solo["info"]["file_enddate"] = ldt[-1].strftime("%Y-%m-%d %H:%M")
+    solo["info"]["startdate"] = ldt[0].strftime("%Y-%m-%d %H:%M")
+    solo["info"]["enddate"] = ldt[-1].strftime("%Y-%m-%d %H:%M")
+    solo["info"]["called_by"] = called_by
+    solo["info"]["time_step"] = time_step
     # check to see if this is a batch or an interactive run
     call_mode = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "call_mode", default="interactive")
     solo["info"]["call_mode"] = call_mode
     # truncate to last date in Imports?
     truncate = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "TruncateToImports", default="Yes")
     solo["info"]["truncate_to_imports"] = truncate
+    # number of records per day and maximum lags
+    nperhr = int(float(60)/time_step + 0.5)
+    solo["info"]["nperday"] = int(float(24)*nperhr + 0.5)
+    solo["info"]["maxlags"] = int(float(12)*nperhr + 0.5)
     # get the plot path
     plot_path = pfp_utils.get_keyvaluefromcf(cf, ["Files"], "plot_path", default="./plots/")
     plot_path = os.path.join(plot_path, level, "")
@@ -859,10 +866,11 @@ def gfSOLO_createdict_info(cf, ds, solo, called_by):
             msg = "Unable to create the plot path " + plot_path + "\n"
             msg = msg + "Press 'Quit' to edit the control file.\n"
             msg = msg + "Press 'Continue' to use the default path.\n"
-            result = pfp_gui.MsgBox_ContinueOrQuit(msg, title="Warning: L5 plot path")
+            title = "Warning: " + level + " plot path"
+            result = pfp_gui.MsgBox_ContinueOrQuit(msg, title=title)
             if result.clickedButton().text() == "Quit":
                 # user wants to edit the control file
-                msg = " Quitting L5 to edit control file"
+                msg = " Quitting " + level + " to edit control file"
                 logger.warning(msg)
                 ds.returncodes["message"] = msg
                 ds.returncodes["value"] = 1
@@ -879,9 +887,11 @@ def gfSOLO_createdict_outputs(cf, solo, target, called_by):
     if level == "L5":
         section = "Fluxes"
         drivers = "Fn,Fg,SHD,q,Ta,Ts"
+        source = target
     elif level == "L6":
         section = "EcosystemRespiration"
         drivers = "Ta,Ts,Sws"
+        source = "Fc"
     else:
         msg = "Unrecognised control file level (must be L5 or L6)"
         logger.error(msg)
@@ -893,6 +903,7 @@ def gfSOLO_createdict_outputs(cf, solo, target, called_by):
         # get the target
         sl = [section, target, called_by, output]
         so[output]["target"] = pfp_utils.get_keyvaluefromcf(cf, sl, "target", default=target)
+        so[output]["source"] = pfp_utils.get_keyvaluefromcf(cf, sl, "source", default=source)
         # list of SOLO settings
         if "solo_settings" in cf[section][target][called_by][output]:
             src_string = cf[section][target][called_by][output]["solo_settings"]

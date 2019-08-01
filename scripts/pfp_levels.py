@@ -382,10 +382,8 @@ def l6qc(main_gui, cf, ds5):
     # check units of Fc
     Fc_list = [label for label in ds6.series.keys() if label[0:2] == "Fc"]
     pfp_utils.CheckUnits(ds6, Fc_list, "umol/m2/s", convert_units=True)
-    ## apply the turbulence filter (if requested)
-    #pfp_ck.ApplyTurbulenceFilter(cf, ds6)
     # get ER from the observed Fc
-    pfp_rp.GetERFromFc(cf, ds6, l6_info)
+    pfp_rp.GetERFromFc(cf, ds6)
     # return code will be non-zero if turbulance filter not applied to CO2 flux
     if ds6.returncodes["value"] != 0:
         return ds6
@@ -398,7 +396,7 @@ def l6qc(main_gui, cf, ds5):
     # estimate ER using Lasslop et al
     pfp_rp.ERUsingLasslop(cf, ds6, l6_info)
     # merge the estimates of ER with the observations
-    pfp_ts.MergeSeriesUsingDict(ds6, l6_info["ER"], merge_order="standard")
+    pfp_ts.MergeSeriesUsingDict(ds6, l6_info, merge_order="standard")
     # calculate NEE from Fc and ER
     pfp_rp.CalculateNEE(cf, ds6, l6_info)
     # calculate NEP from NEE
