@@ -87,30 +87,30 @@ def get_yarray(ds,ThisOne):
         yarray = numpy.ma.zeros(numpy.size(yarray))
     return yarray,nRecs,nNotM,nMskd
 
-#def get_yaxislimitsfromcf(cf,nFig,maxkey,minkey,nSer,YArray):
-    #if maxkey in cf['Plots'][str(nFig)].keys():                               # Y axis minima specified
-        #maxlist = ast.literal_eval(cf['Plots'][str(nFig)][maxkey])     # Evaluate the minima list
-        #if str(maxlist[nSer])=='Auto':             # This entry is 'Auto' ...
-            #YAxMax = numpy.ma.maximum.reduce(YArray)                        # ... so take the array minimum value
-        #else:
-            #YAxMax = float(maxlist[nSer])         # Evaluate the entry for this series
-    #else:
-        #YAxMax = numpy.ma.maximum.reduce(YArray)                            # Y axis minima not given, use auto
-    #if minkey in cf['Plots'][str(nFig)].keys():                               # Y axis minima specified
-        #minlist = ast.literal_eval(cf['Plots'][str(nFig)][minkey])     # Evaluate the minima list
-        #if str(minlist[nSer])=='Auto':             # This entry is 'Auto' ...
-            #YAxMin = numpy.ma.minimum.reduce(YArray)                        # ... so take the array minimum value
-        #else:
-            #YAxMin = float(minlist[nSer])         # Evaluate the entry for this series
-    #else:
-        #YAxMin = numpy.ma.minimum.reduce(YArray)                            # Y axis minima not given, use auto
-    #if (abs(YAxMax-YAxMin) < c.eps):
-        #YAxDelta = 0.001*YAxMax
-        #if YAxDelta == 0:
-            #YAxDelta = 1
-        #YAxMax = YAxMax + YAxDelta
-        #YAxMin = YAxMin - YAxDelta
-    #return YAxMax,YAxMin
+def get_yaxislimitsfromcf(cf,nFig,maxkey,minkey,nSer,YArray):
+    if maxkey in cf['Plots'][str(nFig)].keys():                               # Y axis minima specified
+        maxlist = ast.literal_eval(cf['Plots'][str(nFig)][maxkey])     # Evaluate the minima list
+        if str(maxlist[nSer])=='Auto':             # This entry is 'Auto' ...
+            YAxMax = numpy.ma.maximum.reduce(YArray)                        # ... so take the array minimum value
+        else:
+            YAxMax = float(maxlist[nSer])         # Evaluate the entry for this series
+    else:
+        YAxMax = numpy.ma.maximum.reduce(YArray)                            # Y axis minima not given, use auto
+    if minkey in cf['Plots'][str(nFig)].keys():                               # Y axis minima specified
+        minlist = ast.literal_eval(cf['Plots'][str(nFig)][minkey])     # Evaluate the minima list
+        if str(minlist[nSer])=='Auto':             # This entry is 'Auto' ...
+            YAxMin = numpy.ma.minimum.reduce(YArray)                        # ... so take the array minimum value
+        else:
+            YAxMin = float(minlist[nSer])         # Evaluate the entry for this series
+    else:
+        YAxMin = numpy.ma.minimum.reduce(YArray)                            # Y axis minima not given, use auto
+    if (abs(YAxMax-YAxMin) < c.eps):
+        YAxDelta = 0.001*YAxMax
+        if YAxDelta == 0:
+            YAxDelta = 1
+        YAxMax = YAxMax + YAxDelta
+        YAxMin = YAxMin - YAxDelta
+    return YAxMax,YAxMin
 
 def plot_fcvsustar(ds):
     """

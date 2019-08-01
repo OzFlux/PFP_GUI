@@ -357,9 +357,9 @@ def rpLT_createdict_info(cf, ds, erlt, called_by):
     # check to see if this is a batch or an interactive run
     call_mode = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "call_mode", default="interactive")
     erlt["info"]["call_mode"] = call_mode
-    erlt["info"]["show_plots"] = False
+    erlt["gui"]["show_plots"] = False
     if call_mode.lower() == "interactive":
-        erlt["info"]["show_plots"] = True
+        erlt["gui"]["show_plots"] = True
     # truncate to last date in Imports?
     truncate = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "TruncateToImports", default="Yes")
     erlt["info"]["truncate_to_imports"] = truncate
@@ -454,7 +454,7 @@ def rpLT_plot(pd, ds, output, drivers, target, iel, si=0, ei=-1):
     obs, f, a = pfp_utils.GetSeriesasMA(ds, target, si=si, ei=ei)
     mod, f, a = pfp_utils.GetSeriesasMA(ds, output, si=si, ei=ei)
     # make the figure
-    if ieli["show_plots"]:
+    if iel["gui"]["show_plots"]:
         plt.ion()
     else:
         plt.ioff()
@@ -561,7 +561,7 @@ def rpLT_plot(pd, ds, output, drivers, target, iel, si=0, ei=-1):
     figname = figname + "_" + sdt + "_" + edt + '.png'
     fig.savefig(figname, format='png')
     # draw the plot on the screen
-    if ieli["show_plots"]:
+    if iel["gui"]["show_plots"]:
         plt.draw()
         #plt.pause(1)
         mypause(1)

@@ -389,9 +389,9 @@ def rpLL_createdict_info(cf, ds, erll, called_by):
     # check to see if this is a batch or an interactive run
     call_mode = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "call_mode", default="interactive")
     erll["info"]["call_mode"] = call_mode
-    erll["info"]["show_plots"] = False
+    erll["gui"]["show_plots"] = False
     if call_mode.lower() == "interactive":
-        erll["info"]["show_plots"] = True
+        erll["gui"]["show_plots"] = True
     # truncate to last date in Imports?
     truncate = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "TruncateToImports", default="Yes")
     erll["info"]["truncate_to_imports"] = truncate
@@ -469,6 +469,7 @@ def rpLL_initplot(**kwargs):
 
 def rpLL_plot(pd, ds, output, drivers, target, l6_info, si=0, ei=-1):
     """ Plot the results of the Lasslop run. """
+    iel = l6_info["ERUsingLasslop"]
     ieli = l6_info["ERUsingLasslop"]["info"]
     ielo = l6_info["ERUsingLasslop"]["outputs"]
     # get a local copy of the datetime series
@@ -482,7 +483,7 @@ def rpLL_plot(pd, ds, output, drivers, target, l6_info, si=0, ei=-1):
     obs, f, a = pfp_utils.GetSeriesasMA(ds, target, si=si, ei=ei)
     mod, f, a = pfp_utils.GetSeriesasMA(ds, output, si=si, ei=ei)
     # make the figure
-    if ieli["show_plots"]:
+    if iel["gui"]["show_plots"]:
         plt.ion()
     else:
         plt.ioff()
@@ -589,7 +590,7 @@ def rpLL_plot(pd, ds, output, drivers, target, l6_info, si=0, ei=-1):
     figname = figname + "_" + sdt + "_" + edt + '.png'
     fig.savefig(figname, format='png')
     # draw the plot on the screen
-    if ieli["show_plots"]:
+    if iel["gui"]["show_plots"]:
         plt.draw()
         #plt.pause(1)
         mypause(1)
