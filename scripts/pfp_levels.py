@@ -388,7 +388,10 @@ def l6qc(main_gui, cf, ds5):
     if ds6.returncodes["value"] != 0:
         return ds6
     # estimate ER using SOLO
-    pfp_rpNN.ERUsingSOLO(main_gui, cf, ds6, l6_info)
+    if "ERUsingSOLO" in l6_info:
+        pfp_rpNN.ERUsingSOLO(main_gui, ds6, l6_info, "ERUsingSOLO")
+        if ds6.returncodes["value"] != 0:
+            return ds6
     # estimate ER using FFNET
     #pfp_rp.ERUsingFFNET(cf, ds6, l6_info)
     # estimate ER using Lloyd-Taylor
