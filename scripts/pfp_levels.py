@@ -18,7 +18,6 @@ import pfp_gfMDS
 import pfp_gfSOLO
 import pfp_io
 import pfp_rp
-import pfp_rpNN
 import pfp_ts
 import pfp_utils
 
@@ -389,7 +388,7 @@ def l6qc(main_gui, cf, ds5):
         return ds6
     # estimate ER using SOLO
     if "ERUsingSOLO" in l6_info:
-        pfp_rpNN.ERUsingSOLO(main_gui, ds6, l6_info, "ERUsingSOLO")
+        pfp_rp.ERUsingSOLO(main_gui, ds6, l6_info, "ERUsingSOLO")
         if ds6.returncodes["value"] != 0:
             return ds6
     # estimate ER using FFNET

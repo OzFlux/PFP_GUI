@@ -18,11 +18,12 @@ import xlrd
 import constants as c
 import meteorologicalfunctions as pfp_mf
 import pfp_cfg
+import pfp_gf
+import pfp_gfSOLO
 import pfp_gui
 import pfp_io
 import pfp_rpLL
 import pfp_rpLT
-import pfp_rpNN
 import pfp_ts
 import pfp_utils
 
@@ -219,17 +220,6 @@ def ERUsingLasslop(cf, ds, l6_info):
     nperday = int(float(24)*nperhr+0.5)
     site_name = ds.globalattributes["site_name"]
     nrecs = int(ds.globalattributes["nc_nrecs"])
-    ## add an info section
-    #iel["info"] = {"file_startdate": startdate.strftime("%Y-%m-%d %H:%M"),
-                   #"file_enddate": enddate.strftime("%Y-%m-%d %H:%M"),
-                   #"plot_path": cf["Files"]["plot_path"],
-                   #"show_plots": False,
-                   #"time_step": ts,
-                   #"nperday": nperday}
-    #call_mode = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "call_mode", default="interactive")
-    #iel["info"]["call_mode"] = call_mode
-    #if call_mode.lower() == "interactive":
-        #iel["info"]["show_plots"] = True
     # get the data and synchronise the gaps
     # *** PUT INTO SEPARATE FUNCTION
     indicator = numpy.ones(nrecs, dtype=numpy.int)
@@ -402,16 +392,6 @@ def ERUsingLloydTaylor(cf, ds, l6_info):
     iel = l6_info["ERUsingLloydTaylor"]
     iel["time_step"] = ts
     iel["nperday"] = nperday
-    #iel["info"] = {"file_startdate": startdate.strftime("%Y-%m-%d %H:%M"),
-                   #"file_enddate": enddate.strftime("%Y-%m-%d %H:%M"),
-                   #"plot_path": cf["Files"]["plot_path"],
-                   #"show_plots": False,
-                   #"time_step": ts,
-                   #"nperday": nperday}
-    #call_mode = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "call_mode", default="interactive")
-    #iel["info"]["call_mode"] = call_mode
-    #if call_mode.lower() == "interactive":
-        #iel["info"]["show_plots"] = True
     # set the figure number
     if len(plt.get_fignums()) == 0:
         fig_num = 0
@@ -588,6 +568,36 @@ def ERUsingLloydTaylor(cf, ds, l6_info):
         pfp_rpLT.rpLT_plot(pd, ds, output, drivers, target, iel)
     # close the Excel workbook
     xl_file.save(xl_name)
+
+def ERUsingSOLO(main_gui, ds, l6_info, called_by):
+    """
+    Purpose:
+     Estimate ER using SOLO.
+    Usage:
+    Side effects:
+    Author: PRI
+    Date: Back in the day
+    Mods:
+     21/8/2017 - moved GetERFromFc from pfp_ls.l6qc() to individual
+                 ER estimation routines to allow for multiple sources
+                 of ER.
+    """
+    # set the default return code
+    ds.returncodes["value"] = 0
+    ds.returncodes["message"] = "normal"
+    # get the SOLO information
+    solo = l6_info["ERUsingSOLO"]
+    # check the SOLO drivers for missing data
+    pfp_gf.CheckDrivers(solo, ds)
+    if ds.returncodes["value"] != 0:
+        return ds
+    if solo["info"]["call_mode"].lower() == "interactive":
+        # call the ERUsingSOLO GUI
+        pfp_gfSOLO.gfSOLO_gui(main_gui, ds, solo)
+    #else:
+        #if "GUI" in cf:
+            #if "SOLO" in cf["GUI"]:
+                #rpSOLO_run_nogui(cf, ds, l6_info["ER"])
 
 def GetERFromFc(cf, ds):
     """
@@ -1726,7 +1736,7 @@ def ParseL6ControlFile(cf, ds):
         #l6_info["EcosystemRespiration"] = {}
         for output in cf["EcosystemRespiration"].keys():
             if "ERUsingSOLO" in cf["EcosystemRespiration"][output].keys():
-                pfp_rpNN.rpSOLO_createdict(cf, ds, l6_info, output, "ERUsingSOLO")
+                rpSOLO_createdict(cf, ds, l6_info, output, "ERUsingSOLO")
             #if "ERUsingFFNET" in cf["EcosystemRespiration"][output].keys():
                 #pfp_rpNN.rpFFNET_createdict(cf, ds, l6_info, output, "ERUsingFFNET")
             if "ERUsingLloydTaylor" in cf["EcosystemRespiration"][output].keys():
@@ -1871,6 +1881,42 @@ def rpMergeSeries_createdict(cf, ds, l6_info, label, called_by):
     if l6_info[called_by]["standard"][label]["output"] not in ds.series.keys():
         variable = pfp_utils.CreateEmptyVariable(label, nrecs)
         pfp_utils.CreateVariable(ds, variable)
+    return
+
+def rpSOLO_createdict(cf, ds, l6_info, output, called_by):
+    """
+    Purpose:
+     Creates a dictionary in l6_info to hold information about the SOLO data
+     used to estimate ecosystem respiration.
+    Usage:
+    Side effects:
+    Author: PRI
+    Date: Back in the day
+    """
+    nrecs = int(ds.globalattributes["nc_nrecs"])
+    # create the dictionary keys for this series
+    if called_by not in l6_info.keys():
+        l6_info[called_by] = {"outputs": {}, "info": {"source": "Fc", "target": "ER"}, "gui": {}}
+    # get the info section
+    pfp_gf.gfSOLO_createdict_info(cf, ds, l6_info[called_by], called_by)
+    if ds.returncodes["value"] != 0:
+        return
+    # get the outputs section
+    pfp_gf.gfSOLO_createdict_outputs(cf, l6_info[called_by], output, called_by)
+    # create an empty series in ds if the SOLO output series doesn't exist yet
+    Fc = pfp_utils.GetVariable(ds, l6_info[called_by]["info"]["source"])
+    model_outputs = cf["EcosystemRespiration"][output][called_by].keys()
+    for model_output in model_outputs:
+        if model_output not in ds.series.keys():
+            # create an empty variable
+            variable = pfp_utils.CreateEmptyVariable(model_output, nrecs)
+            variable["Attr"]["long_name"] = "Ecosystem respiration"
+            variable["Attr"]["drivers"] = l6_info[called_by]["outputs"][model_output]["drivers"]
+            variable["Attr"]["description_l6"] = "Modeled by neural network (SOLO)"
+            variable["Attr"]["target"] = l6_info[called_by]["info"]["target"]
+            variable["Attr"]["source"] = l6_info[called_by]["info"]["source"]
+            variable["Attr"]["units"] = Fc["Attr"]["units"]
+            pfp_utils.CreateVariable(ds, variable)
     return
 
 def mypause(interval):

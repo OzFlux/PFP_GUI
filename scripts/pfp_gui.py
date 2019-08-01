@@ -12,7 +12,6 @@ import pfp_func
 import pfp_utils
 import pfp_gfALT
 import pfp_gfSOLO
-import pfp_rpNN
 
 logger = logging.getLogger("pfp_log")
 
@@ -5704,22 +5703,10 @@ class solo_gui(QtWidgets.QDialog):
         self.QuitButton.clicked.connect(self.call_gui_quit)
 
     def call_gui_run(self):
-        if self.solo["info"]["called_by"] in ["GapFillUsingSOLO", "GapFillLongSOLO"]:
-            pfp_gfSOLO.gfSOLO_run_gui(self)
-        elif self.solo["info"]["called_by"] == "ERUsingSOLO":
-            #pfp_rpNN.rpSOLO_run_gui(self)
-            pfp_gfSOLO.gfSOLO_run_gui(self)
+        pfp_gfSOLO.gfSOLO_run_gui(self)
 
     def call_gui_quit(self):
-        if self.solo["info"]["called_by"] in ["GapFillUsingSOLO", "GapFillLongSOLO"]:
-            pfp_gfSOLO.gfSOLO_quit(self)
-        elif self.solo["info"]["called_by"] == "ERUsingSOLO":
-            #pfp_rpNN.rpSOLO_quit(self)
-            pfp_gfSOLO.gfSOLO_quit(self)
+        pfp_gfSOLO.gfSOLO_quit(self)
 
     def call_gui_done(self):
-        if self.solo["info"]["called_by"] in ["GapFillUsingSOLO", "GapFillLongSOLO"]:
-            pfp_gfSOLO.gfSOLO_done(self)
-        elif self.solo["info"]["called_by"] == "ERUsingSOLO":
-            #pfp_rpNN.rpSOLO_done(self)
-            pfp_gfSOLO.gfSOLO_done(self)
+        pfp_gfSOLO.gfSOLO_done(self)
