@@ -1,10 +1,10 @@
-name: pfp_env
+name: pfp_env2
 channels:
   - conda-forge
 dependencies:
   - python=2.7
   - configobj
-  - dateutil
+  - python-dateutil
   - matplotlib
   - netcdf4
   - numpy
