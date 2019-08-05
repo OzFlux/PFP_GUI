@@ -601,26 +601,45 @@ def gfSOLO_quit(solo_gui):
     # destroy the GUI
     solo_gui.close()
 
-def gfSOLO_run_gui(solo_gui):
-    """ Run the SOLO neural network to gap fill the fluxes."""
+def gfSOLO_run_interactive(solo_gui):
+    """
+    Purpose:
+     Gets settings from the GapFillUsingSOLO GUI and loads them
+     into the l5_info["gui"] dictionary
+    Usage:
+     Called when the "Run" button is clicked.
+    Side effects:
+     Loads settings into the l5_info["gui"] dictionary.
+    Author: PRI
+    Date: Re-written August 2019
+    """
     # local pointers to useful things
     ds = solo_gui.ds
-    solo = solo_gui.solo
+    called_by = solo_gui.called_by
+    l5_info = solo_gui.l5_info
+    l5s = l5_info[called_by]
     # populate the solo dictionary with more useful things
+    ts = int(ds.globalattributes["time_step"])
+    l5s["gui"]["nperhr"] = int(float(60)/ts + 0.5)
+    l5s["gui"]["nperday"] = int(float(24)*l5s["gui"]["nperhr"] + 0.5)
+    # window period length
     if str(solo_gui.radioButtons.checkedButton().text()) == "Manual":
-        solo["gui"]["period_option"] = 1
+        l5s["gui"]["period_option"] = 1
     elif str(solo_gui.radioButtons.checkedButton().text()) == "Months":
-        solo["gui"]["period_option"] = 2
+        l5s["gui"]["period_option"] = 2
+        l5s["gui"]["number_months"] = int(solo_gui.lineEdit_NumberMonths.text())
     elif str(solo_gui.radioButtons.checkedButton().text()) == "Days":
-        solo["gui"]["period_option"] = 3
-
-    solo["gui"]["overwrite"] = solo_gui.checkBox_Overwrite.isChecked()
-    solo["gui"]["show_plots"] = solo_gui.checkBox_ShowPlots.isChecked()
-    solo["gui"]["show_all"] = solo_gui.checkBox_PlotAll.isChecked()
-    solo["gui"]["auto_complete"] = solo_gui.checkBox_AutoComplete.isChecked()
+        l5s["gui"]["period_option"] = 3
+        l5s["gui"]["number_days"] = int(solo_gui.lineEdit_NumberDays.text())
+    # plot settings
+    l5s["gui"]["overwrite"] = solo_gui.checkBox_Overwrite.isChecked()
+    l5s["gui"]["show_plots"] = solo_gui.checkBox_ShowPlots.isChecked()
+    l5s["gui"]["show_all"] = solo_gui.checkBox_PlotAll.isChecked()
+    # auto-complete settings
+    l5s["gui"]["auto_complete"] = solo_gui.checkBox_AutoComplete.isChecked()
     solo["gui"]["min_percent"] = max(int(str(solo_gui.lineEdit_MinPercent.text())), 1)
-
-    solo["gui"]["nodes"] = str(solo_gui.lineEdit_Nodes.text())
+    # minimum percentage of good data required
+    l5s["gui"]["nodes"] = str(solo_gui.lineEdit_Nodes.text())
     solo["gui"]["training"] = str(solo_gui.lineEdit_Training.text())
     solo["gui"]["nda_factor"] = str(solo_gui.lineEdit_NdaFactor.text())
     solo["gui"]["learning_rate"] = str(solo_gui.lineEdit_Learning.text())
