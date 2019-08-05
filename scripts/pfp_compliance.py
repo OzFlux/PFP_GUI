@@ -51,6 +51,25 @@ def check_executables():
         result = pfp_gui.MsgBox_Quit(msg, title="Critical")
     return
 
+def check_l6_controlfile(cf):
+    """
+    Purpose:
+     Check a control file to see if it conforms to the the syntax expected at L6.
+    Usage:
+    Side effects:
+    Author: PRI
+    Date: August 2019
+    """
+    ok = True
+    # check to see if we have an old style L6 control file
+    if "ER" in cf.keys() or "NEE" in cf.keys() or "GPP" in cf.keys():
+        ok = False
+        msg = "This is an old version of the L6 control file.\n"
+        msg = msg + "Close the L6 control file and create a new one from\n"
+        msg = msg + "the template in PyFluxPro/controlfiles/template/L6."
+        result = pfp_gui.MsgBox_Quit(msg, title="Critical")
+    return ok
+
 def copy_ws_wd(ds):
     """
     Purpose:
