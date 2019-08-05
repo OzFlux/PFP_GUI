@@ -4,49 +4,43 @@ level = L6
     in_filename = Right click to browse
     out_filename = Right click to browse
     plot_path = Right click to browse
-
 [Global]
     acknowledgement = """This work used eddy covariance data collected by the TERN-OzFlux facility. OzFlux
 would like to acknowledge the financial support of the Australian Federal Government via
 the National Collaborative Research Infrastructure Scheme and the Education Investment
 Fund."""
-
-[Options]
-    MaxGapInterpolate   = 0
-
-[ER]
-   [[ER_SOLO]]
+[EcosystemRespiration]
+    [[ER_SOLO]]
         [[[ERUsingSOLO]]]
-            target = ER
-            drivers = Ts,Ta,Sws
-            output = ER_SOLO_all
+            [[[[ER_SOLO_all]]]]
+                target = ER
+                drivers = Ts,Ta,Sws
         [[[MergeSeries]]]
             Source = ER,ER_SOLO_all
     [[ER_LT]]
         [[[ERUsingLloydTaylor]]]
-            target = ER
-            drivers = Ta
-            output = ER_LT_all
-            minimum_temperature_spread = 5
-            step_size_days = 5
-            window_size_days = 15
-            minimum_percent_annual = 25
-            minimum_percent_noct_window = 20
-            output_plots = False
+            [[[[ER_LT_all]]]]
+                target = ER
+                drivers = Ta
+                minimum_temperature_spread = 5
+                step_size_days = 5
+                window_size_days = 15
+                minimum_percent_annual = 5
+                minimum_percent_noct_window = 5
+                output_plots = False
         [[[MergeSeries]]]
             Source = ER,ER_LT_all
     [[ER_LL]]
         [[[ERUsingLasslop]]]
-            target = ER
-            drivers = Fsd,VPD,Ta
-            output = ER_LL_all
-            step_size_days = 5
-            window_size_days = 15
-            output_plots = False
+            [[[[ER_LL_all]]]]
+                target = ER
+                drivers = Fsd,VPD,Ta
+                step_size_days = 5
+                window_size_days = 15
+                output_plots = False
         [[[MergeSeries]]]
             Source = ER,ER_LL_all
-
-[NEE]
+[NetEcosystemExchange]
     [[NEE_SOLO]]
         Fc = Fc
         ER = ER_SOLO
@@ -56,8 +50,7 @@ Fund."""
     [[NEE_LL]]
         Fc = Fc
         ER = ER_LL
-
-[GPP]
+[GrossPrimaryProductivity]
     [[GPP_SOLO]]
         NEE = NEE_SOLO
         ER = ER_SOLO

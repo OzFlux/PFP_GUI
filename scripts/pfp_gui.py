@@ -12,7 +12,6 @@ import pfp_func
 import pfp_utils
 import pfp_gfALT
 import pfp_gfSOLO
-import pfp_rpNN
 
 logger = logging.getLogger("pfp_log")
 
@@ -4819,37 +4818,44 @@ class edit_cfg_L6(QtWidgets.QWidget):
                 self.sections[key1] = QtGui.QStandardItem(key1)
                 for key2 in self.cfg[key1]:
                     val = self.cfg[key1][key2]
-                    val = self.parse_cfg_values(key2, val, ["[", "]", "'", '"'])
                     child0 = QtGui.QStandardItem(key2)
                     child1 = QtGui.QStandardItem(val)
                     self.sections[key1].appendRow([child0, child1])
                 self.model.appendRow(self.sections[key1])
-            elif key1 in ["NEE", "GPP"]:
+            elif key1 in ["NetEcosystemExchange", "GrossPrimaryProductivity"]:
                 # sections with 2 levels
                 self.sections[key1] = QtGui.QStandardItem(key1)
                 for key2 in self.cfg[key1]:
                     parent2 = QtGui.QStandardItem(key2)
                     for key3 in self.cfg[key1][key2]:
                         val = self.cfg[key1][key2][key3]
-                        val = self.parse_cfg_nee_gpp_value(key3, val)
                         child0 = QtGui.QStandardItem(key3)
                         child1 = QtGui.QStandardItem(val)
                         parent2.appendRow([child0, child1])
                     self.sections[key1].appendRow(parent2)
                 self.model.appendRow(self.sections[key1])
-            elif key1 in ["ER"]:
-                # sections with 3 levels
+            elif key1 in ["EcosystemRespiration"]:
+                # sections with 4 levels
                 self.sections[key1] = QtGui.QStandardItem(key1)
                 for key2 in self.cfg[key1]:
                     parent2 = QtGui.QStandardItem(key2)
                     for key3 in self.cfg[key1][key2]:
                         parent3 = QtGui.QStandardItem(key3)
-                        for key4 in self.cfg[key1][key2][key3]:
-                            val = self.cfg[key1][key2][key3][key4]
-                            val = self.parse_cfg_er_value(key3, val)
-                            child0 = QtGui.QStandardItem(key4)
-                            child1 = QtGui.QStandardItem(val)
-                            parent3.appendRow([child0, child1])
+                        if key3 in ["ERUsingSOLO", "ERUsingFFNET", "ERUsingLloydTaylor", "ERUsingLasslop"]:
+                            for key4 in self.cfg[key1][key2][key3]:
+                                parent4 = QtGui.QStandardItem(key4)
+                                for key5 in self.cfg[key1][key2][key3][key4]:
+                                    val = self.cfg[key1][key2][key3][key4][key5]
+                                    child0 = QtGui.QStandardItem(key5)
+                                    child1 = QtGui.QStandardItem(val)
+                                    parent4.appendRow([child0, child1])
+                                parent3.appendRow(parent4)
+                        elif key3 in ["MergeSeries"]:
+                            for key4 in self.cfg[key1][key2][key3]:
+                                val = self.cfg[key1][key2][key3][key4]
+                                child0 = QtGui.QStandardItem(key4)
+                                child1 = QtGui.QStandardItem(val)
+                                parent3.appendRow([child0, child1])
                         parent2.appendRow(parent3)
                     self.sections[key1].appendRow(parent2)
                 self.model.appendRow(self.sections[key1])
@@ -4870,7 +4876,7 @@ class edit_cfg_L6(QtWidgets.QWidget):
                     key2 = str(section.child(j, 0).text())
                     val2 = str(section.child(j, 1).text())
                     cfg[key1][key2] = val2
-            elif key1 in ["NEE", "GPP"]:
+            elif key1 in ["NetEcosystemExchange", "GrossPrimaryProductivity"]:
                 # sections with 2 levels
                 for j in range(section.rowCount()):
                     subsection = section.child(j)
@@ -4880,8 +4886,8 @@ class edit_cfg_L6(QtWidgets.QWidget):
                         key3 = str(subsection.child(k, 0).text())
                         val3 = str(subsection.child(k, 1).text())
                         cfg[key1][key2][key3] = val3
-            elif key1 in ["ER"]:
-                # sections with 3 levels
+            elif key1 in ["EcosystemRespiration"]:
+                # sections with 4 levels
                 for j in range(section.rowCount()):
                     subsection = section.child(j)
                     key2 = str(subsection.text())
@@ -4890,10 +4896,20 @@ class edit_cfg_L6(QtWidgets.QWidget):
                         subsubsection = subsection.child(k)
                         key3 = str(subsubsection.text())
                         cfg[key1][key2][key3] = {}
-                        for l in range(subsubsection.rowCount()):
-                            key4 = str(subsubsection.child(l, 0).text())
-                            val4 = str(subsubsection.child(l, 1).text())
-                            cfg[key1][key2][key3][key4] = val4
+                        if key3 in ["ERUsingSOLO", "ERUsingFFNET", "ERUsingLloydTaylor", "ERUsingLasslop"]:
+                            for l in range(subsubsection.rowCount()):
+                                subsubsubsection = subsubsection.child(l)
+                                key4 = str(subsubsubsection.text())
+                                cfg[key1][key2][key3][key4] = {}
+                                for m in range(subsubsubsection.rowCount()):
+                                    key5 = str(subsubsubsection.child(m, 0).text())
+                                    val5 = str(subsubsubsection.child(m, 1).text())
+                                    cfg[key1][key2][key3][key4][key5] = val5
+                        elif key3 in ["MergeSeries"]:
+                            for l in range(subsubsection.rowCount()):
+                                key4 = str(subsubsection.child(l, 0).text())
+                                val4 = str(subsubsection.child(l, 1).text())
+                                cfg[key1][key2][key3][key4] = val4
 
         return cfg
 
@@ -4934,12 +4950,16 @@ class edit_cfg_L6(QtWidgets.QWidget):
                 self.context_menu.actionAddGlobalAttribute.setText("Add global attribute")
                 self.context_menu.addAction(self.context_menu.actionAddGlobalAttribute)
                 self.context_menu.actionAddGlobalAttribute.triggered.connect(self.add_global_attribute)
-            elif selected_text in ["ER"]:
+            elif selected_text in ["EcosystemRespiration"]:
                 pass
                 #self.context_menu.actionAddVariable = QtWidgets.QAction(self)
                 #self.context_menu.actionAddVariable.setText("Add variable")
                 #self.context_menu.addAction(self.context_menu.actionAddVariable)
                 #self.context_menu.actionAddVariable.triggered.connect(self.add_er_variable)
+            elif selected_text in ["NetEcosystemExchange"]:
+                pass
+            elif selected_text in ["GrossPrimaryProductivity"]:
+                pass
         elif level == 1:
             # sections with 2 levels
             # get the parent of the selected item
@@ -4966,17 +4986,17 @@ class edit_cfg_L6(QtWidgets.QWidget):
                 self.context_menu.actionRemoveGlobalAttribute.setText("Remove attribute")
                 self.context_menu.addAction(self.context_menu.actionRemoveGlobalAttribute)
                 self.context_menu.actionRemoveGlobalAttribute.triggered.connect(self.remove_item)
-            elif (str(parent.text()) == "NEE") and (selected_item.column() == 0):
+            elif (str(parent.text()) == "NetEcosystemExchange") and (selected_item.column() == 0):
                 self.context_menu.actionRemoveNEEVariable = QtWidgets.QAction(self)
                 self.context_menu.actionRemoveNEEVariable.setText("Remove variable")
                 self.context_menu.addAction(self.context_menu.actionRemoveNEEVariable)
                 self.context_menu.actionRemoveNEEVariable.triggered.connect(self.remove_item)
-            elif (str(parent.text()) == "GPP") and (selected_item.column() == 0):
+            elif (str(parent.text()) == "GrossPrimaryProductivity") and (selected_item.column() == 0):
                 self.context_menu.actionRemoveGPPVariable = QtWidgets.QAction(self)
                 self.context_menu.actionRemoveGPPVariable.setText("Remove variable")
                 self.context_menu.addAction(self.context_menu.actionRemoveGPPVariable)
                 self.context_menu.actionRemoveGPPVariable.triggered.connect(self.remove_item)
-            elif (str(parent.text()) == "ER") and (selected_item.column() == 0):
+            elif (str(parent.text()) == "EcosystemRespiration") and (selected_item.column() == 0):
                 self.context_menu.actionRemoveERVariable = QtWidgets.QAction(self)
                 self.context_menu.actionRemoveERVariable.setText("Remove variable")
                 self.context_menu.addAction(self.context_menu.actionRemoveERVariable)
@@ -4995,14 +5015,14 @@ class edit_cfg_L6(QtWidgets.QWidget):
 
     def add_er_variable(self):
         """ Add a variable to the [ER] section."""
-        dict_to_add = {"ERUsingSOLO":{"ER_SOLO_all": {"drivers": "[]",
+        dict_to_add = {"ERUsingSOLO":{"ER_SOLO_all": {"drivers": "Ta,Ts,Sws",
                                                       "target": "ER",
                                                       "output": "ER_SOLO_all"}}}
         subsection = QtGui.QStandardItem("ER_SOLO")
         self.add_subsubsubsection(subsection, dict_to_add)
-        dict_to_add = {"MergeSeries":{"Source":"ER,ER_SOLO_all"}}
+        dict_to_add = {"MergeSeries": {"Source": "ER,ER_SOLO_all"}}
         self.add_subsubsection(subsection, dict_to_add)
-        self.tree.sections["ER"].appendRow(subsection)
+        self.tree.sections["EcosystemRespiration"].appendRow(subsection)
         # update the tab text with an asterix if required
         self.update_tab_text()
 
@@ -5133,47 +5153,6 @@ class edit_cfg_L6(QtWidgets.QWidget):
                 index = index.parent()
                 level += 1
         return level
-
-    def parse_cfg_er_value(self, k, v):
-        """ Parse value from control file to remove unnecessary characters."""
-        try:
-            # check to see if it is a number
-            r = float(v)
-        except ValueError as e:
-            if ("[" in v) and ("]" in v) and ("*" in v):
-                # old style of [value]*12
-                v = v[v.index("[")+1:v.index("]")]
-                self.cfg_changed = True
-            elif ("[" in v) and ("]" in v) and ("*" not in v):
-                # old style of [1,2,3,4,5,6,7,8,9,10,11,12]
-                v = v.replace("[", "").replace("]", "")
-                self.cfg_changed = True
-        # remove white space and quotes
-        if k in ["ERUsingSOLO", "ERUsingFFNET", "ERUsingLloydTaylor",
-                 "ERUsingLasslop", "MergeSeries", "AverageSeries"]:
-            strip_list = [" ", '"', "'"]
-        for c in strip_list:
-            if c in v:
-                v = v.replace(c, "")
-                self.cfg_changed = True
-        return v
-
-    def parse_cfg_nee_gpp_value(self, k, v):
-        """ Parse the [NEE] and [GPP] section keys to remove unnecessary characters."""
-        strip_list = [" ", '"', "'", "[", "]"]
-        for c in strip_list:
-            if c in v:
-                v = v.replace(c, "")
-                self.cfg_changed = True
-        return v
-
-    def parse_cfg_values(self, k, v, strip_list):
-        """ Parse key values to remove unnecessary characters."""
-        for c in strip_list:
-            if c in v:
-                v = v.replace(c, "")
-                self.cfg_changed = True
-        return v
 
     def remove_item(self):
         """ Remove an item from the view."""
@@ -5724,19 +5703,10 @@ class solo_gui(QtWidgets.QDialog):
         self.QuitButton.clicked.connect(self.call_gui_quit)
 
     def call_gui_run(self):
-        if self.solo["info"]["called_by"] in ["GapFillUsingSOLO", "GapFillLongSOLO"]:
-            pfp_gfSOLO.gfSOLO_run_gui(self)
-        elif self.solo["info"]["called_by"] == "ERUsingSOLO":
-            pfp_rpNN.rpSOLO_run_gui(self)
+        pfp_gfSOLO.gfSOLO_run_gui(self)
 
     def call_gui_quit(self):
-        if self.solo["info"]["called_by"] in ["GapFillUsingSOLO", "GapFillLongSOLO"]:
-            pfp_gfSOLO.gfSOLO_quit(self)
-        elif self.solo["info"]["called_by"] == "ERUsingSOLO":
-            pfp_rpNN.rpSOLO_quit(self)
+        pfp_gfSOLO.gfSOLO_quit(self)
 
     def call_gui_done(self):
-        if self.solo["info"]["called_by"] in ["GapFillUsingSOLO", "GapFillLongSOLO"]:
-            pfp_gfSOLO.gfSOLO_done(self)
-        elif self.solo["info"]["called_by"] == "ERUsingSOLO":
-            pfp_rpNN.rpSOLO_done(self)
+        pfp_gfSOLO.gfSOLO_done(self)

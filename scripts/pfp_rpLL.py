@@ -72,7 +72,7 @@ def get_LL_params(ldt, Fsd, D, T, NEE, ER, LT_results, l6_info, output):
     # Actually, the only intended difference is the window length and offset
     # Lasslop et al used window_length=4, window_offset=2
     # local pointers to entries in the info dictionary
-    iel = l6_info["ER"]["ERUsingLasslop"]
+    iel = l6_info["ERUsingLasslop"]
     ielo = iel["outputs"]
     ieli = iel["info"]
     # window and step sizes
@@ -219,7 +219,7 @@ def get_LT_params(ldt, ER, T, l6_info, output, mode="verbose"):
     Date: April 2016
     """
     # local pointers to entries in the info dictionary
-    iel = l6_info["ER"]["ERUsingLasslop"]
+    iel = l6_info["ERUsingLasslop"]
     ielo = iel["outputs"]
     ieli = iel["info"]
     # window and step sizes
@@ -323,58 +323,135 @@ def plot_LTparams_ER(ldt,ER,ER_LT,LT_results):
     plt.tight_layout()
     plt.draw()
 
-def rpLL_createdict(cf, ds, l6_info, label, called_by):
+def rpLL_createdict(cf, ds, l6_info, output, called_by):
     """
     Purpose:
      Creates a dictionary in ds to hold information about estimating ecosystem
      respiration using the Lasslop method.
     Usage:
+    Side effects:
     Author: PRI
     Date April 2016
     """
     nrecs = int(ds.globalattributes["nc_nrecs"])
-    # get the target
-    target = pfp_utils.get_keyvaluefromcf(cf, ["ER", label, called_by], "target", default="ER")
-    output = pfp_utils.get_keyvaluefromcf(cf, ["ER", label, called_by], "output", default="ER_LL_all")
-    # check that none of the drivers have missing data
-    opt = pfp_utils.get_keyvaluefromcf(cf, ["ER", label, called_by], "drivers", default="Ta")
-    drivers = pfp_cfg.cfg_string_to_list(opt)
-    for driver in drivers:
-        data, flag, attr = pfp_utils.GetSeriesasMA(ds, driver)
-        if numpy.ma.count_masked(data) != 0:
-            msg = "ERUsingLasslop: driver " + driver + " contains missing data, skipping target " + target
-            logger.error(msg)
-            return
-    # create the dictionary keys for this series
-    if called_by not in l6_info["ER"].keys():
-        l6_info["ER"][called_by] = {"outputs": {}, "info": {}, "gui": {}}
-    ilol = l6_info["ER"][called_by]["outputs"][output] = {}
-    # target series name
-    ilol["target"] = target
-    # list of drivers
-    ilol["drivers"] = drivers
-    # source to use as CO2 flux
-    opt = pfp_utils.get_keyvaluefromcf(cf, ["ER", label, called_by], "source", default="Fc")
-    ilol["source"] = opt
-    # results of best fit for plotting later on
-    ilol["results"] = {"startdate":[], "enddate":[], "No. points":[], "r":[],
-                       "Bias":[], "RMSE":[], "Frac Bias":[], "NMSE":[],
-                       "Avg (obs)":[], "Avg (LL)":[],
-                       "Var (obs)":[], "Var (LL)":[], "Var ratio":[],
-                       "m_ols":[], "b_ols":[]}
-    # step size
-    opt = pfp_utils.get_keyvaluefromcf(cf, ["ER", label, called_by], "step_size_days", default=5)
-    ilol["step_size_days"] = int(opt)
-    # window size
-    opt = pfp_utils.get_keyvaluefromcf(cf, ["ER", label, called_by], "window_size_days", default=15)
-    ilol["window_size_days"] = int(opt)
-    # Fsd day/night threshold
-    opt = pfp_utils.get_keyvaluefromcf(cf, ["ER", label, called_by], "fsd_threshold", default=10)
-    ilol["fsd_threshold"] = float(opt)
+    # create the Lasslop settings directory
+    if called_by not in l6_info.keys():
+        l6_info[called_by] = {"outputs": {}, "info": {}, "gui": {}}
+    # get the info section
+    rpLL_createdict_info(cf, ds, l6_info[called_by], called_by)
+    if ds.returncodes["value"] != 0:
+        return
+    # get the outputs section
+    rpLL_createdict_outputs(cf, l6_info[called_by], output, called_by)
     # create an empty series in ds if the output series doesn't exist yet
-    if output not in ds.series.keys():
-        variable = pfp_utils.CreateEmptyVariable(output, nrecs)
-        pfp_utils.CreateVariable(ds, variable)
+    Fc = pfp_utils.GetVariable(ds, l6_info[called_by]["info"]["source"])
+    model_outputs = cf["EcosystemRespiration"][output][called_by].keys()
+    for model_output in model_outputs:
+        if model_output not in ds.series.keys():
+            # create an empty variable
+            variable = pfp_utils.CreateEmptyVariable(model_output, nrecs)
+            variable["Attr"]["long_name"] = "Ecosystem respiration"
+            variable["Attr"]["drivers"] = l6_info[called_by]["outputs"][model_output]["drivers"]
+            variable["Attr"]["description_l6"] = "Modeled by Lasslop et al. (2010)"
+            variable["Attr"]["target"] = l6_info[called_by]["info"]["target"]
+            variable["Attr"]["source"] = l6_info[called_by]["info"]["source"]
+            variable["Attr"]["units"] = Fc["Attr"]["units"]
+            pfp_utils.CreateVariable(ds, variable)
+    return
+
+def rpLL_createdict_info(cf, ds, erll, called_by):
+    """
+    Purpose:
+    Usage:
+    Side effects:
+    Author: PRI
+    Date: Back in the day
+          June 2019 - modified for new l5_info structure
+    """
+    # reset the return message and code
+    ds.returncodes["message"] = "OK"
+    ds.returncodes["value"] = 0
+    # time step
+    time_step = int(ds.globalattributes["time_step"])
+    # get the level of processing
+    level = ds.globalattributes["nc_level"]
+    # local pointer to the datetime series
+    ldt = ds.series["DateTime"]["Data"]
+    # add an info section to the info["solo"] dictionary
+    erll["info"]["file_startdate"] = ldt[0].strftime("%Y-%m-%d %H:%M")
+    erll["info"]["file_enddate"] = ldt[-1].strftime("%Y-%m-%d %H:%M")
+    erll["info"]["startdate"] = ldt[0].strftime("%Y-%m-%d %H:%M")
+    erll["info"]["enddate"] = ldt[-1].strftime("%Y-%m-%d %H:%M")
+    erll["info"]["called_by"] = called_by
+    erll["info"]["time_step"] = time_step
+    erll["info"]["source"] = "Fc"
+    erll["info"]["target"] = "ER"
+    # check to see if this is a batch or an interactive run
+    call_mode = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "call_mode", default="interactive")
+    erll["info"]["call_mode"] = call_mode
+    erll["gui"]["show_plots"] = False
+    if call_mode.lower() == "interactive":
+        erll["gui"]["show_plots"] = True
+    # truncate to last date in Imports?
+    truncate = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "TruncateToImports", default="Yes")
+    erll["info"]["truncate_to_imports"] = truncate
+    # number of records per day and maximum lags
+    nperhr = int(float(60)/time_step + 0.5)
+    erll["info"]["nperday"] = int(float(24)*nperhr + 0.5)
+    erll["info"]["maxlags"] = int(float(12)*nperhr + 0.5)
+    # get the plot path
+    plot_path = pfp_utils.get_keyvaluefromcf(cf, ["Files"], "plot_path", default="./plots/")
+    plot_path = os.path.join(plot_path, level, "")
+    if not os.path.exists(plot_path):
+        try:
+            os.makedirs(plot_path)
+        except OSError:
+            msg = "Unable to create the plot path " + plot_path + "\n"
+            msg = msg + "Press 'Quit' to edit the control file.\n"
+            msg = msg + "Press 'Continue' to use the default path.\n"
+            result = pfp_gui.MsgBox_ContinueOrQuit(msg, title="Warning: L6 plot path")
+            if result.clickedButton().text() == "Quit":
+                # user wants to edit the control file
+                msg = " Quitting L6 to edit control file"
+                logger.warning(msg)
+                ds.returncodes["message"] = msg
+                ds.returncodes["value"] = 1
+            else:
+                plot_path = "./plots/"
+                cf["Files"]["plot_path"] = "./plots/"
+    erll["info"]["plot_path"] = plot_path
+    return
+
+def rpLL_createdict_outputs(cf, erll, target, called_by):
+    level = cf["level"]
+    eo = erll["outputs"]
+    # loop over the outputs listed in the control file
+    section = "EcosystemRespiration"
+    outputs = cf[section][target][called_by].keys()
+    for output in outputs:
+        # create the dictionary keys for this series
+        eo[output] = {}
+        # get the target
+        sl = [section, target, called_by, output]
+        eo[output]["target"] = pfp_utils.get_keyvaluefromcf(cf, sl, "target", default=target)
+        eo[output]["source"] = pfp_utils.get_keyvaluefromcf(cf, sl, "source", default="Fc")
+        # list of drivers
+        opt = pfp_utils.get_keyvaluefromcf(cf, sl, "drivers", default="Ta")
+        eo[output]["drivers"] = pfp_cfg.cfg_string_to_list(opt)
+        opt = pfp_utils.get_keyvaluefromcf(cf, sl, "step_size_days", default=5)
+        eo[output]["step_size_days"] = int(opt)
+        opt = pfp_utils.get_keyvaluefromcf(cf, sl, "window_size_days", default=15)
+        eo[output]["window_size_days"] = int(opt)
+        opt = pfp_utils.get_keyvaluefromcf(cf, sl, "output_plots", default="False")
+        eo[output]["output_plots"] = (opt == "True")
+        opt = pfp_utils.get_keyvaluefromcf(cf, sl, "fsd_threshold", default=10)
+        eo[output]["fsd_threshold"] = int(opt)
+        # fit statistics for plotting later on
+        eo[output]["results"] = {"startdate":[],"enddate":[],"No. points":[],"r":[],
+                                 "Bias":[],"RMSE":[],"Frac Bias":[],"NMSE":[],
+                                 "Avg (obs)":[],"Avg (LL)":[],
+                                 "Var (obs)":[],"Var (LL)":[],"Var ratio":[],
+                                 "m_ols":[],"b_ols":[]}
     return
 
 def rpLL_initplot(**kwargs):
@@ -392,8 +469,9 @@ def rpLL_initplot(**kwargs):
 
 def rpLL_plot(pd, ds, output, drivers, target, l6_info, si=0, ei=-1):
     """ Plot the results of the Lasslop run. """
-    ieli = l6_info["ER"]["ERUsingLasslop"]["info"]
-    ielo = l6_info["ER"]["ERUsingLasslop"]["outputs"]
+    iel = l6_info["ERUsingLasslop"]
+    ieli = l6_info["ERUsingLasslop"]["info"]
+    ielo = l6_info["ERUsingLasslop"]["outputs"]
     # get a local copy of the datetime series
     if ei==-1:
         dt = ds.series['DateTime']['Data'][si:]
@@ -405,7 +483,7 @@ def rpLL_plot(pd, ds, output, drivers, target, l6_info, si=0, ei=-1):
     obs, f, a = pfp_utils.GetSeriesasMA(ds, target, si=si, ei=ei)
     mod, f, a = pfp_utils.GetSeriesasMA(ds, output, si=si, ei=ei)
     # make the figure
-    if ieli["show_plots"]:
+    if iel["gui"]["show_plots"]:
         plt.ion()
     else:
         plt.ioff()
@@ -512,7 +590,7 @@ def rpLL_plot(pd, ds, output, drivers, target, l6_info, si=0, ei=-1):
     figname = figname + "_" + sdt + "_" + edt + '.png'
     fig.savefig(figname, format='png')
     # draw the plot on the screen
-    if ieli["show_plots"]:
+    if iel["gui"]["show_plots"]:
         plt.draw()
         #plt.pause(1)
         mypause(1)

@@ -18,71 +18,6 @@ import pfp_utils
 logger = logging.getLogger("pfp_log")
 
 # code to integrate Ian's code into OzFluxQC
-#def apply_turbulence_filter(data_dict,indicator):
-    #data_dict["NEE"] = numpy.where(indicator==0,numpy.nan,data_dict["NEE"])
-
-def get_configs_dict(cf,ds):
-#    configs_dict = {'nan_value': -9999,
-#                    'minimum_temperature_spread': 5,
-#                    'step_size_days': 5,
-#                    'window_size_days': 15,
-#                    'min_pct_annual': 30,
-#                    'min_pct_noct_window': 20,
-#                    'min_pct_day_window': 50,
-#                    'output_plots': False,
-#                    'measurement_interval': 0.5,
-#                    'QC_accept_code': 0,
-#                    'plot_output_path': '/home/imchugh/Documents'}
-    configs_dict = {}
-    configs_dict["nan_value"] = int(c.missing_value)
-    opt = pfp_utils.get_keyvaluefromcf(cf,["ER","ER_LT","ERUsingLloydTaylor"],
-                                     "minimum_temperature_spread",default=5)
-    configs_dict["minimum_temperature_spread"] = int(opt)
-    opt = pfp_utils.get_keyvaluefromcf(cf,["ER","ER_LT","ERUsingLloydTaylor"],
-                                     "step_size_days",default=5)
-    configs_dict["step_size_days"] = int(opt)
-    opt = pfp_utils.get_keyvaluefromcf(cf,["ER","ER_LT","ERUsingLloydTaylor"],
-                                     "window_size_days",default=15)
-    configs_dict["window_size_days"] = int(opt)
-    opt = pfp_utils.get_keyvaluefromcf(cf,["ER","ER_LT","ERUsingLloydTaylor"],
-                                     "minimum_percent_annual",default=30)
-    configs_dict["minimum_pct_annual"] = int(opt)
-    opt = pfp_utils.get_keyvaluefromcf(cf,["ER","ER_LT","ERUsingLloydTaylor"],
-                                     "minimum_percent_noct_window",default=20)
-    configs_dict["minimum_pct_noct_window"] = int(opt)
-    #opt = pfp_utils.get_keyvaluefromcf(cf,["ER","ER_LT","ERUsingLloydTaylor"],
-                                     #"minimum_percent_day_window",
-                                     #default=50)
-    #configs_dict["minimum_pct_day_window"] = int(opt)
-    opt = pfp_utils.get_keyvaluefromcf(cf,["ER","ER_LT","ERUsingLloydTaylor"],
-                                     "output_plots",default="False")
-    configs_dict["output_plots"] = (opt=="True")
-    opt = pfp_utils.get_keyvaluefromcf(cf,["ER","ER_LT","ERUsingLloydTaylor"],
-                                     "show_plots",default="False")
-    configs_dict["show_plots"] = (opt=="True")
-    opt = pfp_utils.get_keyvaluefromcf(cf,["ER","ER_LT","ERUsingLloydTaylor"],
-                                     "target",default="ER")
-    configs_dict["target"] = str(opt)
-    opt = pfp_utils.get_keyvaluefromcf(cf,["ER","ER_LT","ERUsingLloydTaylor"],
-                                     "drivers",default="Ta")
-    #configs_dict["drivers"] = ast.literal_eval(opt)[0]
-    driver_string = opt
-    if "," in driver_string:
-        driver_list = driver_string(",")
-    else:
-        driver_list = [driver_string]
-    configs_dict["drivers"] = driver_list[0]
-    opt = pfp_utils.get_keyvaluefromcf(cf,["ER","ER_LT","ERUsingLloydTaylor"],
-                                     "output",default="ER_LT_all")
-    configs_dict["output_label"] = opt
-    configs_dict["output_results"] = True
-    ts = int(ds.globalattributes["time_step"])
-    configs_dict["measurement_interval"] = float(ts)/60.0
-    configs_dict["QC_accept_code"] = 0
-    opt = pfp_utils.get_keyvaluefromcf(cf,["Files"],"plot_path",default="plots/")
-    configs_dict["output_path"] = os.path.join(opt,"respiration/")
-    return configs_dict
-
 def get_data_dict(ds,configs_dict):
     data = {}
     # NOTE: series are ndarrays not masked arrays
@@ -90,7 +25,7 @@ def get_data_dict(ds,configs_dict):
     target = configs_dict["target"]
     ER,ER_flag,a = pfp_utils.GetSeries(ds,target)
     Fsd,Fsd_flag,a = pfp_utils.GetSeries(ds,"Fsd")
-    T_label = configs_dict["drivers"]
+    T_label = configs_dict["drivers"][0]
     T,T_flag,a = pfp_utils.GetSeries(ds,T_label)
     VPD,VPD_flag,a = pfp_utils.GetSeries(ds,"VPD")
     ustar,ustar_flag,a = pfp_utils.GetSeries(ds,"ustar")
@@ -359,7 +294,7 @@ def optimise_annual_Eo(data_dict, params_dict, configs_dict, year_index_dict):
         logger.info(" Eo estimates passed QC for all years")
     return yearsEo_dict, yearsQC_dict, yearsEo_raw_dict, yearsQC_raw_dict, status
 
-def rpLT_createdict(cf, ds, l6_info, label, called_by):
+def rpLT_createdict(cf, ds, l6_info, output, called_by):
     """
     Purpose:
      Creates a dictionary in ds to hold information about estimating ecosystem
@@ -369,41 +304,126 @@ def rpLT_createdict(cf, ds, l6_info, label, called_by):
     Date October 2015
     """
     nrecs = int(ds.globalattributes["nc_nrecs"])
-    # get the target
-    target = pfp_utils.get_keyvaluefromcf(cf, ["ER", label, called_by], "target", default="ER")
-    output = pfp_utils.get_keyvaluefromcf(cf, ["ER", label, called_by], "output", default="ER_LT_all")
-    # check that none of the drivers have missing data
-    opt = pfp_utils.get_keyvaluefromcf(cf, ["ER", label, called_by], "drivers", default="Ta")
-    drivers = pfp_cfg.cfg_string_to_list(opt)
-    for driver in drivers:
-        data, flag, attr = pfp_utils.GetSeriesasMA(ds, driver)
-        if numpy.ma.count_masked(data) != 0:
-            msg = "ERUsingLloydTaylor: driver " + driver + " contains missing data, skipping target " + target
-            logger.error(msg)
-            return
-    # create the dictionary keys for this series
-    if called_by not in l6_info["ER"].keys():
-        l6_info["ER"][called_by] = {"outputs": {}, "info": {}, "gui": {}}
-    ilol = l6_info["ER"][called_by]["outputs"][output] = {}
-    # target series name
-    ilol["target"] = target
-    # list of drivers
-    ilol["drivers"] = drivers
-    # source to use as CO2 flux
-    opt = pfp_utils.get_keyvaluefromcf(cf, ["ER", label, called_by], "source", default="Fc")
-    ilol["source"] = opt
-    # results of best fit for plotting later on
-    ilol["results"] = {"startdate":[], "enddate":[], "No. points":[], "r":[],
-                       "Bias":[], "RMSE":[], "Frac Bias":[], "NMSE":[],
-                       "Avg (obs)":[], "Avg (LT)":[],
-                       "Var (obs)":[], "Var (LT)":[], "Var ratio":[],
-                       "m_ols":[], "b_ols":[]}
-    # create the configuration dictionary
-    ilol["configs_dict"] = get_configs_dict(cf, ds)
+    # create the LT settings directory
+    if called_by not in l6_info.keys():
+        l6_info[called_by] = {"outputs": {}, "info": {"source": "Fc", "target": "ER"}, "gui": {}}
+    # get the info section
+    rpLT_createdict_info(cf, ds, l6_info[called_by], called_by)
+    if ds.returncodes["value"] != 0:
+        return
+    # get the outputs section
+    rpLT_createdict_outputs(cf, l6_info[called_by], output, called_by)
     # create an empty series in ds if the output series doesn't exist yet
-    if output not in ds.series.keys():
-        variable = pfp_utils.CreateEmptyVariable(output, nrecs)
-        pfp_utils.CreateVariable(ds, variable)
+    Fc = pfp_utils.GetVariable(ds, l6_info[called_by]["info"]["source"])
+    model_outputs = cf["EcosystemRespiration"][output][called_by].keys()
+    for model_output in model_outputs:
+        if model_output not in ds.series.keys():
+            # create an empty variable
+            variable = pfp_utils.CreateEmptyVariable(model_output, nrecs)
+            variable["Attr"]["long_name"] = "Ecosystem respiration"
+            variable["Attr"]["drivers"] = l6_info[called_by]["outputs"][model_output]["drivers"]
+            variable["Attr"]["description_l6"] = "Modeled by Lloyd-Taylor"
+            variable["Attr"]["target"] = l6_info[called_by]["info"]["target"]
+            variable["Attr"]["source"] = l6_info[called_by]["info"]["source"]
+            variable["Attr"]["units"] = Fc["Attr"]["units"]
+            pfp_utils.CreateVariable(ds, variable)
+    return
+
+def rpLT_createdict_info(cf, ds, erlt, called_by):
+    """
+    Purpose:
+    Usage:
+    Side effects:
+    Author: PRI
+    Date: Back in the day
+          June 2019 - modified for new l5_info structure
+    """
+    # reset the return message and code
+    ds.returncodes["message"] = "OK"
+    ds.returncodes["value"] = 0
+    # time step
+    time_step = int(ds.globalattributes["time_step"])
+    # get the level of processing
+    level = ds.globalattributes["nc_level"]
+    # local pointer to the datetime series
+    ldt = ds.series["DateTime"]["Data"]
+    # add an info section to the info["solo"] dictionary
+    erlt["info"]["file_startdate"] = ldt[0].strftime("%Y-%m-%d %H:%M")
+    erlt["info"]["file_enddate"] = ldt[-1].strftime("%Y-%m-%d %H:%M")
+    erlt["info"]["startdate"] = ldt[0].strftime("%Y-%m-%d %H:%M")
+    erlt["info"]["enddate"] = ldt[-1].strftime("%Y-%m-%d %H:%M")
+    erlt["info"]["called_by"] = called_by
+    erlt["info"]["time_step"] = time_step
+    # check to see if this is a batch or an interactive run
+    call_mode = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "call_mode", default="interactive")
+    erlt["info"]["call_mode"] = call_mode
+    erlt["gui"]["show_plots"] = False
+    if call_mode.lower() == "interactive":
+        erlt["gui"]["show_plots"] = True
+    # truncate to last date in Imports?
+    truncate = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "TruncateToImports", default="Yes")
+    erlt["info"]["truncate_to_imports"] = truncate
+    # number of records per day and maximum lags
+    nperhr = int(float(60)/time_step + 0.5)
+    erlt["info"]["nperday"] = int(float(24)*nperhr + 0.5)
+    erlt["info"]["maxlags"] = int(float(12)*nperhr + 0.5)
+    # get the plot path
+    plot_path = pfp_utils.get_keyvaluefromcf(cf, ["Files"], "plot_path", default="./plots/")
+    plot_path = os.path.join(plot_path, level, "")
+    if not os.path.exists(plot_path):
+        try:
+            os.makedirs(plot_path)
+        except OSError:
+            msg = "Unable to create the plot path " + plot_path + "\n"
+            msg = msg + "Press 'Quit' to edit the control file.\n"
+            msg = msg + "Press 'Continue' to use the default path.\n"
+            result = pfp_gui.MsgBox_ContinueOrQuit(msg, title="Warning: L6 plot path")
+            if result.clickedButton().text() == "Quit":
+                # user wants to edit the control file
+                msg = " Quitting L6 to edit control file"
+                logger.warning(msg)
+                ds.returncodes["message"] = msg
+                ds.returncodes["value"] = 1
+            else:
+                plot_path = "./plots/"
+                cf["Files"]["plot_path"] = "./plots/"
+    erlt["info"]["plot_path"] = plot_path
+    return
+
+def rpLT_createdict_outputs(cf, erlt, target, called_by):
+    level = cf["level"]
+    eo = erlt["outputs"]
+    # loop over the outputs listed in the control file
+    section = "EcosystemRespiration"
+    outputs = cf[section][target][called_by].keys()
+    for output in outputs:
+        # create the dictionary keys for this series
+        eo[output] = {}
+        # get the target
+        sl = [section, target, called_by, output]
+        eo[output]["target"] = pfp_utils.get_keyvaluefromcf(cf, sl, "target", default=target)
+        eo[output]["source"] = pfp_utils.get_keyvaluefromcf(cf, sl, "source", default="Fc")
+        # list of drivers
+        opt = pfp_utils.get_keyvaluefromcf(cf, sl, "drivers", default="Ta")
+        eo[output]["drivers"] = pfp_cfg.cfg_string_to_list(opt)
+        opt = pfp_utils.get_keyvaluefromcf(cf, sl, "minimum_temperature_spread", default=5)
+        eo[output]["minimum_temperature_spread"] = int(opt)
+        opt = pfp_utils.get_keyvaluefromcf(cf, sl, "step_size_days", default=5)
+        eo[output]["step_size_days"] = int(opt)
+        opt = pfp_utils.get_keyvaluefromcf(cf, sl, "window_size_days", default=15)
+        eo[output]["window_size_days"] = int(opt)
+        opt = pfp_utils.get_keyvaluefromcf(cf, sl, "minimum_percent_annual", default=30)
+        eo[output]["minimum_pct_annual"] = int(opt)
+        opt = pfp_utils.get_keyvaluefromcf(cf, sl, "minimum_percent_noct_window", default=20)
+        eo[output]["minimum_pct_noct_window"] = int(opt)
+        opt = pfp_utils.get_keyvaluefromcf(cf, sl, "output_plots", default="False")
+        eo[output]["output_plots"] = (opt == "True")
+        # fit statistics for plotting later on
+        eo[output]["results"] = {"startdate":[],"enddate":[],"No. points":[],"r":[],
+                                 "Bias":[],"RMSE":[],"Frac Bias":[],"NMSE":[],
+                                 "Avg (obs)":[],"Avg (LT)":[],
+                                 "Var (obs)":[],"Var (LT)":[],"Var ratio":[],
+                                 "m_ols":[],"b_ols":[]}
     return
 
 def rpLT_initplot(**kwargs):
@@ -434,7 +454,7 @@ def rpLT_plot(pd, ds, output, drivers, target, iel, si=0, ei=-1):
     obs, f, a = pfp_utils.GetSeriesasMA(ds, target, si=si, ei=ei)
     mod, f, a = pfp_utils.GetSeriesasMA(ds, output, si=si, ei=ei)
     # make the figure
-    if ieli["show_plots"]:
+    if iel["gui"]["show_plots"]:
         plt.ion()
     else:
         plt.ioff()
@@ -541,7 +561,7 @@ def rpLT_plot(pd, ds, output, drivers, target, iel, si=0, ei=-1):
     figname = figname + "_" + sdt + "_" + edt + '.png'
     fig.savefig(figname, format='png')
     # draw the plot on the screen
-    if ieli["show_plots"]:
+    if iel["gui"]["show_plots"]:
         plt.draw()
         #plt.pause(1)
         mypause(1)

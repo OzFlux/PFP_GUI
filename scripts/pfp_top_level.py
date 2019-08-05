@@ -491,7 +491,7 @@ def do_run_l6(main_gui, cfg=None):
         if "Options" not in cfg:
             cfg["Options"] = {}
         cfg["Options"]["call_mode"] = "interactive"
-        cf["Options"]["show_plots"] = "Yes"
+        cfg["Options"]["show_plots"] = "Yes"
         ds6 = pfp_levels.l6qc(main_gui, cfg, ds5)
         if ds6.returncodes["value"] != 0:
             logger.info("Quitting L6: "+sitename)

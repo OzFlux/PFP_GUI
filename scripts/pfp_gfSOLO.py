@@ -35,6 +35,7 @@ def GapFillUsingSOLO(main_gui, ds, l5_info, called_by):
     writes the gap filled data to file.
     '''
     # set the default return code
+    ds.returncodes["value"] = 0
     ds.returncodes["message"] = "normal"
     # get the SOLO information
     solo = l5_info[called_by]
@@ -42,7 +43,7 @@ def GapFillUsingSOLO(main_gui, ds, l5_info, called_by):
     pfp_gf.CheckDrivers(solo, ds)
     if ds.returncodes["value"] != 0:
         return ds
-    if solo["info"]["call_mode"] == "interactive":
+    if solo["info"]["call_mode"].lower() == "interactive":
         # put up a plot of the data coverage at L4
         gfSOLO_plotcoveragelines(ds, solo)
         # call the GapFillUsingSOLO GUI
@@ -67,17 +68,23 @@ def  gfSOLO_gui(main_gui, ds, solo):
     if solo["info"]["called_by"] == "GapFillLongSOLO":
         main_gui.solo_gui.setWindowTitle("Gap fill using SOLO (long gaps)")
         main_gui.solo_gui.radioButton_Manual.setChecked(True)
+        main_gui.solo_gui.lineEdit_MinPercent.setText("25")
+        main_gui.solo_gui.lineEdit_Nodes.setText("Auto")
         main_gui.solo_gui.checkBox_AutoComplete.setChecked(True)
-    else:
+    elif solo["info"]["called_by"] == "GapFillUsingSOLO":
         main_gui.solo_gui.setWindowTitle("Gap fill using SOLO (short gaps)")
         main_gui.solo_gui.radioButton_NumberMonths.setChecked(True)
         main_gui.solo_gui.lineEdit_NumberMonths.setText("2")
+        main_gui.solo_gui.lineEdit_MinPercent.setText("25")
+        main_gui.solo_gui.lineEdit_Nodes.setText("Auto")
         auto_complete = solo["gui"]["auto_complete"]
         main_gui.solo_gui.checkBox_AutoComplete.setChecked(auto_complete)
-    # set the default number of nodes
-    main_gui.solo_gui.lineEdit_Nodes.setText("Auto")
-    # set the default minimum percentage of good data
-    main_gui.solo_gui.lineEdit_MinPercent.setText("25")
+    elif solo["info"]["called_by"] == "ERUsingSOLO":
+        main_gui.solo_gui.setWindowTitle("ER using SOLO")
+        main_gui.solo_gui.radioButton_Manual.setChecked(True)
+        main_gui.solo_gui.lineEdit_Nodes.setText("1")
+        main_gui.solo_gui.lineEdit_MinPercent.setText("10")
+        main_gui.solo_gui.checkBox_AutoComplete.setChecked(True)
     # display the SOLO GUI
     main_gui.solo_gui.show()
     main_gui.solo_gui.exec_()
@@ -127,11 +134,13 @@ def gfSOLO_done(solo_gui):
     ds = solo_gui.ds
     solo = solo_gui.solo
     # plot the summary statistics if gap filling was done manually
-    if solo["gui"]["period_option"] == 1:
-        # write Excel spreadsheet with fit statistics
-        pfp_io.xl_write_SOLOStats(ds, solo)
-        # plot the summary statistics
-        gfSOLO_plotsummary(ds, solo)
+    cl = ["GapFillUsingSOLO", "GapFillLongSOLO"]
+    if (solo["gui"]["period_option"] == 1 and
+        solo["info"]["called_by"] in cl):
+            # write Excel spreadsheet with fit statistics
+            pfp_io.xl_write_SOLOStats(ds, solo)
+            # plot the summary statistics
+            gfSOLO_plotsummary(ds, solo)
     # destroy the SOLO GUI
     solo_gui.close()
     # remove the solo dictionary from the data structure
@@ -617,10 +626,6 @@ def gfSOLO_run_gui(solo_gui):
     solo["gui"]["learning_rate"] = str(solo_gui.lineEdit_Learning.text())
     solo["gui"]["iterations"] = str(solo_gui.lineEdit_Iterations.text())
 
-    ts = int(ds.globalattributes["time_step"])
-    nperhr = int(float(60)/ts + 0.5)
-    solo["info"]["nperday"] = int(float(24)*nperhr + 0.5)
-    solo["info"]["maxlags"] = int(float(12)*nperhr + 0.5)
     targets = [solo["outputs"][output]["target"] for output in solo["outputs"].keys()]
     logger.info(" Gap filling "+str(targets)+" using SOLO")
     if solo["gui"]["period_option"] == 1:
@@ -633,7 +638,8 @@ def gfSOLO_run_gui(solo_gui):
         # run the main SOLO gap fill routine
         gfSOLO_main(ds, solo)
         # plot the coverage lines
-        gfSOLO_plotcoveragelines(ds, solo)
+        if solo["info"]["called_by"] in ["GapFillUsingSOLO", "GapFillLongSOLO"]:
+            gfSOLO_plotcoveragelines(ds, solo)
         logger.info(" Finished manual run")
     elif solo["gui"]["period_option"] == 2:
         logger.info(" Starting auto (months) run ...")
@@ -652,17 +658,19 @@ def gfSOLO_run_gui(solo_gui):
         solo["info"]["enddate"] = datetime.datetime.strftime(enddate, "%Y-%m-%d %H:%M")
         while startdate < file_enddate:
             gfSOLO_main(ds, solo)
-            gfSOLO_plotcoveragelines(ds, solo)
+            if solo["info"]["called_by"] in ["GapFillUsingSOLO", "GapFillLongSOLO"]:
+                gfSOLO_plotcoveragelines(ds, solo)
             startdate = enddate
             enddate = startdate+dateutil.relativedelta.relativedelta(months=nMonths)
             solo["info"]["startdate"] = startdate.strftime("%Y-%m-%d %H:%M")
             solo["info"]["enddate"] = enddate.strftime("%Y-%m-%d %H:%M")
         # now fill any remaining gaps
         gfSOLO_autocomplete(ds, solo)
-        # write Excel spreadsheet with fit statistics
-        pfp_io.xl_write_SOLOStats(ds, solo)
-        # plot the summary statistics
-        gfSOLO_plotsummary(ds, solo)
+        if solo["info"]["called_by"] in ["GapFillUsingSOLO", "GapFillLongSOLO"]:
+            # write Excel spreadsheet with fit statistics
+            pfp_io.xl_write_SOLOStats(ds, solo)
+            # plot the summary statistics
+            gfSOLO_plotsummary(ds, solo)
         logger.info(" Finished auto (months) run ...")
     elif solo["gui"]["period_option"] == 3:
         logger.info(" Starting auto (days) run ...")
@@ -686,7 +694,8 @@ def gfSOLO_run_gui(solo_gui):
         stopdate = min([file_enddate, gui_enddate])
         while startdate < stopdate:
             gfSOLO_main(ds, solo)
-            gfSOLO_plotcoveragelines(ds, solo)
+            if solo["info"]["called_by"] in ["GapFillUsingSOLO", "GapFillLongSOLO"]:
+                gfSOLO_plotcoveragelines(ds, solo)
             startdate = enddate
             enddate = startdate+dateutil.relativedelta.relativedelta(days=nDays)
             run_enddate = min([stopdate, enddate])
@@ -694,10 +703,11 @@ def gfSOLO_run_gui(solo_gui):
             solo["info"]["enddate"] = run_enddate.strftime("%Y-%m-%d %H:%M")
         # now fill any remaining gaps
         gfSOLO_autocomplete(ds, solo)
-        # write Excel spreadsheet with fit statistics
-        pfp_io.xl_write_SOLOStats(ds, solo)
-        # plot the summary statistics
-        gfSOLO_plotsummary(ds, solo)
+        if solo["info"]["called_by"] in ["GapFillUsingSOLO", "GapFillLongSOLO"]:
+            # write Excel spreadsheet with fit statistics
+            pfp_io.xl_write_SOLOStats(ds, solo)
+            # plot the summary statistics
+            gfSOLO_plotsummary(ds, solo)
         logger.info(" Finished auto (days) run ...")
 
 def gfSOLO_run_nogui(cf,dsa,dsb,solo_info):
