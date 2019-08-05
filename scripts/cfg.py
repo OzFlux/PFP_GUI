@@ -1,5 +1,8 @@
 version_name = "PyFluxPro"
-version_number = "V1.0.0"
+version_number = "V1.0.1"
+# V1.0.1 - 5th August 2019
+#        - remove redundant SOLO code at L6
+#        - implement L1 to L4 batch processing
 # V1.0.0 - 16th June 2019
 #        - MAJOR CHANGES
 #          - implement detection and filling of long gaps
