@@ -187,7 +187,8 @@ def gfalternate_autocomplete(ds_tower, ds_alt, l4_info, called_by, mode="verbose
             l4a["run"]["startdate"] = ldt_tower[gap[0]].strftime("%Y-%m-%d %H:%M")
             l4a["run"]["enddate"] = ldt_tower[gap[1]].strftime("%Y-%m-%d %H:%M")
             gfalternate_main(ds_tower, ds_alt, l4_info, called_by, label_tower_list=[label_tower])
-            gfalternate_plotcoveragelines(ds_tower, l4_info, called_by)
+            if l4a["info"]["call_mode"] == "interactive":
+                gfalternate_plotcoveragelines(ds_tower, l4_info, called_by)
             if not_enough_points: break
 
 def gfalternate_createdataandstatsdict(ldt_tower, data_tower, attr_tower, l4a):
@@ -995,7 +996,7 @@ def gfalternate_plotcoveragelines(ds_tower, l4_info, called_by):
     Date: Back in the day
     """
     # local pointer to l4_info["GapFillFromAlternate"]
-    l4ia = l4_info[called_by]
+    l4a = l4_info[called_by]
     # local pointer to datetime
     ldt = ds_tower.series["DateTime"]["Data"]
     # get the site name and the start and end date
@@ -1003,14 +1004,17 @@ def gfalternate_plotcoveragelines(ds_tower, l4_info, called_by):
     start_date = ldt[0].strftime("%Y-%m-%d")
     end_date = ldt[-1].strftime("%Y-%m-%d")
     # list of targets to plot
-    targets = [l4ia["outputs"][output]["target"] for output in l4ia["outputs"].keys()]
+    targets = [l4a["outputs"][output]["target"] for output in l4a["outputs"].keys()]
     targets = list(set(targets))
     ylabel_list = [""] + targets + [""]
     ylabel_right_list = [""]
     colors = ["blue", "red", "green", "yellow", "magenta", "black", "cyan", "brown"]
     xsize = 15.0
     ysize = max([len(targets)*0.2, 1])
-    plt.ion()
+    if l4a["gui"]["show_plots"]:
+        plt.ion()
+    else:
+        plt.ioff()
     if plt.fignum_exists(0):
         fig = plt.figure(0)
         plt.clf()
@@ -1040,8 +1044,12 @@ def gfalternate_plotcoveragelines(ds_tower, l4_info, called_by):
     ax2 = ax1.twinx()
     pylab.yticks(ylabel_posn, ylabel_right_list)
     fig.tight_layout()
-    plt.draw()
-    plt.ioff()
+    if l4a["gui"]["show_plots"]:
+        plt.draw()
+        mypause(1)
+        plt.ioff()
+    else:
+        plt.ion()
 
 def gfalternate_quit(alt_gui):
     """ Quit the GapFillFromAlternate GUI."""
