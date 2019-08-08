@@ -105,25 +105,25 @@ def ApplyTurbulenceFilter(cf,ds,ustar_threshold=None):
     indicators["day"] = pfp_rp.get_day_indicator(cf, ds)
     ind_day = indicators["day"]["values"]
     # get the turbulence indicator series
-    if opt["turbulence_filter"].lower()=="ustar":
+    if opt["turbulence_filter"].lower() == "ustar":
         # indicators["turbulence"] = 1 ==> turbulent, indicators["turbulence"] = 0 ==> not turbulent
-        indicators["turbulence"] = pfp_rp.get_turbulence_indicator_ustar(ldt,ustar,ustar_dict,ts)
-    elif opt["turbulence_filter"].lower()=="ustar_evg":
+        indicators["turbulence"] = pfp_rp.get_turbulence_indicator_ustar(ldt, ustar, ustar_dict, ts)
+    elif opt["turbulence_filter"].lower() == "ustar_evg":
         # ustar >= threshold ==> ind_ustar = 1, ustar < threshold == ind_ustar = 0
-        indicators["ustar"] = pfp_rp.get_turbulence_indicator_ustar(ldt,ustar,ustar_dict,ts)
+        indicators["ustar"] = pfp_rp.get_turbulence_indicator_ustar(ldt, ustar, ustar_dict, ts)
         ind_ustar = indicators["ustar"]["values"]
         # ustar >= threshold during day AND ustar has been >= threshold since sunset ==> indicators["turbulence"] = 1
         # indicators["turbulence"] = 0 during night once ustar has dropped below threshold even if it
         # increases above the threshold later in the night
-        indicators["turbulence"] = pfp_rp.get_turbulence_indicator_ustar_evg(ldt,ind_day,ind_ustar,ustar,ustar_dict,ts)
-    elif opt["turbulence_filter"].lower()=="l":
+        indicators["turbulence"] = pfp_rp.get_turbulence_indicator_ustar_evg(ldt, ind_day, ind_ustar, ustar, ustar_dict)
+    elif opt["turbulence_filter"].lower() == "l":
         #indicators["turbulence] = get_turbulence_indicator_l(ldt,L,z,d,zmdonL_threshold)
         indicators["turbulence"] = numpy.ones(len(ldt))
         msg = " Use of L as turbulence indicator not implemented, no filter applied"
         logger.warning(msg)
     else:
         msg = " Unrecognised turbulence filter option ("
-        msg = msg+opt["turbulence_filter"]+"), no filter applied"
+        msg = msg + opt["turbulence_filter"] + "), no filter applied"
         logger.error(msg)
         return
     # initialise the final indicator series as the turbulence indicator

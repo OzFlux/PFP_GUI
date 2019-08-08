@@ -1106,7 +1106,14 @@ def gfalternate_run_interactive(alt_gui):
     return
 
 def gfalternate_run(ds_tower, ds_alt, l4_info, called_by):
-    """ Run the GapFillFromAlternate GUI."""
+    """
+    Purpose:
+     Run the main routine for gap filling meteorological data.
+    Usage:
+    Side effects:
+    Author: PRI
+    Date: Re-written in August 2019
+    """
     l4a = l4_info[called_by]
     # get a list of target variables
     series_list = [l4a["outputs"][item]["target"] for item in l4a["outputs"].keys()]
@@ -1125,7 +1132,7 @@ def gfalternate_run(ds_tower, ds_alt, l4_info, called_by):
         logger.info(" Finished manual run ...")
     elif l4a["gui"]["period_option"] == 2:
         # automated run with window length in months
-        logger.info("Starting auto (months) run ...")
+        logger.info(" Starting auto (months) run ...")
         startdate = dateutil.parser.parse(l4a["run"]["startdate"])
         enddate = startdate + dateutil.relativedelta.relativedelta(months=l4a["gui"]["number_months"])
         enddate = min([dateutil.parser.parse(l4a["info"]["enddate"]), enddate])
@@ -1144,7 +1151,7 @@ def gfalternate_run(ds_tower, ds_alt, l4_info, called_by):
         logger.info(" Finished auto (months) run ...")
     elif l4a["gui"]["period_option"] == 3:
         # automated run with window length in days
-        logger.info("Starting auto (days) run ...")
+        logger.info(" Starting auto (days) run ...")
         # get the start datetime entered in the alternate GUI
         startdate = dateutil.parser.parse(l4a["run"]["startdate"])
         # get the end datetime from the start datetime

@@ -1,22 +1,18 @@
 # standard modules
-import ast
 import collections
 import copy
 import datetime
 import logging
 import os
-import sys
 # 3rd party modules
 import dateutil
 import matplotlib
 import matplotlib.pyplot as plt
-import netCDF4
 import numpy
 import pylab
 import xlrd
 # PFP modules
 import constants as c
-import meteorologicalfunctions as pfp_mf
 import pfp_cfg
 import pfp_gf
 import pfp_gfSOLO
@@ -67,15 +63,10 @@ def CalculateNEE(cf, ds, l6_info):
     """
     if "NetEcosystemExchange" not in l6_info:
         return
-    # get the Fsd and ustar thresholds
+    # get the Fsd threshold
     Fsd_threshold = float(pfp_utils.get_keyvaluefromcf(cf, ["Options"], "Fsd_threshold", default=10))
-    # get the incoming shortwave radiation and friction velocity
-    Fsd, Fsd_flag, Fsd_attr = pfp_utils.GetSeriesasMA(ds, "Fsd")
-    if "Fsd_syn" in ds.series.keys():
-        Fsd_syn, flag, attr = pfp_utils.GetSeriesasMA(ds, "Fsd_syn")
-        index = numpy.where(numpy.ma.getmaskarray(Fsd) == True)[0]
-        Fsd[index] = Fsd_syn[index]
-    ustar, ustar_flag, ustar_attr = pfp_utils.GetSeriesasMA(ds, "ustar")
+    # get the incoming shortwave radiation
+    Fsd, _, _ = pfp_utils.GetSeriesasMA(ds, "Fsd")
     for label in l6_info["NetEcosystemExchange"].keys():
         if "Fc" not in l6_info["NetEcosystemExchange"][label] and "ER" not in l6_info["NetEcosystemExchange"][label]:
             continue
@@ -83,7 +74,7 @@ def CalculateNEE(cf, ds, l6_info):
         ER_label = l6_info["NetEcosystemExchange"][label]["ER"]
         output_label = l6_info["NetEcosystemExchange"][label]["output"]
         Fc, Fc_flag, Fc_attr = pfp_utils.GetSeriesasMA(ds, Fc_label)
-        ER, ER_flag, ER_attr = pfp_utils.GetSeriesasMA(ds, ER_label)
+        ER, ER_flag, _ = pfp_utils.GetSeriesasMA(ds, ER_label)
         # put the day time Fc into the NEE series
         index = numpy.ma.where(Fsd >= Fsd_threshold)[0]
         ds.series[output_label]["Data"][index] = Fc[index]
@@ -157,42 +148,7 @@ def cleanup_ustar_dict(ldt,ustar_dict):
         if ustar_dict[year]["ustar_mean"]==float(c.missing_value):
             ustar_dict[year]["ustar_mean"] = ustar_threshold_mean
 
-#def ERUsingFFNET(cf, ds, info):
-    #"""
-    #Purpose:
-     #Estimate ecosystem respiration using the ffnet neural network.
-    #Usage:
-     #pfp_rp.ERUsingFFNET(cf,ds)
-      #where cf is a control file object
-            #ds is a data structure
-    #Author: PRI
-    #Date: August 2014
-    #"""
-    #if "ffnet" not in info["er"]: return
-    #if "ffnet" not in sys.modules.keys():
-        #logger.error("ERUsingFFNET: I don't think ffnet is installed ...")
-        #return
-    ## local pointer to the datetime series
-    #ldt = ds.series["DateTime"]["Data"]
-    #startdate = ldt[0]
-    #enddate = ldt[-1]
-    #FFNET_info = {"file_startdate":startdate.strftime("%Y-%m-%d %H:%M"),
-                  #"file_enddate":enddate.strftime("%Y-%m-%d %H:%M"),
-                  #"plot_path":cf["Files"]["plot_path"],
-                  #"er":info["er"]["ffnet"]}
-    ## check to see if this is a batch or an interactive run
-    #call_mode = pfp_utils.get_keyvaluefromcf(cf,["Options"],"call_mode",default="interactive")
-    #FFNET_info["call_mode"]= call_mode
-    #if call_mode.lower()=="interactive":
-        ##FFNET_info["show_plots"] = True
-        ## call the FFNET GUI
-        #pfp_rpNN.rpFFNET_gui(cf,ds,FFNET_info)
-    #else:
-        #if "GUI" in cf:
-            #if "FFNET" in cf["GUI"]:
-                #pfp_rpNN.rpFFNET_run_nogui(cf,ds,FFNET_info)
-
-def ERUsingLasslop(cf, ds, l6_info):
+def ERUsingLasslop(ds, l6_info):
     """
     Purpose:
     Usage:
@@ -216,23 +172,21 @@ def ERUsingLasslop(cf, ds, l6_info):
     startdate = ldt[0]
     enddate = ldt[-1]
     ts = int(ds.globalattributes["time_step"])
-    nperhr = int(float(60)/ts+0.5)
-    nperday = int(float(24)*nperhr+0.5)
     site_name = ds.globalattributes["site_name"]
     nrecs = int(ds.globalattributes["nc_nrecs"])
     # get the data and synchronise the gaps
     # *** PUT INTO SEPARATE FUNCTION
     indicator = numpy.ones(nrecs, dtype=numpy.int)
-    Fsd,f,a = pfp_utils.GetSeriesasMA(ds, "Fsd")
+    Fsd, f, _ = pfp_utils.GetSeriesasMA(ds, "Fsd")
     idx = numpy.where(f != 0)[0]
     indicator[idx] = numpy.int(0)
-    D, f, a = pfp_utils.GetSeriesasMA(ds, "VPD")
+    D, f, _ = pfp_utils.GetSeriesasMA(ds, "VPD")
     idx = numpy.where(f != 0)[0]
     indicator[idx] = numpy.int(0)
-    T, f, a = pfp_utils.GetSeriesasMA(ds, "Ta")
+    T, f, _ = pfp_utils.GetSeriesasMA(ds, "Ta")
     idx = numpy.where(f != 0)[0]
     indicator[idx] = numpy.int(0)
-    ustar, f, a = pfp_utils.GetSeriesasMA(ds, "ustar")
+    _, f, _ = pfp_utils.GetSeriesasMA(ds, "ustar")
     idx = numpy.where(f != 0)[0]
     indicator[idx] = numpy.int(0)
     Fc, f, Fc_attr = pfp_utils.GetSeriesasMA(ds, "Fc")
@@ -245,7 +199,6 @@ def ERUsingLasslop(cf, ds, l6_info):
     indicator_night[idx] = numpy.int(0)
     # synchronise the gaps and apply the ustar filter
     T_night = numpy.ma.masked_where(indicator_night == 0, T)
-    ustar_night = numpy.ma.masked_where(indicator_night == 0, ustar)
     ER = numpy.ma.masked_where(indicator_night == 0, Fc)
     # loop over the windows and get E0
     logger.info(" Estimating the rb and E0 parameters")
@@ -262,19 +215,12 @@ def ERUsingLasslop(cf, ds, l6_info):
     rb_beginning = numpy.ones(int(days_at_beginning*ntsperday+0.5))*LT_results["rb_int"][0]
     rb_middle = numpy.repeat(LT_results["rb_int"],ielo[output]["step_size_days"]*ntsperday)
     nend = len(ldt) - (len(rb_beginning)+len(rb_middle))
-    rb_end = numpy.ones(nend)*LT_results["rb_int"][-1]
-    rb_tts = numpy.concatenate((rb_beginning,rb_middle,rb_end))
     E0_beginning = numpy.ones(int(days_at_beginning*ntsperday+0.5))*LT_results["E0_int"][0]
     E0_middle = numpy.repeat(LT_results["E0_int"],ielo[output]["step_size_days"]*ntsperday)
     nend = len(ldt) - (len(E0_beginning)+len(E0_middle))
-    E0_end = numpy.ones(nend)*LT_results["E0_int"][-1]
-    E0_tts = numpy.concatenate((E0_beginning,E0_middle,E0_end))
     # ***
     # and get the ecosystem respiration at the tower time step
     logger.info(" Calculating ER using Lloyd-Taylor")
-    ER_LT = pfp_rpLL.ER_LloydTaylor(T,rb_tts,E0_tts)
-    # plot the L&T parameters and ER_LT
-    #pfp_rpLL.plot_LTparams_ER(ldt,ER,ER_LT,LT_results)
     # get a day time indicator
     indicator_day = numpy.copy(indicator)
     # apply a day/night filter
@@ -294,7 +240,6 @@ def ERUsingLasslop(cf, ds, l6_info):
     LL_results["k_int"] = pfp_rpLL.interp_params(LL_results["k"])
     LL_results["rb_int"] = pfp_rpLL.interp_params(LL_results["rb"])
     LL_results["E0_int"] = pfp_rpLL.interp_params(LL_results["E0"])
-    #pfp_rpLL.plot_LLparams(LT_results,LL_results)
     # get the Lasslop parameters at the tower time step
     # *** PUT INTO SEPARATE FUNCTION
     ntsperday = float(24)*float(60)/float(ts)
@@ -402,7 +347,8 @@ def ERUsingLloydTaylor(cf, ds, l6_info):
     xl_name = nc_name.replace(".nc", "_L&T.xls")
     xl_file = pfp_io.xl_open_write(xl_name)
     if xl_file == '':
-        logger.error("ERUsingLloydTaylor: error opening Excel file " + xl_name)
+        msg = "ERUsingLloydTaylor: error opening Excel file " + xl_name
+        logger.error(msg)
         return
     # loop over the series
     outputs = iel["outputs"].keys()
@@ -549,14 +495,10 @@ def ERUsingLloydTaylor(cf, ds, l6_info):
             idx = numpy.where((ldt_year==param_year)&(ldt_month==param_month)&(ldt_day==param_day))[0]
             E0[idx] = E0_val
             rb[idx] = rb_val
-        T_label = configs_dict["drivers"][0]
-        T,T_flag,a = pfp_utils.GetSeriesasMA(ds,T_label)
         ER_LT = pfp_rpLT.TRF(data_dict, E0, rb)
         ER_LT_flag = numpy.empty(len(ER_LT),dtype=numpy.int32)
         ER_LT_flag.fill(30)
-        #ER_LT = pfp_rpLT.ER_LloydTaylor(T,E0,rb)
         target = iel["outputs"][output]["target"]
-        #drivers = str(configs_dict["drivers"])
         drivers = iel["outputs"][output]["drivers"]
         ER_attr["comment1"] = "Drivers were "+str(drivers)
         pfp_utils.CreateSeries(ds, output, ER_LT, ER_LT_flag, ER_attr)
@@ -585,19 +527,16 @@ def ERUsingSOLO(main_gui, ds, l6_info, called_by):
     # set the default return code
     ds.returncodes["value"] = 0
     ds.returncodes["message"] = "normal"
-    # get the SOLO information
-    solo = l6_info["ERUsingSOLO"]
     # check the SOLO drivers for missing data
-    pfp_gf.CheckDrivers(solo, ds)
+    pfp_gf.CheckDrivers(ds, l6_info, called_by)
     if ds.returncodes["value"] != 0:
         return ds
-    if solo["info"]["call_mode"].lower() == "interactive":
+    if l6_info["ERUsingSOLO"]["info"]["call_mode"].lower() == "interactive":
         # call the ERUsingSOLO GUI
-        pfp_gfSOLO.gfSOLO_gui(main_gui, ds, solo)
-    #else:
-        #if "GUI" in cf:
-            #if "SOLO" in cf["GUI"]:
-                #rpSOLO_run_nogui(cf, ds, l6_info["ER"])
+        pfp_gfSOLO.gfSOLO_gui(main_gui, ds, l6_info, called_by)
+    else:
+        # ["gui"] settings dictionary done in pfp_rp.ParseL6ControlFile()
+        pfp_gfSOLO.gfSOLO_run(ds, l6_info, called_by)
 
 def GetERFromFc(cf, ds):
     """
@@ -662,11 +601,12 @@ def GetERFromFc(cf, ds):
     pfp_utils.CreateVariable(ds, ER)
     return
 
-def check_for_missing_data(series_list,label_list):
-    for item,label in zip(series_list,label_list):
-        index = numpy.where(numpy.ma.getmaskarray(item)==True)[0]
-        if len(index)!=0:
-            logger.error(" GetERFromFc: missing data in series "+label)
+def check_for_missing_data(series_list, label_list):
+    for item, label in zip(series_list, label_list):
+        index = numpy.where(numpy.ma.getmaskarray(item) == True)[0]
+        if len(index) != 0:
+            msg = " GetERFromFc: missing data in series " + label
+            logger.error(msg)
             return 0
     return 1
 
@@ -681,9 +621,8 @@ def get_ustar_thresholds(cf,ldt):
     return ustar_dict
 
 def get_daynight_indicator(cf, ds):
-    Fsd, f, a = pfp_utils.GetSeriesasMA(ds, "Fsd")
+    Fsd, _, _ = pfp_utils.GetSeriesasMA(ds, "Fsd")
     # get the day/night indicator
-    nRecs = len(Fsd)
     daynight_indicator = {"values":numpy.zeros(len(Fsd), dtype=numpy.int32), "attr":{}}
     inds = daynight_indicator["values"]
     attr = daynight_indicator["attr"]
@@ -698,13 +637,7 @@ def get_daynight_indicator(cf, ds):
         Fsd_threshold = int(pfp_utils.get_keyvaluefromcf(cf, ["Options"], "Fsd_threshold", default=10))
         attr["Fsd_threshold"] = str(Fsd_threshold)
         # we are using Fsd only to define day/night
-        if use_fsdsyn.lower() == "yes":
-            if "solar_altitude" not in ds.series.keys():
-                pfp_ts.get_synthetic_fsd(ds)
-            Fsd_syn, f, a = pfp_utils.GetSeriesasMA(ds, "Fsd_syn")
-            idx = numpy.ma.where((Fsd <= Fsd_threshold) & (Fsd_syn <= Fsd_threshold))[0]
-        else:
-            idx = numpy.ma.where(Fsd <= Fsd_threshold)[0]
+        idx = numpy.ma.where(Fsd <= Fsd_threshold)[0]
         inds[idx] = numpy.int32(1)
     elif filter_type.lower() == "sa":
         # get the solar altitude threshold
@@ -713,7 +646,7 @@ def get_daynight_indicator(cf, ds):
         # we are using solar altitude to define day/night
         if "solar_altitude" not in ds.series.keys():
             pfp_ts.get_synthetic_fsd(ds)
-        sa, f, a = pfp_utils.GetSeriesasMA(ds, "solar_altitude")
+        sa, _, _ = pfp_utils.GetSeriesasMA(ds, "solar_altitude")
         idx = numpy.ma.where(sa < sa_threshold)[0]
         inds[idx] = numpy.int32(1)
     else:
@@ -741,7 +674,7 @@ def get_day_indicator(cf, ds):
     Mods:
      PRI 6/12/2018 - removed calculation of Fsd_syn by default
     """
-    Fsd, f, a = pfp_utils.GetSeriesasMA(ds, "Fsd")
+    Fsd, _, _ = pfp_utils.GetSeriesasMA(ds, "Fsd")
     # indicator = 1 ==> day, indicator = 0 ==> night
     day_indicator = {"values":numpy.ones(len(Fsd), dtype=numpy.int32), "attr":{}}
     inds = day_indicator["values"]
@@ -757,13 +690,7 @@ def get_day_indicator(cf, ds):
         Fsd_threshold = int(pfp_utils.get_keyvaluefromcf(cf, ["Options"], "Fsd_threshold", default=10))
         attr["Fsd_threshold"] = str(Fsd_threshold)
         # we are using Fsd only to define day/night
-        if use_fsdsyn.lower() == "yes":
-            if "solar_altitude" not in ds.series.keys():
-                pfp_ts.get_synthetic_fsd(ds)
-            Fsd_syn, f, a = pfp_utils.GetSeriesasMA(ds, "Fsd_syn")
-            idx = numpy.ma.where((Fsd <= Fsd_threshold) & (Fsd_syn <= Fsd_threshold))[0]
-        else:
-            idx = numpy.ma.where(Fsd <= Fsd_threshold)[0]
+        idx = numpy.ma.where(Fsd <= Fsd_threshold)[0]
         inds[idx] = numpy.int32(0)
     elif filter_type.lower() == "sa":
         # get the solar altitude threshold
@@ -772,7 +699,7 @@ def get_day_indicator(cf, ds):
         # we are using solar altitude to define day/night
         if "solar_altitude" not in ds.series.keys():
             pfp_ts.get_synthetic_fsd(ds)
-        sa, f, a = pfp_utils.GetSeriesasMA(ds, "solar_altitude")
+        sa, _, _ = pfp_utils.GetSeriesasMA(ds, "solar_altitude")
         index = numpy.ma.where(sa < sa_threshold)[0]
         inds[index] = numpy.int32(0)
     else:
@@ -804,7 +731,7 @@ def get_evening_indicator(cf, ds):
     Date: March 2016
     """
     ts = int(ds.globalattributes["time_step"])
-    Fsd, f, a = pfp_utils.GetSeriesasMA(ds, "Fsd")
+    Fsd, _, _ = pfp_utils.GetSeriesasMA(ds, "Fsd")
     evening_indicator = {"values":numpy.zeros(len(Fsd), dtype=numpy.int32), "attr":{}}
     attr = evening_indicator["attr"]
     opt = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "EveningFilterLength", default="3")
@@ -843,7 +770,7 @@ def get_night_indicator(cf, ds):
     Author: PRI
     Date: March 2016
     """
-    Fsd, f, a = pfp_utils.GetSeriesasMA(ds, "Fsd")
+    Fsd, _, _ = pfp_utils.GetSeriesasMA(ds, "Fsd")
     # indicator = 1 ==> night, indicator = 0 ==> day
     night_indicator = {"values":numpy.zeros(len(Fsd), dtype=numpy.int32), "attr":{}}
     inds = night_indicator["values"]
@@ -859,13 +786,7 @@ def get_night_indicator(cf, ds):
         Fsd_threshold = int(pfp_utils.get_keyvaluefromcf(cf, ["Options"], "Fsd_threshold", default=10))
         attr["Fsd_threshold"] = str(Fsd_threshold)
         # we are using Fsd only to define day/night
-        if use_fsdsyn.lower() == "yes":
-            if "solar_altitude" not in ds.series.keys():
-                pfp_ts.get_synthetic_fsd(ds)
-            Fsd_syn, f, a = pfp_utils.GetSeriesasMA(ds, "Fsd_syn")
-            idx = numpy.ma.where((Fsd <= Fsd_threshold) & (Fsd_syn <= Fsd_threshold))[0]
-        else:
-            idx = numpy.ma.where(Fsd <= Fsd_threshold)[0]
+        idx = numpy.ma.where(Fsd <= Fsd_threshold)[0]
         inds[idx] = numpy.int32(1)
     elif filter_type.lower() == "sa":
         # get the solar altitude threshold
@@ -874,26 +795,13 @@ def get_night_indicator(cf, ds):
         # we are using solar altitude to define day/night
         if "solar_altitude" not in ds.series.keys():
             pfp_ts.get_synthetic_fsd(ds)
-        sa, f, a = pfp_utils.GetSeriesasMA(ds, "solar_altitude")
+        sa, _, _ = pfp_utils.GetSeriesasMA(ds, "solar_altitude")
         index = numpy.ma.where(sa < sa_threshold)[0]
         inds[index] = numpy.int32(1)
     else:
         msg = "Unrecognised DayNightFilter option in control file"
         raise Exception(msg)
     return night_indicator
-
-def get_turbulence_indicator(cf,ldt,ustar,L,ustar_dict,ts,attr):
-    opt = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "TurbulenceFilter", default="ustar")
-    if opt.lower() == "ustar":
-        turbulence_indicator = get_turbulence_indicator_ustar(ldt, ustar, ustar_dict, ts)
-    elif opt.lower() == "l":
-        msg = " GetERfromFc: use of L as turbulence indicator not implemented yet"
-        logger.warning(msg)
-        #turbulence_indicator = get_turbulence_indicator_l(ldt,L,z,d,zmdonL_threshold)
-    else:
-        msg = " Unrecognised TurbulenceFilter option in control file"
-        raise Exception(msg)
-    return turbulence_indicator
 
 def get_turbulence_indicator_l(ldt, L, z, d, zmdonL_threshold):
     turbulence_indicator = numpy.zeros(len(ldt),dtype=numpy.int32)
@@ -945,7 +853,7 @@ def get_turbulence_indicator_ustar(ldt, ustar, ustar_dict, ts):
         inds[si:ei][idx] = numpy.int32(1)
     return turbulence_indicator
 
-def get_turbulence_indicator_ustar_evg(ldt,ind_day,ind_ustar,ustar,ustar_dict,ts):
+def get_turbulence_indicator_ustar_evg(ldt, ind_day, ind_ustar, ustar, ustar_dict):
     """
     Purpose:
      Returns a dictionary containing an indicator series and some attributes.
@@ -956,7 +864,7 @@ def get_turbulence_indicator_ustar_evg(ldt,ind_day,ind_ustar,ustar,ustar_dict,ts
      Based on a ustar filter scheme designed by Eva van Gorsel for use at the
      Tumbarumba site.
     Usage:
-     indicators["turbulence"] = get_turbulence_indicator_ustar_evg(ldt,ind_day,ustar,ustar_dict,ts)
+     indicators["turbulence"] = get_turbulence_indicator_ustar_evg(ldt,ind_day,ustar,ustar_dict)
      where;
       ldt is a list of datetimes
       ind_day is a day/night indicator
@@ -1114,7 +1022,8 @@ def L6_summary(cf, ds):
     try:
         xl_file = pfp_io.xl_open_write(xl_name)
     except IOError:
-        logger.error(" L6_summary: error opening Excel file "+xl_name)
+        msg = " L6_summary: error opening Excel file " + xl_name
+        logger.error(msg)
         return 0
     # open the netCDF file for the summary results
     nc_name = out_name.replace(".nc", "_Summary.nc")
@@ -1122,7 +1031,8 @@ def L6_summary(cf, ds):
         nc_file = pfp_io.nc_open_write(nc_name, nctype='NETCDF4')
         pfp_io.nc_write_globalattributes(nc_file, ds, flag_defs=False)
     except IOError:
-        logger.error(" L6_summary: error opening netCDF file "+nc_name)
+        msg = " L6_summary: error opening netCDF file " + nc_name
+        logger.error(msg)
         return 0
     # daily averages and totals
     daily_dict = L6_summary_daily(ds, series_dict)
@@ -1245,7 +1155,6 @@ def L6_summary_plotdaily(cf, ds, daily_dict):
         plt.ion()
 
 def L6_summary_plotcumulative(cf, ds, cumulative_dict):
-    ts = int(ds.globalattributes["time_step"])
     # cumulative plots
     color_list = ["blue","red","green","yellow","magenta","black","cyan","brown"]
     year_list = cumulative_dict.keys()
@@ -1262,8 +1171,6 @@ def L6_summary_plotcumulative(cf, ds, cumulative_dict):
     title_str = site_name+": "+year_list[0]+" to "+year_list[-1]
     # get lists of X labels (letter of month) and position
     xlabels = numpy.array(["J", "F", "M", "A", "M", "J", "J", "A", "S", "O", "N", "D"])
-    #nperday = int(24*float(60)/float(ts))
-    #xlabel_posn = numpy.array([0,31, 59, 89, 120, 150, 181, 212, 242, 273, 303, 334])*nperday
     xlabel_posn = numpy.array([0,31, 59, 89, 120, 150, 181, 212, 242, 273, 303, 334])/float(366)
     for item in type_list:
         if cf["Options"]["call_mode"].lower()=="interactive":
@@ -1360,7 +1267,6 @@ def L6_summary_createseriesdict(cf,ds):
     Author: PRI
     Date: June 2015
     """
-    ts = int(ds.globalattributes["time_step"])
     series_dict = {"daily":{},"annual":{},"cumulative":{},"lists":{}}
     # adjust units of NEE, NEP, GPP and ER
     sdl = series_dict["lists"]
@@ -1446,7 +1352,6 @@ def L6_summary_daily(ds, series_dict):
     ntsInDay = int(24.0*60.0/float(ts))
     nDays = int(len(ldt))/ntsInDay
     # create an empty data array and an array of zeros for the flag
-    mt_data = numpy.full(nDays, c.missing_value, dtype=numpy.float64)
     f0 = numpy.zeros(nDays, dtype=numpy.int32)
     ldt_daily = [ldt[0]+datetime.timedelta(days=i) for i in range(0,nDays)]
     # create a dictionary to hold the daily statistics
@@ -1692,7 +1597,7 @@ def L6_summary_cumulative(ds, series_dict):
     year_list = range(start_year, end_year+1, 1)
     series_list = series_dict["cumulative"].keys()
     cumulative_dict = {}
-    for i,year in enumerate(year_list):
+    for year in year_list:
         cumulative_dict[str(year)] = cdyr = {"globalattributes":{}, "variables":{}}
         # copy the global attributes
         cdyr["globalattributes"] = copy.deepcopy(ds.globalattributes)
@@ -1733,12 +1638,9 @@ def ParseL6ControlFile(cf, ds):
     # create the L6 information dictionary
     l6_info = {}
     if "EcosystemRespiration" in cf.keys():
-        #l6_info["EcosystemRespiration"] = {}
         for output in cf["EcosystemRespiration"].keys():
             if "ERUsingSOLO" in cf["EcosystemRespiration"][output].keys():
                 rpSOLO_createdict(cf, ds, l6_info, output, "ERUsingSOLO")
-            #if "ERUsingFFNET" in cf["EcosystemRespiration"][output].keys():
-                #pfp_rpNN.rpFFNET_createdict(cf, ds, l6_info, output, "ERUsingFFNET")
             if "ERUsingLloydTaylor" in cf["EcosystemRespiration"][output].keys():
                 pfp_rpLT.rpLT_createdict(cf, ds, l6_info, output, "ERUsingLloydTaylor")
             if "ERUsingLasslop" in cf["EcosystemRespiration"][output].keys():
@@ -1755,13 +1657,13 @@ def ParseL6ControlFile(cf, ds):
             rpGPP_createdict(cf, ds, l6_info["GrossPrimaryProductivity"], output)
     return l6_info
 
-def PartitionNEE(cf, ds, l6_info):
+def PartitionNEE(ds, l6_info):
     """
     Purpose:
      Partition NEE into GPP and ER.
      Input and output names are held in info['gpp'].
     Usage:
-     pfp_rp.PartitionNEE(cf, ds, info)
+     pfp_rp.PartitionNEE(ds, info)
       where cf is a conbtrol file object
             ds is a data structure
     Side effects:
@@ -1771,16 +1673,6 @@ def PartitionNEE(cf, ds, l6_info):
     """
     if "GrossPrimaryProductivity" not in l6_info:
         return
-    # get the Fsd threshold
-    opt = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "Fsd_threshold", default=10)
-    Fsd_threshold = float(opt)
-    # get the incoming shortwave radiation
-    Fsd, Fsd_flag, Fsd_attr = pfp_utils.GetSeriesasMA(ds, "Fsd")
-    if "Fsd_syn" in ds.series.keys():
-        Fsd_syn,flag,attr = pfp_utils.GetSeriesasMA(ds,"Fsd_syn")
-        index = numpy.where(numpy.ma.getmaskarray(Fsd)==True)[0]
-        #index = numpy.ma.where(numpy.ma.getmaskarray(Fsd)==True)[0]
-        Fsd[index] = Fsd_syn[index]
     # calculate GPP from NEE and ER
     for label in l6_info["GrossPrimaryProductivity"].keys():
         if ("NEE" not in l6_info["GrossPrimaryProductivity"][label] and
@@ -1790,7 +1682,7 @@ def PartitionNEE(cf, ds, l6_info):
         ER_label = l6_info["GrossPrimaryProductivity"][label]["ER"]
         output_label = l6_info["GrossPrimaryProductivity"][label]["output"]
         NEE, NEE_flag, NEE_attr = pfp_utils.GetSeriesasMA(ds, NEE_label)
-        ER, ER_flag, ER_attr = pfp_utils.GetSeriesasMA(ds, ER_label)
+        ER, _, _ = pfp_utils.GetSeriesasMA(ds, ER_label)
         # calculate GPP
         # here we use the conventions from Chapin et al (2006)
         #  NEP = -1*NEE
@@ -1798,18 +1690,6 @@ def PartitionNEE(cf, ds, l6_info):
         GPP = float(-1)*NEE + ER
         ds.series[output_label]["Data"] = GPP
         ds.series[output_label]["Flag"] = NEE_flag
-        # NOTE: there is no need to force GPP to 0 when Fsd<threshold since
-        #       OzFluxQC sets NEE=ER when Fsd<threshold.  Hence, the following
-        #       lines are unecessary and have been commented out.
-        # put the day time data into the GPP series
-        #index = numpy.ma.where(Fsd>=Fsd_threshold)[0]
-        #ds.series[output_label]["Data"][index] = GPP[index]
-        #ds.series[output_label]["Flag"][index] = NEE_flag[index]
-        # put the night time ER into the NEE series
-        # This force nocturnal GPP to be 0!  Not sure this is the right thing to do.
-        #index = numpy.ma.where(Fsd<Fsd_threshold)[0]
-        #ds.series[output_label]["Data"][index] = numpy.float64(0)
-        #ds.series[output_label]["Flag"][index] = numpy.int32(1)
         # copy the attributes
         attr = ds.series[output_label]["Attr"]
         attr["units"] = NEE_attr["units"]
@@ -1897,12 +1777,14 @@ def rpSOLO_createdict(cf, ds, l6_info, output, called_by):
     # create the dictionary keys for this series
     if called_by not in l6_info.keys():
         l6_info[called_by] = {"outputs": {}, "info": {"source": "Fc", "target": "ER"}, "gui": {}}
-    # get the info section
-    pfp_gf.gfSOLO_createdict_info(cf, ds, l6_info[called_by], called_by)
-    if ds.returncodes["value"] != 0:
-        return
+        # only need to create the ["info"] dictionary on the first pass
+        pfp_gf.gfSOLO_createdict_info(cf, ds, l6_info, called_by)
+        if ds.returncodes["value"] != 0:
+            return
+        # only need to create the ["gui"] dictionary on the first pass
+        pfp_gf.gfSOLO_createdict_gui(cf, ds, l6_info, called_by)
     # get the outputs section
-    pfp_gf.gfSOLO_createdict_outputs(cf, l6_info[called_by], output, called_by)
+    pfp_gf.gfSOLO_createdict_outputs(cf, l6_info, output, called_by)
     # create an empty series in ds if the SOLO output series doesn't exist yet
     Fc = pfp_utils.GetVariable(ds, l6_info[called_by]["info"]["source"])
     model_outputs = cf["EcosystemRespiration"][output][called_by].keys()

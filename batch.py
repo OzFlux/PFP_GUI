@@ -5,9 +5,8 @@ import sys
 # 3rd party modules
 from configobj import ConfigObj
 # PFP modules
-sys.path.append('scripts')
+sys.path.append("scripts")
 import pfp_batch
-#import pfp_io
 import pfp_log
 
 # create pfp_log when called from the command line

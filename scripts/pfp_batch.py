@@ -7,7 +7,7 @@ import sys
 import traceback
 # 3rd party modules
 # PFP modules
-sys.path.append('scripts')
+sys.path.append("scripts")
 import pfp_cfg
 import pfp_clim
 import pfp_cpd
