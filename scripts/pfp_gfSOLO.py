@@ -126,7 +126,8 @@ def gfSOLO_autocomplete(ds, l5_info, called_by):
             l5s["run"]["startdate"] = ldt[si].strftime("%Y-%m-%d %H:%M")
             l5s["run"]["enddate"] = ldt[ei].strftime("%Y-%m-%d %H:%M")
             gfSOLO_main(ds, l5_info, called_by, outputs=[output])
-            gfSOLO_plotcoveragelines(ds, l5_info, called_by)
+            if l5s["info"]["call_mode"] == "interactive":
+                gfSOLO_plotcoveragelines(ds, l5_info, called_by)
 
 def gfSOLO_done(solo_gui):
     ds = solo_gui.ds
@@ -431,7 +432,10 @@ def gfSOLO_plotcoveragelines(ds, l5_info, called_by):
     colors = ["blue", "red", "green", "yellow", "magenta", "black", "cyan", "brown"]
     xsize = 15.0
     ysize = max([len(outputs)*0.3, 1])
-    plt.ion()
+    if l5s["gui"]["show_plots"]:
+        plt.ion()
+    else:
+        plt.ioff()
     if plt.fignum_exists(0):
         fig = plt.figure(0)
         plt.clf()
@@ -460,8 +464,12 @@ def gfSOLO_plotcoveragelines(ds, l5_info, called_by):
     ax2 = ax1.twinx()
     pylab.yticks(ylabel_posn, ylabel_right_list)
     fig.tight_layout()
-    plt.draw()
-    plt.ioff()
+    if l5s["gui"]["show_plots"]:
+        plt.draw()
+        mypause(1)
+        plt.ioff()
+    else:
+        plt.ion()
 
 def gfSOLO_plotsummary(ds, solo):
     """ Plot single pages of summary results for groups of variables. """
