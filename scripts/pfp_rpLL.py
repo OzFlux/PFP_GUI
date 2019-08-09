@@ -1,6 +1,5 @@
 """ Routines for the Lasslop et al partitioning scheme."""
 # standard modules
-import ast
 import datetime
 import logging
 import os
@@ -13,6 +12,7 @@ from scipy.optimize import curve_fit, OptimizeWarning
 # PFP modules
 import constants as c
 import pfp_cfg
+import pfp_gui
 import pfp_utils
 
 warnings.simplefilter("ignore", OptimizeWarning)
