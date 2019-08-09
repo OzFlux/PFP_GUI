@@ -21,7 +21,7 @@ import pfp_utils
 # create pfp_log when called from the command line
 now = datetime.datetime.now()
 log_file_name = "batch_" + now.strftime("%Y%m%d%H%M") + ".log"
-logger = pfp_log.init_logger("pfp_log", log_file_name, to_console=True)
+logger = pfp_log.init_logger("pfp_log", log_file_name, to_file=True, to_screen=True)
 
 def do_L1_batch(cf_level):
     for i in cf_level.keys():

@@ -18,7 +18,6 @@ else:
 from PyQt5 import QtWidgets
 # PFP modules
 sys.path.append('scripts')
-import pfp_batch
 import pfp_compliance
 import pfp_gui
 import pfp_log
@@ -46,7 +45,7 @@ for item in dir_list:
 
 now = datetime.datetime.now()
 log_file_name = "pfp_" + now.strftime("%Y%m%d%H%M") + ".log"
-logger = pfp_log.init_logger("pfp_log", log_file_name)
+logger = pfp_log.init_logger("pfp_log", log_file_name, to_file=True, to_screen=False)
 
 class pfp_main_ui(QtWidgets.QWidget):
     def __init__(self):

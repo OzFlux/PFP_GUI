@@ -18,7 +18,7 @@ class QPlainTextEditLogger(logging.Handler):
         self.textBox.appendPlainText(msg)
         QtWidgets.QApplication.processEvents()
 
-def init_logger(logger_name, log_file_name, to_file=True, to_console=False):
+def init_logger(logger_name, log_file_name, to_file=True, to_screen=False):
     """
     Purpose:
      Returns a logger object.
@@ -28,7 +28,7 @@ def init_logger(logger_name, log_file_name, to_file=True, to_console=False):
     Date: September 2016
     """
     # create formatter
-    formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s','%H:%M:%S')
+    formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s', '%H:%M:%S')
     # create the logger and set the level
     logger = logging.getLogger(name=logger_name)
     logger.setLevel(logging.DEBUG)
@@ -41,13 +41,13 @@ def init_logger(logger_name, log_file_name, to_file=True, to_console=False):
         # add the file handler to the logger
         logger.addHandler(fh1)
         # set up a separate file for errors
-        error_file_name = log_file_name.replace(".","_errors.")
+        error_file_name = log_file_name.replace(".", "_errors.")
         error_file_path = os.path.join("logfiles", error_file_name)
         fh2 = logging.FileHandler(error_file_path)
         fh2.setLevel(logging.ERROR)
         fh2.setFormatter(formatter)
         logger.addHandler(fh2)
-    if to_console:
+    if to_screen:
         console = logging.StreamHandler()
         console.setFormatter(formatter)
         console.setLevel(logging.DEBUG)

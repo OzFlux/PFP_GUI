@@ -554,10 +554,9 @@ def rpLT_plot(pd, ds, output, drivers, target, iel, si=0, ei=-1):
     # save a hard copy of the plot
     sdt = xdt[0].strftime("%Y%m%d")
     edt = xdt[-1].strftime("%Y%m%d")
-    plot_path = os.path.join(ieli["plot_path"], "L6", "")
-    if not os.path.exists(plot_path):
-        os.makedirs(plot_path)
-    figname = plot_path + pd["site_name"].replace(" ","") + "_LT_" + pd["label"]
+    if not os.path.exists(ieli["plot_path"]):
+        os.makedirs(ieli["plot_path"])
+    figname = ieli["plot_path"] + pd["site_name"].replace(" ","") + "_LT_" + pd["label"]
     figname = figname + "_" + sdt + "_" + edt + '.png'
     fig.savefig(figname, format='png')
     # draw the plot on the screen
