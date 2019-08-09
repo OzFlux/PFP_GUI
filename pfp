@@ -1,3 +1,19 @@
+#!/bin/bash
+# activate the environment
 source activate pfp_env
+# wait until the command has completed
 wait
-python PyFluxPro.py
+# check the command line arguments
+if [ "$1" != "batch" ]; then
+    # run interactive if anything other than batch entered on command line
+    python PyFluxPro.py
+else
+    # check to see if control file entered on command line
+    if [ "$2" != "" ]; then
+        # run batch with specified control file
+        python pfp_batch.py $2
+    else
+        # run batch with no control file
+        python pfp_batch.py
+    fi
+fi

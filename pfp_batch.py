@@ -1,24 +1,27 @@
 # standard modules
 import datetime
-import logging
 import ntpath
 import os
 import sys
 import traceback
 # 3rd party modules
+from configobj import ConfigObj
 # PFP modules
 sys.path.append("scripts")
 import pfp_cfg
 import pfp_clim
 import pfp_cpd
 import pfp_io
-import pfp_log
 import pfp_levels
+import pfp_log
 import pfp_mpt
 import pfp_plot
 import pfp_utils
 
-logger = logging.getLogger("pfp_log")
+# create pfp_log when called from the command line
+now = datetime.datetime.now()
+log_file_name = "batch_" + now.strftime("%Y%m%d%H%M") + ".log"
+logger = pfp_log.init_logger("pfp_log", log_file_name, to_console=True)
 
 def do_L1_batch(cf_level):
     for i in cf_level.keys():
@@ -40,7 +43,6 @@ def do_L1_batch(cf_level):
             logger.error(error_message)
             continue
     return
-
 def do_L2_batch(cf_level):
     for i in cf_level.keys():
         cf_file_name = os.path.split(cf_level[i])
@@ -64,7 +66,6 @@ def do_L2_batch(cf_level):
             logger.error(error_message)
             continue
     return
-
 def do_L3_batch(cf_level):
     for i in cf_level.keys():
         cf_file_name = os.path.split(cf_level[i])
@@ -89,7 +90,6 @@ def do_L3_batch(cf_level):
             logger.error(error_message)
             continue
     return
-
 def do_ecostress_batch(cf_level):
     for i in cf_level.keys():
         cf_file_name = os.path.split(cf_level[i])
@@ -108,7 +108,6 @@ def do_ecostress_batch(cf_level):
             logger.error(error_message)
             continue
     return
-
 def do_fluxnet_batch(cf_level):
     for i in cf_level.keys():
         cf_file_name = os.path.split(cf_level[i])
@@ -120,7 +119,6 @@ def do_fluxnet_batch(cf_level):
         logger.info(msg)
         logger.info("")
     return
-
 def do_reddyproc_batch(cf_level):
     for i in cf_level.keys():
         cf_file_name = os.path.split(cf_level[i])
@@ -132,7 +130,6 @@ def do_reddyproc_batch(cf_level):
         logger.info(msg)
         logger.info("")
     return
-
 def do_concatenate_batch(cf_level):
     for i in cf_level.keys():
         if not os.path.isfile(cf_level[i]):
@@ -176,7 +173,6 @@ def do_concatenate_batch(cf_level):
             logger.error(error_message)
             continue
     return
-
 def do_climatology_batch(cf_level):
     for i in cf_level.keys():
         if not os.path.isfile(cf_level[i]):
@@ -199,7 +195,6 @@ def do_climatology_batch(cf_level):
             logger.error(error_message)
             continue
     return
-
 def do_cpd_batch(cf_level):
     for i in cf_level.keys():
         cf_file_name = os.path.split(cf_level[i])
@@ -222,7 +217,6 @@ def do_cpd_batch(cf_level):
             logger.error(error_message)
             continue
     return
-
 def do_mpt_batch(cf_level):
     for i in cf_level.keys():
         cf_file_name = os.path.split(cf_level[i])
@@ -245,7 +239,6 @@ def do_mpt_batch(cf_level):
             logger.error(error_message)
             continue
     return
-
 def do_L4_batch(cf_level):
     for i in cf_level.keys():
         if not os.path.isfile(cf_level[i]):
@@ -298,7 +291,6 @@ def do_L4_batch(cf_level):
             logger.error(error_message)
             continue
     return
-
 def do_L5_batch(cf_level):
     for i in cf_level.keys():
         if not os.path.isfile(cf_level[i]):
@@ -352,7 +344,6 @@ def do_L5_batch(cf_level):
             logger.error(error_message)
             continue
     return
-
 def do_L6_batch(cf_level):
     for i in cf_level.keys():
         if not os.path.isfile(cf_level[i]):
@@ -385,7 +376,6 @@ def do_L6_batch(cf_level):
             logger.error(error_message)
             continue
     return
-
 def do_levels_batch(cf_batch):
     if "Options" in cf_batch:
         if "levels" in cf_batch["Options"]:
@@ -398,13 +388,11 @@ def do_levels_batch(cf_batch):
         msg = "No [Options] section in control file"
         logger.error(msg)
         sys.exit()
-
     processing_levels = ["l1", "l2", "l3",
                          "ecostress", "fluxnet", "reddyproc",
                          "concatenate", "climatology",
                          "cpd", "mpt",
                          "l4", "l5", "l6"]
-
     for level in levels:
         if level.lower() not in processing_levels:
             msg = "Unrecognised level " + level
@@ -450,3 +438,24 @@ def do_levels_batch(cf_batch):
             # L6 processing
             do_L6_batch(cf_batch["Levels"][level])
     return
+
+if (__name__ == '__main__'):
+    # get the control file name
+    if len(sys.argv) == 1:
+        # not on the command line, so ask the user
+        cfg_file_path = raw_input("Enter the control file name: ")
+        # exit if nothing selected
+        if len(cfg_file_path) == 0:
+            sys.exit()
+    else:
+        # control file name on the command line
+        if not os.path.exists(sys.argv[1]):
+            # control file doesn't exist
+            logger.error("Control file %s does not exist", sys.argv[1])
+            sys.exit()
+        else:
+            cfg_file_path = sys.argv[1]
+    # read the control file
+    cf_batch = ConfigObj(cfg_file_path, indent_type="    ", list_values=False)
+    # call the processing
+    do_levels_batch(cf_batch)

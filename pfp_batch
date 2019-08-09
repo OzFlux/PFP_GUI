@@ -1,4 +1,0 @@
-#!/bin/bash
-source activate pfp_env
-wait
-python batch.py $1
