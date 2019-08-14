@@ -347,6 +347,11 @@ def do_SONICcheck(cf, ds, code=3):
     Author: PRI
     Date: Back in the day
     """
+    # check to see if the user has disabled the SONIC check
+    opt = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "SONIC_Check", default="Yes")
+    if opt.lower() == "no":
+        return
+    # do the SONIC check
     series_list = list(ds.series.keys())
     if "Diag_SONIC" in series_list:
         pass
@@ -358,10 +363,12 @@ def do_SONICcheck(cf, ds, code=3):
         return
     logger.info(" Doing the sonic check")
     sonic_all = ["Ux", "Uy", "Uz",
-                "Ws_CSAT", "Wd_CSAT", "Wd_CSAT_Compass",
-                "Ws_SONIC", "Wd_SONIC", "Wd_SONIC_Compass",
-                "Tv_CSAT", "Tv_CSAT_Av", "Tv_CSAT_Vr",
-                "Tv_SONIC", "Tv_SONIC_Av", "Tv_SONIC_Vr",
+                "Ws_CSAT", "Ws_CSAT_Av", "Ws_CSAT_Sd", "Ws_CSAT_Vr",
+                "Wd_CSAT", "Wd_CSAT_Av", "Wd_CSAT_Compass", "Wd_CSAT_Sd", "Wd_CSAT_Vr",
+                "Ws_SONIC", "Ws_SONIC_Av", "Ws_SONIC_Sd", "Ws_SONIC_Vr",
+                "Wd_SONIC", "Wd_SONIC_Av", "Wd_SONIC_Compass", "Wd_SONIC_Sd", "Wd_SONIC_Vr",
+                "Tv_CSAT", "Tv_CSAT_Av", "Tv_CSAT_Sd", "Tv_CSAT_Vr",
+                "Tv_SONIC", "Tv_SONIC_Av", "Tv_SONIC_Sd", "Tv_SONIC_Vr",
                 "UzT", "UxT", "UyT", "UzA", "UxA", "UyA", "UzC", "UxC", "UyC",
                 "UxUz", "UyUz", "UxUy", "UxUx", "UyUy", "UzUz"]
     sonic_list = []
@@ -637,34 +644,30 @@ def do_IRGAcheck(cf,ds):
     Author: PRI
     Date: September 2015
     """
-    irga_list = ["li7500","li7500a","li7500rs","ec150","ec155","irgason"]
+    # check to see if the user has disabled the IRGA check
+    opt = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "IRGA_Check", default="Yes")
+    if opt.lower() == "no":
+        return
     # get the IRGA type from the control file
-    irga_type = pfp_utils.get_keyvaluefromcf(cf,["Options"],"irga_type", default="not found")
+    irga_type = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "irga_type", default="not found")
     if irga_type == "not found":
         msg = " IRGA type not specified in Options section, using default (Li-7500)"
         logger.warning(msg)
-        irga_type = "li7500"
-    # remove any hyphens or spaces
-    for item in ["-"," "]:
-        if item in irga_type: irga_type = irga_type.replace(item,"")
-    # check the IRGA type against the list of suppprted devices
-    if irga_type.lower() not in irga_list:
-        msg = " Unrecognised IRGA type "+irga_type+" given in control file, IRGA checks skipped ..."
+        irga_type = "Li-7500"
+    # do the IRGA checks
+    if irga_type in ["Li-7500", "Li-7500A", "Li-7500A (<V6.5)"]:
+        ds.globalattributes["irga_type"] = irga_type
+        do_li7500check(cf, ds)
+    elif irga_type in ["Li-7500A (>=V6.5)", "Li-7500RS"]:
+        ds.globalattributes["irga_type"] = irga_type
+        do_li7500acheck(cf, ds)
+    elif irga_type in ["EC150", "EC155", "IRGASON"]:
+        ds.globalattributes["irga_type"] = irga_type
+        do_EC155check(cf, ds)
+    else:
+        msg = " Unsupported IRGA type " + irga_type + ", contact the devloper ..."
         logger.error(msg)
         return
-    # do the IRGA checks
-    if irga_type.lower()=="li7500":
-        ds.globalattributes["irga_type"] = irga_type
-        do_li7500check(cf,ds)
-    elif irga_type.lower() in ["li7500a","irgason"]:
-        ds.globalattributes["irga_type"] = irga_type
-        do_li7500acheck(cf,ds)
-    elif irga_type.lower() in ["ec155","ec150","irgason"]:
-        ds.globalattributes["irga_type"] = irga_type
-        do_EC155check(cf,ds)
-    else:
-        msg = " Unsupported IRGA type "+irga_type+", contact the devloper ..."
-        logger.error(msg)
     return
 
 def do_li7500check(cf, ds, code=4):
@@ -781,9 +784,9 @@ def do_li7500acheck(cf,ds):
         if item in ds.series.keys():
             if ("Signal_H2O" in item) or ("Signal_CO2" in item):
                 used_Signal = True
-            if ("H2O" in item) or ("Ah" in label):
+            if ("H2O" in item) or ("Ah" in item):
                 used_H2O = True
-            if ("CO2" in item) or ("Cc" in label):
+            if ("CO2" in item) or ("Cc" in item):
                 used_CO2 = True
             LI75_dependents.append(item)
     if "H2O_IRGA_Sd" and "H2O_IRGA_Vr" in LI75_dependents:

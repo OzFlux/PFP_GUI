@@ -552,6 +552,16 @@ class edit_cfg_L2(QtWidgets.QWidget):
         # add an asterisk to the tab text to indicate the tab contents have changed
         self.update_tab_text()
 
+    def add_irga_check(self):
+        """ Add IRGA check to Options section."""
+        new_options = {"IRGA_Check": "Yes"}
+        for key in new_options:
+            value = new_options[key]
+            child0 = QtGui.QStandardItem(key)
+            child1 = QtGui.QStandardItem(value)
+            self.sections["Options"].appendRow([child0, child1])
+        self.update_tab_text()
+
     def add_linear(self):
         """ Add a linear correction to a variable."""
         print " add Linear here"
@@ -646,6 +656,16 @@ class edit_cfg_L2(QtWidgets.QWidget):
             child1 = QtGui.QStandardItem(str(val))
             parent.appendRow([child0, child1])
         self.sections["Plots"].appendRow(parent)
+        self.update_tab_text()
+
+    def add_sonic_check(self):
+        """ Add sonic check to Options section."""
+        new_options = {"SONIC_Check": "Yes"}
+        for key in new_options:
+            value = new_options[key]
+            child0 = QtGui.QStandardItem(key)
+            child1 = QtGui.QStandardItem(value)
+            self.sections["Options"].appendRow([child0, child1])
         self.update_tab_text()
 
     def add_subsection(self, section, dict_to_add):
@@ -859,6 +879,22 @@ class edit_cfg_L2(QtWidgets.QWidget):
                     self.context_menu.addAction(self.context_menu.actionAddplot_path)
                     self.context_menu.actionAddplot_path.triggered.connect(self.add_plot_path)
             elif selected_text == "Options":
+                existing_entries = self.get_existing_entries()
+                if "SONIC_Check" not in existing_entries:
+                    self.context_menu.actionSonicCheck = QtWidgets.QAction(self)
+                    self.context_menu.actionSonicCheck.setText("SONIC_Check")
+                    self.context_menu.addAction(self.context_menu.actionSonicCheck)
+                    self.context_menu.actionSonicCheck.triggered.connect(self.add_sonic_check)
+                    add_separator = True
+                if "IRGA_Check" not in existing_entries:
+                    self.context_menu.actionIRGACheck = QtWidgets.QAction(self)
+                    self.context_menu.actionIRGACheck.setText("IRGA_Check")
+                    self.context_menu.addAction(self.context_menu.actionIRGACheck)
+                    self.context_menu.actionIRGACheck.triggered.connect(self.add_irga_check)
+                    add_separator = True
+                if add_separator:
+                    self.context_menu.addSeparator()
+                    add_separator = False
                 self.context_menu.actionRemoveOptionsSection = QtWidgets.QAction(self)
                 self.context_menu.actionRemoveOptionsSection.setText("Remove section")
                 self.context_menu.addAction(self.context_menu.actionRemoveOptionsSection)
@@ -914,11 +950,16 @@ class edit_cfg_L2(QtWidgets.QWidget):
                         self.context_menu.actionSetIRGATypeLi7500.setText("Li-7500")
                         self.context_menu.addAction(self.context_menu.actionSetIRGATypeLi7500)
                         self.context_menu.actionSetIRGATypeLi7500.triggered.connect(self.set_irga_li7500)
-                    if existing_entry != "Li-7500A":
-                        self.context_menu.actionSetIRGATypeLi7500A = QtWidgets.QAction(self)
-                        self.context_menu.actionSetIRGATypeLi7500A.setText("Li-7500A")
-                        self.context_menu.addAction(self.context_menu.actionSetIRGATypeLi7500A)
-                        self.context_menu.actionSetIRGATypeLi7500A.triggered.connect(self.set_irga_li7500a)
+                    if existing_entry != "Li-7500A (<V6.5)":
+                        self.context_menu.actionSetIRGATypeLi7500APre6_5 = QtWidgets.QAction(self)
+                        self.context_menu.actionSetIRGATypeLi7500APre6_5.setText("Li-7500A (<V6.5)")
+                        self.context_menu.addAction(self.context_menu.actionSetIRGATypeLi7500APre6_5)
+                        self.context_menu.actionSetIRGATypeLi7500APre6_5.triggered.connect(self.set_irga_li7500a_pre6_5)
+                    if existing_entry != "Li-7500A (>=V6.5)":
+                        self.context_menu.actionSetIRGATypeLi7500APost6_5 = QtWidgets.QAction(self)
+                        self.context_menu.actionSetIRGATypeLi7500APost6_5.setText("Li-7500A (>=V6.5)")
+                        self.context_menu.addAction(self.context_menu.actionSetIRGATypeLi7500APost6_5)
+                        self.context_menu.actionSetIRGATypeLi7500APost6_5.triggered.connect(self.set_irga_li7500a_post6_5)
                     if existing_entry != "Li-7500RS":
                         self.context_menu.actionSetIRGATypeLi7500RS = QtWidgets.QAction(self)
                         self.context_menu.actionSetIRGATypeLi7500RS.setText("Li-7500RS")
@@ -944,6 +985,24 @@ class edit_cfg_L2(QtWidgets.QWidget):
                         self.context_menu.actionSetIRGATypeIRGASON.setText("IRGASON")
                         self.context_menu.addAction(self.context_menu.actionSetIRGATypeIRGASON)
                         self.context_menu.actionSetIRGATypeIRGASON.triggered.connect(self.set_irga_irgason)
+                elif key in ["SONIC_Check", "IRGA_Check"]:
+                    existing_entry = str(parent.child(selected_item.row(),1).text())
+                    if existing_entry != "Yes":
+                        self.context_menu.actionSetCheckYes = QtWidgets.QAction(self)
+                        self.context_menu.actionSetCheckYes.setText("Yes")
+                        self.context_menu.addAction(self.context_menu.actionSetCheckYes)
+                        self.context_menu.actionSetCheckYes.triggered.connect(self.set_check_yes)
+                    if existing_entry != "No":
+                        self.context_menu.actionSetCheckNo = QtWidgets.QAction(self)
+                        self.context_menu.actionSetCheckNo.setText("No")
+                        self.context_menu.addAction(self.context_menu.actionSetCheckNo)
+                        self.context_menu.actionSetCheckNo.triggered.connect(self.set_check_no)
+            elif (str(parent.text()) == "Options") and (selected_item.column() == 0):
+                if selected_item.text() in ["SONIC_Check", "IRGA_Check"]:
+                    self.context_menu.actionRemoveOption = QtWidgets.QAction(self)
+                    self.context_menu.actionRemoveOption.setText("Remove option")
+                    self.context_menu.addAction(self.context_menu.actionRemoveOption)
+                    self.context_menu.actionRemoveOption.triggered.connect(self.remove_item)
             elif str(parent.text()) == "Variables":
                 # get a list of existing entries
                 existing_entries = self.get_existing_entries()
@@ -1321,12 +1380,19 @@ class edit_cfg_L2(QtWidgets.QWidget):
         parent = selected_item.parent()
         parent.child(selected_item.row(), 1).setText("Li-7500")
 
-    def set_irga_li7500a(self):
-        """ Set the IRGA type to Li-7500A."""
+    def set_irga_li7500a_pre6_5(self):
+        """ Set the IRGA type to Li-7500A pre V6.5."""
         idx = self.view.selectedIndexes()[0]
         selected_item = idx.model().itemFromIndex(idx)
         parent = selected_item.parent()
-        parent.child(selected_item.row(), 1).setText("Li-7500A")
+        parent.child(selected_item.row(), 1).setText("Li-7500A (<V6.5)")
+
+    def set_irga_li7500a_post6_5(self):
+        """ Set the IRGA type to Li-7500A post V6.5."""
+        idx = self.view.selectedIndexes()[0]
+        selected_item = idx.model().itemFromIndex(idx)
+        parent = selected_item.parent()
+        parent.child(selected_item.row(), 1).setText("Li-7500A (>=V6.5)")
 
     def set_irga_li7500rs(self):
         """ Set the IRGA type to Li-7500RS."""
@@ -1362,6 +1428,20 @@ class edit_cfg_L2(QtWidgets.QWidget):
         selected_item = idx.model().itemFromIndex(idx)
         parent = selected_item.parent()
         parent.child(selected_item.row(), 1).setText("IRGASON")
+
+    def set_check_no(self):
+        """ Set the Sonic check to No."""
+        idx = self.view.selectedIndexes()[0]
+        selected_item = idx.model().itemFromIndex(idx)
+        parent = selected_item.parent()
+        parent.child(selected_item.row(), 1).setText("No")
+
+    def set_check_yes(self):
+        """ Set the Sonic check to Yes."""
+        idx = self.view.selectedIndexes()[0]
+        selected_item = idx.model().itemFromIndex(idx)
+        parent = selected_item.parent()
+        parent.child(selected_item.row(), 1).setText("Yes")
 
     def update_tab_text(self):
         """ Add an asterisk to the tab title text to indicate tab contents have changed."""
