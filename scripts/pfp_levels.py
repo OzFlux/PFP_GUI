@@ -1,16 +1,8 @@
 # standard modules
-import ast
 import copy
 import logging
 import os
-import sys
-import time
-# 3rd party modules
-import numpy
-import xlrd
 # PFP modules
-import constants as c
-import meteorologicalfunctions as pfp_mf
 import pfp_ck
 import pfp_gf
 import pfp_gfALT
@@ -396,7 +388,7 @@ def l6qc(main_gui, cf, ds5):
     # estimate ER using Lloyd-Taylor
     pfp_rp.ERUsingLloydTaylor(cf, ds6, l6_info)
     # estimate ER using Lasslop et al
-    pfp_rp.ERUsingLasslop(cf, ds6, l6_info)
+    pfp_rp.ERUsingLasslop(ds6, l6_info)
     # merge the estimates of ER with the observations
     pfp_ts.MergeSeriesUsingDict(ds6, l6_info, merge_order="standard")
     # calculate NEE from Fc and ER
@@ -406,7 +398,7 @@ def l6qc(main_gui, cf, ds5):
     # calculate ET from Fe
     pfp_rp.CalculateET(ds6)
     # partition NEE into GPP and ER
-    pfp_rp.PartitionNEE(cf, ds6, l6_info)
+    pfp_rp.PartitionNEE(ds6, l6_info)
     # write the percentage of good data as a variable attribute
     pfp_utils.get_coverage_individual(ds6)
     # write the percentage of good data for groups

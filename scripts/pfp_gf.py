@@ -21,7 +21,7 @@ import pfp_utils
 
 logger = logging.getLogger("pfp_log")
 
-def CheckDrivers(info, ds):
+def CheckDrivers(ds, info, called_by):
     """
     Purpose:
      Check the drivers specified for gap filling using SOLO and warn
@@ -36,8 +36,8 @@ def CheckDrivers(info, ds):
     ts = int(ds.globalattributes["time_step"])
     ldt = pfp_utils.GetVariable(ds, "DateTime")
     gf_drivers = []
-    for label in info["outputs"].keys():
-        gf_drivers = gf_drivers + info["outputs"][label]["drivers"]
+    for label in info[called_by]["outputs"].keys():
+        gf_drivers = gf_drivers + info[called_by]["outputs"][label]["drivers"]
     drivers = list(set(gf_drivers))
     drivers_with_missing = {}
     # loop over the drivers and check for missing data
@@ -84,7 +84,7 @@ def CheckDrivers(info, ds):
         ds.returncodes["value"] = 1
         return
     # check to see if the user wants us to truncate to an end date
-    if info["info"]["truncate_to_imports"].lower() == "no":
+    if info[called_by]["info"]["truncate_to_imports"].lower() == "no":
         msg = "  Truncation to imported variable end date disabled in control file"
         logger.error(msg)
         ds.returncodes["message"] = msg
@@ -190,21 +190,29 @@ def CheckGapLengths(cf, ds, l5_info):
             targets_without.append(target)
     # if we have any, put up a warning message and let the user decide
     if len(targets_without) != 0:
-        # put up a message box, continue or quit
-        msg = "The following series have long gaps but no long gap filling method\n"
-        msg = msg + "is specified in the control file.\n"
-        msg = msg + "    " + ",".join(targets_without) + "\n"
-        msg = msg + "To add a long gap fill method, press 'Quit' and edit the control file\n"
-        msg = msg + "or press 'Continue' to ignore this warning."
-        result = pfp_gui.MsgBox_ContinueOrQuit(msg, title="Warning: Long gaps")
-        if result.clickedButton().text() == "Quit":
-            # user wants to edit the control file
-            msg = " Quitting L5 to edit control file"
-            logger.warning(msg)
-            ds.returncodes["message"] = msg
-            ds.returncodes["value"] = 1
+        if cf["Options"]["call_mode"].lower() == "interactive":
+            # put up a message box, continue or quit
+            msg = "The following series have long gaps but no long gap filling method\n"
+            msg = msg + "is specified in the control file.\n"
+            msg = msg + "    " + ",".join(targets_without) + "\n"
+            msg = msg + "To add a long gap fill method, press 'Quit' and edit the control file\n"
+            msg = msg + "or press 'Continue' to ignore this warning."
+            result = pfp_gui.MsgBox_ContinueOrQuit(msg, title="Warning: Long gaps")
+            if result.clickedButton().text() == "Quit":
+                # user wants to edit the control file
+                msg = " Quitting L5 to edit control file"
+                logger.warning(msg)
+                ds.returncodes["message"] = msg
+                ds.returncodes["value"] = 1
+            else:
+                # user wants to continue, turn on auto-complete for SOLO ...
+                if "GapFillUsingSOLO" in l5_info:
+                    l5_info["GapFillUsingSOLO"]["gui"]["auto_complete"] = True
+                # ... and disable masking of long gaps with MDS
+                if "GapFillUsingMDS" in l5_info:
+                    l5_info["GapFillUsingMDS"]["info"].pop("MaxShortGapRecords", None)
         else:
-            # user wants to continue, turn on auto-complete for SOLO ...
+            # batch mode, turn on auto-complete for SOLO ...
             if "GapFillUsingSOLO" in l5_info:
                 l5_info["GapFillUsingSOLO"]["gui"]["auto_complete"] = True
             # ... and disable masking of long gaps with MDS
@@ -295,7 +303,7 @@ def gfalternate_createdict(cf, ds, l4_info, label, called_by):
         # only need to create the ["gui"] dictionary on the first pass
         gfalternate_createdict_gui(cf, ds, l4_info, called_by)
     # get the outputs section
-    gfalternate_createdict_outputs(cf, ds, l4_info, label, called_by)
+    gfalternate_createdict_outputs(cf, l4_info, label, called_by)
     # create an empty series in ds if the alternate output series doesn't exist yet
     outputs = l4_info[called_by]["outputs"].keys()
     for output in outputs:
@@ -307,6 +315,15 @@ def gfalternate_createdict(cf, ds, l4_info, label, called_by):
     return
 
 def gfalternate_createdict_info(cf, ds, l4_info, called_by):
+    """
+    Purpose:
+     Create the "info" section of the l4_info[called_by] dictionary.
+    Usage:
+    Side effects:
+    Author: PRI
+    Date: Back in the day
+          June 2019 - modified for new l4_info structure
+    """
     # reset the return message and code
     ds.returncodes["message"] = "OK"
     ds.returncodes["value"] = 0
@@ -347,7 +364,7 @@ def gfalternate_createdict_info(cf, ds, l4_info, called_by):
     l4a["info"]["xl_file_name"] = xl_file_name
     return
 
-def gfalternate_createdict_outputs(cf, ds, l4_info, label, called_by):
+def gfalternate_createdict_outputs(cf, l4_info, label, called_by):
     # name of alternate output series in ds
     outputs = cf["Drivers"][label][called_by].keys()
     # loop over the outputs listed in the control file
@@ -432,40 +449,42 @@ def gfalternate_createdict_gui(cf, ds, l4_info, called_by):
     l4a["gui"]["nperhr"] = int(float(60)/ts + 0.5)
     l4a["gui"]["nperday"] = int(float(24)*l4a["gui"]["nperhr"] + 0.5)
     l4a["gui"]["max_lags"] = int(float(12)*l4a["gui"]["nperhr"] + 0.5)
+    # items from the [GUI] section of the control file
+    sl = ["GUI", "GapFillFromAlternate"]
     # window length
-    opt = pfp_utils.get_keyvaluefromcf(cf, ["GUI", "GapFillFromAlternate"], "period_option", default="manual")
+    opt = pfp_utils.get_keyvaluefromcf(cf, sl, "period_option", default="manual")
     if opt == "manual":
         l4a["gui"]["period_option"] = 1
     elif opt == "monthly":
         l4a["gui"]["period_option"] = 2
-        opt = pfp_utils.get_keyvaluefromcf(cf, ["GUI", "GapFillFromAlternate"], "number_months", default=3)
+        opt = pfp_utils.get_keyvaluefromcf(cf, sl, "number_months", default=3)
         l4a["gui"]["number_months"] = int(opt)
     elif opt == "days":
         l4a["gui"]["period_option"] = 3
-        opt = pfp_utils.get_keyvaluefromcf(cf, ["GUI", "GapFillFromAlternate"], "number_days", default=90)
+        opt = pfp_utils.get_keyvaluefromcf(cf, sl, "number_days", default=90)
         l4a["gui"]["number_days"] = int(opt)
     # overwrite option
     l4a["gui"]["overwrite"] = False
-    opt = pfp_utils.get_keyvaluefromcf(cf, ["GUI", "GapFillFromAlternate"], "overwrite", default="no")
+    opt = pfp_utils.get_keyvaluefromcf(cf, sl, "overwrite", default="no")
     if opt.lower() == "yes": l4a["gui"]["overwrite"] = True
     # show plots option
     l4a["gui"]["show_plots"] = True
-    opt = pfp_utils.get_keyvaluefromcf(cf, ["GUI", "GapFillFromAlternate"], "show_plots", default="yes")
+    opt = pfp_utils.get_keyvaluefromcf(cf, sl, "show_plots", default="yes")
     if opt.lower() == "no": l4a["gui"]["show_plots"] = False
     # show all plots option
     l4a["gui"]["show_all"] = False
-    opt = pfp_utils.get_keyvaluefromcf(cf, ["GUI", "GapFillFromAlternate"], "show_all", default="no")
+    opt = pfp_utils.get_keyvaluefromcf(cf, sl, "show_all", default="no")
     if opt.lower() == "yes": l4a["gui"]["show_all"] = True
     # auto-complete option
     l4a["gui"]["auto_complete"] = True
-    opt = pfp_utils.get_keyvaluefromcf(cf, ["GUI", "GapFillFromAlternate"], "auto_complete", default="yes")
+    opt = pfp_utils.get_keyvaluefromcf(cf, sl, "auto_complete", default="yes")
     if opt.lower() == "no": l4a["gui"]["auto_complete"] = False
     l4a["gui"]["autoforce"] = False
     # minimum percentage of good points required
-    opt = pfp_utils.get_keyvaluefromcf(cf, ["GUI", "GapFillFromAlternate"], "min_percent", default=50)
+    opt = pfp_utils.get_keyvaluefromcf(cf, sl, "min_percent", default=50)
     l4a["gui"]["min_percent"] = max(int(opt), 1)
     # start date of period to be gap filled
-    opt = pfp_utils.get_keyvaluefromcf(cf, ["GUI", "GapFillFromAlternate"], "start_date", default="YYYY-MM-DD HH:mm")
+    opt = pfp_utils.get_keyvaluefromcf(cf, sl, "start_date", default="YYYY-MM-DD HH:mm")
     try:
         sd = dateutil.parser.parse(opt)
     except (ValueError, TypeError):
@@ -796,15 +815,16 @@ def gfSOLO_createdict(cf, ds, l5_info, target, called_by):
     nrecs = int(ds.globalattributes["nc_nrecs"])
     # create the solo settings directory
     if called_by not in l5_info.keys():
+        # create the GapFillUsingSOLO dictionary
         l5_info[called_by] = {"outputs": {}, "info": {}, "gui": {}}
-    # get the info section
-    gfSOLO_createdict_info(cf, ds, l5_info[called_by], called_by)
-    if ds.returncodes["value"] != 0:
-        return
+        # only need to create the ["info"] dictionary on the first pass
+        gfSOLO_createdict_info(cf, ds, l5_info, called_by)
+        if ds.returncodes["value"] != 0:
+            return
+        # only need to create the ["gui"] dictionary on the first pass
+        gfSOLO_createdict_gui(cf, ds, l5_info, called_by)
     # get the outputs section
-    gfSOLO_createdict_outputs(cf, l5_info[called_by], target, called_by)
-    # the gui section is done in pfp_gfSOLO.gfSOLO_run_gui
-    l5_info[called_by]["gui"]["auto_complete"] = False
+    gfSOLO_createdict_outputs(cf, l5_info, target, called_by)
     # add the summary plors section
     if "SummaryPlots" in cf:
         l5_info[called_by]["SummaryPlots"] = cf["SummaryPlots"]
@@ -821,15 +841,100 @@ def gfSOLO_createdict(cf, ds, l5_info, target, called_by):
             pfp_utils.CreateVariable(ds, variable)
     return
 
-def gfSOLO_createdict_info(cf, ds, solo, called_by):
+def gfSOLO_createdict_gui(cf, ds, l5_info, called_by):
     """
     Purpose:
+     Get settings for the GapFillUsingSOLO routine from the [GUI]
+     section of the L5 control file.
+    Usage:
+    Side effects:
+    Author: PRI
+    Date: August 2019
+    """
+    # local pointer to l5_info[called_by]
+    l5s = l5_info[called_by]
+    # local pointer to datetime
+    ldt = pfp_utils.GetVariable(ds, "DateTime")
+    # populate the l5_info["gui"] dictionary with things that will be useful
+    ts = int(ds.globalattributes["time_step"])
+    # number of records per hour and per day
+    l5s["gui"]["nperhr"] = int(float(60)/ts + 0.5)
+    l5s["gui"]["nperday"] = int(float(24)*l5s["gui"]["nperhr"] + 0.5)
+    # items from the [GUI] section of the control file
+    sl = ["GUI", called_by]
+    # window length
+    opt = pfp_utils.get_keyvaluefromcf(cf, sl, "period_option", default="manual")
+    if opt == "manual":
+        l5s["gui"]["period_option"] = 1
+    elif opt == "monthly":
+        l5s["gui"]["period_option"] = 2
+        opt = pfp_utils.get_keyvaluefromcf(cf, sl, "number_months", default=2)
+        l5s["gui"]["number_months"] = int(opt)
+    elif opt == "days":
+        l5s["gui"]["period_option"] = 3
+        opt = pfp_utils.get_keyvaluefromcf(cf, sl, "number_days", default=60)
+        l5s["gui"]["number_days"] = int(opt)
+    # overwrite option
+    l5s["gui"]["overwrite"] = False
+    opt = pfp_utils.get_keyvaluefromcf(cf, sl, "overwrite", default="no")
+    if opt.lower() == "yes": l5s["gui"]["overwrite"] = True
+    # show plots option
+    l5s["gui"]["show_plots"] = True
+    opt = pfp_utils.get_keyvaluefromcf(cf, sl, "show_plots", default="yes")
+    if opt.lower() == "no": l5s["gui"]["show_plots"] = False
+    # show all plots option
+    l5s["gui"]["show_all"] = False
+    opt = pfp_utils.get_keyvaluefromcf(cf, sl, "show_all", default="no")
+    if opt.lower() == "yes": l5s["gui"]["show_all"] = True
+    # auto-complete option
+    l5s["gui"]["auto_complete"] = True
+    opt = pfp_utils.get_keyvaluefromcf(cf, sl, "auto_complete", default="yes")
+    if opt.lower() == "no": l5s["gui"]["auto_complete"] = False
+    # minimum percentage of good points required
+    opt = pfp_utils.get_keyvaluefromcf(cf, sl, "min_percent", default=50)
+    l5s["gui"]["min_percent"] = max(int(opt), 1)
+    # nodes for SOFM/SOLO network
+    opt = pfp_utils.get_keyvaluefromcf(cf, sl, "nodes", default="auto")
+    l5s["gui"]["nodes"] = str(opt)
+    # training iterations
+    opt = pfp_utils.get_keyvaluefromcf(cf, sl, "training", default="500")
+    l5s["gui"]["training"] = str(opt)
+    # nda factor
+    opt = pfp_utils.get_keyvaluefromcf(cf, sl, "nda_factor", default="5")
+    l5s["gui"]["nda_factor"] = str(opt)
+    # learning rate
+    opt = pfp_utils.get_keyvaluefromcf(cf, sl, "learning_rate", default="0.001")
+    l5s["gui"]["learning_rate"] = str(opt)
+    # learning iterations
+    opt = pfp_utils.get_keyvaluefromcf(cf, sl, "iterations", default="500")
+    l5s["gui"]["iterations"] = str(opt)
+    # start date of period to be gap filled
+    opt = pfp_utils.get_keyvaluefromcf(cf, sl, "start_date", default="YYYY-MM-DD HH:mm")
+    try:
+        sd = dateutil.parser.parse(opt)
+    except (ValueError, TypeError):
+        sd = ldt["Data"][0].strftime("%Y-%m-%d %H:%M")
+    l5s["gui"]["startdate"] = sd
+    # end date of period to be gap filled
+    opt = pfp_utils.get_keyvaluefromcf(cf, sl, "end_date", default="YYYY-MM-DD HH:mm")
+    try:
+        ed = dateutil.parser.parse(opt)
+    except (ValueError, TypeError):
+        ed = ldt["Data"][-1].strftime("%Y-%m-%d %H:%M")
+    l5s["gui"]["enddate"] = ed
+    return
+
+def gfSOLO_createdict_info(cf, ds, l5_info, called_by):
+    """
+    Purpose:
+     Create the "info" section of the l5_info[called_by] dictionary.
     Usage:
     Side effects:
     Author: PRI
     Date: Back in the day
           June 2019 - modified for new l5_info structure
     """
+    l5s = l5_info[called_by]
     # reset the return message and code
     ds.returncodes["message"] = "OK"
     ds.returncodes["value"] = 0
@@ -839,23 +944,24 @@ def gfSOLO_createdict_info(cf, ds, solo, called_by):
     level = ds.globalattributes["nc_level"]
     # local pointer to the datetime series
     ldt = ds.series["DateTime"]["Data"]
-    # add an info section to the info["solo"] dictionary
-    solo["info"]["file_startdate"] = ldt[0].strftime("%Y-%m-%d %H:%M")
-    solo["info"]["file_enddate"] = ldt[-1].strftime("%Y-%m-%d %H:%M")
-    solo["info"]["startdate"] = ldt[0].strftime("%Y-%m-%d %H:%M")
-    solo["info"]["enddate"] = ldt[-1].strftime("%Y-%m-%d %H:%M")
-    solo["info"]["called_by"] = called_by
-    solo["info"]["time_step"] = time_step
+    # add an info section to the l5_info[called_by] dictionary
+    l5s["info"]["file_startdate"] = ldt[0].strftime("%Y-%m-%d %H:%M")
+    l5s["info"]["file_enddate"] = ldt[-1].strftime("%Y-%m-%d %H:%M")
+    l5s["info"]["startdate"] = ldt[0].strftime("%Y-%m-%d %H:%M")
+    l5s["info"]["enddate"] = ldt[-1].strftime("%Y-%m-%d %H:%M")
+    l5s["info"]["called_by"] = called_by
+    l5s["info"]["time_step"] = time_step
+    l5s["info"]["site_name"] = ds.globalattributes["site_name"]
     # check to see if this is a batch or an interactive run
     call_mode = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "call_mode", default="interactive")
-    solo["info"]["call_mode"] = call_mode
+    l5s["info"]["call_mode"] = call_mode
     # truncate to last date in Imports?
     truncate = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "TruncateToImports", default="Yes")
-    solo["info"]["truncate_to_imports"] = truncate
+    l5s["info"]["truncate_to_imports"] = truncate
     # number of records per day and maximum lags
     nperhr = int(float(60)/time_step + 0.5)
-    solo["info"]["nperday"] = int(float(24)*nperhr + 0.5)
-    solo["info"]["maxlags"] = int(float(12)*nperhr + 0.5)
+    l5s["info"]["nperday"] = int(float(24)*nperhr + 0.5)
+    l5s["info"]["maxlags"] = int(float(12)*nperhr + 0.5)
     # get the plot path
     plot_path = pfp_utils.get_keyvaluefromcf(cf, ["Files"], "plot_path", default="./plots/")
     plot_path = os.path.join(plot_path, level, "")
@@ -877,12 +983,21 @@ def gfSOLO_createdict_info(cf, ds, solo, called_by):
             else:
                 plot_path = "./plots/"
                 cf["Files"]["plot_path"] = "./plots/"
-    solo["info"]["plot_path"] = plot_path
+    l5s["info"]["plot_path"] = plot_path
     return
 
-def gfSOLO_createdict_outputs(cf, solo, target, called_by):
+def gfSOLO_createdict_outputs(cf, l5_info, target, called_by):
+    """
+    Purpose:
+     Create the l5_info[called_by]["outputs"] dictionary.
+    Usage:
+    Side effects:
+    Author: PRI
+    Date: Back in the day
+        August 2019 - rewritten for consistency and batch operation
+    """
     level = cf["level"]
-    so = solo["outputs"]
+    so = l5_info[called_by]["outputs"]
     # loop over the outputs listed in the control file
     if level == "L5":
         section = "Fluxes"

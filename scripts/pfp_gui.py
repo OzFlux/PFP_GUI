@@ -5783,7 +5783,7 @@ class solo_gui(QtWidgets.QDialog):
         self.QuitButton.clicked.connect(self.call_gui_quit)
 
     def call_gui_run(self):
-        pfp_gfSOLO.gfSOLO_run_gui(self)
+        pfp_gfSOLO.gfSOLO_run_interactive(self)
 
     def call_gui_quit(self):
         pfp_gfSOLO.gfSOLO_quit(self)

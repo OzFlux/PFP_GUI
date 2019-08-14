@@ -1,6 +1,5 @@
 """ Routines for the Lasslop et al partitioning scheme."""
 # standard modules
-import ast
 import datetime
 import logging
 import os
@@ -13,6 +12,7 @@ from scipy.optimize import curve_fit, OptimizeWarning
 # PFP modules
 import constants as c
 import pfp_cfg
+import pfp_gui
 import pfp_utils
 
 warnings.simplefilter("ignore", OptimizeWarning)
@@ -583,10 +583,9 @@ def rpLL_plot(pd, ds, output, drivers, target, l6_info, si=0, ei=-1):
     # save a hard copy of the plot
     sdt = xdt[0].strftime("%Y%m%d")
     edt = xdt[-1].strftime("%Y%m%d")
-    plot_path = os.path.join(ieli["plot_path"], "L6", "")
-    if not os.path.exists(plot_path):
-        os.makedirs(plot_path)
-    figname = plot_path + pd["site_name"].replace(" ","") + "_LL_" + pd["label"]
+    if not os.path.exists(ieli["plot_path"]):
+        os.makedirs(ieli["plot_path"])
+    figname = ieli["plot_path"] + pd["site_name"].replace(" ","") + "_LL_" + pd["label"]
     figname = figname + "_" + sdt + "_" + edt + '.png'
     fig.savefig(figname, format='png')
     # draw the plot on the screen
