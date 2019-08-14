@@ -3,10 +3,10 @@ level = L2
     file_path = Right click to browse
     in_filename = Right click to browse (*.nc)
     out_filename = Right click to browse (*.nc)
-
 [Options]
     irga_type = Li-7500
-
+    SONIC_Check = Yes
+    IRGA_Check = Yes
 [Variables]
     [[Fn_NR]]
         [[[RangeCheck]]]
@@ -217,7 +217,6 @@ level = L2
         [[[RangeCheck]]]
             Lower = 0
             Upper = 70
-
 [Plots]
     [[Radiative fluxes]]
         Variables = Fsd,Fsu,Fld,Flu,Fn
