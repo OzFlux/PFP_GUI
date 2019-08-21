@@ -38,6 +38,7 @@ class DataStructure(object):
         self.globalattributes["Functions"] = ""
         self.mergeserieslist = []
         self.averageserieslist = []
+        self.intermediate = []
         self.returncodes = {"value":0,"message":"OK"}
 
 def copy_datastructure(cf,ds_in):
@@ -1787,7 +1788,6 @@ def nc_write_data(nc_obj, data_dict):
         for attr_key in data_dict["variables"][label]["attr"]:
             attr_value = data_dict["variables"][label]["attr"][attr_key]
             nc_var.setncattr(attr_key, attr_value)
-
     return
 
 def nc_write_globalattributes(nc_file, ds, flag_defs=True):
@@ -1900,8 +1900,8 @@ def nc_write_series(ncFile, ds, outputlist=None, ndims=3):
     datetimelist = ['xlDateTime','Year','Month','Day','Hour','Minute','Second','Hdh','Ddd']
     # and write them to the netCDF file
     for ThisOne in sorted(datetimelist):
-        if ThisOne in ds.series.keys(): nc_write_var(ncFile,ds,ThisOne,dims)
-        if ThisOne in outputlist: outputlist.remove(ThisOne)
+        if ThisOne in outputlist:
+            outputlist.remove(ThisOne)
     # write everything else to the netCDF file
     for ThisOne in sorted(outputlist):
         nc_write_var(ncFile,ds,ThisOne,dims)
