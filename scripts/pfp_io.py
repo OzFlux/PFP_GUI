@@ -1601,23 +1601,24 @@ def nc_read_series(ncFullName,checktimestep=True,fixtimestepmethod="round"):
     Author: PRI
     Date: Back in the day
     """
-    logger.info(" Reading netCDF file "+ntpath.split(ncFullName)[1])
+    logger.info(" Reading netCDF file " + ntpath.split(ncFullName)[1])
     netCDF4.default_encoding = 'latin-1'
     ds = DataStructure()
     # check to see if the requested file exists, return empty ds if it doesn't
-    if ncFullName[0:4]!="http":
-        if not pfp_utils.file_exists(ncFullName,mode="quiet"):
-            logger.error(' netCDF file '+ncFullName+' not found')
+    if ncFullName[0:4] != "http":
+        if not pfp_utils.file_exists(ncFullName, mode="quiet"):
+            msg = " netCDF file " + ncFullName + " not found"
+            logger.error(msg)
             raise Exception("nc_read_series: file not found")
     # file probably exists, so let's read it
-    ncFile = netCDF4.Dataset(ncFullName,'r')
+    ncFile = netCDF4.Dataset(ncFullName, "r")
     # disable automatic masking of data when valid_range specified
     ncFile.set_auto_mask(False)
     # now deal with the global attributes
     gattrlist = ncFile.ncattrs()
-    if len(gattrlist)!=0:
+    if len(gattrlist) != 0:
         for gattr in gattrlist:
-            ds.globalattributes[gattr] = getattr(ncFile,gattr)
+            ds.globalattributes[gattr] = getattr(ncFile, gattr)
     # get a list of the variables in the netCDF file (not their QC flags)
     varlist = [x for x in ncFile.variables.keys() if "_QCFlag" not in x]
     for ThisOne in varlist:
@@ -1627,15 +1628,11 @@ def nc_read_series(ncFullName,checktimestep=True,fixtimestepmethod="round"):
         # create the series in the data structure
         ds.series[unicode(ThisOne)] = {}
         # get the data and the QC flag
-        data,flag,attr = nc_read_var(ncFile,ThisOne)
+        data, flag, attr = nc_read_var(ncFile, ThisOne)
         ds.series[ThisOne]["Data"] = data
         ds.series[ThisOne]["Flag"] = flag
         ds.series[ThisOne]["Attr"] = attr
     ncFile.close()
-    # make sure all values of -9999 have non-zero QC flag
-    # NOTE: the following was a quick and dirty fix for something a long time ago
-    #       and needs to be retired
-    #pfp_utils.CheckQCFlags(ds)
     # get a series of Python datetime objects
     if "time" in ds.series.keys():
         time,f,a = pfp_utils.GetSeries(ds,"time")
@@ -1643,18 +1640,17 @@ def nc_read_series(ncFullName,checktimestep=True,fixtimestepmethod="round"):
     else:
         pfp_utils.get_datetimefromymdhms(ds)
     # round the Python datetime to the nearest second
-    pfp_utils.round_datetime(ds,mode="nearest_second")
+    pfp_utils.round_datetime(ds, mode="nearest_second")
     # check the time step and fix it required
     if checktimestep:
         if pfp_utils.CheckTimeStep(ds):
-            pfp_utils.FixTimeStep(ds,fixtimestepmethod=fixtimestepmethod)
-            # update the Excel datetime from the Python datetime
-            pfp_utils.get_xldatefromdatetime(ds)
-            # update the Year, Month, Day etc from the Python datetime
-            pfp_utils.get_ymdhmsfromdatetime(ds)
+            pfp_utils.FixTimeStep(ds, fixtimestepmethod=fixtimestepmethod)
+    # get the Year, Month, Day etc from the Python datetime
+    pfp_utils.get_ymdhmsfromdatetime(ds)
     # tell the user when the data starts and ends
     ldt = ds.series["DateTime"]["Data"]
-    msg = " Got data from "+ldt[0].strftime("%Y-%m-%d %H:%M:%S")+" to "+ldt[-1].strftime("%Y-%m-%d %H:%M:%S")
+    msg = " Got data from " + ldt[0].strftime("%Y-%m-%d %H:%M:%S")
+    msg += " to " + ldt[-1].strftime("%Y-%m-%d %H:%M:%S")
     logger.info(msg)
     return ds
 
