@@ -226,7 +226,8 @@ def cpd_main(cf):
             if i==1: logger.info(' Analysing '+str(d['num_bootstraps'])+' bootstraps')
 
         # Create nocturnal dataframe (drop all records where any one of the variables is NaN)
-        temp_df = df[['Fc','Ta','ustar','xlDateTime','Year']][df['Fsd'] < d['radiation_threshold']].dropna(how = 'any',axis=0)
+        #temp_df = df[['Fc','Ta','ustar','xlDateTime','Year']][df['Fsd'] < d['radiation_threshold']].dropna(how = 'any',axis=0)
+        temp_df = df[['Fc','Ta','ustar','Year']][df['Fsd'] < d['radiation_threshold']].dropna(how = 'any',axis=0)
 
         # Arrange data into seasons
         # try: may be insufficient data, needs to be handled; if insufficient on first pass then return empty,otherwise next pass
@@ -367,7 +368,7 @@ def CPD_run(cf):
         else:
             names[item] = item
     # add the xlDateTime
-    names["xlDateTime"] = "xlDateTime"
+    #names["xlDateTime"] = "xlDateTime"
     names["Year"] = "Year"
     # read the netcdf file
     logger.info(' Reading netCDF file '+file_in)
@@ -650,9 +651,11 @@ def sort(df, flux_period, years_index, i):
     seasons_df.index = hierarchical_index
 
     # Set up the results df
+    #results_df = pd.DataFrame({'T_avg':seasons_df['Ta'].groupby(level = ['year','season','T_class']).mean(),
+                               #'Year':seasons_df['Year'].groupby(level = ['year','season','T_class']).mean(),
+                               #'xlDateTime':seasons_df["xlDateTime"].groupby(level = ['year','season','T_class']).mean()})
     results_df = pd.DataFrame({'T_avg':seasons_df['Ta'].groupby(level = ['year','season','T_class']).mean(),
-                               'Year':seasons_df['Year'].groupby(level = ['year','season','T_class']).mean(),
-                               'xlDateTime':seasons_df["xlDateTime"].groupby(level = ['year','season','T_class']).mean()})
+                               'Year':seasons_df['Year'].groupby(level = ['year','season','T_class']).mean()})
 
     # Sort the seasons by ustar, then bin average and drop the bin level from the index
     # ugly hack to avoid FutureWarning from pandas V0.16.2 and older
