@@ -299,6 +299,7 @@ def CalculateFluxes(cf,ds):
 
         Accepts meteorological constants or variables
         """
+    descr_level = "description_" + ds.globalattributes["nc_level"]
     nRecs = int(ds.globalattributes["nc_nrecs"])
     zeros = numpy.zeros(nRecs,dtype=numpy.int32)
     ones = numpy.ones(nRecs,dtype=numpy.int32)
@@ -311,7 +312,7 @@ def CalculateFluxes(cf,ds):
 
     long_name = ''
     if 'Massman' in ds.globalattributes['Functions']:
-        long_name = ' and frequency response corrected'
+        long_name = ', frequency response corrected'
 
     logger.info(" Calculating fluxes from covariances")
     if "wT" in ds.series.keys():
@@ -319,7 +320,9 @@ def CalculateFluxes(cf,ds):
         wT,flag,attr = pfp_utils.GetSeriesasMA(ds,"wT")
         if attr["units"] in ok_units:
             Fhv = RhoCp*wT
-            attr["long_name"] = "Virtual heat flux, rotated to natural wind coordinates"+long_name
+            attr["long_name"] = "Virtual heat flux"
+            attr[descr_level] = "Rotated to natural wind coordinates" + long_name
+            attr["group_name"] = "flux"
             attr["units"] = "W/m2"
             flag = numpy.where(numpy.ma.getmaskarray(Fhv)==True,ones,zeros)
             pfp_utils.CreateSeries(ds,"Fhv",Fhv,flag,attr)
@@ -331,7 +334,9 @@ def CalculateFluxes(cf,ds):
         wA,flag,attr = pfp_utils.GetSeriesasMA(ds,"wA")
         if attr["units"]=="g/m2/s":
             Fe = Lv*wA/float(1000)
-            attr["long_name"] = "Latent heat flux, rotated to natural wind coordinates"+long_name
+            attr["long_name"] = "Latent heat flux"
+            attr[descr_level] = "Rotated to natural wind coordinates" + long_name
+            attr["group_name"] = "flux"
             attr["standard_name"] = "surface_upward_latent_heat_flux"
             attr["units"] = "W/m2"
             flag = numpy.where(numpy.ma.getmaskarray(Fe)==True,ones,zeros)
@@ -344,7 +349,9 @@ def CalculateFluxes(cf,ds):
         wC,flag,attr = pfp_utils.GetSeriesasMA(ds,"wC")
         if attr["units"]=="mg/m2/s":
             Fc = wC
-            attr["long_name"] = "CO2 flux, rotated to natural wind coordinates"+long_name
+            attr["long_name"] = "CO2 flux"
+            attr[descr_level] = "Rotated to natural wind coordinates" + long_name
+            attr["group_name"] = "flux"
             attr["units"] = "mg/m2/s"
             flag = numpy.where(numpy.ma.getmaskarray(Fc)==True,ones,zeros)
             pfp_utils.CreateSeries(ds,"Fc",Fc,flag,attr)
@@ -359,12 +366,16 @@ def CalculateFluxes(cf,ds):
             vs = uw*uw + vw*vw
             Fm = rhom*numpy.ma.sqrt(vs)
             us = numpy.ma.sqrt(numpy.ma.sqrt(vs))
-            attr["long_name"] = "Momentum flux, rotated to natural wind coordinates"+long_name
+            attr["long_name"] = "Momentum flux"
+            attr[descr_level] = "Rotated to natural wind coordinates" + long_name
+            attr["group_name"] = "flux"
             attr["units"] = "kg/m/s2"
             flag = numpy.where(numpy.ma.getmaskarray(Fm)==True,ones,zeros)
             pfp_utils.CreateSeries(ds,"Fm",Fm,flag,attr)
             pfp_utils.CreateSeries(ds,"Fm_PFP",Fm,flag,attr)
-            attr["long_name"] = "Friction velocity, rotated to natural wind coordinates"+long_name
+            attr["long_name"] = "Friction velocity"
+            attr[descr_level] = "Rotated to natural wind coordinates" + long_name
+            attr["group_name"] = "flux"
             attr["units"] = "m/s"
             flag = numpy.where(numpy.ma.getmaskarray(us)==True,ones,zeros)
             pfp_utils.CreateSeries(ds,"ustar",us,flag,attr)
@@ -418,11 +429,11 @@ def CalculateHumidities(ds):
     Author: PRI
     """
     if "Ah" not in ds.series.keys():
-        if "q" in ds.series.keys():
+        if "SH" in ds.series.keys():
             AbsoluteHumidityFromq(ds)    # calculate Ah from q
         elif "RH" in ds.series.keys():
             AbsoluteHumidityFromRH(ds)   # calculate Ah from RH
-    if "q" not in ds.series.keys():
+    if "SH" not in ds.series.keys():
         if "Ah" in ds.series.keys():
             SpecificHumidityFromAh(ds)
         elif "RH" in ds.series.keys():
@@ -430,7 +441,7 @@ def CalculateHumidities(ds):
     if "RH" not in ds.series.keys():
         if "Ah" in ds.series.keys():
             RelativeHumidityFromAh(ds)
-        elif "q" in ds.series.keys():
+        elif "SH" in ds.series.keys():
             RelativeHumidityFromq(ds)
 
 def CalculateHumiditiesAfterGapFill(ds, info):
@@ -465,14 +476,14 @@ def CalculateHumiditiesAfterGapFill(ds, info):
     if len(gf_list)==0: return
     # check to see if absolute humidity (Ah) was gap filled ...
     if "Ah" in gf_list:
-        if "q" not in gf_list: SpecificHumidityFromAh(ds)
+        if "SH" not in gf_list: SpecificHumidityFromAh(ds)
         if "RH" not in gf_list: RelativeHumidityFromAh(ds)
     # ... or was relative humidity (RH) gap filled ...
     elif "RH" in gf_list:
         if "Ah" not in gf_list: AbsoluteHumidityFromRH(ds)
-        if "q" not in gf_list: SpecificHumidityFromRH(ds)
+        if "SH" not in gf_list: SpecificHumidityFromRH(ds)
     # ... or was specific humidity (q) gap filled ...
-    elif "q" in gf_list:
+    elif "SH" in gf_list:
         if "Ah" not in gf_list: AbsoluteHumidityFromq(ds)
         if "RH" not in gf_list: RelativeHumidityFromq(ds)
     else:
@@ -482,6 +493,7 @@ def CalculateHumiditiesAfterGapFill(ds, info):
 def AbsoluteHumidityFromRH(ds):
     """ Calculate absolute humidity from relative humidity. """
     logger.info(' Calculating absolute humidity from relative humidity')
+    descr_level = "description_" + ds.globalattributes["nc_level"]
     Ta,Ta_flag,a = pfp_utils.GetSeriesasMA(ds,"Ta")
     RH,RH_flag,a = pfp_utils.GetSeriesasMA(ds,"RH")
     Ah_new_flag = pfp_utils.MergeQCFlag([Ta_flag,RH_flag])
@@ -492,18 +504,24 @@ def AbsoluteHumidityFromRH(ds):
         #index = numpy.ma.where(numpy.ma.getmaskarray(Ah)==True)[0]
         Ah[index] = Ah_new[index]
         Ah_flag[index] = Ah_new_flag[index]
-        Ah_attr["long_name"] = Ah_attr["long_name"]+", merged with Ah calculated from RH"
+        if descr_level in Ah_attr:
+            Ah_attr[descr_level] += ", merged with Ah calculated from RH"
+        else:
+            Ah_attr[descr_level] = "Merged with Ah calculated from RH"
         pfp_utils.CreateSeries(ds,"Ah",Ah,Ah_flag,Ah_attr)
     else:
         attr = pfp_utils.MakeAttributeDictionary(long_name='Absolute humidity',units='g/m3',standard_name='mass_concentration_of_water_vapor_in_air')
-        pfp_utils.CreateSeries(ds,'Ah',Ah_new,Ah_new_flag,attr)
+        attr[descr_level] = "Absoulte humidity calculated from Ta and RH"
+        attr["group_name"] = "meteorology"
+        pfp_utils.CreateSeries(ds, "Ah", Ah_new, Ah_new_flag, attr)
 
 def AbsoluteHumidityFromq(ds):
     """ Calculate absolute humidity from specific humidity. """
     logger.info(' Calculating absolute humidity from specific humidity')
+    descr_level = "description_" + ds.globalattributes["nc_level"]
     Ta,Ta_flag,a = pfp_utils.GetSeriesasMA(ds,"Ta")
     ps,ps_flag,a = pfp_utils.GetSeriesasMA(ds,"ps")
-    q,q_flag,a = pfp_utils.GetSeriesasMA(ds,"q")
+    q, q_flag, a = pfp_utils.GetSeriesasMA(ds, "SH")
     Ah_new_flag = pfp_utils.MergeQCFlag([Ta_flag,ps_flag,q_flag])
     RH = pfp_mf.RHfromspecifichumidity(q,Ta,ps)
     Ah_new = pfp_mf.absolutehumidityfromRH(Ta,RH)
@@ -513,18 +531,24 @@ def AbsoluteHumidityFromq(ds):
         #index = numpy.ma.where(numpy.ma.getmaskarray(Ah)==True)[0]
         Ah[index] = Ah_new[index]
         Ah_flag[index] = Ah_new_flag[index]
-        Ah_attr["long_name"] = Ah_attr["long_name"]+", merged with Ah calculated from q"
+        if descr_level in Ah_attr:
+            Ah_attr[descr_level] += ", merged with Ah calculated from q"
+        else:
+            Ah_attr[descr_level] = "Merged with Ah calculated from q"
         pfp_utils.CreateSeries(ds,"Ah",Ah,Ah_flag,Ah_attr)
     else:
         attr = pfp_utils.MakeAttributeDictionary(long_name='Absolute humidity',units='g/m3',standard_name='mass_concentration_of_water_vapor_in_air')
+        attr[descr_level] = "Absoulte humidity calculated from Ta, ps and q"
+        attr["group_name"] = "meteorology"
         pfp_utils.CreateSeries(ds,"Ah",Ah_new,Ah_new_flag,attr)
 
 def RelativeHumidityFromq(ds):
     """ Calculate relative humidity from specific humidity. """
     logger.info(' Calculating relative humidity from specific humidity')
+    descr_level = "description_" + ds.globalattributes["nc_level"]
     Ta,Ta_flag,a = pfp_utils.GetSeriesasMA(ds,"Ta")
     ps,ps_flag,a = pfp_utils.GetSeriesasMA(ds,"ps")
-    q,q_flag,a = pfp_utils.GetSeriesasMA(ds,"q")
+    q, q_flag, a = pfp_utils.GetSeriesasMA(ds, "SH")
     RH_new_flag = pfp_utils.MergeQCFlag([Ta_flag,ps_flag,q_flag])
     RH_new = pfp_mf.RHfromspecifichumidity(q,Ta,ps)
     if "RH" in ds.series.keys():
@@ -533,15 +557,21 @@ def RelativeHumidityFromq(ds):
         #index = numpy.ma.where(numpy.ma.getmaskarray(RH)==True)[0]
         RH[index] = RH_new[index]
         RH_flag[index] = RH_new_flag[index]
-        RH_attr["long_name"] = RH_attr["long_name"]+", merged with RH calculated from q"
+        if descr_level in RH_attr:
+            RH_attr[descr_level] += ", merged with RH calculated from q"
+        else:
+            RH_attr[descr_level] = "Merged with RH calculated from q"
         pfp_utils.CreateSeries(ds,"RH",RH,RH_flag,RH_attr)
     else:
         attr = pfp_utils.MakeAttributeDictionary(long_name='Relative humidity',units='%',standard_name='relative_humidity')
-        pfp_utils.CreateSeries(ds,'RH',RH_new,RH_new_flag,attr)
+        attr[descr_level] = "Relative humidity calculated from SH, Ta and ps"
+        attr["group_name"] = "meteorology"
+        pfp_utils.CreateSeries(ds, "RH", RH_new, RH_new_flag, attr)
 
 def RelativeHumidityFromAh(ds):
     """ Calculate relative humidity from absolute humidity. """
     logger.info(' Calculating relative humidity from absolute humidity')
+    descr_level = "description_" + ds.globalattributes["nc_level"]
     Ta,Ta_flag,a = pfp_utils.GetSeriesasMA(ds,"Ta")
     Ah,Ah_flag,a = pfp_utils.GetSeriesasMA(ds,"Ah")
     RH_new_flag = pfp_utils.MergeQCFlag([Ta_flag,Ah_flag])
@@ -552,10 +582,15 @@ def RelativeHumidityFromAh(ds):
         #index = numpy.ma.where(numpy.ma.getmaskarray(RH)==True)[0]
         RH[index] = RH_new[index]
         RH_flag[index] = RH_new_flag[index]
-        RH_attr["long_name"] = RH_attr["long_name"]+", merged with RH calculated from Ah"
+        if descr_level in RH_attr:
+            RH_attr[descr_level] += ", merged with RH calculated from Ah"
+        else:
+            RH_attr[descr_level] = "Merged with RH calculated from Ah"
         pfp_utils.CreateSeries(ds,"RH",RH,RH_flag,RH_attr)
     else:
         attr = pfp_utils.MakeAttributeDictionary(long_name='Relative humidity',units='%',standard_name='relative_humidity')
+        attr[descr_level] = "Relative humidity calculated from Ah and Ta"
+        attr["group_name"] = "meteorology"
         pfp_utils.CreateSeries(ds,"RH",RH_new,RH_new_flag,attr)
 
 def smooth(x,window_len=11,window='hanning'):
@@ -607,46 +642,58 @@ def smooth(x,window_len=11,window='hanning'):
 def SpecificHumidityFromAh(ds):
     """ Calculate specific humidity from absolute humidity. """
     logger.info(' Calculating specific humidity from absolute humidity')
+    descr_level = "description_" + ds.globalattributes["nc_level"]
     Ta,Ta_flag,a = pfp_utils.GetSeriesasMA(ds,"Ta")
     ps,ps_flag,a = pfp_utils.GetSeriesasMA(ds,"ps")
     Ah,Ah_flag,a = pfp_utils.GetSeriesasMA(ds,"Ah")
     q_new_flag = pfp_utils.MergeQCFlag([Ta_flag,ps_flag,Ah_flag])
     RH = pfp_mf.RHfromabsolutehumidity(Ah,Ta)
     q_new = pfp_mf.specifichumidityfromRH(RH, Ta, ps)
-    if "q" in ds.series.keys():
-        q,q_flag,q_attr = pfp_utils.GetSeriesasMA(ds,"q")
+    if "SH" in ds.series.keys():
+        q, q_flag, q_attr = pfp_utils.GetSeriesasMA(ds, "SH")
         index = numpy.where(numpy.ma.getmaskarray(q)==True)[0]
         #index = numpy.ma.where(numpy.ma.getmaskarray(q)==True)[0]
         q[index] = q_new[index]
         q_flag[index] = q_new_flag[index]
-        q_attr["long_name"] = q_attr["long_name"]+", merged with q calculated from Ah"
-        pfp_utils.CreateSeries(ds,"q",q,q_flag,q_attr)
+        if descr_level in q_attr:
+            q_attr[descr_level] += ", merged with q calculated from Ah"
+        else:
+            q_attr[descr_level] = "Merged with q calculated from Ah"
+        pfp_utils.CreateSeries(ds, "SH", q, q_flag, q_attr)
     else:
         attr = pfp_utils.MakeAttributeDictionary(long_name='Specific humidity',units='kg/kg',standard_name='specific_humidity')
-        pfp_utils.CreateSeries(ds,'q',q_new,q_new_flag,attr)
+        attr[descr_level] = "Specific humidity calculated from Ah, Ta and ps"
+        attr["group_name"] = "meteorology"
+        pfp_utils.CreateSeries(ds, "SH", q_new, q_new_flag, attr)
 
 def SpecificHumidityFromRH(ds):
     """ Calculate specific humidity from relative humidity."""
     logger.info(' Calculating specific humidity from relative humidity')
+    descr_level = "description_" + ds.globalattributes["nc_level"]
     Ta,Ta_flag,a = pfp_utils.GetSeriesasMA(ds,"Ta")
     ps,ps_flag,a = pfp_utils.GetSeriesasMA(ds,"ps")
     RH,RH_flag,a = pfp_utils.GetSeriesasMA(ds,"RH")
     q_new_flag = pfp_utils.MergeQCFlag([Ta_flag,ps_flag,RH_flag])
     q_new = pfp_mf.specifichumidityfromRH(RH,Ta,ps)   # specific humidity in units of kg/kg
-    if "q" in ds.series.keys():
-        q,q_flag,q_attr = pfp_utils.GetSeriesasMA(ds,"q")
+    if "SH" in ds.series.keys():
+        q, q_flag, q_attr = pfp_utils.GetSeriesasMA(ds, "SH")
         index = numpy.where(numpy.ma.getmaskarray(q)==True)[0]
         #index = numpy.ma.where(numpy.ma.getmaskarray(q)==True)[0]
         q[index] = q_new[index]
         q_flag[index] = q_new_flag[index]
-        q_attr["long_name"] = q_attr["long_name"]+", merged with q calculated from RH"
-        pfp_utils.CreateSeries(ds,"q",q,q_flag,q_attr)
+        if descr_level in q_attr:
+            q_attr[descr_level] += ", merged with q calculated from RH"
+        else:
+            q_attr[descr_level] = "Merged with q calculated from RH"
+        pfp_utils.CreateSeries(ds, "SH", q, q_flag, q_attr)
     else:
         attr = pfp_utils.MakeAttributeDictionary(long_name='Specific humidity',units='kg/kg',standard_name='specific_humidity')
-        pfp_utils.CreateSeries(ds,"q",q_new,q_new_flag,attr)
+        attr[descr_level] = "Specific humidity calculated from Ah, Ta and ps"
+        attr["group_name"] = "meteorology"
+        pfp_utils.CreateSeries(ds, "SH", q_new, q_new_flag, attr)
 
-def CalculateMeteorologicalVariables(ds,Ta_name='Ta',Tv_name='Tv_SONIC_Av',ps_name='ps',
-                                     q_name="q",Ah_name='Ah',RH_name='RH'):
+def CalculateMeteorologicalVariables(ds,Ta_name='Ta', Tv_name='Tv_SONIC_Av', ps_name='ps',
+                                     q_name="SH", Ah_name='Ah', RH_name='RH'):
     """
         Add time series of meteorological variables based on fundamental
         relationships (Stull 1988)
@@ -678,6 +725,7 @@ def CalculateMeteorologicalVariables(ds,Ta_name='Ta',Tv_name='Tv_SONIC_Av',ps_na
             logger.warning(msg)
             return
     logger.info(' Adding standard met variables to database')
+    descr_level = "description_" + ds.globalattributes["nc_level"]
     # get the required data series
     Ta,f,a = pfp_utils.GetSeriesasMA(ds,Ta_name)
     # deal with possible aliases for the sonic temperature for the time being
@@ -694,60 +742,89 @@ def CalculateMeteorologicalVariables(ds,Ta_name='Ta',Tv_name='Tv_SONIC_Av',ps_na
     Ah,f,a = pfp_utils.GetSeriesasMA(ds,Ah_name)
     q,f,a = pfp_utils.GetSeriesasMA(ds,q_name)
     # do the calculations
-    e = pfp_mf.vapourpressure(Ah,Ta)                  # vapour pressure from absolute humidity and temperature
-    esat = pfp_mf.es(Ta)                              # saturation vapour pressure
-    rhod = pfp_mf.densitydryair(Ta,ps,e)              # partial density of dry air
-    rhom = pfp_mf.densitymoistair(Ta,ps,e)            # density of moist air
-    rhow = pfp_mf.densitywatervapour(Ta,e)            # partial density of water vapour
+    vp = pfp_mf.vapourpressure(Ah, Ta)                # vapour pressure from absolute humidity and temperature
+    vpsat = pfp_mf.es(Ta)                             # saturation vapour pressure
+    rhod = pfp_mf.densitydryair(Ta, ps, vp)           # partial density of dry air
+    rhom = pfp_mf.densitymoistair(Ta, ps, vp)         # density of moist air
+    rhow = pfp_mf.densitywatervapour(Ta, vp)          # partial density of water vapour
     Lv = pfp_mf.Lv(Ta)                                # latent heat of vapourisation
-    mr = pfp_mf.mixingratio(ps,e)                     # mixing ratio
-    mrsat = pfp_mf.mixingratio(ps,esat)               # saturation mixing ratio
+    mr = pfp_mf.mixingratio(ps, vp)                   # mixing ratio
+    mrsat = pfp_mf.mixingratio(ps, vpsat)             # saturation mixing ratio
     qsat = pfp_mf.specifichumidity(mrsat)             # saturation specific humidity from saturation mixing ratio
     Cpd = pfp_mf.specificheatcapacitydryair(Tv)
     Cpw = pfp_mf.specificheatcapacitywatervapour(Ta,Ah)
     RhoCp = pfp_mf.densitytimesspecificheat(rhow,Cpw,rhod,Cpd)
     Cpm = pfp_mf.specificheatmoistair(q)              # specific heat of moist air
-    VPD = esat - e                                # vapour pressure deficit
+    VPD = vpsat - vp                                  # vapour pressure deficit
     SHD = qsat - q                                # specific humidity deficit
     h2o = pfp_mf.h2o_mmolpmolfromgpm3(Ah,Ta,ps)
     # write the meteorological series to the data structure
     attr = pfp_utils.MakeAttributeDictionary(long_name='Vapour pressure',units='kPa',standard_name='water_vapor_partial_pressure_in_air')
-    flag = numpy.where(numpy.ma.getmaskarray(e)==True,ones,zeros)
-    pfp_utils.CreateSeries(ds,'e',e,flag,attr)
+    attr["group_name"] = "meteorology"
+    attr[descr_level] = "Vapour pressure calculated from Ah, Ta and ps"
+    flag = numpy.where(numpy.ma.getmaskarray(vp) == True, ones, zeros)
+    pfp_utils.CreateSeries(ds, 'VP', vp, flag, attr)
+
     attr = pfp_utils.MakeAttributeDictionary(long_name='Saturation vapour pressure',units='kPa')
-    flag = numpy.where(numpy.ma.getmaskarray(esat)==True,ones,zeros)
-    pfp_utils.CreateSeries(ds,'esat',esat,flag,attr)
+    flag = numpy.where(numpy.ma.getmaskarray(vpsat) == True, ones, zeros)
+    pfp_utils.CreateSeries(ds, 'VPsat', vpsat, flag, attr)
+    ds.intermediate.append("VPsat")
+
     attr = pfp_utils.MakeAttributeDictionary(long_name='Density of dry air',units='kg/m3')
     flag = numpy.where(numpy.ma.getmaskarray(rhod)==True,ones,zeros)
     pfp_utils.CreateSeries(ds,'rhod',rhod,flag,attr)
+    ds.intermediate.append("rhod")
+
     attr = pfp_utils.MakeAttributeDictionary(long_name='Density of moist air',units='kg/m3',standard_name='air_density')
     flag = numpy.where(numpy.ma.getmaskarray(rhom)==True,ones,zeros)
     pfp_utils.CreateSeries(ds,'rhom',rhom,flag,attr)
+    ds.intermediate.append("rhom")
+
     attr = pfp_utils.MakeAttributeDictionary(long_name='Partial density of water vapour',units='kg/m3')
     flag = numpy.where(numpy.ma.getmaskarray(rhow)==True,ones,zeros)
     pfp_utils.CreateSeries(ds,'rhow',rhow,flag,attr)
+    ds.intermediate.append("rhow")
+
     attr = pfp_utils.MakeAttributeDictionary(long_name='Latent heat of vapourisation',units='J/kg')
     flag = numpy.where(numpy.ma.getmaskarray(Lv)==True,ones,zeros)
     pfp_utils.CreateSeries(ds,'Lv',Lv,flag,attr)
+    ds.intermediate.append("Lv")
+
     attr = pfp_utils.MakeAttributeDictionary(long_name='Specific heat capacity of dry air',units='J/kg-K')
     flag = numpy.where(numpy.ma.getmaskarray(Cpd)==True,ones,zeros)
     pfp_utils.CreateSeries(ds,'Cpd',Cpd,flag,attr)
+    ds.intermediate.append("Cpd")
+
     attr = pfp_utils.MakeAttributeDictionary(long_name='Specific heat capacity of water vapour',units='J/kg-K')
     flag = numpy.where(numpy.ma.getmaskarray(Cpw)==True,ones,zeros)
     pfp_utils.CreateSeries(ds,'Cpw',Cpw,flag,attr)
+    ds.intermediate.append("Cpw")
+
     attr = pfp_utils.MakeAttributeDictionary(long_name='Specific heat capacity of moist air',units='J/kg-K')
     flag = numpy.where(numpy.ma.getmaskarray(Cpm)==True,ones,zeros)
     pfp_utils.CreateSeries(ds,'Cpm',Cpm,flag,attr)
+    ds.intermediate.append("Cpm")
+
     attr = pfp_utils.MakeAttributeDictionary(long_name='Product of air density and specific heat capacity',units='J/m3-K')
     flag = numpy.where(numpy.ma.getmaskarray(RhoCp)==True,ones,zeros)
     pfp_utils.CreateSeries(ds,'RhoCp',RhoCp,flag,attr)
+    ds.intermediate.append("RhoCp")
+
     attr = pfp_utils.MakeAttributeDictionary(long_name='Vapour pressure deficit',units='kPa',standard_name='water_vapor_saturation_deficit_in_air')
+    attr["group_name"] = "meteorology"
+    attr[descr_level] = "Vapour pressure deficit calculated from Ah, Ta and ps"
     flag = numpy.where(numpy.ma.getmaskarray(VPD)==True,ones,zeros)
     pfp_utils.CreateSeries(ds,'VPD',VPD,flag,attr)
+    
     attr = pfp_utils.MakeAttributeDictionary(long_name='Specific humidity deficit',units='kg/kg')
+    attr["group_name"] = "meteorology"
+    attr[descr_level] = "Specific humidity deficit calculated from SH, Ta and ps"
     flag = numpy.where(numpy.ma.getmaskarray(SHD)==True,ones,zeros)
     pfp_utils.CreateSeries(ds,'SHD',SHD,flag,attr)
-    attr = pfp_utils.MakeAttributeDictionary(long_name='H2O mixing ratio',units='mmol/mol',standard_name='mole_concentration_of_water_vapor_in_air')
+
+    attr = pfp_utils.MakeAttributeDictionary(long_name='H2O concentration', units='mmol/mol', standard_name='mole_concentration_of_water_vapor_in_air')
+    attr["group_name"] = "meteorology"
+    attr[descr_level] = "Water vapour mixing ratio calculated from Ah, Ta and ps"
     flag = numpy.where(numpy.ma.getmaskarray(h2o)==True,ones,zeros)
     pfp_utils.CreateSeries(ds,'H2O',h2o,flag,attr)
 
@@ -774,7 +851,7 @@ def CalculateMoninObukhovLength(ds):
     # get the required meteorological variables
     Ta = pfp_utils.GetVariable(ds, "Ta")
     ps = pfp_utils.GetVariable(ds, "ps")
-    vp = pfp_utils.GetVariable(ds, "e")
+    vp = pfp_utils.GetVariable(ds, "VP")
     # get the required fluxes
     ustar = pfp_utils.GetVariable(ds, "ustar")
     Fh = pfp_utils.GetVariable(ds, "Fh")
@@ -1915,11 +1992,11 @@ def Fe_WPL(cf,ds,Fe_wpl_out='Fe',Fe_raw_in='Fe',Fh_in='Fh',Ta_in='Ta',Ah_in='Ah'
             ds.globalattributes['Functions'] = ds.globalattributes['Functions']+', RelaxFeWPL'
     return 0
 
-def FhvtoFh(cf,ds,Fh_out='Fh',Fhv_in='Fhv',Tv_in='Tv_SONIC_Av',q_in='q',wA_in='wA',wT_in='wT'):
+def FhvtoFh(cf,ds,Fh_out='Fh',Fhv_in='Fhv',Tv_in='Tv_SONIC_Av',q_in='SH',wA_in='wA',wT_in='wT'):
     '''
     Convert the virtual heat flux to the sensible heat flux.
     USEAGE:
-     pfp_ts.FhvtoFh_EP(cf,ds,Fhv_in='Fhv',RhoCp_in='RhoCp',Tv_in='Tv_SONIC_Av',wA_in='wA',rhom_in='rhom',q_in='q',wT_in='wT')
+     pfp_ts.FhvtoFh_EP(cf,ds,Fhv_in='Fhv',RhoCp_in='RhoCp',Tv_in='Tv_SONIC_Av',wA_in='wA',rhom_in='rhom',q_in='SH',wT_in='wT')
     INPUT:
      All inputs are read from the data structure.
       Fhv_in   - label of the virtual heat flux series, default is 'Fhv'
@@ -1927,7 +2004,7 @@ def FhvtoFh(cf,ds,Fh_out='Fh',Fhv_in='Fhv',Tv_in='Tv_SONIC_Av',q_in='q',wA_in='w
       Tv_in    - label of the virtual temperature series, default is 'Tv_CSAT'
       wA_in    - label of the wA covariance series, default is 'wA'
       rhom_in  - label of the moist air density series, default is 'rhom'
-      q_in     - label of the specific humidity series, default is 'q'
+      q_in     - label of the specific humidity series, default is 'SH'
       wT_in    - label of the wT covariance series, default is 'wT'
     OUTPUT:
      All outputs are written to the data structure.
@@ -2242,10 +2319,12 @@ def get_synthetic_fsd(ds):
     attr = pfp_utils.MakeAttributeDictionary(long_name='Synthetic downwelling shortwave radiation',units='W/m2',
                                            standard_name='surface_downwelling_shortwave_flux_in_air')
     pfp_utils.CreateSeries(ds,"Fsd_syn",Fsd_syn,flag,attr)
+    ds.intermediate.append("Fsd_syn")
     # add the solar altitude to the data structure
     attr = pfp_utils.MakeAttributeDictionary(long_name='Solar altitude',units='deg',
                                            standard_name='not defined')
     pfp_utils.CreateSeries(ds,"solar_altitude",alt_solar,flag,attr)
+    ds.intermediate.append("solar_altitude")
 
 def InvertSign(ds,ThisOne):
     logger.info(' Inverting sign of '+ThisOne)
@@ -2489,12 +2568,14 @@ def MassmanStandard(cf, ds, Ta_in='Ta', Ah_in='Ah', ps_in='ps', u_in="U_SONIC_Av
 
 def MergeSeriesUsingDict(ds, info, merge_order="standard"):
     """ Merge series as defined in the merge dictionary."""
+    descr_level = "description_" + ds.globalattributes["nc_level"]
     merge = info["MergeSeries"]
     if merge_order not in merge:
         msg = "MergeSeriesUsingDict: merge order " + merge_order + " not found"
         logger.warning(msg)
         return
     # loop over the entries in merge
+    descr_level = "description_" + ds.globalattributes["nc_level"]
     for target in merge[merge_order].keys():
         srclist = merge[merge_order][target]["source"]
         logger.info(" Merging "+str(srclist)+"==>"+target)
@@ -2508,6 +2589,7 @@ def MergeSeriesUsingDict(ds, info, merge_order="standard"):
         SeriesNameString = srclist[0]
         tmplist = list(srclist)
         tmplist.remove(tmplist[0])
+        s2add = ""
         for label in tmplist:
             if label in ds.series.keys():
                 SeriesNameString = SeriesNameString+", "+label
@@ -2520,25 +2602,27 @@ def MergeSeriesUsingDict(ds, info, merge_order="standard"):
                 index = numpy.where(flag2 != 0)[0]                      # index of flag values other than 0,10,20,30 ...
                 data[index] = ds.series[label]["Data"][index].copy()    # replace bad primary with good secondary
                 flag1[index] = ds.series[label]["Flag"][index].copy()
+                s2add = pfp_utils.append_string(s2add, ds.series[label]["Attr"][descr_level], caps=False)
             else:
                 logger.error(" MergeSeries: secondary input series "+label+" not found")
-        attr["long_name"] = attr["long_name"]+", merged from " + SeriesNameString
+        s2add = "gap filled using " + s2add
+        attr[descr_level] = pfp_utils.append_string(attr[descr_level], s2add)
         pfp_utils.CreateSeries(ds, target, data, flag1, attr)
     return
 
 def MergeHumidities(cf,ds,convert_units=False):
-    if "Ah" not in cf["Variables"] and "RH" not in cf["Variables"] and "q" not in cf["Variables"]:
+    if "Ah" not in cf["Variables"] and "RH" not in cf["Variables"] and "SH" not in cf["Variables"]:
         logger.error(" MergeHumidities: No humidities found in control file, returning ...")
         return
     if "Ah" in cf["Variables"]:
         MergeSeries(cf,ds,"Ah",convert_units=convert_units)
         pfp_utils.CheckUnits(ds,"Ah","g/m3",convert_units=True)
     if "RH" in cf["Variables"]:
-        MergeSeries(cf,ds,'RH',convert_units=convert_units)
+        MergeSeries(cf, ds, "RH", convert_units=convert_units)
         pfp_utils.CheckUnits(ds,"RH","%",convert_units=True)
-    if "q" in cf["Variables"]:
-        MergeSeries(cf,ds,'q',convert_units=convert_units)
-        pfp_utils.CheckUnits(ds,"q","kg/kg",convert_units=False)
+    if "SH" in cf["Variables"]:
+        MergeSeries(cf, ds, "SH", convert_units=convert_units)
+        pfp_utils.CheckUnits(ds, "SH", "kg/kg", convert_units=False)
 
 def MergeSeries(cf,ds,series,okflags=[0,10,20,30,40,50,60],convert_units=False,save_originals=False):
     """
@@ -2674,6 +2758,47 @@ def ReplaceRotatedCovariance(cf,ds,rot_cov_label,non_cov_label):
     if len(index)!=0:
         ds.series[rot_cov_label]['Data'][index] = cn_data[index]
         ds.series[rot_cov_label]['Flag'][index] = numpy.int32(20)
+    return
+
+def RemoveIntermediateSeries(cf, ds):
+    """
+    Purpose:
+     Remove the alternate, solo, mds, climatology and composite variables
+     from the L4 or L5 data structures.
+    Usage:
+    Side effects:
+    Author: PRI
+    Date: November 2018
+    """
+    opt = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "KeepIntermediateSeries", default="No")
+    if opt == "Yes":
+        return
+    #alt_list = []
+    #solo_list = []
+    #mds_list = []
+    #cli_list = []
+    #com_list = []
+    #if "alternate" in dir(ds):
+        #alt_list = list(ds.alternate.keys())
+    #if "solo" in dir(ds):
+        #solo_list = list(ds.solo.keys())
+    #if "mds" in dir(ds):
+        #mds_list = list(ds.mds.keys())
+    #if "climatology" in dir(ds):
+        #cli_list = list(ds.climatology.keys())
+    #if "composite" in dir(ds):
+        #com_list = list(ds.composite.keys())
+    #remove_list = alt_list + solo_list + mds_list + cli_list + com_list
+    #if len(remove_list) == 0:
+        #return
+    if "intermediate" in dir(ds):
+        if len(ds.intermediate) > 0:
+            msg = " Removing intermediate series from data structure"
+            logger.info(msg)
+            for label in ds.intermediate:
+                if label in list(ds.series.keys()):
+                    del ds.series[label]
+            ds.intermediate = []
     return
 
 def ReplaceOnDiff(cf,ds,series=''):
@@ -2818,7 +2943,7 @@ def SquareRoot(Series):
     tmp[index] = Series[index] ** .5
     return tmp
 
-def TaFromTv(cf,ds,Ta_out='Ta_SONIC_Av',Tv_in='Tv_SONIC_Av',Ah_in='Ah',RH_in='RH',q_in='q',ps_in='ps'):
+def TaFromTv(cf,ds,Ta_out='Ta_SONIC_Av',Tv_in='Tv_SONIC_Av',Ah_in='Ah',RH_in='RH',q_in='SH',ps_in='ps'):
     # Calculate the air temperature from the virtual temperature, the
     # absolute humidity and the pressure.
     # NOTE: the virtual temperature is used in place of the air temperature
