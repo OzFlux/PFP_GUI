@@ -221,7 +221,19 @@ def CheckGapLengths(cf, ds, l5_info):
     return
 
 def ParseL4ControlFile(cf, ds):
+    """
+    Purpose:
+     Create the L4 information and setting dictionary.
+    Usage:
+    Side effects:
+    Author: PRI
+    Date: Back in the day
+    """
     l4_info = {}
+    # add key for suppressing output of intermediate variables e.g. Ta_aws
+    opt = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "KeepIntermediateSeries", default="No")
+    l4_info["RemoveIntermediateSeries"] = {"KeepIntermediateSeries": opt, "not_output": []}
+    # loop over target variables
     for target in cf["Drivers"].keys():
         if "GapFillFromAlternate" in cf["Drivers"][target].keys():
             gfalternate_createdict(cf, ds, l4_info, target, "GapFillFromAlternate")
@@ -247,7 +259,7 @@ def ParseL4ControlFile(cf, ds):
     return l4_info
 
 def ParseL5ControlFile(cf, ds):
-    l5_info = {}
+    l5_info = {"not_output": []}
     for target in cf["Fluxes"].keys():
         if "GapFillUsingSOLO" in cf["Fluxes"][target].keys():
             gfSOLO_createdict(cf, ds, l5_info, target, "GapFillUsingSOLO")
@@ -371,6 +383,8 @@ def gfalternate_createdict_outputs(cf, l4_info, label, called_by):
     l4ao = l4_info[called_by]["outputs"]
     cfalt = cf["Drivers"][label][called_by]
     for output in outputs:
+        # disable output to netCDF file for this variable
+        l4_info["not_output"].append(output)
         # create the dictionary keys for this output
         l4ao[output] = {}
         # get the target
@@ -604,6 +618,8 @@ def gfClimatology_createdict(cf, ds, l4_info, label, called_by):
     l4co = l4_info[called_by]["outputs"]
     cfcli = cf["Drivers"][label][called_by]
     for output in outputs:
+        # disable output to netCDF file for this variable
+        l4_info["not_output"].append(output)
         # create the dictionary keys for this output
         l4co[output] = {}
         # get the target
@@ -697,6 +713,8 @@ def gfMDS_createdict(cf, ds, l5_info, label, called_by):
     # loop over the outputs listed in the control file
     l5mo = l5_info[called_by]["outputs"]
     for output in outputs:
+        # disable output to netCDF file for this variable
+        l5_info["not_output"].append(output)
         # create the dictionary keys for this series
         l5mo[output] = {}
         # get the target
@@ -1013,6 +1031,8 @@ def gfSOLO_createdict_outputs(cf, l5_info, target, called_by):
         return
     outputs = cf[section][target][called_by].keys()
     for output in outputs:
+        # disable output to netCDF file for this variable
+        l5_info["not_output"].append(output)
         # create the dictionary keys for this series
         so[output] = {}
         # get the target
