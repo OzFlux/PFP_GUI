@@ -386,7 +386,7 @@ def l6qc(main_gui, cf, ds5):
     # estimate ER using FFNET
     #pfp_rp.ERUsingFFNET(cf, ds6, l6_info)
     # estimate ER using Lloyd-Taylor
-    pfp_rp.ERUsingLloydTaylor(cf, ds6, l6_info)
+    pfp_rp.ERUsingLloydTaylor(ds6, l6_info)
     # estimate ER using Lasslop et al
     pfp_rp.ERUsingLasslop(ds6, l6_info)
     # merge the estimates of ER with the observations

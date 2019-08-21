@@ -15,6 +15,8 @@ import pfp_cfg
 import pfp_gui
 import pfp_utils
 
+import pdb
+
 warnings.simplefilter("ignore", OptimizeWarning)
 logger = logging.getLogger("pfp_log")
 
@@ -399,6 +401,11 @@ def rpLL_createdict_info(cf, ds, erll, called_by):
     nperhr = int(float(60)/time_step + 0.5)
     erll["info"]["nperday"] = int(float(24)*nperhr + 0.5)
     erll["info"]["maxlags"] = int(float(12)*nperhr + 0.5)
+    # Get the data path
+    path_name = pfp_utils.get_keyvaluefromcf(cf, ["Files"], "file_path")
+    file_name = pfp_utils.get_keyvaluefromcf(cf, ["Files"], "in_filename")
+    file_name = file_name.replace(".nc", "_Lasslop.xls")
+    erll['info']['data_file_path'] = os.path.join(path_name, file_name)
     # get the plot path
     plot_path = pfp_utils.get_keyvaluefromcf(cf, ["Files"], "plot_path", default="./plots/")
     plot_path = os.path.join(plot_path, level, "")
@@ -467,11 +474,10 @@ def rpLL_initplot(**kwargs):
     pd["ts_height"] = (1.0 - pd["margin_top"] - pd["ts_bottom"])/float(pd["nDrivers"]+1)
     return pd
 
-def rpLL_plot(pd, ds, output, drivers, target, l6_info, si=0, ei=-1):
+def rpLL_plot(pd, ds, output, drivers, target, iel, si=0, ei=-1):
     """ Plot the results of the Lasslop run. """
-    iel = l6_info["ERUsingLasslop"]
-    ieli = l6_info["ERUsingLasslop"]["info"]
-    ielo = l6_info["ERUsingLasslop"]["outputs"]
+    ieli = iel["info"]
+    ielo = iel["outputs"]
     # get a local copy of the datetime series
     if ei==-1:
         dt = ds.series['DateTime']['Data'][si:]

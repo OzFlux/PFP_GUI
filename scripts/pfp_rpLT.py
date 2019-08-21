@@ -5,6 +5,7 @@ import datetime
 import logging
 import os
 import sys
+import pdb
 # 3rd party modules
 import numpy
 import matplotlib
@@ -367,6 +368,11 @@ def rpLT_createdict_info(cf, ds, erlt, called_by):
     nperhr = int(float(60)/time_step + 0.5)
     erlt["info"]["nperday"] = int(float(24)*nperhr + 0.5)
     erlt["info"]["maxlags"] = int(float(12)*nperhr + 0.5)
+    # get the data path
+    path_name = pfp_utils.get_keyvaluefromcf(cf, ["Files"], "file_path")
+    file_name = pfp_utils.get_keyvaluefromcf(cf, ["Files"], "in_filename")
+    file_name = file_name.replace(".nc", "_L&T.xls")
+    erlt['info']['data_file_path'] = os.path.join(path_name, file_name)
     # get the plot path
     plot_path = pfp_utils.get_keyvaluefromcf(cf, ["Files"], "plot_path", default="./plots/")
     plot_path = os.path.join(plot_path, level, "")
@@ -406,16 +412,18 @@ def rpLT_createdict_outputs(cf, erlt, target, called_by):
         # list of drivers
         opt = pfp_utils.get_keyvaluefromcf(cf, sl, "drivers", default="Ta")
         eo[output]["drivers"] = pfp_cfg.cfg_string_to_list(opt)
-        opt = pfp_utils.get_keyvaluefromcf(cf, sl, "minimum_temperature_spread", default=5)
-        eo[output]["minimum_temperature_spread"] = int(opt)
-        opt = pfp_utils.get_keyvaluefromcf(cf, sl, "step_size_days", default=5)
-        eo[output]["step_size_days"] = int(opt)
-        opt = pfp_utils.get_keyvaluefromcf(cf, sl, "window_size_days", default=15)
-        eo[output]["window_size_days"] = int(opt)
-        opt = pfp_utils.get_keyvaluefromcf(cf, sl, "minimum_percent_annual", default=30)
-        eo[output]["minimum_pct_annual"] = int(opt)
-        opt = pfp_utils.get_keyvaluefromcf(cf, sl, "minimum_percent_noct_window", default=20)
-        eo[output]["minimum_pct_noct_window"] = int(opt)
+        opt = pfp_utils.get_keyvaluefromcf(cf, sl, "weighting", default="1")
+        eo[output]["weighting"] = pfp_cfg.cfg_string_to_list(opt)
+#        opt = pfp_utils.get_keyvaluefromcf(cf, sl, "minimum_temperature_spread", default=5)
+#        eo[output]["minimum_temperature_spread"] = int(opt)
+#        opt = pfp_utils.get_keyvaluefromcf(cf, sl, "step_size_days", default=5)
+#        eo[output]["step_size_days"] = int(opt)
+#        opt = pfp_utils.get_keyvaluefromcf(cf, sl, "window_size_days", default=15)
+#        eo[output]["window_size_days"] = int(opt)
+#        opt = pfp_utils.get_keyvaluefromcf(cf, sl, "minimum_percent_annual", default=30)
+#        eo[output]["minimum_pct_annual"] = int(opt)
+#        opt = pfp_utils.get_keyvaluefromcf(cf, sl, "minimum_percent_noct_window", default=20)
+#        eo[output]["minimum_pct_noct_window"] = int(opt)
         opt = pfp_utils.get_keyvaluefromcf(cf, sl, "output_plots", default="False")
         eo[output]["output_plots"] = (opt == "True")
         # fit statistics for plotting later on

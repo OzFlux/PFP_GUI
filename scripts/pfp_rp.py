@@ -4,6 +4,8 @@ import copy
 import datetime
 import logging
 import os
+import pandas
+import pdb
 # 3rd party modules
 import dateutil
 import matplotlib
@@ -22,6 +24,11 @@ import pfp_rpLL
 import pfp_rpLT
 import pfp_ts
 import pfp_utils
+
+# Ian's modules
+import sys
+sys.path.append('/home/ian/Code/Python/Py3_6/Partitioning')
+import partitioning_class as pt
 
 logger = logging.getLogger("pfp_log")
 
@@ -148,171 +155,249 @@ def cleanup_ustar_dict(ldt,ustar_dict):
         if ustar_dict[year]["ustar_mean"]==float(c.missing_value):
             ustar_dict[year]["ustar_mean"] = ustar_threshold_mean
 
+#def ERUsingLasslop(ds, l6_info):
+#    """
+#    Purpose:
+#    Usage:
+#    Side effects:
+#    Author: IMcH, PRI
+#    Date: Back in the day
+#    """
+#    if "ERUsingLasslop" not in l6_info:
+#        return
+#    logger.info("Estimating ER using Lasslop")
+#    iel = l6_info["ERUsingLasslop"]
+#    ielo = iel["outputs"]
+#    # get a list of the required outputs
+#    outputs = iel["outputs"].keys()
+#    # need to loop over more than 1 output
+#    output = outputs[0]
+#    drivers = ielo[output]["drivers"]
+#    target = ielo[output]["target"]
+#    # get some useful things
+#    ldt = ds.series["DateTime"]["Data"]
+#    startdate = ldt[0]
+#    enddate = ldt[-1]
+#    ts = int(ds.globalattributes["time_step"])
+#    site_name = ds.globalattributes["site_name"]
+#    nrecs = int(ds.globalattributes["nc_nrecs"])
+#    # get the data and synchronise the gaps
+#    # *** PUT INTO SEPARATE FUNCTION
+#    indicator = numpy.ones(nrecs, dtype=numpy.int)
+#    Fsd, f, _ = pfp_utils.GetSeriesasMA(ds, "Fsd")
+#    idx = numpy.where(f != 0)[0]
+#    indicator[idx] = numpy.int(0)
+#    D, f, _ = pfp_utils.GetSeriesasMA(ds, "VPD")
+#    idx = numpy.where(f != 0)[0]
+#    indicator[idx] = numpy.int(0)
+#    T, f, _ = pfp_utils.GetSeriesasMA(ds, "Ta")
+#    idx = numpy.where(f != 0)[0]
+#    indicator[idx] = numpy.int(0)
+#    _, f, _ = pfp_utils.GetSeriesasMA(ds, "ustar")
+#    idx = numpy.where(f != 0)[0]
+#    indicator[idx] = numpy.int(0)
+#    Fc, f, Fc_attr = pfp_utils.GetSeriesasMA(ds, "Fc")
+#    idx = numpy.where(f != 0)[0]
+#    indicator[idx] = numpy.int(0)
+#    indicator_night = numpy.copy(indicator)
+#    # ***
+#    # apply a day/night filter
+#    idx = numpy.where(Fsd >= 10)[0]
+#    indicator_night[idx] = numpy.int(0)
+#    # synchronise the gaps and apply the ustar filter
+#    T_night = numpy.ma.masked_where(indicator_night == 0, T)
+#    ER = numpy.ma.masked_where(indicator_night == 0, Fc)
+#    # loop over the windows and get E0
+#    logger.info(" Estimating the rb and E0 parameters")
+#    LT_results = pfp_rpLL.get_LT_params(ldt, ER, T_night, l6_info, output)
+#    # interpolate parameters
+#    # this should have a check to make sure we are not interpolating with a small
+#    # number of points
+#    LT_results["rb_int"] = pfp_rpLL.interp_params(LT_results["rb"])
+#    LT_results["E0_int"] = pfp_rpLL.interp_params(LT_results["E0"])
+#    # get series of rb and E0 from LT at the tower stime step
+#    # *** PUT INTO SEPARATE FUNCTION
+#    ntsperday = float(24)*float(60)/float(ts)
+#    days_at_beginning = float(ielo[output]["window_size_days"])/2 - float(ielo[output]["step_size_days"])/2
+#    rb_beginning = numpy.ones(int(days_at_beginning*ntsperday+0.5))*LT_results["rb_int"][0]
+#    rb_middle = numpy.repeat(LT_results["rb_int"],ielo[output]["step_size_days"]*ntsperday)
+#    nend = len(ldt) - (len(rb_beginning)+len(rb_middle))
+#    E0_beginning = numpy.ones(int(days_at_beginning*ntsperday+0.5))*LT_results["E0_int"][0]
+#    E0_middle = numpy.repeat(LT_results["E0_int"],ielo[output]["step_size_days"]*ntsperday)
+#    nend = len(ldt) - (len(E0_beginning)+len(E0_middle))
+#    # ***
+#    # and get the ecosystem respiration at the tower time step
+#    logger.info(" Calculating ER using Lloyd-Taylor")
+#    # get a day time indicator
+#    indicator_day = numpy.copy(indicator)
+#    # apply a day/night filter
+#    idx = numpy.where(Fsd <= ielo[output]["fsd_threshold"])[0]
+#    indicator_day[idx] = numpy.int(0)
+#    # synchronise the gaps and apply the day/night filter
+#    Fsd_day = numpy.ma.masked_where(indicator_day==0,Fsd)
+#    D_day = numpy.ma.masked_where(indicator_day==0,D)
+#    T_day = numpy.ma.masked_where(indicator_day==0,T)
+#    NEE_day = numpy.ma.masked_where(indicator_day==0,Fc)
+#    # get the Lasslop parameters
+#    logger.info(" Estimating the Lasslop parameters")
+#    LL_results = pfp_rpLL.get_LL_params(ldt, Fsd_day, D_day, T_day, NEE_day, ER, LT_results, l6_info, output)
+#    # interpolate parameters
+#    LL_results["alpha_int"] = pfp_rpLL.interp_params(LL_results["alpha"])
+#    LL_results["beta_int"] = pfp_rpLL.interp_params(LL_results["beta"])
+#    LL_results["k_int"] = pfp_rpLL.interp_params(LL_results["k"])
+#    LL_results["rb_int"] = pfp_rpLL.interp_params(LL_results["rb"])
+#    LL_results["E0_int"] = pfp_rpLL.interp_params(LL_results["E0"])
+#    # get the Lasslop parameters at the tower time step
+#    # *** PUT INTO SEPARATE FUNCTION
+#    ntsperday = float(24)*float(60)/float(ts)
+#    days_at_beginning = float(ielo[output]["window_size_days"])/2 - float(ielo[output]["step_size_days"])/2
+#    int_list = ["alpha_int","beta_int","k_int","rb_int","E0_int"]
+#    tts_list = ["alpha_tts","beta_tts","k_tts","rb_tts","E0_tts"]
+#    for tts_item,int_item in zip(tts_list,int_list):
+#        beginning = numpy.ones(int(days_at_beginning*ntsperday+0.5))*LL_results[int_item][0]
+#        middle = numpy.repeat(LL_results[int_item],ielo[output]["step_size_days"]*ntsperday)
+#        nend = len(ldt) - (len(beginning)+len(middle))
+#        end = numpy.ones(nend)*LL_results[int_item][-1]
+#        LL_results[tts_item] = numpy.concatenate((beginning,middle,end))
+#    # ***
+#    # get ER, GPP and NEE using Lasslop
+#    D0 = LL_results["D0"]
+#    rb = LL_results["rb_tts"]
+#    units = "umol/m2/s"
+#    long_name = "Base respiration at Tref from Lloyd-Taylor method used in Lasslop et al (2010)"
+#    attr = pfp_utils.MakeAttributeDictionary(long_name=long_name,units=units)
+#    flag = numpy.zeros(len(rb),dtype=numpy.int32)
+#    pfp_utils.CreateSeries(ds,"rb_LL",rb,flag,attr)
+#    E0 = LL_results["E0_tts"]
+#    units = "C"
+#    long_name = "Activation energy from Lloyd-Taylor method used in Lasslop et al (2010)"
+#    attr = pfp_utils.MakeAttributeDictionary(long_name=long_name,units=units)
+#    pfp_utils.CreateSeries(ds,"E0_LL",E0,flag,attr)
+#    logger.info(" Calculating ER using Lloyd-Taylor with Lasslop parameters")
+#    ER_LL = pfp_rpLL.ER_LloydTaylor(T,rb,E0)
+#    # write ecosystem respiration modelled by Lasslop et al (2010)
+#    units = Fc_attr["units"]
+#    long_name = "Ecosystem respiration modelled by Lasslop et al (2010)"
+#    attr = pfp_utils.MakeAttributeDictionary(long_name=long_name,units=units)
+#    pfp_utils.CreateSeries(ds,output,ER_LL,flag,attr)
+#    # parameters associated with GPP and GPP itself
+#    alpha = LL_results["alpha_tts"]
+#    units = "umol/J"
+#    long_name = "Canopy light use efficiency"
+#    attr = pfp_utils.MakeAttributeDictionary(long_name=long_name,units=units)
+#    pfp_utils.CreateSeries(ds,"alpha_LL",alpha,flag,attr)
+#    beta = LL_results["beta_tts"]
+#    units = "umol/m2/s"
+#    long_name = "Maximum CO2 uptake at light saturation"
+#    attr = pfp_utils.MakeAttributeDictionary(long_name=long_name,units=units)
+#    pfp_utils.CreateSeries(ds,"beta_LL",beta,flag,attr)
+#    k = LL_results["k_tts"]
+#    units = "none"
+#    long_name = "Sensitivity of response to VPD"
+#    attr = pfp_utils.MakeAttributeDictionary(long_name=long_name,units=units)
+#    pfp_utils.CreateSeries(ds,"k_LL",k,flag,attr)
+#    GPP_LL = pfp_rpLL.GPP_RHLRC_D(Fsd,D,alpha,beta,k,D0)
+#    units = "umol/m2/s"
+#    long_name = "GPP modelled by Lasslop et al (2010)"
+#    attr = pfp_utils.MakeAttributeDictionary(long_name=long_name,units=units)
+#    pfp_utils.CreateSeries(ds,"GPP_LL_all",GPP_LL,flag,attr)
+#    # NEE
+#    data = {"Fsd":Fsd,"T":T,"D":D}
+#    NEE_LL = pfp_rpLL.NEE_RHLRC_D(data,alpha,beta,k,D0,rb,E0)
+#    units = "umol/m2/s"
+#    long_name = "NEE modelled by Lasslop et al (2010)"
+#    attr = pfp_utils.MakeAttributeDictionary(long_name=long_name,units=units)
+#    pfp_utils.CreateSeries(ds,"NEE_LL_all",NEE_LL,flag,attr)
+#    # plot the respiration estimated using Lasslop et al
+#    # set the figure number
+#    if len(plt.get_fignums())==0:
+#        fig_num = 0
+#    else:
+#        fig_num = plt.get_fignums()[-1] + 1
+#    title = site_name+" : ER estimated using Lasslop et al"
+#    pd = pfp_rpLL.rpLL_initplot(site_name=site_name,label="ER",fig_num=fig_num,title=title,
+#                         nDrivers=len(data.keys()),startdate=str(startdate),enddate=str(enddate))
+#    pfp_rpLL.rpLL_plot(pd, ds, output, drivers, target, l6_info)
+
 def ERUsingLasslop(ds, l6_info):
     """
     Purpose:
+     Estimate ecosystem respiration using Lasslop.
+     Ian McHugh wrote the LT code, PRI wrote the wrapper to integrate
+     this with OzFluxQC.
     Usage:
-    Side effects:
     Author: IMcH, PRI
-    Date: Back in the day
+    Date: October 2015
     """
     if "ERUsingLasslop" not in l6_info:
         return
     logger.info("Estimating ER using Lasslop")
-    iel = l6_info["ERUsingLasslop"]
-    ielo = iel["outputs"]
-    # get a list of the required outputs
-    outputs = iel["outputs"].keys()
-    # need to loop over more than 1 output
-    output = outputs[0]
-    drivers = ielo[output]["drivers"]
-    target = ielo[output]["target"]
-    # get some useful things
-    ldt = ds.series["DateTime"]["Data"]
-    startdate = ldt[0]
-    enddate = ldt[-1]
-    ts = int(ds.globalattributes["time_step"])
+    long_name = "Ecosystem respiration modelled by Lasslop"
+    ER_attr = pfp_utils.MakeAttributeDictionary(long_name=long_name, 
+                                                units="umol/m2/s")
     site_name = ds.globalattributes["site_name"]
-    nrecs = int(ds.globalattributes["nc_nrecs"])
-    # get the data and synchronise the gaps
-    # *** PUT INTO SEPARATE FUNCTION
-    indicator = numpy.ones(nrecs, dtype=numpy.int)
-    Fsd, f, _ = pfp_utils.GetSeriesasMA(ds, "Fsd")
-    idx = numpy.where(f != 0)[0]
-    indicator[idx] = numpy.int(0)
-    D, f, _ = pfp_utils.GetSeriesasMA(ds, "VPD")
-    idx = numpy.where(f != 0)[0]
-    indicator[idx] = numpy.int(0)
-    T, f, _ = pfp_utils.GetSeriesasMA(ds, "Ta")
-    idx = numpy.where(f != 0)[0]
-    indicator[idx] = numpy.int(0)
-    _, f, _ = pfp_utils.GetSeriesasMA(ds, "ustar")
-    idx = numpy.where(f != 0)[0]
-    indicator[idx] = numpy.int(0)
-    Fc, f, Fc_attr = pfp_utils.GetSeriesasMA(ds, "Fc")
-    idx = numpy.where(f != 0)[0]
-    indicator[idx] = numpy.int(0)
-    indicator_night = numpy.copy(indicator)
-    # ***
-    # apply a day/night filter
-    idx = numpy.where(Fsd >= 10)[0]
-    indicator_night[idx] = numpy.int(0)
-    # synchronise the gaps and apply the ustar filter
-    T_night = numpy.ma.masked_where(indicator_night == 0, T)
-    ER = numpy.ma.masked_where(indicator_night == 0, Fc)
-    # loop over the windows and get E0
-    logger.info(" Estimating the rb and E0 parameters")
-    LT_results = pfp_rpLL.get_LT_params(ldt, ER, T_night, l6_info, output)
-    # interpolate parameters
-    # this should have a check to make sure we are not interpolating with a small
-    # number of points
-    LT_results["rb_int"] = pfp_rpLL.interp_params(LT_results["rb"])
-    LT_results["E0_int"] = pfp_rpLL.interp_params(LT_results["E0"])
-    # get series of rb and E0 from LT at the tower stime step
-    # *** PUT INTO SEPARATE FUNCTION
-    ntsperday = float(24)*float(60)/float(ts)
-    days_at_beginning = float(ielo[output]["window_size_days"])/2 - float(ielo[output]["step_size_days"])/2
-    rb_beginning = numpy.ones(int(days_at_beginning*ntsperday+0.5))*LT_results["rb_int"][0]
-    rb_middle = numpy.repeat(LT_results["rb_int"],ielo[output]["step_size_days"]*ntsperday)
-    nend = len(ldt) - (len(rb_beginning)+len(rb_middle))
-    E0_beginning = numpy.ones(int(days_at_beginning*ntsperday+0.5))*LT_results["E0_int"][0]
-    E0_middle = numpy.repeat(LT_results["E0_int"],ielo[output]["step_size_days"]*ntsperday)
-    nend = len(ldt) - (len(E0_beginning)+len(E0_middle))
-    # ***
-    # and get the ecosystem respiration at the tower time step
-    logger.info(" Calculating ER using Lloyd-Taylor")
-    # get a day time indicator
-    indicator_day = numpy.copy(indicator)
-    # apply a day/night filter
-    idx = numpy.where(Fsd <= ielo[output]["fsd_threshold"])[0]
-    indicator_day[idx] = numpy.int(0)
-    # synchronise the gaps and apply the day/night filter
-    Fsd_day = numpy.ma.masked_where(indicator_day==0,Fsd)
-    D_day = numpy.ma.masked_where(indicator_day==0,D)
-    T_day = numpy.ma.masked_where(indicator_day==0,T)
-    NEE_day = numpy.ma.masked_where(indicator_day==0,Fc)
-    # get the Lasslop parameters
-    logger.info(" Estimating the Lasslop parameters")
-    LL_results = pfp_rpLL.get_LL_params(ldt, Fsd_day, D_day, T_day, NEE_day, ER, LT_results, l6_info, output)
-    # interpolate parameters
-    LL_results["alpha_int"] = pfp_rpLL.interp_params(LL_results["alpha"])
-    LL_results["beta_int"] = pfp_rpLL.interp_params(LL_results["beta"])
-    LL_results["k_int"] = pfp_rpLL.interp_params(LL_results["k"])
-    LL_results["rb_int"] = pfp_rpLL.interp_params(LL_results["rb"])
-    LL_results["E0_int"] = pfp_rpLL.interp_params(LL_results["E0"])
-    # get the Lasslop parameters at the tower time step
-    # *** PUT INTO SEPARATE FUNCTION
-    ntsperday = float(24)*float(60)/float(ts)
-    days_at_beginning = float(ielo[output]["window_size_days"])/2 - float(ielo[output]["step_size_days"])/2
-    int_list = ["alpha_int","beta_int","k_int","rb_int","E0_int"]
-    tts_list = ["alpha_tts","beta_tts","k_tts","rb_tts","E0_tts"]
-    for tts_item,int_item in zip(tts_list,int_list):
-        beginning = numpy.ones(int(days_at_beginning*ntsperday+0.5))*LL_results[int_item][0]
-        middle = numpy.repeat(LL_results[int_item],ielo[output]["step_size_days"]*ntsperday)
-        nend = len(ldt) - (len(beginning)+len(middle))
-        end = numpy.ones(nend)*LL_results[int_item][-1]
-        LL_results[tts_item] = numpy.concatenate((beginning,middle,end))
-    # ***
-    # get ER, GPP and NEE using Lasslop
-    D0 = LL_results["D0"]
-    rb = LL_results["rb_tts"]
-    units = "umol/m2/s"
-    long_name = "Base respiration at Tref from Lloyd-Taylor method used in Lasslop et al (2010)"
-    attr = pfp_utils.MakeAttributeDictionary(long_name=long_name,units=units)
-    flag = numpy.zeros(len(rb),dtype=numpy.int32)
-    pfp_utils.CreateSeries(ds,"rb_LL",rb,flag,attr)
-    E0 = LL_results["E0_tts"]
-    units = "C"
-    long_name = "Activation energy from Lloyd-Taylor method used in Lasslop et al (2010)"
-    attr = pfp_utils.MakeAttributeDictionary(long_name=long_name,units=units)
-    pfp_utils.CreateSeries(ds,"E0_LL",E0,flag,attr)
-    logger.info(" Calculating ER using Lloyd-Taylor with Lasslop parameters")
-    ER_LL = pfp_rpLL.ER_LloydTaylor(T,rb,E0)
-    # write ecosystem respiration modelled by Lasslop et al (2010)
-    units = Fc_attr["units"]
-    long_name = "Ecosystem respiration modelled by Lasslop et al (2010)"
-    attr = pfp_utils.MakeAttributeDictionary(long_name=long_name,units=units)
-    pfp_utils.CreateSeries(ds,output,ER_LL,flag,attr)
-    # parameters associated with GPP and GPP itself
-    alpha = LL_results["alpha_tts"]
-    units = "umol/J"
-    long_name = "Canopy light use efficiency"
-    attr = pfp_utils.MakeAttributeDictionary(long_name=long_name,units=units)
-    pfp_utils.CreateSeries(ds,"alpha_LL",alpha,flag,attr)
-    beta = LL_results["beta_tts"]
-    units = "umol/m2/s"
-    long_name = "Maximum CO2 uptake at light saturation"
-    attr = pfp_utils.MakeAttributeDictionary(long_name=long_name,units=units)
-    pfp_utils.CreateSeries(ds,"beta_LL",beta,flag,attr)
-    k = LL_results["k_tts"]
-    units = "none"
-    long_name = "Sensitivity of response to VPD"
-    attr = pfp_utils.MakeAttributeDictionary(long_name=long_name,units=units)
-    pfp_utils.CreateSeries(ds,"k_LL",k,flag,attr)
-    GPP_LL = pfp_rpLL.GPP_RHLRC_D(Fsd,D,alpha,beta,k,D0)
-    units = "umol/m2/s"
-    long_name = "GPP modelled by Lasslop et al (2010)"
-    attr = pfp_utils.MakeAttributeDictionary(long_name=long_name,units=units)
-    pfp_utils.CreateSeries(ds,"GPP_LL_all",GPP_LL,flag,attr)
-    # NEE
-    data = {"Fsd":Fsd,"T":T,"D":D}
-    NEE_LL = pfp_rpLL.NEE_RHLRC_D(data,alpha,beta,k,D0,rb,E0)
-    units = "umol/m2/s"
-    long_name = "NEE modelled by Lasslop et al (2010)"
-    attr = pfp_utils.MakeAttributeDictionary(long_name=long_name,units=units)
-    pfp_utils.CreateSeries(ds,"NEE_LL_all",NEE_LL,flag,attr)
-    # plot the respiration estimated using Lasslop et al
+
+    # Get configuration dict
+    iel = l6_info["ERUsingLasslop"]
+
     # set the figure number
-    if len(plt.get_fignums())==0:
+    if len(plt.get_fignums()) == 0:
         fig_num = 0
     else:
-        fig_num = plt.get_fignums()[-1] + 1
-    title = site_name+" : ER estimated using Lasslop et al"
-    pd = pfp_rpLL.rpLL_initplot(site_name=site_name,label="ER",fig_num=fig_num,title=title,
-                         nDrivers=len(data.keys()),startdate=str(startdate),enddate=str(enddate))
-    pfp_rpLL.rpLL_plot(pd, ds, output, drivers, target, l6_info)
+        fig_num = plt.get_fignums()[-1]
+    
+    # open the Excel file for writing all outputs
+    xl_name = iel['info']['data_file_path']
+    xl_writer = pandas.ExcelWriter(xl_name, engine = 'xlsxwriter')
+    
+    # loop over the series of ouputs (usually one only)
+    outputs = iel["outputs"].keys()
+    for output in outputs:
+        
+        # Make the filtered dataframe
+        ustars_dict = {x.split('_')[-1]: float(ds.series['Fc']['Attr'][x])
+                       for x in ds.series['Fc']['Attr'] if 'ustar' in x}
+        var_list = ['Fc', 'Ta', 'Ts', 'Fsd', 'ustar', 'VPD']
+        df = pandas.DataFrame({var: ds.series[var]['Data'] for var in var_list},
+                              index = ds.series['DateTime']['Data'])
+        is_valid = numpy.tile(True, int(ds.globalattributes['nc_nrecs']))
+        for this_var in df.columns: is_valid *= ds.series[this_var]['Flag'] == 0
+        df.loc[~is_valid, 'Fc'] = numpy.nan
+        for year in ustars_dict:
+            df.loc[(df.index.year == int(year)) & 
+                   (df.ustar < ustars_dict[year]) & 
+                   (df.Fsd < 10), 'Fc'] = numpy.nan
+        
+        # Pass the dataframe to the respiration class and get the results
+        ptc = pt.partition(df)
+        params_df = ptc.estimate_parameters(mode = 'day', fit_daytime_rb = True)
+        ER = ptc.estimate_er_time_series(params_df)
+        ER_flag = numpy.tile(30, len(ER))
+        pfp_utils.CreateSeries(ds, output, ER, ER_flag, ER_attr)
+    
+        # Write to excel
+        params_df.to_excel(xl_writer, output)
+        xl_writer.save()
 
-def ERUsingLloydTaylor(cf, ds, l6_info):
+        # Get some info required for plotting
+        drivers = iel['outputs'][output]["drivers"]
+        target = iel["outputs"][output]["target"]
+        ER_attr['comment1'] = 'Drivers were {}'.format(str(drivers))
+        startdate = str(ds.series["DateTime"]["Data"][0])
+        enddate = str(ds.series["DateTime"]["Data"][-1])
+
+        # Do plotting
+        fig_num = fig_num + 1
+        title = site_name+" : "+output+" estimated using Lasslop"
+        pd = pfp_rpLL.rpLL_initplot(site_name=site_name, label=target, 
+                                    fig_num=fig_num, title=title,
+                                    nDrivers=len(drivers), 
+                                    startdate=str(startdate), 
+                                    enddate=str(enddate))
+        pfp_rpLL.rpLL_plot(pd, ds, output, drivers, target, iel)
+
+
+def ERUsingLloydTaylor(ds, l6_info):
     """
     Purpose:
      Estimate ecosystem respiration using Lloyd-Taylor.
@@ -326,190 +411,87 @@ def ERUsingLloydTaylor(cf, ds, l6_info):
         return
     logger.info("Estimating ER using Lloyd-Taylor")
     long_name = "Ecosystem respiration modelled by Lloyd-Taylor"
-    ER_attr = pfp_utils.MakeAttributeDictionary(long_name=long_name, units="umol/m2/s")
-    ts = int(ds.globalattributes["time_step"])
+    ER_attr = pfp_utils.MakeAttributeDictionary(long_name=long_name, 
+                                                units="umol/m2/s")
     site_name = ds.globalattributes["site_name"]
-    ldt = ds.series["DateTime"]["Data"]
-    startdate = ldt[0]
-    enddate = ldt[-1]
-    nperhr = int(float(60)/ts+0.5)
-    nperday = int(float(24)*nperhr+0.5)
+
+    # Get configuration dict
     iel = l6_info["ERUsingLloydTaylor"]
-    iel["time_step"] = ts
-    iel["nperday"] = nperday
+
     # set the figure number
     if len(plt.get_fignums()) == 0:
         fig_num = 0
     else:
         fig_num = plt.get_fignums()[-1]
-    # open the Excel file
-    nc_name = pfp_io.get_outfilenamefromcf(cf)
-    xl_name = nc_name.replace(".nc", "_L&T.xls")
-    xl_file = pfp_io.xl_open_write(xl_name)
-    if xl_file == '':
-        msg = "ERUsingLloydTaylor: error opening Excel file " + xl_name
-        logger.error(msg)
-        return
-    # loop over the series
+    
+    # open the Excel file for writing all outputs
+    xl_name = iel['info']['data_file_path']
+    xl_writer = pandas.ExcelWriter(xl_name, engine = 'xlsxwriter')
+    
+    # loop over the series of ouputs (usually one only)
     outputs = iel["outputs"].keys()
     for output in outputs:
-        # create dictionaries for the results
-        E0_results = {"variables":{}}
-        E0_raw_results = {"variables":{}}
-        rb_results = {"variables":{}}
-        # add a sheet for this series
-        xl_sheet = xl_file.add_sheet(output)
-        # get a local copy of the config dictionary
+        
+        # Make the filtered dataframe
+        ustars_dict = {x.split('_')[-1]: float(ds.series['Fc']['Attr'][x])
+                       for x in ds.series['Fc']['Attr'] if 'ustar' in x}
+        var_list = ['Fc', 'Ta', 'Ts', 'Fsd', 'ustar', 'VPD']
+        df = pandas.DataFrame({var: ds.series[var]['Data'] for var in var_list},
+                              index = ds.series['DateTime']['Data'])
+        is_valid = numpy.tile(True, int(ds.globalattributes['nc_nrecs']))
+        for this_var in df.columns: is_valid *= ds.series[this_var]['Flag'] == 0
+        df.loc[~is_valid, 'Fc'] = numpy.nan
+        for year in ustars_dict:
+            df.loc[(df.index.year == int(year)) & 
+                   (df.ustar < ustars_dict[year]) & 
+                   (df.Fsd < 10), 'Fc'] = numpy.nan
+        
+        # Set the weighting of air and soil temperatures
         configs_dict = iel["outputs"][output]
-        configs_dict["measurement_interval"] = float(ts)/60.0
-        data_dict = pfp_rpLT.get_data_dict(ds, configs_dict)
-        # *** start of code taken from Ian McHugh's Partition_NEE.main ***
-        # If user wants individual window plots, check whether output directories
-        # are present, and create if not
-        if configs_dict['output_plots']:
-            output_path = configs_dict['output_path']
-            configs_dict['window_plot_output_path'] = output_path
-            if not os.path.isdir(output_path): os.makedirs(output_path)
-        # Get arrays of all datetimes, all dates and stepped dates original code
-        datetime_array = data_dict.pop('date_time')
-        (step_date_index_dict,
-         all_date_index_dict,
-         year_index_dict) = pfp_rpLT.get_dates(datetime_array, configs_dict)
-        date_array = numpy.array(all_date_index_dict.keys())
-        date_array.sort()
-        step_date_array = numpy.array(step_date_index_dict.keys())
-        step_date_array.sort()
-        # Create variable name lists for results output
-        series_rslt_list = ['Nocturnally derived Re', 'GPP from nocturnal derived Re',
-                            'Daytime derived Re', 'GPP from daytime derived Re']
-        new_param_list = ['Eo', 'rb_noct', 'rb_day', 'alpha_fixed_rb',
-                          'alpha_free_rb', 'beta_fixed_rb', 'beta_free_rb',
-                          'k_fixed_rb', 'k_free_rb', 'Eo error code',
-                          'Nocturnal rb error code',
-                          'Light response parameters + fixed rb error code',
-                          'Light response parameters + free rb error code']
-        # Create dictionaries for results
-        # First the parameter estimates and error codes...
-        empty_array = numpy.empty([len(date_array)])
-        empty_array[:] = numpy.nan
-        opt_params_dict = {var: empty_array.copy() for var in new_param_list}
-        opt_params_dict['date'] = date_array
-        # Then the time series estimation
-        empty_array = numpy.empty([len(datetime_array)])
-        empty_array[:] = numpy.nan
-        series_est_dict = {var: empty_array.copy() for var in series_rslt_list}
-        series_est_dict['date_time'] = datetime_array
-        # Create a dictionary containing initial guesses for each parameter
-        params_dict = pfp_rpLT.make_initial_guess_dict(data_dict)
-        # *** start of annual estimates of E0 code ***
-        # this section could be a separate routine
-        # Get the annual estimates of Eo
-        logger.info(" Optimising fit for Eo for each year")
-        Eo_dict, EoQC_dict, Eo_raw_dict, EoQC_raw_dict, status = pfp_rpLT.optimise_annual_Eo(data_dict,params_dict,configs_dict,year_index_dict)
-        if status["code"] != 0:
-            msg = " Estimation of ER using Lloyd-Taylor failed with message"
-            logger.error(msg)
-            logger.error(status["message"])
-            return
-        # Write to result arrays
-        year_array = numpy.array([i.year for i in date_array])
-        for yr in year_array:
-            index = numpy.where(year_array == yr)
-            opt_params_dict['Eo'][index] = Eo_dict[yr]
-            opt_params_dict['Eo error code'][index] = EoQC_dict[yr]
-        E0_results["variables"]["DateTime"] = {"data":[datetime.datetime(int(yr),1,1) for yr in Eo_dict.keys()],
-                                               "attr":{"units":"Year","format":"yyyy"}}
-        E0_results["variables"]["E0"] = {"data":[float(Eo_dict[yr]) for yr in Eo_dict.keys()],
-                                         "attr":{"units":"none","format":"0"}}
-        E0_raw_results["variables"]["DateTime"] = {"data":[datetime.datetime(int(yr),1,1) for yr in Eo_raw_dict.keys()],
-                                                   "attr":{"units":"Year","format":"yyyy"}}
-        E0_raw_results["variables"]["E0"] = {"data":[float(Eo_raw_dict[yr]) for yr in Eo_raw_dict.keys()],
-                                             "attr":{"units":"none","format":"0"}}
-        # write the E0 values to the Excel file
-        pfp_io.xl_write_data(xl_sheet,E0_raw_results["variables"],xlCol=0)
-        pfp_io.xl_write_data(xl_sheet,E0_results["variables"],xlCol=2)
-        # *** end of annual estimates of E0 code ***
-        # *** start of estimating rb code for each window ***
-        # this section could be a separate routine
-        # Rewrite the parameters dictionary so that there will be one set of
-        # defaults for the free and one set of defaults for the fixed parameters
-        params_dict = {'fixed_rb': pfp_rpLT.make_initial_guess_dict(data_dict),
-                       'free_rb': pfp_rpLT.make_initial_guess_dict(data_dict)}
-        # Do nocturnal optimisation for each window
-        logger.info(" Optimising fit for rb using nocturnal data")
-        for date in step_date_array:
-            # Get Eo for the relevant year and write to the parameters dictionary
-            param_index = numpy.where(date_array == date)
-            params_dict['fixed_rb']['Eo_default'] = opt_params_dict['Eo'][param_index]
-            # Subset the data and check length
-            sub_dict = pfp_rpLT.subset_window(data_dict, step_date_index_dict[date])
-            noct_dict = pfp_rpLT.subset_window(data_dict, step_date_index_dict[date])
-            # Subset again to remove daytime and then nan
-            #noct_dict = pfp_rpLT.subset_daynight(sub_dict, noct_flag = True)
-            len_all_noct = len(noct_dict['NEE'])
-            noct_dict = pfp_rpLT.subset_nan(noct_dict)
-            len_valid_noct = len(noct_dict['NEE'])
-            # Do optimisation only if data passes minimum threshold
-            if round(float(len_valid_noct) / len_all_noct * 100) > \
-            configs_dict['minimum_pct_noct_window']:
-                params, error_state = pfp_rpLT.optimise_rb(noct_dict,params_dict['fixed_rb'])
-            else:
-                params, error_state = [numpy.nan], 10
-            # Send data to the results dict
-            opt_params_dict['rb_noct'][param_index] = params
-            opt_params_dict['Nocturnal rb error code'][param_index] = error_state
-            # Estimate time series and plot if requested
-            if error_state == 0 and configs_dict['output_plots']:
-                this_params_dict = {'Eo': opt_params_dict['Eo'][param_index],
-                                    'rb': opt_params_dict['rb_noct'][param_index]}
-                est_series_dict = pfp_rpLT.estimate_Re_GPP(sub_dict, this_params_dict)
-                combine_dict = dict(sub_dict, **est_series_dict)
-                pfp_rpLT.plot_windows(combine_dict, configs_dict, date, noct_flag = True)
-        # get a copy of the rb data before interpolation so we can write it to file
-        rb_date = opt_params_dict["date"]
-        rb_data = opt_params_dict["rb_noct"]
-        # get the indices of non-NaN elements
-        idx = numpy.where(numpy.isnan(rb_data)!=True)[0]
-        # get the datetime dictionary
-        rb_results["variables"]["DateTime"] = {"data":rb_date[idx],
-                                  "attr":{"units":"Date","format":"dd/mm/yyyy"}}
-        # get the rb values
-        rb_results["variables"]["rb_noct"] = {"data":rb_data[idx],
-                            "attr":{"units":"none","format":"0.00"}}
-        # write to the Excel file
-        pfp_io.xl_write_data(xl_sheet,rb_results["variables"],xlCol=4)
-        # Interpolate
-        opt_params_dict['rb_noct'] = pfp_rpLT.interp_params(opt_params_dict['rb_noct'])
-        # *** end of estimating rb code for each window ***
-        # *** start of code to calculate ER from fit parameters
-        # this section could be a separate routine
-        E0 = numpy.zeros(len(ldt))
-        rb = numpy.zeros(len(ldt))
-        ldt_year = numpy.array([dt.year for dt in ldt])
-        ldt_month = numpy.array([dt.month for dt in ldt])
-        ldt_day = numpy.array([dt.day for dt in ldt])
-        for date,E0_val,rb_val in zip(opt_params_dict["date"],opt_params_dict["Eo"],opt_params_dict["rb_noct"]):
-            param_year = date.year
-            param_month = date.month
-            param_day = date.day
-            idx = numpy.where((ldt_year==param_year)&(ldt_month==param_month)&(ldt_day==param_day))[0]
-            E0[idx] = E0_val
-            rb[idx] = rb_val
-        ER_LT = pfp_rpLT.TRF(data_dict, E0, rb)
-        ER_LT_flag = numpy.empty(len(ER_LT),dtype=numpy.int32)
-        ER_LT_flag.fill(30)
+        drivers = configs_dict['drivers']
+        weighting = configs_dict['weighting']
+        try:
+            assert len(drivers) == len(weighting)
+        except AssertionError:
+            raise RuntimeError('Drivers and weighting parameters must have '
+                               'same number of elements')
+        if len(drivers) == 1:
+            if configs_dict['drivers'][0] == 'Ta': weighting = 'air'
+            if configs_dict['drivers'][0] == 'Ts': weighting = 'soil'
+        elif len(configs_dict['drivers']) == 2:
+            Ta_weight = weighting[drivers.index('Ta')]
+            Ts_weight = weighting[drivers.index('Ts')] 
+            weighting = float(Ta_weight) / float(Ts_weight)
+        else:
+            raise RuntimeError('Only 1 or 2 drivers allowed')
+        
+        # Pass the dataframe to the respiration class and get the results
+        ptc = pt.partition(df, weighting = weighting)
+        params_df = ptc.estimate_parameters(mode = 'night')
+        ER = ptc.estimate_er_time_series(params_df)
+        ER_flag = numpy.tile(30, len(ER))
+        pfp_utils.CreateSeries(ds, output, ER, ER_flag, ER_attr)
+    
+        # Write to excel
+        params_df.to_excel(xl_writer, output)
+        xl_writer.save()
+
+        # Get some info required for plotting
+        drivers = iel['outputs'][output]["drivers"]
         target = iel["outputs"][output]["target"]
-        drivers = iel["outputs"][output]["drivers"]
-        ER_attr["comment1"] = "Drivers were "+str(drivers)
-        pfp_utils.CreateSeries(ds, output, ER_LT, ER_LT_flag, ER_attr)
-        # plot the respiration estimated using Lloyd-Taylor
+        ER_attr['comment1'] = 'Drivers were {}'.format(str(drivers))
+        startdate = str(ds.series["DateTime"]["Data"][0])
+        enddate = str(ds.series["DateTime"]["Data"][-1])
+
+        # Do plotting
         fig_num = fig_num + 1
         title = site_name+" : "+output+" estimated using Lloyd-Taylor"
-        pd = pfp_rpLT.rpLT_initplot(site_name=site_name, label=target, fig_num=fig_num, title=title,
-                             nDrivers=len(drivers), startdate=str(startdate), enddate=str(enddate))
+        pd = pfp_rpLT.rpLT_initplot(site_name=site_name, label=target, 
+                                    fig_num=fig_num, title=title,
+                                    nDrivers=len(drivers), 
+                                    startdate=str(startdate), 
+                                    enddate=str(enddate))
         pfp_rpLT.rpLT_plot(pd, ds, output, drivers, target, iel)
-    # close the Excel workbook
-    xl_file.save(xl_name)
 
 def ERUsingSOLO(main_gui, ds, l6_info, called_by):
     """
