@@ -259,7 +259,10 @@ def ParseL4ControlFile(cf, ds):
     return l4_info
 
 def ParseL5ControlFile(cf, ds):
-    l5_info = {"not_output": []}
+    l5_info = {}
+    # add key for suppressing output of intermediate variables e.g. Ta_aws
+    opt = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "KeepIntermediateSeries", default="No")
+    l5_info["RemoveIntermediateSeries"] = {"KeepIntermediateSeries": opt, "not_output": []}
     for target in cf["Fluxes"].keys():
         if "GapFillUsingSOLO" in cf["Fluxes"][target].keys():
             gfSOLO_createdict(cf, ds, l5_info, target, "GapFillUsingSOLO")
@@ -304,6 +307,9 @@ def gfalternate_createdict(cf, ds, l4_info, label, called_by):
     Date: August 2014
     """
     nrecs = int(ds.globalattributes["nc_nrecs"])
+    # make the L4 "description" attrubute for the target variable
+    descr_level = "description_" + ds.globalattributes["nc_level"]
+    ds.series[label]["Attr"][descr_level] = ""
     # create the alternate data settings directory
     if called_by not in l4_info.keys():
         # create the GapFillFromAlternate dictionary
@@ -320,9 +326,13 @@ def gfalternate_createdict(cf, ds, l4_info, label, called_by):
     outputs = l4_info[called_by]["outputs"].keys()
     for output in outputs:
         if output not in ds.series.keys():
+            l4_info["RemoveIntermediateSeries"]["not_output"].append(output)
             variable = pfp_utils.CreateEmptyVariable(output, nrecs)
+            variable["Attr"][descr_level] = l4_info[called_by]["outputs"][output]["source"]
             pfp_utils.CreateVariable(ds, variable)
             variable = pfp_utils.CreateEmptyVariable(label + "_composite", nrecs)
+            l4_info["RemoveIntermediateSeries"]["not_output"].append(label + "_composite")
+            variable["Attr"][descr_level] = "Composite series of tower and alternate data"
             pfp_utils.CreateVariable(ds, variable)
     return
 
@@ -609,6 +619,9 @@ def gfClimatology_createdict(cf, ds, l4_info, label, called_by):
     Author: PRI
     Date: August 2014
     """
+    # make the L4 "description" attrubute for the target variable
+    descr_level = "description_" + ds.globalattributes["nc_level"]
+    ds.series[series]["Attr"][descr_level] = ""
     # create the climatology directory in the data structure
     if called_by not in l4_info.keys():
         l4_info[called_by] = {"outputs": {}}
@@ -619,7 +632,7 @@ def gfClimatology_createdict(cf, ds, l4_info, label, called_by):
     cfcli = cf["Drivers"][label][called_by]
     for output in outputs:
         # disable output to netCDF file for this variable
-        l4_info["not_output"].append(output)
+        l4_info["RemoveIntermediateSeries"]["not_output"].append(output)
         # create the dictionary keys for this output
         l4co[output] = {}
         # get the target
@@ -662,6 +675,7 @@ def gfClimatology_createdict(cf, ds, l4_info, label, called_by):
         # create an empty series in ds if the climatology output series doesn't exist yet
         if output not in ds.series.keys():
             data, flag, attr = pfp_utils.MakeEmptySeries(ds, output)
+            attr[descr_level] = "CLI"
             pfp_utils.CreateSeries(ds, output, data, flag, attr)
 
 def gfMDS_createdict(cf, ds, l5_info, label, called_by):
@@ -714,7 +728,7 @@ def gfMDS_createdict(cf, ds, l5_info, label, called_by):
     l5mo = l5_info[called_by]["outputs"]
     for output in outputs:
         # disable output to netCDF file for this variable
-        l5_info["not_output"].append(output)
+        l5_info["RemoveIntermediateSeries"]["not_output"].append(output)
         # create the dictionary keys for this series
         l5mo[output] = {}
         # get the target
@@ -820,7 +834,7 @@ def gfMergeSeries_createdict(cf, ds, info, label, called_by):
         data, flag, attr = pfp_utils.MakeEmptySeries(ds, label)
         pfp_utils.CreateSeries(ds, label, data, flag, attr)
 
-def gfSOLO_createdict(cf, ds, l5_info, target, called_by):
+def gfSOLO_createdict(cf, ds, l5_info, target_label, called_by):
     """
     Purpose:
      Creates a dictionary in l5_info to hold information about the SOLO data
@@ -831,6 +845,9 @@ def gfSOLO_createdict(cf, ds, l5_info, target, called_by):
     Date: August 2014
     """
     nrecs = int(ds.globalattributes["nc_nrecs"])
+    # make the L5 "description" attrubute for the target variable
+    descr_level = "description_" + ds.globalattributes["nc_level"]
+    ds.series[series]["Attr"][descr_level] = ""
     # create the solo settings directory
     if called_by not in l5_info.keys():
         # create the GapFillUsingSOLO dictionary
@@ -842,20 +859,27 @@ def gfSOLO_createdict(cf, ds, l5_info, target, called_by):
         # only need to create the ["gui"] dictionary on the first pass
         gfSOLO_createdict_gui(cf, ds, l5_info, called_by)
     # get the outputs section
-    gfSOLO_createdict_outputs(cf, l5_info, target, called_by)
+    gfSOLO_createdict_outputs(cf, l5_info, target_label, called_by)
     # add the summary plors section
     if "SummaryPlots" in cf:
         l5_info[called_by]["SummaryPlots"] = cf["SummaryPlots"]
     # create an empty series in ds if the SOLO output series doesn't exist yet
-    outputs = cf["Fluxes"][target][called_by].keys()
-    target_attr = copy.deepcopy(ds.series[target]["Attr"])
-    target_attr["long_name"] = "Modeled by neural network (SOLO)"
+    outputs = cf["Fluxes"][target_label][called_by].keys()
     for output in outputs:
         if output not in ds.series.keys():
+            # disable output to netCDF file for this variable
+            l5_info["RemoveIntermediateSeries"]["not_output"].append(output)
             # create an empty variable
-            variable = pfp_utils.CreateEmptyVariable(output, nrecs, attr=target_attr)
+            variable = pfp_utils.CreateEmptyVariable(output, nrecs)
+            # update the empty variable attributes
+            target_variable = pfp_utils.GetVariable(ds, target_label)
+            for vattr in ["long_name", "group_name", "valid_range", "units", "standard_name"]:
+                if vattr in target_variable["Attr"]:
+                    variable["Attr"][vattr] = target_variable["Attr"][vattr]
+            # create L5 specific vards.series[label]iable attributes
             variable["Attr"]["drivers"] = l5_info[called_by]["outputs"][output]["drivers"]
-            variable["Attr"]["target"] = target
+            variable["Attr"]["target"] = target_label
+            variable["Attr"][descr_level] = "SOLO"
             pfp_utils.CreateVariable(ds, variable)
     return
 
@@ -1151,22 +1175,29 @@ def gfClimatology_interpolateddaily(ds, series, output, xlbook):
             flag[ii] = numpy.int32(41)
     # put the gap filled data back into the data structure
     pfp_utils.CreateSeries(ds, output, data, flag, attr)
+    # PRI_Check - make sure climatology variable is OK
+    #ds.series[output]["Data"] = data
+    #ds.series[output]["Flag"] = flag
+    return
 
-def gfClimatology_monthly(ds,series,output,xlbook):
+def gfClimatology_monthly(ds, series, output, xlbook):
     """ Gap fill using monthly climatology."""
+    dt = ds.series["DateTime"]["Data"]
+    Hdh = numpy.array([d.hour + d.minute/float(60) for d in dt])
+    Month = numpy.array([d.month for d in dt])
     thissheet = xlbook.sheet_by_name(series)
-    val1d = numpy.zeros_like(ds.series[series]['Data'])
-    values = numpy.zeros([48,12])
-    for month in range(1,13):
+    val1d = numpy.zeros_like(ds.series[series]["Data"])
+    values = numpy.zeros([48, 12])
+    for month in range(1, 13):
         xlCol = (month-1)*5 + 2
         values[:,month-1] = thissheet.col_values(xlCol)[2:50]
-    for i in range(len(ds.series[series]['Data'])):
-        h = numpy.int(2*ds.series['Hdh']['Data'][i])
-        m = numpy.int(ds.series['Month']['Data'][i])
-        val1d[i] = values[h,m-1]
-    index = numpy.where(abs(ds.series[output]['Data']-c.missing_value)<c.eps)[0]
-    ds.series[output]['Data'][index] = val1d[index]
-    ds.series[output]['Flag'][index] = numpy.int32(40)
+    for i in range(len(ds.series[series]["Data"])):
+        h = numpy.int(2*Hdh[i])
+        m = numpy.int(Month[i])
+        val1d[i] = values[h, m-1]
+    index = numpy.where(abs(ds.series[output]["Data"] - c.missing_value)<c.eps)[0]
+    ds.series[output]["Data"][index] = val1d[index]
+    ds.series[output]["Flag"][index] = numpy.int32(40)
 
 # functions for GapFillUsingInterpolation
 def GapFillUsingInterpolation(cf, ds):
