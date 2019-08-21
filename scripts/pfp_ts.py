@@ -2760,7 +2760,7 @@ def ReplaceRotatedCovariance(cf,ds,rot_cov_label,non_cov_label):
         ds.series[rot_cov_label]['Flag'][index] = numpy.int32(20)
     return
 
-def RemoveIntermediateSeries(cf, ds):
+def RemoveIntermediateSeries(ds, info):
     """
     Purpose:
      Remove the alternate, solo, mds, climatology and composite variables
@@ -2770,8 +2770,8 @@ def RemoveIntermediateSeries(cf, ds):
     Author: PRI
     Date: November 2018
     """
-    opt = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "KeepIntermediateSeries", default="No")
-    if opt == "Yes":
+    iris = info["RemoveIntermediateSeries"]
+    if iris["KeepIntermediateSeries"] == "Yes":
         return
     #alt_list = []
     #solo_list = []
@@ -2791,14 +2791,14 @@ def RemoveIntermediateSeries(cf, ds):
     #remove_list = alt_list + solo_list + mds_list + cli_list + com_list
     #if len(remove_list) == 0:
         #return
-    if "intermediate" in dir(ds):
-        if len(ds.intermediate) > 0:
+    if "not_output" in iris:
+        if len(iris["not_output"]) > 0:
             msg = " Removing intermediate series from data structure"
             logger.info(msg)
-            for label in ds.intermediate:
+            for label in iris["not_output"]:
                 if label in list(ds.series.keys()):
                     del ds.series[label]
-            ds.intermediate = []
+            iris["not_output"] = []
     return
 
 def ReplaceOnDiff(cf,ds,series=''):
