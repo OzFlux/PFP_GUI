@@ -252,7 +252,7 @@ def gfSOLO_plot(pd, ds, drivers, target, output, l5s, si=0, ei=-1):
     ts = int(ds.globalattributes['time_step'])
     # get a local copy of the datetime series
     xdt = ds.series["DateTime"]["Data"][si:ei+1]
-    Hdh, _, _ = pfp_utils.GetSeriesasMA(ds, 'Hdh', si=si, ei=ei)
+    Hdh = numpy.array([d.hour+d.minute/float(60) for d in xdt])
     # get the observed and modelled values
     obs, _, _ = pfp_utils.GetSeriesasMA(ds, target, si=si, ei=ei)
     mod, _, _ = pfp_utils.GetSeriesasMA(ds, output, si=si, ei=ei)
@@ -261,7 +261,6 @@ def gfSOLO_plot(pd, ds, drivers, target, output, l5s, si=0, ei=-1):
         plt.ion()
     else:
         plt.ioff()
-    #fig = plt.figure(pd["fig_num"], figsize=(13, 8))
     if plt.fignum_exists(1):
         fig = plt.figure(1)
         plt.clf()

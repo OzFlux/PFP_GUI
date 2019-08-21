@@ -72,15 +72,17 @@ def ApplyRangeCheckToVariable(variable):
         variable["Attr"]["valid_range"] = valid_range
     return
 
-def ApplyTurbulenceFilter(cf,ds,ustar_threshold=None):
+def ApplyTurbulenceFilter(cf, ds, l5_info, ustar_threshold=None):
     """
     Purpose:
     Usage:
     Author:
     Date:
     """
+    iris = l5_info["RemoveIntermediateSeries"]
     opt = ApplyTurbulenceFilter_checks(cf,ds)
-    if not opt["OK"]: return
+    if not opt["OK"]:
+        return
     # local point to datetime series
     ldt = ds.series["DateTime"]["Data"]
     # time step
@@ -154,19 +156,25 @@ def ApplyTurbulenceFilter(cf,ds,ustar_threshold=None):
     long_name = "Turbulence indicator, 1 for turbulent, 0 for non-turbulent"
     ind_attr = pfp_utils.MakeAttributeDictionary(long_name=long_name,units="None")
     pfp_utils.CreateSeries(ds,"turbulence_indicator",indicators["turbulence"]["values"],ind_flag,ind_attr)
+    iris["not_output"].append("turbulence_indicator")
     long_name = "Day indicator, 1 for day time, 0 for night time"
     ind_attr = pfp_utils.MakeAttributeDictionary(long_name=long_name,units="None")
     pfp_utils.CreateSeries(ds,"day_indicator",indicators["day"]["values"],ind_flag,ind_attr)
+    iris["not_output"].append("day_indicator")
     long_name = "Evening indicator, 1 for evening, 0 for not evening"
     ind_attr = pfp_utils.MakeAttributeDictionary(long_name=long_name,units="None")
     pfp_utils.CreateSeries(ds,"evening_indicator",indicators["evening"]["values"],ind_flag,ind_attr)
+    iris["not_output"].append("evening_indicator")
     long_name = "Day/evening indicator, 1 for day/evening, 0 for not day/evening"
     ind_attr = pfp_utils.MakeAttributeDictionary(long_name=long_name,units="None")
     pfp_utils.CreateSeries(ds,"dayevening_indicator",indicators["dayevening"]["values"],ind_flag,ind_attr)
+    iris["not_output"].append("dayevening_indicator")
     long_name = "Final indicator, 1 for use data, 0 for don't use data"
     ind_attr = pfp_utils.MakeAttributeDictionary(long_name=long_name,units="None")
     pfp_utils.CreateSeries(ds,"final_indicator",indicators["final"]["values"],ind_flag,ind_attr)
+    iris["not_output"].append("final_indicator")
     # loop over the series to be filtered
+    descr_level = "description_" + ds.globalattributes["nc_level"]
     for series in opt["filter_list"]:
         msg = " Applying "+opt["turbulence_filter"]+" filter to "+series
         logger.info(msg)
@@ -174,24 +182,31 @@ def ApplyTurbulenceFilter(cf,ds,ustar_threshold=None):
         data,flag,attr = pfp_utils.GetSeriesasMA(ds,series)
         # continue to next series if this series has been filtered before
         if "turbulence_filter" in attr:
-            msg = " Series "+series+" has already been filtered, skipping ..."
+            msg = " Series " + series + " has already been filtered, skipping ..."
             logger.warning(msg)
             continue
         # save the non-filtered data
-        pfp_utils.CreateSeries(ds,series+"_nofilter",data,flag,attr)
+        attr_nofilter = copy.deepcopy(attr)
+        pfp_utils.CreateSeries(ds, series + "_nofilter", data,flag, attr_nofilter)
+        iris["not_output"].append(series + "_nofilter")
         # now apply the filter
         data_filtered = numpy.ma.masked_where(indicators["final"]["values"]==0,data,copy=True)
         flag_filtered = numpy.copy(flag)
         idx = numpy.where(indicators["final"]["values"]==0)[0]
         flag_filtered[idx] = numpy.int32(61)
+        attr_filtered = copy.deepcopy(attr)
         # update the series attributes
         for item in indicators["final"]["attr"].keys():
             attr[item] = indicators["final"]["attr"][item]
+        # update the "description" attribute
+        attr_filtered[descr_level] = pfp_utils.append_string(attr_filtered[descr_level],
+                                                             "turbulence filter applied")
         # and write the filtered data to the data structure
-        pfp_utils.CreateSeries(ds,series,data_filtered,flag_filtered,attr)
+        pfp_utils.CreateSeries(ds,series,data_filtered,flag_filtered,attr_filtered)
         # and write a copy of the filtered datas to the data structure so it
         # will still exist once the gap filling has been done
-        pfp_utils.CreateSeries(ds,series+"_filtered",data_filtered,flag_filtered,attr)
+        pfp_utils.CreateSeries(ds,series+"_filtered",data_filtered,flag_filtered,attr_filtered)
+        iris["not_output"].append(series+"_filtered")
         nnf = numpy.ma.count(data)
         nf = numpy.ma.count(data_filtered)
         pc = int(100*(float(nnf-nf)/float(nnf))+0.5)
@@ -447,20 +462,31 @@ def do_dependencycheck(cf, ds, section, series, code=23, mode="quiet"):
     # our work here is done
     return
 
-def do_diurnalcheck(cf,ds,section,series,code=5):
-    if 'DiurnalCheck' not in cf[section][series].keys(): return
-    if 'NumSd' not in cf[section][series]['DiurnalCheck'].keys(): return
-    dt = float(ds.globalattributes['time_step'])
-    n = int((60./dt) + 0.5)             #Number of timesteps per hour
-    nInts = int((1440.0/dt)+0.5)        #Number of timesteps per day
+def do_diurnalcheck(cf, ds, section, series,code=5):
+    """
+    Purpose:
+     Do the diurnal QC check.
+    Usage:
+    Author: PRI
+    Date: Back in the day
+    """
+    if 'DiurnalCheck' not in cf[section][series].keys():
+        return
+    if 'NumSd' not in cf[section][series]["DiurnalCheck"].keys():
+        return
+    dt = ds.series["DateTime"]["Data"]
+    Hdh = numpy.array([d.hour+d.minute/float(60) for d in dt])
+    ts = float(ds.globalattributes["time_step"])
+    n = int((60./ts) + 0.5)             #Number of timesteps per hour
+    nInts = int((1440.0/ts)+0.5)        #Number of timesteps per day
     Av = numpy.array([c.missing_value]*nInts,dtype=numpy.float64)
     Sd = numpy.array([c.missing_value]*nInts,dtype=numpy.float64)
-    NSd = numpy.array(parse_rangecheck_limit(cf[section][series]['DiurnalCheck']['NumSd']))
+    NSd = numpy.array(parse_rangecheck_limit(cf[section][series]["DiurnalCheck"]["NumSd"]))
     for m in range(1,13):
-        mindex = numpy.where(ds.series['Month']['Data']==m)[0]
+        mindex = numpy.where(ds.series["Month"]["Data"]==m)[0]
         if len(mindex)!=0:
-            lHdh = ds.series['Hdh']['Data'][mindex]
-            l2ds = ds.series[series]['Data'][mindex]
+            lHdh = Hdh[mindex]
+            l2ds = ds.series[series]["Data"][mindex]
             for i in range(nInts):
                 li = numpy.where((abs(lHdh-(float(i)/float(n)))<c.eps)&(l2ds!=float(c.missing_value)))
                 if numpy.size(li)!=0:

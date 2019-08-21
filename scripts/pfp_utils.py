@@ -24,6 +24,24 @@ import pfp_func
 
 logger = logging.getLogger("pfp_log")
 
+def append_string(attr, string_to_add, caps=True):
+    """
+    Purpose:
+     Format the input attribute string and add it to the attribute.
+    Usage:
+    Side effects:
+    Author: PRI
+    Date: November 2018
+    """
+    if len(attr) == 0:
+        if caps:
+            attr = string_to_add[:1].upper() + string_to_add[1:]
+        else:
+            attr = string_to_add
+    else:
+        attr += ", " + string_to_add
+    return attr
+
 def bp(fx,tao):
     """
     Function to calculate the b and p coeficients of the Massman frequency correction.
@@ -1296,6 +1314,7 @@ def FixTimeGaps(ds):
     ldt_end = ldt_gaps[-1]
     nogaps = [result for result in perdelta(ldt_start,ldt_end,datetime.timedelta(minutes=ts))]
     ldt_nogaps = numpy.array(nogaps)
+    ldt_gaps = numpy.array(ldt_gaps)
     # update the global attribute containing the number of records
     nRecs = len(ldt_nogaps)
     ds.globalattributes['nc_nrecs'] = nRecs
@@ -1943,12 +1962,12 @@ def get_datetimefromymdhms(ds):
         logger.info(' get_datetimefromymdhms: unable to find all datetime fields required')
         return
     logger.info(' Getting the date and time series')
-    year = ds.series["Year"]["Data"]
-    month = ds.series["Month"]["Data"]
-    day = ds.series["Day"]["Data"]
-    hour = ds.series["Hour"]["Data"]
-    minute = ds.series["Minute"]["Data"]
-    second = ds.series["Second"]["Data"]
+    year = ds.series["Year"]["Data"].astype('int')
+    month = ds.series["Month"]["Data"].astype('int')
+    day = ds.series["Day"]["Data"].astype('int')
+    hour = ds.series["Hour"]["Data"].astype('int')
+    minute = ds.series["Minute"]["Data"].astype('int')
+    second = ds.series["Second"]["Data"].astype('int')
     dt = [datetime.datetime(yr,mn,dy,hr,mi,se) for yr,mn,dy,hr,mi,se in zip(year,month,day,hour,minute,second)]
     ds.series["DateTime"] = {}
     ds.series["DateTime"]["Data"] = numpy.array(dt)
@@ -2440,21 +2459,21 @@ def MakeAttributeDictionary(**kwargs):
     Author: PRI
     Date: Back in the day
     """
-    default_list = ["height","instrument","long_name","serial_number","standard_name",
-                    "units","valid_range"]
+    default_list = ["height", "instrument", "long_name", "serial_number",
+                    "standard_name", "units", "valid_range", "group_name"]
     attr = {}
     for item in kwargs:
         if isinstance(item, dict):
             for entry in item: attr[entry] = item[entry]
         else:
-            attr[item] = kwargs.get(item,"not defined")
+            attr[item] = kwargs.get(item,"")
         if item in default_list: default_list.remove(item)
     if len(default_list)!=0:
         for item in default_list:
             if item == "valid_range":
                 attr[item] = str(c.small_value)+","+str(c.large_value)
             else:
-                attr[item] = "not defined"
+                attr[item] = ""
     attr["missing_value"] = c.missing_value
     return copy.deepcopy(attr)
 
@@ -2468,9 +2487,8 @@ def make_attribute_dictionary(attr_existing):
     Author: PRI
     Date: Back in the day
     """
-    attr_new = {"height": "not defined", "standard_name": "not defined",
-                "long_name": "not defined", "units": "not defined",
-                "missing_value": c.missing_value}
+    attr_new = {"height": "", "instrument": "", "long_name": "", "serial_number": "",
+                "standard_name": "", "units": "", "valid_range": "", "group_name": ""}
     if isinstance(attr_existing, dict):
         for item in attr_existing:
             if item in ["height", "standard_name", "long_name", "units"]:
@@ -2540,6 +2558,7 @@ def MergeVariables(ds, out_label, in_labels):
     Author: PRI
     Date: October 2018
     """
+    descr_level = "description_" + ds.globalattributes["nc_level"]
     var_in = GetVariable(ds, in_labels[0])
     var_out = CopyVariable(var_in)
     if len(in_labels) == 1:
@@ -2553,6 +2572,10 @@ def MergeVariables(ds, out_label, in_labels):
         condition = (out_mask == True) & (in_mask == False)
         var_out["Data"] = numpy.ma.where(condition, var_in["Data"], var_out["Data"])
         var_out["Flag"] = numpy.ma.where(condition, var_in["Flag"], var_out["Flag"])
+    if descr_level in var_out["Attr"]:
+        var_out["Attr"][descr_level] += ", merged from " + str(in_labels)
+    else:
+        var_out["Attr"][descr_level] = "Merged from " + str(in_labels)
     var_out["Attr"]["description"] = "Merged from "+str(in_labels)
     var_out["Label"] = out_label
     return var_out

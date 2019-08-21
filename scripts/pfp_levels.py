@@ -298,14 +298,14 @@ def l4qc(main_gui, cf, ds3):
     pfp_ts.CalculateHumiditiesAfterGapFill(ds4, l4_info)
     # re-calculate the meteorological variables
     pfp_ts.CalculateMeteorologicalVariables(ds4)
-    # the Tumba rhumba
-    pfp_ts.CalculateComponentsFromWsWd(ds4)
     # check for any missing data
     pfp_utils.get_missingingapfilledseries(ds4, l4_info)
     # write the percentage of good data as a variable attribute
     pfp_utils.get_coverage_individual(ds4)
     # write the percentage of good data for groups
     pfp_utils.get_coverage_groups(ds4)
+    # remove intermediate series from the data structure
+    pfp_ts.RemoveIntermediateSeries(ds4, l4_info)
 
     return ds4
 
@@ -331,7 +331,7 @@ def l5qc(main_gui, cf, ds4):
     if ds5.returncodes["value"] != 0:
         return ds5
     # apply the turbulence filter (if requested)
-    pfp_ck.ApplyTurbulenceFilter(cf, ds5)
+    pfp_ck.ApplyTurbulenceFilter(cf, ds5, l5_info)
     # fill short gaps using interpolation
     pfp_gf.GapFillUsingInterpolation(cf, ds5)
     # gap fill using marginal distribution sampling
@@ -355,6 +355,8 @@ def l5qc(main_gui, cf, ds4):
     pfp_utils.get_coverage_individual(ds5)
     # write the percentage of good data for groups
     pfp_utils.get_coverage_groups(ds5)
+    # remove intermediate series from the data structure
+    pfp_ts.RemoveIntermediateSeries(ds5, l5_info)
 
     return ds5
 
@@ -403,6 +405,8 @@ def l6qc(main_gui, cf, ds5):
     pfp_utils.get_coverage_individual(ds6)
     # write the percentage of good data for groups
     pfp_utils.get_coverage_groups(ds6)
+    # remove intermediate series from the data structure
+    pfp_ts.RemoveIntermediateSeries(ds6, l6_info)
     # do the L6 summary
     pfp_rp.L6_summary(cf, ds6)
 

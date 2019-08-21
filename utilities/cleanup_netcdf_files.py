@@ -211,7 +211,7 @@ rp = os.path.join(os.sep, "home", "peter", "OzFlux", "Sites")
 #         "HowardSprings", "Litchfield", "Loxton", "Otway", "RedDirtMelonFarm", "Ridgefield", "RiggsCreek",
 #         "RobsonCreek", "Samford", "SturtPlains", "TiTreeEast", "Tumbarumba", "WallabyCreek", "Warra",
 #         "Whroo", "WombatStateForest", "Yanco"]
-sites = ["Calperum"]
+sites = ["Loxton"]
 for site in sites:
     sp = os.path.join(rp, site, "Data", "Portal")
     op = os.path.join(rp, site, "Data", "Processed")

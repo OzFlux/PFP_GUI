@@ -605,6 +605,7 @@ def gfalternate_getoutputstatistics(data_dict, stat_dict, l4a):
         rmse = numpy.ma.sqrt(numpy.ma.average(error*error))
         stat_dict[label]["RMSE"] = trap_masked_constant(rmse)
         data_range = numpy.ma.maximum.reduce(data_dict[label_tower]["data"])-numpy.ma.minimum.reduce(data_dict[label_tower]["data"])
+        data_range = numpy.maximum(data_range, 1)
         if numpy.ma.is_masked(data_range) or abs(data_range) < c.eps:
             nmse = float(c.missing_value)
         else:

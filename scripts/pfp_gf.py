@@ -43,7 +43,7 @@ def CheckDrivers(ds, info, called_by):
     # loop over the drivers and check for missing data
     for label in drivers:
         if label not in ds.series.keys():
-            msg = "  Requested driver not found in data structure"
+            msg = "  Requested driver (" + label + ") not found in data structure"
             logger.error(msg)
             ds.returncodes["message"] = msg
             ds.returncodes["value"] = 1
@@ -394,7 +394,7 @@ def gfalternate_createdict_outputs(cf, l4_info, label, called_by):
     cfalt = cf["Drivers"][label][called_by]
     for output in outputs:
         # disable output to netCDF file for this variable
-        l4_info["not_output"].append(output)
+        l4_info["RemoveIntermediateSeries"]["not_output"].append(output)
         # create the dictionary keys for this output
         l4ao[output] = {}
         # get the target
@@ -621,7 +621,7 @@ def gfClimatology_createdict(cf, ds, l4_info, label, called_by):
     """
     # make the L4 "description" attrubute for the target variable
     descr_level = "description_" + ds.globalattributes["nc_level"]
-    ds.series[series]["Attr"][descr_level] = ""
+    ds.series[label]["Attr"][descr_level] = ""
     # create the climatology directory in the data structure
     if called_by not in l4_info.keys():
         l4_info[called_by] = {"outputs": {}}
@@ -847,7 +847,7 @@ def gfSOLO_createdict(cf, ds, l5_info, target_label, called_by):
     nrecs = int(ds.globalattributes["nc_nrecs"])
     # make the L5 "description" attrubute for the target variable
     descr_level = "description_" + ds.globalattributes["nc_level"]
-    ds.series[series]["Attr"][descr_level] = ""
+    ds.series[target_label]["Attr"][descr_level] = ""
     # create the solo settings directory
     if called_by not in l5_info.keys():
         # create the GapFillUsingSOLO dictionary
@@ -1039,6 +1039,7 @@ def gfSOLO_createdict_outputs(cf, l5_info, target, called_by):
         August 2019 - rewritten for consistency and batch operation
     """
     level = cf["level"]
+    iris = l5_info["RemoveIntermediateSeries"]
     so = l5_info[called_by]["outputs"]
     # loop over the outputs listed in the control file
     if level == "L5":
@@ -1056,7 +1057,7 @@ def gfSOLO_createdict_outputs(cf, l5_info, target, called_by):
     outputs = cf[section][target][called_by].keys()
     for output in outputs:
         # disable output to netCDF file for this variable
-        l5_info["not_output"].append(output)
+        iris["not_output"].append(output)
         # create the dictionary keys for this series
         so[output] = {}
         # get the target
