@@ -1802,35 +1802,6 @@ def do_mergeseries(ds,target,srclist,mode="verbose"):
     attr["long_name"] = attr["long_name"]+", merged from " + SeriesNameString
     pfp_utils.CreateSeries(ds,target,data,flag1,attr)
 
-def do_solo(cf,ds4,Fc_in='Fc',Fe_in='Fe',Fh_in='Fh',Fc_out='Fc',Fe_out='Fe',Fh_out='Fh'):
-    ''' duplicate gapfilled fluxes for graphing comparison'''
-    if pfp_utils.cfkeycheck(cf,Base='FunctionArgs',ThisOne='SOLOvars'):
-        invars = ast.literal_eval(cf['FunctionArgs']['SOLOvars'])
-        Fc_in = invars[0]
-        Fe_in = invars[1]
-        Fh_in = invars[2]
-    if pfp_utils.cfkeycheck(cf,Base='FunctionArgs',ThisOne='SOLOplot'):
-        outvars = ast.literal_eval(cf['FunctionArgs']['SOLOplot'])
-        Fc_out = outvars[0]
-        Fe_out = outvars[1]
-        Fh_out = outvars[2]
-    # add relevant meteorological values to L3 data
-    logger.info(' Adding standard met variables to database')
-    CalculateMeteorologicalVariables(ds4)
-    ds4.globalattributes['L4Functions'] = ds4.globalattributes['L4Functions']+', CalculateMetVars'
-    if Fe_in in ds4.series.keys():
-        Fe,flag,attr = pfp_utils.GetSeriesasMA(ds4,Fe_in)
-        attr = pfp_utils.MakeAttributeDictionary(long_name='ANN gapfilled Latent Heat Flux',units='W/m2',standard_name='surface_upward_latent_heat_flux')
-        pfp_utils.CreateSeries(ds4,Fe_out,Fe,flag,attr)
-    if Fc_in in ds4.series.keys():
-        Fc,flag,attr = pfp_utils.GetSeriesasMA(ds4,Fc_in)
-        attr = pfp_utils.MakeAttributeDictionary(long_name='ANN gapfilled Carbon Flux',units='mg/m2/s')
-        pfp_utils.CreateSeries(ds4,Fc_out,Fc,flag,attr)
-    if Fh_in in ds4.series.keys():
-        Fh,flag,attr = pfp_utils.GetSeriesasMA(ds4,Fh_in)
-        attr = pfp_utils.MakeAttributeDictionary(long_name='ANN gapfilled Sensible Heat Flux',units='W/m2',standard_name='surface_upward_sensible_heat_flux')
-        pfp_utils.CreateSeries(ds4,Fh_out,Fh,flag,attr)
-
 def Fc_WPL(cf, ds, Fc_wpl_out='Fc', Fc_raw_in='Fc', Fh_in='Fh', Fe_in='Fe',
            Ta_in='Ta', Ah_in='Ah', CO2_in='CO2', ps_in='ps'):
     """
@@ -2773,24 +2744,6 @@ def RemoveIntermediateSeries(ds, info):
     iris = info["RemoveIntermediateSeries"]
     if iris["KeepIntermediateSeries"] == "Yes":
         return
-    #alt_list = []
-    #solo_list = []
-    #mds_list = []
-    #cli_list = []
-    #com_list = []
-    #if "alternate" in dir(ds):
-        #alt_list = list(ds.alternate.keys())
-    #if "solo" in dir(ds):
-        #solo_list = list(ds.solo.keys())
-    #if "mds" in dir(ds):
-        #mds_list = list(ds.mds.keys())
-    #if "climatology" in dir(ds):
-        #cli_list = list(ds.climatology.keys())
-    #if "composite" in dir(ds):
-        #com_list = list(ds.composite.keys())
-    #remove_list = alt_list + solo_list + mds_list + cli_list + com_list
-    #if len(remove_list) == 0:
-        #return
     if "not_output" in iris:
         if len(iris["not_output"]) > 0:
             msg = " Removing intermediate series from data structure"
