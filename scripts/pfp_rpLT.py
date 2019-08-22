@@ -304,6 +304,8 @@ def rpLT_createdict(cf, ds, l6_info, output, called_by):
     Date October 2015
     """
     nrecs = int(ds.globalattributes["nc_nrecs"])
+    # make the L6 "description" attrubute for the target variable
+    descr_level = "description_" + ds.globalattributes["nc_level"]
     # create the LT settings directory
     if called_by not in l6_info.keys():
         l6_info[called_by] = {"outputs": {}, "info": {"source": "Fc", "target": "ER"}, "gui": {}}
@@ -322,7 +324,7 @@ def rpLT_createdict(cf, ds, l6_info, output, called_by):
             variable = pfp_utils.CreateEmptyVariable(model_output, nrecs)
             variable["Attr"]["long_name"] = "Ecosystem respiration"
             variable["Attr"]["drivers"] = l6_info[called_by]["outputs"][model_output]["drivers"]
-            variable["Attr"]["description_l6"] = "Modeled by Lloyd-Taylor"
+            variable["Attr"][descr_level] = "Modeled by Lloyd-Taylor"
             variable["Attr"]["target"] = l6_info[called_by]["info"]["target"]
             variable["Attr"]["source"] = l6_info[called_by]["info"]["source"]
             variable["Attr"]["units"] = Fc["Attr"]["units"]

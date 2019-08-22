@@ -334,6 +334,8 @@ def rpLL_createdict(cf, ds, l6_info, output, called_by):
     Date April 2016
     """
     nrecs = int(ds.globalattributes["nc_nrecs"])
+    # make the L6 "description" attrubute for the target variable
+    descr_level = "description_" + ds.globalattributes["nc_level"]
     # create the Lasslop settings directory
     if called_by not in l6_info.keys():
         l6_info[called_by] = {"outputs": {}, "info": {}, "gui": {}}
@@ -352,7 +354,7 @@ def rpLL_createdict(cf, ds, l6_info, output, called_by):
             variable = pfp_utils.CreateEmptyVariable(model_output, nrecs)
             variable["Attr"]["long_name"] = "Ecosystem respiration"
             variable["Attr"]["drivers"] = l6_info[called_by]["outputs"][model_output]["drivers"]
-            variable["Attr"]["description_l6"] = "Modeled by Lasslop et al. (2010)"
+            variable["Attr"][descr_level] = "Modeled by Lasslop et al. (2010)"
             variable["Attr"]["target"] = l6_info[called_by]["info"]["target"]
             variable["Attr"]["source"] = l6_info[called_by]["info"]["source"]
             variable["Attr"]["units"] = Fc["Attr"]["units"]

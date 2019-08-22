@@ -197,7 +197,7 @@ def ApplyTurbulenceFilter(cf, ds, l5_info, ustar_threshold=None):
         attr_filtered = copy.deepcopy(attr)
         # update the series attributes
         for item in indicators["final"]["attr"].keys():
-            attr[item] = indicators["final"]["attr"][item]
+            attr_filtered[item] = indicators["final"]["attr"][item]
         # update the "description" attribute
         attr_filtered[descr_level] = pfp_utils.append_string(attr_filtered[descr_level],
                                                              "turbulence filter applied")

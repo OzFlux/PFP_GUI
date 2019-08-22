@@ -815,7 +815,7 @@ def CalculateMeteorologicalVariables(ds,Ta_name='Ta', Tv_name='Tv_SONIC_Av', ps_
     attr[descr_level] = "Vapour pressure deficit calculated from Ah, Ta and ps"
     flag = numpy.where(numpy.ma.getmaskarray(VPD)==True,ones,zeros)
     pfp_utils.CreateSeries(ds,'VPD',VPD,flag,attr)
-    
+
     attr = pfp_utils.MakeAttributeDictionary(long_name='Specific humidity deficit',units='kg/kg')
     attr["group_name"] = "meteorology"
     attr[descr_level] = "Specific humidity deficit calculated from SH, Ta and ps"
@@ -2568,6 +2568,7 @@ def MassmanStandard(cf, ds, Ta_in='Ta', Ah_in='Ah', ps_in='ps', u_in="U_SONIC_Av
 
 def MergeSeriesUsingDict(ds, info, merge_order="standard"):
     """ Merge series as defined in the merge dictionary."""
+    # create decsription level attribute string
     descr_level = "description_" + ds.globalattributes["nc_level"]
     merge = info["MergeSeries"]
     if merge_order not in merge:
@@ -2575,7 +2576,6 @@ def MergeSeriesUsingDict(ds, info, merge_order="standard"):
         logger.warning(msg)
         return
     # loop over the entries in merge
-    descr_level = "description_" + ds.globalattributes["nc_level"]
     for target in merge[merge_order].keys():
         srclist = merge[merge_order][target]["source"]
         logger.info(" Merging "+str(srclist)+"==>"+target)

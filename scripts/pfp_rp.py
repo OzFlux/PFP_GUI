@@ -63,6 +63,8 @@ def CalculateNEE(cf, ds, l6_info):
     """
     if "NetEcosystemExchange" not in l6_info:
         return
+    # make the L6 "description" attrubute for the target variable
+    descr_level = "description_" + ds.globalattributes["nc_level"]
     # get the Fsd threshold
     Fsd_threshold = float(pfp_utils.get_keyvaluefromcf(cf, ["Options"], "Fsd_threshold", default=10))
     # get the incoming shortwave radiation
@@ -87,7 +89,7 @@ def CalculateNEE(cf, ds, l6_info):
         attr = ds.series[output_label]["Attr"]
         attr["units"] = Fc_attr["units"]
         attr["long_name"] = "Net Ecosystem Exchange"
-        attr["description_l6"] = " Calculated from " + Fc_label + " and " + ER_label
+        attr[descr_level] = " Calculated from " + Fc_label + " and " + ER_label
         attr["comment1"] = "Fsd threshold used was " + str(Fsd_threshold)
         ds.series[output_label]["Attr"] = attr
     return
@@ -586,6 +588,8 @@ def GetERFromFc(cf, ds):
     long_name = "Ecosystem respiration (observed) derived from Fc"
     units = Fc["Attr"]["units"]
     ER["Attr"] = pfp_utils.MakeAttributeDictionary(long_name=long_name, units=units)
+    descr_level = "description_" + ds.globalattributes["nc_level"]
+    ER["Attr"][descr_level] = "Ecosystem respiration from nocturnal, ustar-filtered Fc"
     # only accept Fc with QC flag value of 0
     Fc["Data"] = numpy.ma.masked_where((Fc["Flag"] != 0), Fc["Data"])
     idx_notok = numpy.where((Fc["Flag"] != 0))[0]
@@ -1637,6 +1641,9 @@ def ParseL6ControlFile(cf, ds):
     """
     # create the L6 information dictionary
     l6_info = {}
+    # add key for suppressing output of intermediate variables e.g. Ta_aws
+    opt = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "KeepIntermediateSeries", default="No")
+    l6_info["RemoveIntermediateSeries"] = {"KeepIntermediateSeries": opt, "not_output": []}
     if "EcosystemRespiration" in cf.keys():
         for output in cf["EcosystemRespiration"].keys():
             if "ERUsingSOLO" in cf["EcosystemRespiration"][output].keys():
@@ -1673,6 +1680,8 @@ def PartitionNEE(ds, l6_info):
     """
     if "GrossPrimaryProductivity" not in l6_info:
         return
+    # make the L6 "description" attrubute for the target variable
+    descr_level = "description_" + ds.globalattributes["nc_level"]
     # calculate GPP from NEE and ER
     for label in l6_info["GrossPrimaryProductivity"].keys():
         if ("NEE" not in l6_info["GrossPrimaryProductivity"][label] and
@@ -1694,7 +1703,7 @@ def PartitionNEE(ds, l6_info):
         attr = ds.series[output_label]["Attr"]
         attr["units"] = NEE_attr["units"]
         attr["long_name"] = "Gross Primary Productivity"
-        attr["description_l6"] = "Calculated as -1*" + NEE_label + " + " + ER_label
+        attr[descr_level] = "Calculated as -1*" + NEE_label + " + " + ER_label
         ds.series[output_label]["Attr"] = attr
 
 def rpGPP_createdict(cf, ds, info, label):
@@ -1735,8 +1744,6 @@ def rpNEE_createdict(cf, ds, info, label):
     # create an empty series in ds if the output series doesn't exist yet
     if info[label]["output"] not in ds.series.keys():
         data, flag, attr = pfp_utils.MakeEmptySeries(ds, info[label]["output"])
-        attr["long_name"] = "Net Ecosystem Exchange"
-        attr["units"] = Fc["Attr"]["units"]
         pfp_utils.CreateSeries(ds, info[label]["output"], data, flag, attr)
     return
 
@@ -1774,6 +1781,8 @@ def rpSOLO_createdict(cf, ds, l6_info, output, called_by):
     Date: Back in the day
     """
     nrecs = int(ds.globalattributes["nc_nrecs"])
+    # make the L6 "description" attrubute for the target variable
+    descr_level = "description_" + ds.globalattributes["nc_level"]
     # create the dictionary keys for this series
     if called_by not in l6_info.keys():
         l6_info[called_by] = {"outputs": {}, "info": {"source": "Fc", "target": "ER"}, "gui": {}}
@@ -1794,7 +1803,7 @@ def rpSOLO_createdict(cf, ds, l6_info, output, called_by):
             variable = pfp_utils.CreateEmptyVariable(model_output, nrecs)
             variable["Attr"]["long_name"] = "Ecosystem respiration"
             variable["Attr"]["drivers"] = l6_info[called_by]["outputs"][model_output]["drivers"]
-            variable["Attr"]["description_l6"] = "Modeled by neural network (SOLO)"
+            variable["Attr"][descr_level] = "Modeled by neural network (SOLO)"
             variable["Attr"]["target"] = l6_info[called_by]["info"]["target"]
             variable["Attr"]["source"] = l6_info[called_by]["info"]["source"]
             variable["Attr"]["units"] = Fc["Attr"]["units"]
