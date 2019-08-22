@@ -22,6 +22,7 @@ import pfp_gui
 import pfp_io
 import pfp_rpLL
 import pfp_rpLT
+import pfp_rputils
 import pfp_ts
 import pfp_utils
 
@@ -319,104 +320,133 @@ def cleanup_ustar_dict(ldt,ustar_dict):
 #                         nDrivers=len(data.keys()),startdate=str(startdate),enddate=str(enddate))
 #    pfp_rpLL.rpLL_plot(pd, ds, output, drivers, target, l6_info)
 
+#def ERUsingLasslop2(ds, l6_info):
+#    """
+#    Purpose:
+#     Estimate ecosystem respiration using Lasslop.
+#     Ian McHugh wrote the LT code, PRI wrote the wrapper to integrate
+#     this with OzFluxQC.
+#    Usage:
+#    Author: IMcH, PRI
+#    Date: October 2015
+#    """
+#    if "ERUsingLasslop" not in l6_info:
+#        return
+#    logger.info("Estimating ER using Lasslop")
+#    long_name = "Ecosystem respiration modelled by Lasslop"
+#    ER_attr = pfp_utils.MakeAttributeDictionary(long_name=long_name, 
+#                                                units="umol/m2/s")
+#    site_name = ds.globalattributes["site_name"]
+#
+#    pdb.set_trace()
+#
+#    # Get configuration dict
+#    iel = l6_info["ERUsingLasslop"]
+#
+#    # set the figure number
+#    if len(plt.get_fignums()) == 0:
+#        fig_num = 0
+#    else:
+#        fig_num = plt.get_fignums()[-1]
+#    
+#    # open the Excel file for writing all outputs
+#    xl_name = iel['info']['data_file_path']
+#    xl_writer = pandas.ExcelWriter(xl_name, engine = 'xlsxwriter')
+#    
+#    # loop over the series of ouputs (usually one only)
+#    outputs = iel["outputs"].keys()
+#    for output in outputs:
+#        
+#        # Make the filtered dataframe
+#        ustars_dict = {x.split('_')[-1]: float(ds.series['Fc']['Attr'][x])
+#                       for x in ds.series['Fc']['Attr'] if 'ustar' in x}
+#        var_list = ['Fc', 'Ta', 'Ts', 'Fsd', 'ustar', 'VPD']
+#        df = pandas.DataFrame({var: ds.series[var]['Data'] for var in var_list},
+#                              index = ds.series['DateTime']['Data'])
+#        is_valid = numpy.tile(True, int(ds.globalattributes['nc_nrecs']))
+#        for this_var in df.columns: is_valid *= ds.series[this_var]['Flag'] == 0
+#        df.loc[~is_valid, 'Fc'] = numpy.nan
+#        for year in ustars_dict:
+#            df.loc[(df.index.year == int(year)) & 
+#                   (df.ustar < ustars_dict[year]) & 
+#                   (df.Fsd < 10), 'Fc'] = numpy.nan
+#        
+#        # Pass the dataframe to the respiration class and get the results
+#        ptc = pt.partition(df)
+#        params_df = ptc.estimate_parameters(mode = 'day', fit_daytime_rb = True)
+#        ER = ptc.estimate_er_time_series(params_df)
+#        ER_flag = numpy.tile(30, len(ER))
+#        pfp_utils.CreateSeries(ds, output, ER, ER_flag, ER_attr)
+#    
+#        # Write to excel
+#        params_df.to_excel(xl_writer, output)
+#        xl_writer.save()
+#
+#        # Get some info required for plotting
+#        drivers = iel['outputs'][output]["drivers"]
+#        target = iel["outputs"][output]["target"]
+#        ER_attr['comment1'] = 'Drivers were {}'.format(str(drivers))
+#        startdate = str(ds.series["DateTime"]["Data"][0])
+#        enddate = str(ds.series["DateTime"]["Data"][-1])
+#
+#        # Do plotting
+#        fig_num = fig_num + 1
+#        title = site_name+" : "+output+" estimated using Lasslop"
+#        pd = pfp_rpLL.rpLL_initplot(site_name=site_name, label=target, 
+#                                    fig_num=fig_num, title=title,
+#                                    nDrivers=len(drivers), 
+#                                    startdate=str(startdate), 
+#                                    enddate=str(enddate))
+#        pfp_rputils.rp_plot(pd, ds, output, drivers, target, iel)
+
 def ERUsingLasslop(ds, l6_info):
-    """
-    Purpose:
-     Estimate ecosystem respiration using Lasslop.
-     Ian McHugh wrote the LT code, PRI wrote the wrapper to integrate
-     this with OzFluxQC.
-    Usage:
-    Author: IMcH, PRI
-    Date: October 2015
-    """
+    
     if "ERUsingLasslop" not in l6_info:
         return
     logger.info("Estimating ER using Lasslop")
-    long_name = "Ecosystem respiration modelled by Lasslop"
-    ER_attr = pfp_utils.MakeAttributeDictionary(long_name=long_name, 
-                                                units="umol/m2/s")
-    site_name = ds.globalattributes["site_name"]
-
-    # Get configuration dict
-    iel = l6_info["ERUsingLasslop"]
-
-    # set the figure number
-    if len(plt.get_fignums()) == 0:
-        fig_num = 0
-    else:
-        fig_num = plt.get_fignums()[-1]
+#    iel = l6_info["ERUsingLasslop"]
+    EcoResp(ds, l6_info, 'ERUsingLasslop')
     
-    # open the Excel file for writing all outputs
-    xl_name = iel['info']['data_file_path']
-    xl_writer = pandas.ExcelWriter(xl_name, engine = 'xlsxwriter')
-    
-    # loop over the series of ouputs (usually one only)
-    outputs = iel["outputs"].keys()
-    for output in outputs:
-        
-        # Make the filtered dataframe
-        ustars_dict = {x.split('_')[-1]: float(ds.series['Fc']['Attr'][x])
-                       for x in ds.series['Fc']['Attr'] if 'ustar' in x}
-        var_list = ['Fc', 'Ta', 'Ts', 'Fsd', 'ustar', 'VPD']
-        df = pandas.DataFrame({var: ds.series[var]['Data'] for var in var_list},
-                              index = ds.series['DateTime']['Data'])
-        is_valid = numpy.tile(True, int(ds.globalattributes['nc_nrecs']))
-        for this_var in df.columns: is_valid *= ds.series[this_var]['Flag'] == 0
-        df.loc[~is_valid, 'Fc'] = numpy.nan
-        for year in ustars_dict:
-            df.loc[(df.index.year == int(year)) & 
-                   (df.ustar < ustars_dict[year]) & 
-                   (df.Fsd < 10), 'Fc'] = numpy.nan
-        
-        # Pass the dataframe to the respiration class and get the results
-        ptc = pt.partition(df)
-        params_df = ptc.estimate_parameters(mode = 'day', fit_daytime_rb = True)
-        ER = ptc.estimate_er_time_series(params_df)
-        ER_flag = numpy.tile(30, len(ER))
-        pfp_utils.CreateSeries(ds, output, ER, ER_flag, ER_attr)
-    
-        # Write to excel
-        params_df.to_excel(xl_writer, output)
-        xl_writer.save()
-
-        # Get some info required for plotting
-        drivers = iel['outputs'][output]["drivers"]
-        target = iel["outputs"][output]["target"]
-        ER_attr['comment1'] = 'Drivers were {}'.format(str(drivers))
-        startdate = str(ds.series["DateTime"]["Data"][0])
-        enddate = str(ds.series["DateTime"]["Data"][-1])
-
-        # Do plotting
-        fig_num = fig_num + 1
-        title = site_name+" : "+output+" estimated using Lasslop"
-        pd = pfp_rpLL.rpLL_initplot(site_name=site_name, label=target, 
-                                    fig_num=fig_num, title=title,
-                                    nDrivers=len(drivers), 
-                                    startdate=str(startdate), 
-                                    enddate=str(enddate))
-        pfp_rpLL.rpLL_plot(pd, ds, output, drivers, target, iel)
-
-
 def ERUsingLloydTaylor(ds, l6_info):
-    """
-    Purpose:
-     Estimate ecosystem respiration using Lloyd-Taylor.
-     Ian McHugh wrote the LT code, PRI wrote the wrapper to integrate
-     this with OzFluxQC.
-    Usage:
-    Author: IMcH, PRI
-    Date: October 2015
-    """
+    
     if "ERUsingLloydTaylor" not in l6_info:
         return
     logger.info("Estimating ER using Lloyd-Taylor")
-    long_name = "Ecosystem respiration modelled by Lloyd-Taylor"
-    ER_attr = pfp_utils.MakeAttributeDictionary(long_name=long_name, 
+#    iel = l6_info["ERUsingLloydTaylor"]
+    EcoResp(ds, l6_info, 'ERUsingLloydTaylor')
+
+def EcoResp(ds, l6_info, called_by):
+    """
+    Purpose:
+    Estimate ecosystem respiration
+    Args:
+        * ds: PyFluxPro data structure (class)
+        * l6_info: information derived from L6 control file (dict)
+    Kwargs:
+        * mode: choice of whether to to use Lloyd Taylor os Lasslop methods to 
+          estimate respiration (str; options "LT" [Lloyd Taylor - default] 
+          and "LL" [Lasslop])
+    Author: IMcH, PRI
+    Date: August 2019
+    """
+
+    iel = l6_info[called_by]
+
+    # Set dict to select day or night fitting of rb depending on mode
+    partition_dict = {'ERUsingLasslop': {'day_night_mode': 
+                                         'day', 'day_rb_bool': True},
+                      'ERUsingLloydTaylor': {'day_night_mode': 'night', 
+                                             'day_rb_bool': False}}
+    er_mode = partition_dict[called_by]['day_night_mode']
+    rb_mode = partition_dict[called_by]['day_rb_bool']
+
+    # Set attributes for ER and plotting   
+    long_name_dict = {'ERUsingLasslop': "Ecosystem respiration modelled by Lloyd-Taylor",
+                      'ERUsingLloydTaylor': "Ecosystem respiration modelled by Lasslop"}
+    long_name = long_name_dict[called_by]
+    ER_attr = pfp_utils.MakeAttributeDictionary(long_name = long_name, 
                                                 units="umol/m2/s")
     site_name = ds.globalattributes["site_name"]
-
-    # Get configuration dict
-    iel = l6_info["ERUsingLloydTaylor"]
 
     # set the figure number
     if len(plt.get_fignums()) == 0:
@@ -449,25 +479,25 @@ def ERUsingLloydTaylor(ds, l6_info):
         # Set the weighting of air and soil temperatures
         configs_dict = iel["outputs"][output]
         drivers = configs_dict['drivers']
-        weighting = configs_dict['weighting']
-        try:
-            assert len(drivers) == len(weighting)
-        except AssertionError:
-            raise RuntimeError('Drivers and weighting parameters must have '
-                               'same number of elements')
-        if len(drivers) == 1:
-            if configs_dict['drivers'][0] == 'Ta': weighting = 'air'
-            if configs_dict['drivers'][0] == 'Ts': weighting = 'soil'
-        elif len(configs_dict['drivers']) == 2:
-            Ta_weight = weighting[drivers.index('Ta')]
-            Ts_weight = weighting[drivers.index('Ts')] 
-            weighting = float(Ta_weight) / float(Ts_weight)
-        else:
-            raise RuntimeError('Only 1 or 2 drivers allowed')
+        weighting = configs_dict['weights_air_soil']
+        re_drivers = [x for x in drivers if x in ['Ta', 'Ts']]
+        if len(re_drivers) == 1:
+            if re_drivers[0] == 'Ta': weighting = 'air'
+            if re_drivers[0] == 'Ts': weighting = 'soil'
+        elif len(re_drivers) == 2:
+            if len(weighting) == 1: 
+                weighting = 'air'
+            elif len(weighting) == 2:
+                try:
+                    weighting = [float(x) for x in weighting]
+                except TypeError:
+                    weighting = 'air'
+            else:
+                weighting = 'air'
         
         # Pass the dataframe to the respiration class and get the results
-        ptc = pt.partition(df, weighting = weighting)
-        params_df = ptc.estimate_parameters(mode = 'night')
+        ptc = pt.partition(df, weights_air_soil = weighting)
+        params_df = ptc.estimate_parameters(mode = er_mode, fit_daytime_rb = rb_mode)
         ER = ptc.estimate_er_time_series(params_df)
         ER_flag = numpy.tile(30, len(ER))
         pfp_utils.CreateSeries(ds, output, ER, ER_flag, ER_attr)
@@ -485,13 +515,14 @@ def ERUsingLloydTaylor(ds, l6_info):
 
         # Do plotting
         fig_num = fig_num + 1
-        title = site_name+" : "+output+" estimated using Lloyd-Taylor"
-        pd = pfp_rpLT.rpLT_initplot(site_name=site_name, label=target, 
+        title_snippet = (' ').join(long_name.split(' ')[2:])
+        title = site_name+" : " + output + title_snippet
+        pd = pfp_rputils.rp_initplot(site_name=site_name, label=target, 
                                     fig_num=fig_num, title=title,
                                     nDrivers=len(drivers), 
                                     startdate=str(startdate), 
                                     enddate=str(enddate))
-        pfp_rpLT.rpLT_plot(pd, ds, output, drivers, target, iel)
+        pfp_rputils.rp_plot(pd, ds, output, drivers, target, iel, called_by)
 
 def ERUsingSOLO(main_gui, ds, l6_info, called_by):
     """
