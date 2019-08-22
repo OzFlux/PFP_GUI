@@ -1190,7 +1190,8 @@ def CalculateFcStorageSinglePoint(cf,ds,Fc_out='Fc_single',CO2_in='CO2'):
         # convert the CO2 concentration difference from umol/mol to mg/m3
         dc = pfp_mf.co2_mgCO2pm3fromppm(dc, Ta, ps)
         # calculate the time step in seconds
-        dt=86400*numpy.ediff1d(ds.series["xlDateTime"]["Data"], to_begin=float(ts)/1440)
+        #dt=86400*numpy.ediff1d(ds.series["xlDateTime"]["Data"], to_begin=float(ts)/1440)
+        dt=86400*numpy.ediff1d(ds.series["time"]["Data"], to_begin=float(ts)/1440)
         # calculate the CO2 flux based on storage below the measurement height
         Fc_single = zms*dc/dt
         Fc_single_units = "mg/m2/s"
