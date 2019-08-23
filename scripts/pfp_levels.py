@@ -4,6 +4,7 @@ import logging
 import os
 # PFP modules
 import pfp_ck
+import pfp_compliance
 import pfp_gf
 import pfp_gfALT
 import pfp_gfMDS
@@ -124,6 +125,10 @@ def l3qc(cf,ds2):
     pfp_gf.ImportSeries(cf,ds3)
     # apply linear corrections to the data
     pfp_ck.do_linear(cf,ds3)
+    # parse the control file for information on how the user wants to do the gap filling
+    l3_info = pfp_compliance.ParseL3ControlFile(cf, ds3)
+    if ds3.returncodes["value"] != 0:
+        return ds3
     # ************************
     # *** Merge humidities ***
     # ************************
@@ -163,7 +168,7 @@ def l3qc(cf,ds2):
     # *** Calculate meteorological variables ***
     # ******************************************
     # Update meteorological variables
-    pfp_ts.CalculateMeteorologicalVariables(ds3)
+    pfp_ts.CalculateMeteorologicalVariables(ds3, l3_info)
     # *************************************************
     # *** Calculate fluxes from covariances section ***
     # *************************************************
@@ -249,7 +254,8 @@ def l3qc(cf,ds2):
     pfp_utils.get_coverage_individual(ds3)
     # write the percentage of good data for groups
     pfp_utils.get_coverage_groups(ds3)
-
+    # remove intermediate series from the data structure
+    pfp_ts.RemoveIntermediateSeries(ds3, l3_info)
     return ds3
 
 def l4qc(main_gui, cf, ds3):
@@ -297,7 +303,7 @@ def l4qc(main_gui, cf, ds3):
     # re-calculate the water vapour concentrations
     pfp_ts.CalculateHumiditiesAfterGapFill(ds4, l4_info)
     # re-calculate the meteorological variables
-    pfp_ts.CalculateMeteorologicalVariables(ds4)
+    pfp_ts.CalculateMeteorologicalVariables(ds4, l4_info)
     # check for any missing data
     pfp_utils.get_missingingapfilledseries(ds4, l4_info)
     # write the percentage of good data as a variable attribute

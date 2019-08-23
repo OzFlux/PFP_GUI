@@ -229,6 +229,8 @@ def ParseL4ControlFile(cf, ds):
     Author: PRI
     Date: Back in the day
     """
+    ds.returncodes["message"] = "OK"
+    ds.returncodes["value"] = 0
     l4_info = {}
     # add key for suppressing output of intermediate variables e.g. Ta_aws
     opt = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "KeepIntermediateSeries", default="No")
@@ -259,6 +261,16 @@ def ParseL4ControlFile(cf, ds):
     return l4_info
 
 def ParseL5ControlFile(cf, ds):
+    """
+    Purpose:
+     Create the L5 information and setting dictionary.
+    Usage:
+    Side effects:
+    Author: PRI
+    Date: Back in the day
+    """
+    ds.returncodes["message"] = "OK"
+    ds.returncodes["value"] = 0
     l5_info = {}
     # add key for suppressing output of intermediate variables e.g. Ta_aws
     opt = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "KeepIntermediateSeries", default="No")

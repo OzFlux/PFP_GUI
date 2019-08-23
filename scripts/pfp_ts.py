@@ -692,8 +692,8 @@ def SpecificHumidityFromRH(ds):
         attr["group_name"] = "meteorology"
         pfp_utils.CreateSeries(ds, "SH", q_new, q_new_flag, attr)
 
-def CalculateMeteorologicalVariables(ds,Ta_name='Ta', Tv_name='Tv_SONIC_Av', ps_name='ps',
-                                     q_name="SH", Ah_name='Ah', RH_name='RH'):
+def CalculateMeteorologicalVariables(ds, info, Ta_name='Ta', Tv_name='Tv_SONIC_Av',
+                                     ps_name='ps', q_name="SH", Ah_name='Ah', RH_name='RH'):
     """
         Add time series of meteorological variables based on fundamental
         relationships (Stull 1988)
@@ -715,6 +715,7 @@ def CalculateMeteorologicalVariables(ds,Ta_name='Ta', Tv_name='Tv_SONIC_Av', ps_
             Cpm: specific heat of moist air, pfp_mf.specificheatmoistair(q)
             VPD: vapour pressure deficit, VPD = esat - e
         """
+    iris = info["RemoveIntermediateSeries"]
     nRecs = int(ds.globalattributes["nc_nrecs"])
     zeros = numpy.zeros(nRecs,dtype=numpy.int32)
     ones = numpy.ones(nRecs,dtype=numpy.int32)
@@ -768,47 +769,47 @@ def CalculateMeteorologicalVariables(ds,Ta_name='Ta', Tv_name='Tv_SONIC_Av', ps_
     attr = pfp_utils.MakeAttributeDictionary(long_name='Saturation vapour pressure',units='kPa')
     flag = numpy.where(numpy.ma.getmaskarray(vpsat) == True, ones, zeros)
     pfp_utils.CreateSeries(ds, 'VPsat', vpsat, flag, attr)
-    ds.intermediate.append("VPsat")
+    iris["not_output"].append("VPsat")
 
     attr = pfp_utils.MakeAttributeDictionary(long_name='Density of dry air',units='kg/m3')
     flag = numpy.where(numpy.ma.getmaskarray(rhod)==True,ones,zeros)
     pfp_utils.CreateSeries(ds,'rhod',rhod,flag,attr)
-    ds.intermediate.append("rhod")
+    iris["not_output"].append("rhod")
 
     attr = pfp_utils.MakeAttributeDictionary(long_name='Density of moist air',units='kg/m3',standard_name='air_density')
     flag = numpy.where(numpy.ma.getmaskarray(rhom)==True,ones,zeros)
     pfp_utils.CreateSeries(ds,'rhom',rhom,flag,attr)
-    ds.intermediate.append("rhom")
+    iris["not_output"].append("rhom")
 
     attr = pfp_utils.MakeAttributeDictionary(long_name='Partial density of water vapour',units='kg/m3')
     flag = numpy.where(numpy.ma.getmaskarray(rhow)==True,ones,zeros)
     pfp_utils.CreateSeries(ds,'rhow',rhow,flag,attr)
-    ds.intermediate.append("rhow")
+    iris["not_output"].append("rhow")
 
     attr = pfp_utils.MakeAttributeDictionary(long_name='Latent heat of vapourisation',units='J/kg')
     flag = numpy.where(numpy.ma.getmaskarray(Lv)==True,ones,zeros)
     pfp_utils.CreateSeries(ds,'Lv',Lv,flag,attr)
-    ds.intermediate.append("Lv")
+    iris["not_output"].append("Lv")
 
     attr = pfp_utils.MakeAttributeDictionary(long_name='Specific heat capacity of dry air',units='J/kg-K')
     flag = numpy.where(numpy.ma.getmaskarray(Cpd)==True,ones,zeros)
     pfp_utils.CreateSeries(ds,'Cpd',Cpd,flag,attr)
-    ds.intermediate.append("Cpd")
+    iris["not_output"].append("Cpd")
 
     attr = pfp_utils.MakeAttributeDictionary(long_name='Specific heat capacity of water vapour',units='J/kg-K')
     flag = numpy.where(numpy.ma.getmaskarray(Cpw)==True,ones,zeros)
     pfp_utils.CreateSeries(ds,'Cpw',Cpw,flag,attr)
-    ds.intermediate.append("Cpw")
+    iris["not_output"].append("Cpw")
 
     attr = pfp_utils.MakeAttributeDictionary(long_name='Specific heat capacity of moist air',units='J/kg-K')
     flag = numpy.where(numpy.ma.getmaskarray(Cpm)==True,ones,zeros)
     pfp_utils.CreateSeries(ds,'Cpm',Cpm,flag,attr)
-    ds.intermediate.append("Cpm")
+    iris["not_output"].append("Cpm")
 
     attr = pfp_utils.MakeAttributeDictionary(long_name='Product of air density and specific heat capacity',units='J/m3-K')
     flag = numpy.where(numpy.ma.getmaskarray(RhoCp)==True,ones,zeros)
     pfp_utils.CreateSeries(ds,'RhoCp',RhoCp,flag,attr)
-    ds.intermediate.append("RhoCp")
+    iris["not_output"].append("RhoCp")
 
     attr = pfp_utils.MakeAttributeDictionary(long_name='Vapour pressure deficit',units='kPa',standard_name='water_vapor_saturation_deficit_in_air')
     attr["group_name"] = "meteorology"

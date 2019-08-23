@@ -1250,6 +1250,15 @@ def load_controlfile(path='.', title='Choose a control file'):
     return cf
 
 def nc_concatenate(cf):
+    """
+    Purpose:
+     Concatenate multiple single year files in a single, multiple year file.
+    Usage:
+    Side effects:
+    Author: PRI
+    Date: Back in the day
+    """
+    cc_info = pfp_compliance.ParseConcatenateControlFile(cf)
     # initialise logicals
     TimeGap = False
     # get an instance of the data structure
@@ -1474,7 +1483,7 @@ def nc_concatenate(cf):
     # make sure we have all of the humidities
     pfp_ts.CalculateHumidities(ds)
     # and make sure we have all of the meteorological variables
-    pfp_ts.CalculateMeteorologicalVariables(ds)
+    pfp_ts.CalculateMeteorologicalVariables(ds, {})
     # check units of Fc and convert if necessary
     Fc_list = [label for label in ds.series.keys() if label[0:2] == "Fc" and "Flag" not in label]
     pfp_utils.CheckUnits(ds, Fc_list, "umol/m2/s", convert_units=True)

@@ -90,6 +90,40 @@ def copy_ws_wd(ds):
             ds.series["Ws"]["Attr"]["long_name"] = "Wind speed (copied from Ws_SONIC_Av)"
     return
 
+def ParseConcatenateControlFile(cf):
+    """
+    Purpose:
+     Make the concatenate information dictionary
+    Usage:
+    Side effects:
+    Author: PRI
+    Date: August 2019
+    """
+    ds.returncodes["message"] = "OK"
+    ds.returncodes["value"] = 0
+    concat_info = {}
+    # add key for suppressing output of intermediate variables e.g. Cpd etc
+    opt = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "KeepIntermediateSeries", default="No")
+    cc_info["RemoveIntermediateSeries"] = {"KeepIntermediateSeries": opt, "not_output": []}
+    return cc_info
+
+def ParseL3ControlFile(cf, ds):
+    """
+    Purpose:
+     Parse the L3 control file and return contents in the l3_info dictionary.
+    Usage:
+    Side effects:
+    Author: PRI
+    Date: August 2019
+    """
+    ds.returncodes["message"] = "OK"
+    ds.returncodes["value"] = 0
+    l3_info = {}
+    # add key for suppressing output of intermediate variables e.g. Cpd etc
+    opt = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "KeepIntermediateSeries", default="No")
+    l3_info["RemoveIntermediateSeries"] = {"KeepIntermediateSeries": opt, "not_output": []}
+    return l3_info
+
 def remove_variables(cfg, ds):
     """
     Purpose:
