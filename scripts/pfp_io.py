@@ -1483,7 +1483,7 @@ def nc_concatenate(cf):
     # make sure we have all of the humidities
     pfp_ts.CalculateHumidities(ds)
     # and make sure we have all of the meteorological variables
-    pfp_ts.CalculateMeteorologicalVariables(ds, {})
+    pfp_ts.CalculateMeteorologicalVariables(ds, cc_info)
     # check units of Fc and convert if necessary
     Fc_list = [label for label in ds.series.keys() if label[0:2] == "Fc" and "Flag" not in label]
     pfp_utils.CheckUnits(ds, Fc_list, "umol/m2/s", convert_units=True)
@@ -1519,9 +1519,11 @@ def nc_concatenate(cf):
         # ... and rename the base file to preserve it
         os.rename(baseFileName,newFileName)
         # now the base file will not be overwritten
+    # remove intermediate series
+    pfp_ts.RemoveIntermediateSeries(ds, cc_info)
     ncFile = nc_open_write(outFileName)
-    ndims = int(pfp_utils.get_keyvaluefromcf(cf,["Options"],"NumberOfDimensions", default=3))
-    nc_write_series(ncFile,ds,ndims=ndims)
+    ndims = int(pfp_utils.get_keyvaluefromcf(cf, ["Options"], "NumberOfDimensions", default=3))
+    nc_write_series(ncFile, ds, ndims=ndims)
 
 def ncsplit_run(split_gui):
     infilename = split_gui.info["input_file_path"]

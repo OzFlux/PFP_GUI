@@ -99,9 +99,7 @@ def ParseConcatenateControlFile(cf):
     Author: PRI
     Date: August 2019
     """
-    ds.returncodes["message"] = "OK"
-    ds.returncodes["value"] = 0
-    concat_info = {}
+    cc_info = {}
     # add key for suppressing output of intermediate variables e.g. Cpd etc
     opt = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "KeepIntermediateSeries", default="No")
     cc_info["RemoveIntermediateSeries"] = {"KeepIntermediateSeries": opt, "not_output": []}
