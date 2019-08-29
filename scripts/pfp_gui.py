@@ -2244,19 +2244,22 @@ class edit_cfg_L3(QtWidgets.QWidget):
                 # sections with 3 levels
                 self.sections[key1] = QtGui.QStandardItem(key1)
                 for key2 in self.cfg[key1]:
+                    if key2 in ["ustar_filtered"]:
+                        continue
                     parent2 = QtGui.QStandardItem(key2)
                     for key3 in self.cfg[key1][key2]:
-                        if key3 in ["ustar_threshold"]:
-                            continue
-                        parent3 = QtGui.QStandardItem(key3)
-                        for key4 in self.cfg[key1][key2][key3]:
-                            val = self.cfg[key1][key2][key3][key4]
-                            val = self.parse_cfg_variables_value(key3, val)
-                            child0 = QtGui.QStandardItem(key4)
-                            child1 = QtGui.QStandardItem(val)
-                            parent3.appendRow([child0, child1])
-                        parent2.appendRow(parent3)
-                    self.sections[key1].appendRow(parent2)
+                        if key3 in ["RangeCheck", "DependencyCheck", "DiurnalCheck", "ExcludeDates",
+                                    "ApplyFcStorage", "MergeSeries", "AverageSeries"]:
+                            parent3 = QtGui.QStandardItem(key3)
+                            for key4 in self.cfg[key1][key2][key3]:
+                                val = self.cfg[key1][key2][key3][key4]
+                                val = self.parse_cfg_variables_value(key3, val)
+                                child0 = QtGui.QStandardItem(key4)
+                                child1 = QtGui.QStandardItem(val)
+                                parent3.appendRow([child0, child1])
+                            parent2.appendRow(parent3)
+                    if parent2.hasChildren():
+                        self.sections[key1].appendRow(parent2)
                 self.model.appendRow(self.sections[key1])
 
     def handleItemChanged(self, item):
