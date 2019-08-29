@@ -1294,7 +1294,7 @@ class edit_cfg_L2(QtWidgets.QWidget):
 
     def parse_cfg_plots_value(self, k, v):
         """ Parse the [Plots] section keys to remove unnecessary characters."""
-        if k == "Variables":
+        if k in ["Variables", "Type", "XSeries", "YSeries"]:
             if ("[" in v) and ("]" in v):
                 v = v.replace("[", "").replace("]", "")
                 self.cfg_changed = True
@@ -2283,7 +2283,7 @@ class edit_cfg_L3(QtWidgets.QWidget):
 
     def parse_cfg_plots_value(self, k, v):
         """ Parse the [Plots] section keys to remove unnecessary characters."""
-        if k == "Variables":
+        if k in ["Variables", "Type", "XSeries", "YSeries"]:
             if ("[" in v) and ("]" in v):
                 v = v.replace("[", "").replace("]", "")
                 self.cfg_changed = True
