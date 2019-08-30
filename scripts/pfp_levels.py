@@ -87,56 +87,46 @@ def l2qc(cf,ds1):
     # make a copy of the L1 data
     ds2 = copy.deepcopy(ds1)
     # set some attributes for this level
-    pfp_utils.UpdateGlobalAttributes(cf,ds2,"L2")
-    ds2.globalattributes['Functions'] = ''
-    # put the control file name into the global attributes
-    #ds2.globalattributes['controlfile_name'] = cf['controlfile_name']
+    pfp_utils.UpdateGlobalAttributes(cf, ds2, "L2")
+    # apply linear corrections to the data
+    pfp_ck.do_linear(cf, ds2)
     # apply the quality control checks (range, diurnal, exclude dates and exclude hours
-    pfp_ck.do_qcchecks(cf,ds2)
+    pfp_ck.do_qcchecks(cf, ds2)
     # do the CSAT diagnostic check
-    pfp_ck.do_SONICcheck(cf,ds2)
+    pfp_ck.do_SONICcheck(cf, ds2)
     # do the IRGA diagnostic check
-    pfp_ck.do_IRGAcheck(cf,ds2)
-    # constrain albedo estimates to full sun angles
-    #pfp_ts.albedo(cf,ds2)
-    #log.info(' Finished the albedo constraints')    # apply linear corrections to the data
-    #log.info(' Applying linear corrections ...')
-    pfp_ck.do_linear(cf,ds2)
+    pfp_ck.do_IRGAcheck(cf, ds2)
     # check missing data and QC flags are consistent
     pfp_utils.CheckQCFlags(ds2)
     # write series statistics to file
-    pfp_io.get_seriesstats(cf,ds2)
+    pfp_io.get_seriesstats(cf, ds2)
     # write the percentage of good data as a variable attribute
     pfp_utils.get_coverage_individual(ds2)
 
     return ds2
 
-def l3qc(cf,ds2):
+def l3qc(cf, ds2):
     """
     """
     # make a copy of the L2 data
     ds3 = copy.deepcopy(ds2)
     # set some attributes for this level
-    pfp_utils.UpdateGlobalAttributes(cf,ds3,"L3")
-    # put the control file name into the global attributes
-    #ds3.globalattributes['controlfile_name'] = cf['controlfile_name']
+    pfp_utils.UpdateGlobalAttributes(cf, ds3, "L3")
     # check to see if we have any imports
-    pfp_gf.ImportSeries(cf,ds3)
-    # apply linear corrections to the data
-    pfp_ck.do_linear(cf,ds3)
+    pfp_gf.ImportSeries(cf, ds3)
     # ************************
     # *** Merge humidities ***
     # ************************
     # merge whatever humidities are available
-    pfp_ts.MergeHumidities(cf,ds3,convert_units=True)
+    pfp_ts.MergeHumidities(cf, ds3, convert_units=True)
     # **************************
     # *** Merge temperatures ***
     # **************************
     # get the air temperature from the CSAT virtual temperature
-    pfp_ts.TaFromTv(cf,ds3)
+    pfp_ts.TaFromTv(cf, ds3)
     # merge the HMP and corrected CSAT data
-    pfp_ts.MergeSeries(cf,ds3,"Ta",convert_units=True)
-    pfp_utils.CheckUnits(ds3,"Ta","C",convert_units=True)
+    pfp_ts.MergeSeries(cf, ds3, "Ta", convert_units=True)
+    pfp_utils.CheckUnits(ds3, "Ta", "C", convert_units=True)
     # ***************************
     # *** Calcuate humidities ***
     # ***************************
@@ -194,7 +184,8 @@ def l3qc(cf,ds2):
     # convert Fc and Fc_storage units if required
     pfp_utils.ConvertFcUnits(cf, ds3)
     # merge Fc and Fc_storage series if required
-    merge_list = [label for label in cf["Variables"].keys() if label[0:2]=="Fc" and "MergeSeries" in cf["Variables"][label].keys()]
+    cfv = cf["Variables"]
+    merge_list = [l for l in cfv.keys() if l[0:2] == "Fc" and "MergeSeries" in cfv[l].keys()]
     for label in merge_list:
         pfp_ts.MergeSeries(cf, ds3, label, save_originals=True)
     # correct Fc for storage term - only recommended if storage calculated from profile available
@@ -205,46 +196,46 @@ def l3qc(cf,ds2):
     # merge the incoming shortwave radiation
     pfp_ts.MergeSeries(cf, ds3, 'Fsd')
     # calculate the net radiation from the Kipp and Zonen CNR1
-    pfp_ts.CalculateNetRadiation(cf,ds3,Fn_out='Fn_4cmpt',Fsd_in='Fsd',Fsu_in='Fsu',Fld_in='Fld',Flu_in='Flu')
-    pfp_ts.MergeSeries(cf,ds3,'Fn')
+    pfp_ts.CalculateNetRadiation(cf, ds3)
+    pfp_ts.MergeSeries(cf, ds3, 'Fn')
     # ****************************************
     # *** Wind speed and direction section ***
     # ****************************************
     # combine wind speed from the Wind Sentry and the SONIC
-    pfp_ts.MergeSeries(cf,ds3,'Ws')
+    pfp_ts.MergeSeries(cf,ds3, 'Ws')
     # combine wind direction from the Wind Sentry and the SONIC
-    pfp_ts.MergeSeries(cf,ds3,'Wd')
+    pfp_ts.MergeSeries(cf,ds3, 'Wd')
     # ********************
     # *** Soil section ***
     # ********************
     # correct soil heat flux for storage
     #    ... either average the raw ground heat flux, soil temperature and moisture
     #        and then do the correction (OzFlux "standard")
-    pfp_ts.AverageSeriesByElements(cf,ds3,'Ts')
-    pfp_ts.AverageSeriesByElements(cf,ds3,'Sws')
+    pfp_ts.AverageSeriesByElements(cf, ds3, 'Ts')
+    pfp_ts.AverageSeriesByElements(cf, ds3, 'Sws')
     if pfp_utils.get_optionskeyaslogical(cf, "CorrectIndividualFg"):
         #    ... or correct the individual ground heat flux measurements (James' method)
-        pfp_ts.CorrectIndividualFgForStorage(cf,ds3)
-        pfp_ts.AverageSeriesByElements(cf,ds3,'Fg')
+        pfp_ts.CorrectIndividualFgForStorage(cf, ds3)
+        pfp_ts.AverageSeriesByElements(cf, ds3, 'Fg')
     else:
-        pfp_ts.AverageSeriesByElements(cf,ds3,'Fg')
-        pfp_ts.CorrectFgForStorage(cf,ds3,Fg_out='Fg',Fg_in='Fg',Ts_in='Ts',Sws_in='Sws')
+        pfp_ts.AverageSeriesByElements(cf, ds3, 'Fg')
+        pfp_ts.CorrectFgForStorage(cf, ds3)
     # calculate the available energy
-    pfp_ts.CalculateAvailableEnergy(ds3,Fa_out='Fa',Fn_in='Fn',Fg_in='Fg')
+    pfp_ts.CalculateAvailableEnergy(ds3)
     # create new series using MergeSeries or AverageSeries
-    pfp_ck.CreateNewSeries(cf,ds3)
+    pfp_ck.CreateNewSeries(cf, ds3)
     # Calculate Monin-Obukhov length
     pfp_ts.CalculateMoninObukhovLength(ds3)
     # re-apply the quality control checks (range, diurnal and rules)
-    pfp_ck.do_qcchecks(cf,ds3)
+    pfp_ck.do_qcchecks(cf, ds3)
     # coordinate gaps in the three main fluxes
-    pfp_ck.CoordinateFluxGaps(cf,ds3)
+    pfp_ck.CoordinateFluxGaps(cf, ds3)
     # coordinate gaps in Ah_7500_Av with Fc
-    pfp_ck.CoordinateAh7500AndFcGaps(cf,ds3)
+    pfp_ck.CoordinateAh7500AndFcGaps(cf, ds3)
     # check missing data and QC flags are consistent
     pfp_utils.CheckQCFlags(ds3)
     # get the statistics for the QC flags and write these to an Excel spreadsheet
-    pfp_io.get_seriesstats(cf,ds3)
+    pfp_io.get_seriesstats(cf, ds3)
     # write the percentage of good data as a variable attribute
     pfp_utils.get_coverage_individual(ds3)
     # write the percentage of good data for groups
