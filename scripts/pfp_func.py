@@ -139,6 +139,21 @@ def ConverthPa2kPa(ds, ps_out, ps_in):
     pfp_utils.CreateVariable(ds, var_out)
     return 1
 
+def ConvertRHtoPercent(ds, RH_out, RH_in):
+    """
+    Purpose:
+     Function to convert RH in units of "frac" (0 to 1) to "percent" (1 to 100).
+    Usage:
+     pfp_func.ConvertRHtoPercent(ds, RH_out, RH_in)
+    Author: PRI
+    Date: August 2019
+    """
+    var_in = pfp_utils.GetVariable(ds, RH_in)
+    var_out = pfp_utils.convert_units_func(ds, var_in, "%", mode="quiet")
+    var_out["Label"] = RH_out
+    pfp_utils.CreateVariable(ds, var_out)
+    return
+
 def DateTimeFromDoY(ds, dt_out, Year_in, DoY_in, Hdh_in):
     year,f,a = pfp_utils.GetSeriesasMA(ds,Year_in)
     doy,f,a = pfp_utils.GetSeriesasMA(ds,DoY_in)

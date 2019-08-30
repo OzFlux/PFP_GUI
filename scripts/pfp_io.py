@@ -35,7 +35,6 @@ class DataStructure(object):
     def __init__(self):
         self.series = {}
         self.globalattributes = {}
-        self.globalattributes["Functions"] = ""
         self.mergeserieslist = []
         self.averageserieslist = []
         self.returncodes = {"value":0,"message":"OK"}
