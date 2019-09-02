@@ -1,22 +1,160 @@
 """Routines for the Lasslop and Lloyd and Taylor partitioning"""
 
 # standard modules
-import datetime
 import logging
 import os
-import warnings
+import pdb
 # 3rd party modules
 import matplotlib
 import matplotlib.pyplot as plt
 import numpy
-from scipy.optimize import curve_fit, OptimizeWarning
 # PFP modules
-import constants as c
 import pfp_cfg
 import pfp_gui
 import pfp_utils
 
-import pdb
+logger = logging.getLogger("pfp_log")
+
+def rp_createdict(cf, ds, l6_info, output, called_by):
+    """
+    Purpose:
+     Creates a dictionary in ds to hold information about estimating ecosystem
+     respiration
+    Usage:
+    Side effects:
+    Author: PRI, IM updated to prevent code duplication of LT and LL methods
+    Date August 2019
+    """
+    
+    # Create a dict to set the description_l6 attribute
+    description_dict = {'ERUsingLasslop': "Modeled by Lasslop et al. (2010)",
+                        'ERUsingLloydTaylor': "Modeled by Lloyd-Taylor (1994)"}
+    nrecs = int(ds.globalattributes["nc_nrecs"])
+    # create the settings directory
+    if called_by not in l6_info.keys():
+        l6_info[called_by] = {"outputs": {}, "info": {}, "gui": {}}
+    # get the info section
+    rp_createdict_info(cf, ds, l6_info[called_by], called_by)
+    if ds.returncodes["value"] != 0:
+        return
+    # get the outputs section
+    rp_createdict_outputs(cf, l6_info[called_by], output, called_by)
+    # create an empty series in ds if the output series doesn't exist yet
+    Fc = pfp_utils.GetVariable(ds, l6_info[called_by]["info"]["source"])
+    model_outputs = cf["EcosystemRespiration"][output][called_by].keys()
+    for model_output in model_outputs:
+        if model_output not in ds.series.keys():
+            # create an empty variable
+            variable = pfp_utils.CreateEmptyVariable(model_output, nrecs)
+            variable["Attr"]["long_name"] = "Ecosystem respiration"
+            variable["Attr"]["drivers"] = l6_info[called_by]["outputs"][model_output]["drivers"]
+            variable["Attr"]["description_l6"] = description_dict[called_by]
+            variable["Attr"]["target"] = l6_info[called_by]["info"]["target"]
+            variable["Attr"]["source"] = l6_info[called_by]["info"]["source"]
+            variable["Attr"]["units"] = Fc["Attr"]["units"]
+            pfp_utils.CreateVariable(ds, variable)
+    return
+
+def rp_createdict_info(cf, ds, erl, called_by):
+    """
+    Purpose:
+    Usage:
+    Side effects:
+    Author: PRI
+    Date: Back in the day
+          June 2019 - modified for new l5_info structure
+    """
+    # Create a dict to set the file_suffix and extension
+    suffix_dict = {'ERUsingLasslop': "_lasslop.xls",
+                   'ERUsingLloydTaylor': "_L&T.xls"}
+    # reset the return message and code
+    ds.returncodes["message"] = "OK"
+    ds.returncodes["value"] = 0
+    # time step
+    time_step = int(ds.globalattributes["time_step"])
+    # get the level of processing
+    level = ds.globalattributes["nc_level"]
+    # local pointer to the datetime series
+    ldt = ds.series["DateTime"]["Data"]
+    # add an info section to the info["solo"] dictionary
+    erl["info"]["file_startdate"] = ldt[0].strftime("%Y-%m-%d %H:%M")
+    erl["info"]["file_enddate"] = ldt[-1].strftime("%Y-%m-%d %H:%M")
+    erl["info"]["startdate"] = ldt[0].strftime("%Y-%m-%d %H:%M")
+    erl["info"]["enddate"] = ldt[-1].strftime("%Y-%m-%d %H:%M")
+    erl["info"]["called_by"] = called_by
+    erl["info"]["time_step"] = time_step
+    erl["info"]["source"] = "Fc"
+    erl["info"]["target"] = "ER"
+    # check to see if this is a batch or an interactive run
+    call_mode = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "call_mode", default="interactive")
+    erl["info"]["call_mode"] = call_mode
+    erl["gui"]["show_plots"] = False
+    if call_mode.lower() == "interactive":
+        erl["gui"]["show_plots"] = True
+    # truncate to last date in Imports?
+    truncate = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "TruncateToImports", default="Yes")
+    erl["info"]["truncate_to_imports"] = truncate
+    # number of records per day and maximum lags
+    nperhr = int(float(60)/time_step + 0.5)
+    erl["info"]["nperday"] = int(float(24)*nperhr + 0.5)
+    erl["info"]["maxlags"] = int(float(12)*nperhr + 0.5)
+    # Get the data path
+    path_name = pfp_utils.get_keyvaluefromcf(cf, ["Files"], "file_path")
+    file_name = pfp_utils.get_keyvaluefromcf(cf, ["Files"], "in_filename")
+    file_name = file_name.replace(".nc", suffix_dict[called_by])
+    erl['info']['data_file_path'] = os.path.join(path_name, file_name)
+    # get the plot path
+    plot_path = pfp_utils.get_keyvaluefromcf(cf, ["Files"], "plot_path", default="./plots/")
+    plot_path = os.path.join(plot_path, level, "")
+    if not os.path.exists(plot_path):
+        try:
+            os.makedirs(plot_path)
+        except OSError:
+            msg = "Unable to create the plot path " + plot_path + "\n"
+            msg = msg + "Press 'Quit' to edit the control file.\n"
+            msg = msg + "Press 'Continue' to use the default path.\n"
+            result = pfp_gui.MsgBox_ContinueOrQuit(msg, title="Warning: L6 plot path")
+            if result.clickedButton().text() == "Quit":
+                # user wants to edit the control file
+                msg = " Quitting L6 to edit control file"
+                logger.warning(msg)
+                ds.returncodes["message"] = msg
+                ds.returncodes["value"] = 1
+            else:
+                plot_path = "./plots/"
+                cf["Files"]["plot_path"] = "./plots/"
+    erl["info"]["plot_path"] = plot_path
+    return
+
+def rp_createdict_outputs(cf, erl, target, called_by):
+    """Where's the docstring ya bastard?!"""
+    var_dict = {'ERUsingLasslop': "LL",
+                'ERUsingLloydTaylor': "LT"}
+    eo = erl["outputs"]
+    # loop over the outputs listed in the control file
+    section = "EcosystemRespiration"
+    outputs = cf[section][target][called_by].keys()
+    for output in outputs:
+        # create the dictionary keys for this series
+        eo[output] = {}
+        # get the target
+        sl = [section, target, called_by, output]
+        eo[output]["target"] = pfp_utils.get_keyvaluefromcf(cf, sl, "target", default=target)
+        eo[output]["source"] = pfp_utils.get_keyvaluefromcf(cf, sl, "source", default="Fc")
+        # list of drivers
+        opt = pfp_utils.get_keyvaluefromcf(cf, sl, "drivers", default="Ta")
+        eo[output]["drivers"] = pfp_cfg.cfg_string_to_list(opt)
+        opt = pfp_utils.get_keyvaluefromcf(cf, sl, "weights_air_soil", default="1")
+        eo[output]["weights_air_soil"] = pfp_cfg.cfg_string_to_list(opt)
+        opt = pfp_utils.get_keyvaluefromcf(cf, sl, "output_plots", default="False")
+        eo[output]["output_plots"] = (opt == "True")
+        # fit statistics for plotting later on
+        eo[output]["results"] = {"startdate":[],"enddate":[],"No. points":[],"r":[],
+                                 "Bias":[],"RMSE":[],"Frac Bias":[],"NMSE":[],
+                                 "Avg (obs)":[],"Avg (" + var_dict[called_by] + ")":[],
+                                 "Var (obs)":[],"Var (" + var_dict[called_by] + ")":[],"Var ratio":[],
+                                 "m_ols":[],"b_ols":[]}
+    return
 
 def rp_initplot(**kwargs):
     # set the margins, heights, widths etc
@@ -121,7 +259,10 @@ def rp_plot(pd, ds, output, drivers, target, iel, called_by, si=0, ei=-1):
     var_obs = numpy.ma.var(obs)
     ielo[output]["results"]["Var (obs)"].append(var_obs)
     var_mod = numpy.ma.var(mod)
-    ielo[output]["results"]["Var (" + mode + ")"].append(var_mod)
+    try:
+        ielo[output]["results"]["Var (" + mode + ")"].append(var_mod)
+    except KeyError:
+        pdb.set_trace()
     ielo[output]["results"]["Var ratio"].append(var_obs/var_mod)
     ielo[output]["results"]["Avg (obs)"].append(numpy.ma.average(obs))
     ielo[output]["results"]["Avg (" + mode + ")"].append(numpy.ma.average(mod))

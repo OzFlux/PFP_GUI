@@ -335,6 +335,7 @@ def rpLL_createdict(cf, ds, l6_info, output, called_by):
     Author: PRI
     Date April 2016
     """
+    pdb.set_trace()
     nrecs = int(ds.globalattributes["nc_nrecs"])
     # create the Lasslop settings directory
     if called_by not in l6_info.keys():
