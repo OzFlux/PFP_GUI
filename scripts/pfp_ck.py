@@ -1,5 +1,4 @@
 # standard modules
-import ast
 import copy
 import constants as c
 import datetime
@@ -282,65 +281,6 @@ def cliptorange(data, lower, upper):
     data = rangecheckseriesupper(data,upper)
     return data
 
-def CoordinateAh7500AndFcGaps(cf,ds,Fcvar='Fc'):
-    '''Cleans up Ah_7500_Av based upon Fc gaps to for QA check on Ah_7500_Av v Ah_HMP.'''
-    if not pfp_utils.get_optionskeyaslogical(cf, "CoordinateAh7500&FcGaps"):
-        return
-    logger.info(' Doing the Ah_7500 check')
-    if pfp_utils.cfkeycheck(cf,Base='FunctionArgs',ThisOne='AhcheckFc'):
-        Fclist = ast.literal_eval(cf['FunctionArgs']['AhcheckFc'])
-        Fcvar = Fclist[0]
-
-    # index1  Index of bad Ah_7500_Av observations
-    index1 = numpy.where((ds.series['Ah_7500_Av']['Flag']!=0) & (ds.series['Ah_7500_Av']['Flag']!=10))
-
-    # index2  Index of bad Fc observations
-    index2 = numpy.where((ds.series[Fcvar]['Flag']!=0) & (ds.series[Fcvar]['Flag']!=10))
-
-    ds.series['Ah_7500_Av']['Data'][index2] = numpy.float64(c.missing_value)
-    ds.series['Ah_7500_Av']['Flag'][index2] = ds.series[Fcvar]['Flag'][index2]
-    ds.series['Ah_7500_Av']['Flag'][index1] = ds.series['Ah_7500_Av']['Flag'][index1]
-    if 'CoordinateAh7500AndFcGaps' not in ds.globalattributes['Functions']:
-        ds.globalattributes['Functions'] = ds.globalattributes['Functions']+',CoordinateAh7500AndFcGaps'
-
-def CoordinateFluxGaps(cf,ds,Fc_in='Fc',Fe_in='Fe',Fh_in='Fh'):
-    if not pfp_utils.get_optionskeyaslogical(cf, "CoordinateFluxGaps"):
-        return
-    if pfp_utils.cfkeycheck(cf,Base='FunctionArgs',ThisOne='gapsvars'):
-        vars = ast.literal_eval(cf['FunctionArgs']['gapsvars'])
-        Fc_in = vars[0]
-        Fe_in = vars[1]
-        Fh_in = vars[2]
-    Fc,f,a = pfp_utils.GetSeriesasMA(ds,Fc_in)
-    Fe,f,a = pfp_utils.GetSeriesasMA(ds,Fe_in)
-    Fh,f,a = pfp_utils.GetSeriesasMA(ds,Fh_in)
-    # April 2015 PRI - changed numpy.ma.where to numpy.where
-    index = numpy.where((numpy.ma.getmaskarray(Fc)==True)|
-                        (numpy.ma.getmaskarray(Fe)==True)|
-                        (numpy.ma.getmaskarray(Fh)==True))[0]
-    #index = numpy.ma.where((numpy.ma.getmaskarray(Fc)==True)|
-                           #(numpy.ma.getmaskarray(Fe)==True)|
-                           #(numpy.ma.getmaskarray(Fh)==True))[0]
-    # the following for ... in loop is not necessary
-    for i in range(len(index)):
-        j = index[i]
-        if Fc.mask[j]==False:
-            Fc.mask[j]=True
-            Fc[j] = numpy.float64(c.missing_value)
-            ds.series[Fc_in]['Flag'][j] = numpy.int32(19)
-        if Fe.mask[j]==False:
-            Fe.mask[j]=True
-            Fe[j] = numpy.float64(c.missing_value)
-            ds.series[Fe_in]['Flag'][j] = numpy.int32(19)
-        if Fh.mask[j]==False:
-            Fh.mask[j]=True
-            Fh[j] = numpy.float64(c.missing_value)
-            ds.series[Fh_in]['Flag'][j] = numpy.int32(19)
-    ds.series[Fc_in]['Data']=numpy.ma.filled(Fc,float(c.missing_value))
-    ds.series[Fe_in]['Data']=numpy.ma.filled(Fe,float(c.missing_value))
-    ds.series[Fh_in]['Data']=numpy.ma.filled(Fh,float(c.missing_value))
-    logger.info(' Finished gap co-ordination')
-
 def CreateNewSeries(cf,ds):
     '''Create a new series using the MergeSeries or AverageSeries instructions.'''
     logger.info(' Checking for new series to create')
@@ -408,18 +348,21 @@ def do_dependencycheck(cf, ds, section, series, code=23, mode="quiet"):
     Author: PRI
     Date: Back in the day
     """
-    if len(section)==0 and len(series)==0: return
-    if len(section)==0: section = pfp_utils.get_cfsection(cf,series=series,mode='quiet')
-    if "DependencyCheck" not in cf[section][series].keys(): return
-    if "Source" not in cf[section][series]["DependencyCheck"]:
-        msg = " DependencyCheck: keyword Source not found for series "+series+", skipping ..."
+    if len(section) == 0 and len(series) == 0:
+        return
+    if len(section) == 0:
+        section = pfp_utils.get_cfsection(cf, series=series, mode='quiet')
+    if "DependencyCheck" not in cf[section][series].keys():
+        return
+    if "source" not in cf[section][series]["DependencyCheck"]:
+        msg = " DependencyCheck: keyword 'source' not found for series " + series + ", skipping ..."
         logger.error(msg)
         return
-    if mode=="verbose":
-        msg = " Doing DependencyCheck for "+series
+    if mode == "verbose":
+        msg = " Doing DependencyCheck for " + series
         logger.info(msg)
     # get the precursor source list from the control file
-    source_string = cf[section][series]["DependencyCheck"]["Source"]
+    source_string = cf[section][series]["DependencyCheck"]["source"]
     if "," in source_string:
         source_list = source_string.split(",")
     else:
@@ -427,7 +370,7 @@ def do_dependencycheck(cf, ds, section, series, code=23, mode="quiet"):
     # check to see if the "ignore_missing" flag is set
     opt = pfp_utils.get_keyvaluefromcf(cf, [section,series,"DependencyCheck"], "ignore_missing", default="no")
     ignore_missing = False
-    if opt.lower() in ["yes","y","true","t"]:
+    if opt.lower() in ["yes", "y", "true", "t"]:
         ignore_missing = True
     # get the data
     dependent_data,dependent_flag,dependent_attr = pfp_utils.GetSeries(ds, series)
@@ -566,7 +509,7 @@ def do_EC155check(cf,ds):
         #else:
             #logger.warning(' do_EC155check: series '+str(ThisOne)+' in EC155 list not found in data structure')
 
-def do_EPQCFlagCheck(cf,ds,section,series,code=9):
+def do_EPQCFlagCheck(cf, ds, section, series, code=9):
     """
     Purpose:
      Mask data according to the value of an EddyPro QC flag.
@@ -574,11 +517,33 @@ def do_EPQCFlagCheck(cf,ds,section,series,code=9):
     Author: PRI
     Date: August 2017
     """
-    if 'EPQCFlagCheck' not in cf[section][series].keys(): return
+    # return if "EPQCFlagCheck" not used for this variable
+    if "EPQCFlagCheck" not in cf[section][series].keys():
+        return
+    # check the "source" key exists and is a string
+    if "source" not in cf[section][series]["EPQCFlagCheck"]:
+        msg = "  EPQCFlagCheck: 'source' key not found for (" + series + ")"
+        logger.error(msg)
+        return
+    if not isinstance(cf[section][series]["EPQCFlagCheck"]["source"], basestring):
+        msg = "  EPQCFlagCheck: 'source' value must be a string (" + series + ")"
+        logger.error(msg)
+        return
+    # comma separated string to list
+    source_list = cf[section][series]["EPQCFlagCheck"]["source"].split(",")
+    # check the "reject" key exists and is a string
+    if "reject" not in cf[section][series]["EPQCFlagCheck"]:
+        msg = "  EPQCFlagCheck: 'reject' key not found for (" + series + ")"
+        logger.error(msg)
+        return
+    if not isinstance(cf[section][series]["EPQCFlagCheck"]["reject"], basestring):
+        msg = "  EPQCFlagCheck: 'reject' value must be a string (" + series + ")"
+        logger.error(msg)
+        return
+    # comma separated string to list
+    reject_list = cf[section][series]["EPQCFlagCheck"]["reject"].split(",")
     nRecs = int(ds.globalattributes["nc_nrecs"])
     flag = numpy.zeros(nRecs, dtype=numpy.int32)
-    source_list = ast.literal_eval(cf[section][series]['EPQCFlagCheck']["Source"])
-    reject_list = ast.literal_eval(cf[section][series]['EPQCFlagCheck']["Reject"])
     variable = pfp_utils.GetVariable(ds, series)
     for source in source_list:
         epflag = pfp_utils.GetVariable(ds, source)

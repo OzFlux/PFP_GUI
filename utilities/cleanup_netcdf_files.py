@@ -189,6 +189,12 @@ def change_variable_attributes(cfg, ds):
                 d[descr] = copy.deepcopy(d["long_name"])
                 d["long_name"] = long_name
                 d["group_name"] = group_name
+    # parse variable attributes to new format
+    series_list = list(ds.series.keys())
+    for label in series_list:
+        variable = pfp_utils.GetVariable(ds, label)
+        variable["Attr"] = parse_variable_attributes(variable["Attr"])
+        pfp_utils.CreateVariable(ds, variable)
     # remove deprecated variable attributes
     deprecated_attributes = ["ancillary_variables"]
     series_list = list(ds.series.keys())
@@ -198,20 +204,53 @@ def change_variable_attributes(cfg, ds):
                 del ds.series[label]["Attr"][vattr]
     return
 
+def parse_variable_attributes(attributes):
+    """
+    Purpose:
+     Clean up the variable attributes.
+    Usage:
+    Author: PRI
+    Date: September 2019
+    """
+    for attr in attributes:
+        value = attributes[attr]
+        if not isinstance(value, basestring):
+            continue
+        if attr in ["rangecheck_lower", "rangecheck_upper", "diurnalcheck_numsd"]:
+            if ("[" in value) and ("]" in value) and ("*" in value):
+                # old style of [value]*12
+                value = value[value.index("[")+1:value.index("]")]
+            elif ("[" in value) and ("]" in value) and ("*" not in value):
+                # old style of [1,2,3,4,5,6,7,8,9,10,11,12]
+                value = value.replace("[", "").replace("]", "")
+            strip_list = [" ", '"', "'"]
+        elif ("ExcludeDates" in attr or
+              "ExcludeHours" in attr or
+              "LowerCheck" in attr or
+              "UpperCheck" in attr):
+            strip_list = ["[", "]", '"', "'"]
+        else:
+            strip_list = ['"', "'"]
+        for c in strip_list:
+            if c in value:
+                value = value.replace(c, "")
+        attributes[attr] = value
+    return attributes
+
 cfg_name = os.path.join("..", "controlfiles", "standard", "nc_cleanup.txt")
 if os.path.exists(cfg_name):
     cfg = ConfigObj(cfg_name)
 else:
     print " 'map_old_to_new' control file not found"
 
-rp = os.path.join(os.sep, "home", "peter", "OzFlux", "Sites")
+rp = os.path.join(os.sep, "mnt", "OzFlux", "Sites")
 #sites = sorted([d for d in os.listdir(rp) if os.path.isdir(os.path.join(rp,d))])
-#sites = ["AdelaideRiver", "AliceSpringsMulga", "Calperum", "CapeTribulation", "CowBay", "CumberlandPlain",
-#         "DalyPasture", "DalyUncleared", "DryRiver", "Emerald", "FoggDam", "Gingin", "GreatWesternWoodlands",
-#         "HowardSprings", "Litchfield", "Loxton", "Otway", "RedDirtMelonFarm", "Ridgefield", "RiggsCreek",
-#         "RobsonCreek", "Samford", "SturtPlains", "TiTreeEast", "Tumbarumba", "WallabyCreek", "Warra",
-#         "Whroo", "WombatStateForest", "Yanco"]
-sites = ["Loxton"]
+sites = ["AdelaideRiver", "AliceSpringsMulga", "Calperum", "CapeTribulation", "CowBay", "CumberlandPlain",
+         "DalyPasture", "DalyUncleared", "DryRiver", "Emerald", "FoggDam", "Gingin", "GreatWesternWoodlands",
+         "HowardSprings", "Litchfield", "Loxton", "Otway", "RedDirtMelonFarm", "Ridgefield", "RiggsCreek",
+         "RobsonCreek", "Samford", "SturtPlains", "TiTreeEast", "Tumbarumba", "WallabyCreek", "Warra",
+         "Whroo", "WombatStateForest", "Yanco"]
+#sites = ["AliceSpringsMulga"]
 for site in sites:
     sp = os.path.join(rp, site, "Data", "Portal")
     op = os.path.join(rp, site, "Data", "Processed")

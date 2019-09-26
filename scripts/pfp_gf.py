@@ -1,5 +1,4 @@
 # standard modules
-import ast
 import copy
 import datetime
 import os
@@ -454,7 +453,7 @@ def gfalternate_createdict_outputs(cf, l4_info, label, called_by):
             l4ao[output]["lag"] = "yes"
         # choose specific alternate variable?
         if "usevars" in cfalt[output]:
-            l4ao[output]["usevars"] = ast.literal_eval(cfalt[output]["usevars"])
+            l4ao[output]["usevars"] = pfp_cfg.cfg_string_to_list(cfalt[output]["usevars"])
         # alternate data variable name if different from name used in control file
         if "alternate_name" in cfalt[output]:
             l4ao[output]["alternate_name"] = cfalt[output]["alternate_name"]
@@ -835,7 +834,7 @@ def gfMergeSeries_createdict(cf, ds, info, label, called_by):
     # output series name
     info[called_by][merge_order][label]["output"] = label
     # merge source list
-    src_string = cf[section][label]["MergeSeries"]["Source"]
+    src_string = cf[section][label]["MergeSeries"]["source"]
     if "," in src_string:
         src_list = src_string.split(",")
     else:

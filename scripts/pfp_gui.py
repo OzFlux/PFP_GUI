@@ -483,7 +483,7 @@ class edit_cfg_L2(QtWidgets.QWidget):
 
     def add_dependencycheck(self):
         """ Add a dependency check to a variable."""
-        new_qc = {"DependencyCheck":{"Source":""}}
+        new_qc = {"DependencyCheck":{"source":""}}
         # get the index of the selected item
         idx = self.view.selectedIndexes()[0]
         # get the selected item from the index
@@ -1483,7 +1483,7 @@ class edit_cfg_L3(QtWidgets.QWidget):
         # get the selected item from the index
         selected_item = idx.model().itemFromIndex(idx)
         parent = QtGui.QStandardItem("ApplyFcStorage")
-        child0 = QtGui.QStandardItem("Source")
+        child0 = QtGui.QStandardItem("source")
         child1 = QtGui.QStandardItem("")
         parent.appendRow([child0, child1])
         selected_item.appendRow(parent)
@@ -1496,7 +1496,7 @@ class edit_cfg_L3(QtWidgets.QWidget):
         # get the selected item from the index
         selected_item = idx.model().itemFromIndex(idx)
         parent = QtGui.QStandardItem("AverageSeries")
-        child0 = QtGui.QStandardItem("Source")
+        child0 = QtGui.QStandardItem("source")
         child1 = QtGui.QStandardItem("")
         parent.appendRow([child0, child1])
         selected_item.appendRow(parent)
@@ -1518,7 +1518,7 @@ class edit_cfg_L3(QtWidgets.QWidget):
 
     def add_dependencycheck(self):
         """ Add a dependency check to a variable."""
-        new_qc = {"DependencyCheck":{"Source":""}}
+        new_qc = {"DependencyCheck":{"source":""}}
         # get the index of the selected item
         idx = self.view.selectedIndexes()[0]
         # get the selected item from the index
@@ -1631,7 +1631,7 @@ class edit_cfg_L3(QtWidgets.QWidget):
         # get the selected item from the index
         selected_item = idx.model().itemFromIndex(idx)
         parent = QtGui.QStandardItem("MergeSeries")
-        child0 = QtGui.QStandardItem("Source")
+        child0 = QtGui.QStandardItem("source")
         child1 = QtGui.QStandardItem("")
         parent.appendRow([child0, child1])
         selected_item.appendRow(parent)
@@ -2070,11 +2070,11 @@ class edit_cfg_L3(QtWidgets.QWidget):
         """ Correct some legacy variable names."""
         # change Fn_KZ to Fn_4cmpt
         opt = pfp_utils.get_keyvaluefromcf(self.cfg, ["Variables", "Fn", "MergeSeries"],
-                                           "Source", default="", mode="quiet")
+                                           "source", default="", mode="quiet")
         if len(opt) != 0:
             if "Fn_KZ" in opt:
                 opt = opt.replace("Fn_KZ", "Fn_4cmpt")
-                self.cfg["Variables"]["Fn"]["MergeSeries"]["Source"] = opt
+                self.cfg["Variables"]["Fn"]["MergeSeries"]["source"] = opt
                 self.cfg_changed = True
         return
 
@@ -2884,8 +2884,6 @@ class edit_cfg_L4(QtWidgets.QWidget):
                 self.sections[key1] = QtGui.QStandardItem(key1)
                 for key2 in self.cfg[key1]:
                     val = self.cfg[key1][key2]
-                    if ("browse" not in val):
-                        val = self.parse_cfg_values(key2, val, ['"', "'"])
                     child0 = QtGui.QStandardItem(key2)
                     child1 = QtGui.QStandardItem(val)
                     self.sections[key1].appendRow([child0, child1])
@@ -2906,7 +2904,6 @@ class edit_cfg_L4(QtWidgets.QWidget):
                                 # key5 is the source of the alternate data
                                 for key5 in self.cfg[key1][key2][key3][key4]:
                                     val = self.cfg[key1][key2][key3][key4][key5]
-                                    val = self.parse_cfg_values(key5, val, ['"', "'"])
                                     child0 = QtGui.QStandardItem(key5)
                                     child1 = QtGui.QStandardItem(val)
                                     parent4.appendRow([child0, child1])
@@ -2914,7 +2911,6 @@ class edit_cfg_L4(QtWidgets.QWidget):
                         elif key3 in ["MergeSeries", "RangeCheck", "ExcludeDates"]:
                             for key4 in self.cfg[key1][key2][key3]:
                                 val = self.cfg[key1][key2][key3][key4]
-                                val = self.parse_cfg_variables_value(key3, val)
                                 child0 = QtGui.QStandardItem(key4)
                                 child1 = QtGui.QStandardItem(val)
                                 parent3.appendRow([child0, child1])
@@ -3282,7 +3278,7 @@ class edit_cfg_L4(QtWidgets.QWidget):
 
     def add_dependencycheck(self):
         """ Add a dependency check to a variable."""
-        dict_to_add = {"DependencyCheck":{"Source":""}}
+        dict_to_add = {"DependencyCheck":{"source":""}}
         # add the subsubsection (DependencyCheck)
         self.add_subsubsection(dict_to_add)
 
@@ -3404,7 +3400,7 @@ class edit_cfg_L4(QtWidgets.QWidget):
         """ Add a new variable."""
         gfALT = {"<var>_<alt>": {"source": "<alt>"}}
         gfCLIM = {"<var>_cli": {"method": "interpolated daily"}}
-        gfMS = {"Source": "<var>,<var>_<alt>,<var>_cli"}
+        gfMS = {"source": "<var>,<var>_<alt>,<var>_cli"}
         d2a = {"New variable": {"GapFillFromAlternate": gfALT,
                                 "GapFillFromClimatology": gfCLIM,
                                 "MergeSeries": gfMS}}
@@ -3592,41 +3588,6 @@ class edit_cfg_L4(QtWidgets.QWidget):
             if str(subsection.text()) == text:
                 break
         return subsection, i
-
-    def parse_cfg_values(self, k, v, strip_list):
-        """ Parse key values to remove unnecessary characters."""
-        for c in strip_list:
-            if c in v:
-                v = v.replace(c, "")
-                self.cfg_changed = True
-        return v
-
-    def parse_cfg_variables_value(self, k, v):
-        """ Parse value from control file to remove unnecessary characters."""
-        try:
-            # check to see if it is a number
-            r = float(v)
-        except ValueError as e:
-            if ("[" in v) and ("]" in v) and ("*" in v):
-                # old style of [value]*12
-                v = v[v.index("[")+1:v.index("]")]
-                self.cfg_changed = True
-            elif ("[" in v) and ("]" in v) and ("*" not in v):
-                # old style of [1,2,3,4,5,6,7,8,9,10,11,12]
-                v = v.replace("[", "").replace("]", "")
-                self.cfg_changed = True
-        # remove white space and quotes
-        if k in ["RangeCheck", "DiurnalCheck", "DependencyCheck",
-                 "MergeSeries", "AverageSeries"]:
-            strip_list = [" ", '"', "'"]
-        elif k in ["ExcludeDates", "ExcludeHours"]:
-            # don't remove white space between date and time
-            strip_list = ['"', "'"]
-        for c in strip_list:
-            if c in v:
-                v = v.replace(c, "")
-                self.cfg_changed = True
-        return v
 
     def remove_daterange(self):
         """ Remove a date range from the ustar_threshold section."""
@@ -4242,7 +4203,7 @@ class edit_cfg_L5(QtWidgets.QWidget):
 
     def add_dependencycheck(self):
         """ Add a dependency check to a variable."""
-        dict_to_add = {"DependencyCheck":{"Source":""}}
+        dict_to_add = {"DependencyCheck":{"source":""}}
         # add the subsubsection (DependencyCheck)
         self.add_subsubsection(dict_to_add)
         # update the list of altered series
@@ -4527,7 +4488,7 @@ class edit_cfg_L5(QtWidgets.QWidget):
         gfSOLO = {"<var>_SOLO": {"drivers": ""}}
         gfMDS = {"<var>_MDS": {"drivers": "Fsd,Ta,VPD", "tolerances": "(20, 50), 2.5, 0.5"}}
         gfCLIM = {"<var>_cli": {"method": "interpolated daily"}}
-        gfMS = {"Source": "<var>,<var>_SOLO,<var>_MDS,<var>_cli"}
+        gfMS = {"source": "<var>,<var>_SOLO,<var>_MDS,<var>_cli"}
         d2a = {"New variable": {"GapFillUsingSOLO": gfSOLO,
                                 "GapFillUsingMDS": gfMDS,
                                 "GapFillFromClimatology": gfCLIM,
@@ -5100,7 +5061,7 @@ class edit_cfg_L6(QtWidgets.QWidget):
                                                       "output": "ER_SOLO_all"}}}
         subsection = QtGui.QStandardItem("ER_SOLO")
         self.add_subsubsubsection(subsection, dict_to_add)
-        dict_to_add = {"MergeSeries": {"Source": "ER,ER_SOLO_all"}}
+        dict_to_add = {"MergeSeries": {"source": "ER,ER_SOLO_all"}}
         self.add_subsubsection(subsection, dict_to_add)
         self.tree.sections["EcosystemRespiration"].appendRow(subsection)
         # update the tab text with an asterix if required

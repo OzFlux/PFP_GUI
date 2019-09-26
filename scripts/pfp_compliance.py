@@ -3,6 +3,7 @@ import copy
 import logging
 import os
 import platform
+import traceback
 # 3rd party modules
 import timezonefinder
 # PFP modules
@@ -51,6 +52,55 @@ def check_executables():
         result = pfp_gui.MsgBox_Quit(msg, title="Critical")
     return
 
+def check_l4_controlfile(cf):
+    """
+    Purpose:
+     Parse the L4 control file to make sure the syntax is correct and that the
+     control file contains all of the information needed.
+    Usage:
+     result = pfp_compliance.check_l4_controlfile(cf)
+     where cf is a ConfigObj object
+           result is True if the L4 control file is compliant
+                     False if it is not compliant
+    Side effects:
+    Author: PRI
+    Date: September 2019
+    """
+    # initialise the return logical
+    ok = True
+    try:
+        for key1 in cf:
+            if key1 in ["Files", "Global", "Options"]:
+                for key2 in cf[key1]:
+                    value = cf[key1][key2]
+                    if ("browse" not in value):
+                        value = strip_characters_from_string(value, ['"', "'"])
+            elif key1 in ["Drivers"]:
+                for key2 in cf[key1]:
+                    for key3 in cf[key1][key2]:
+                        if key3 in ["GapFillFromAlternate", "GapFillFromClimatology"]:
+                            for key4 in cf[key1][key2][key3]:
+                                for key5 in cf[key1][key2][key3][key4]:
+                                    cf[key1][key2][key3][key4].rename(key5, key5.lower())
+                                    value = cf[key1][key2][key3][key4][key5.lower()]
+                                    value = strip_characters_from_string(value, ['"', "'"])
+                        elif key3 in ["MergeSeries", "RangeCheck", "ExcludeDates"]:
+                            # strip out unwanted characters
+                            for key4 in cf[key1][key2][key3]:
+                                # force lower case
+                                cf[key1][key2][key3].rename(key4, key4.lower())
+                                value = cf[key1][key2][key3][key4.lower()]
+                                value = strip_characters_qc_checks(key3, value)
+        logger.info(" Saving " + cf.filename)
+        cf.write()
+    except Exception:
+        ok = False
+        msg = " An error occurred while parsing the L4 control file"
+        logger.error(msg)
+        error_message = traceback.format_exc()
+        logger.error(error_message)
+    return ok
+
 def check_l6_controlfile(cf):
     """
     Purpose:
@@ -68,6 +118,43 @@ def check_l6_controlfile(cf):
         msg = msg + "Close the L6 control file and create a new one from\n"
         msg = msg + "the template in PyFluxPro/controlfiles/template/L6."
         result = pfp_gui.MsgBox_Quit(msg, title="Critical")
+        return ok
+    try:
+        for key1 in cf:
+            if key1 in ["Files", "Global", "Options"]:
+                for key2 in cf[key1]:
+                    value = cf[key1][key2]
+                    if ("browse" not in value):
+                        value = strip_characters_from_string(value, ['"', "'"])
+            elif key1 in ["EcosystemRespiration"]:
+                for key2 in cf[key1]:
+                    for key3 in cf[key1][key2]:
+                        if key3 in ["ERUsingSOLO", "ERUsingLloydTaylor", "ERUsingLasslop"]:
+                            for key4 in cf[key1][key2][key3]:
+                                for key5 in cf[key1][key2][key3][key4]:
+                                    cf[key1][key2][key3][key4].rename(key5, key5.lower())
+                                    value = cf[key1][key2][key3][key4][key5]
+                                    value = strip_characters_from_string(value, ['"', "'"])
+                        elif key3 in ["MergeSeries"]:
+                            # strip out unwanted characters
+                            for key4 in cf[key1][key2][key3]:
+                                # force lower case
+                                cf[key1][key2][key3].rename(key4, key4.lower())
+                                value = cf[key1][key2][key3][key4.lower()]
+                                value = strip_characters_from_string(value, [" ", '"', "'"])
+            elif key1 in ["NetEcosystemExchange", "GrossPrimaryProductivity"]:
+                for key2 in cf[key1]:
+                    for key3 in cf[key1][key2]:
+                        value = cf[key1][key2][key3]
+                        value = strip_characters_from_string(value, ['"', "'"])
+        logger.info(" Saving " + cf.filename)
+        cf.write()
+    except Exception:
+        ok = False
+        msg = " An error occurred while parsing the L6 control file"
+        logger.error(msg)
+        error_message = traceback.format_exc()
+        logger.error(error_message)
     return ok
 
 def copy_ws_wd(ds):
@@ -121,6 +208,35 @@ def ParseL3ControlFile(cf, ds):
     opt = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "KeepIntermediateSeries", default="No")
     l3_info["RemoveIntermediateSeries"] = {"KeepIntermediateSeries": opt, "not_output": []}
     return l3_info
+
+def strip_characters_from_string(v, strip_list):
+    """ Parse key values to remove unnecessary characters."""
+    for c in strip_list:
+        if c in v:
+            v = v.replace(c, "")
+    return v
+
+def strip_characters_qc_checks(k, v):
+    """ Parse value from control file to remove unnecessary characters."""
+    try:
+        # check to see if it is a number
+        r = float(v)
+    except ValueError as e:
+        if ("[" in v) and ("]" in v) and ("*" in v):
+            # old style of [value]*12
+            v = v[v.index("[")+1:v.index("]")]
+        elif ("[" in v) and ("]" in v) and ("*" not in v):
+            # old style of [1,2,3,4,5,6,7,8,9,10,11,12]
+            v = v.replace("[", "").replace("]", "")
+    # remove white space and quotes
+    if k in ["RangeCheck", "DiurnalCheck", "DependencyCheck",
+             "MergeSeries", "AverageSeries"]:
+        strip_list = [" ", '"', "'"]
+    elif k in ["ExcludeDates", "ExcludeHours"]:
+        # don't remove white space between date and time
+        strip_list = ['"', "'"]
+    strip_characters_from_string(v, strip_list)
+    return v
 
 def remove_variables(cfg, ds):
     """

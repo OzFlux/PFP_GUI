@@ -197,7 +197,9 @@ def l3qc(cf,ds2):
     # calculate Fc storage term - single height only at present
     pfp_ts.CalculateFcStorageSinglePoint(cf, ds3, Fc_out='Fc_single', CO2_in=CO2)
     # convert Fc and Fc_storage units if required
-    pfp_utils.ConvertFcUnits(cf, ds3)
+    #pfp_utils.ConvertFcUnits(cf, ds3)
+    Fc_list = ["Fc", "Fc_single", "Fc_profile", "Fc_storage"]
+    pfp_utils.CheckUnits(ds, Fc_list, "umol/m2/s", convert_units=True)
     # merge Fc and Fc_storage series if required
     merge_list = [label for label in cf["Variables"].keys() if label[0:2]=="Fc" and "MergeSeries" in cf["Variables"][label].keys()]
     for label in merge_list:
@@ -242,10 +244,6 @@ def l3qc(cf,ds2):
     pfp_ts.CalculateMoninObukhovLength(ds3)
     # re-apply the quality control checks (range, diurnal and rules)
     pfp_ck.do_qcchecks(cf,ds3)
-    # coordinate gaps in the three main fluxes
-    pfp_ck.CoordinateFluxGaps(cf,ds3)
-    # coordinate gaps in Ah_7500_Av with Fc
-    pfp_ck.CoordinateAh7500AndFcGaps(cf,ds3)
     # check missing data and QC flags are consistent
     pfp_utils.CheckQCFlags(ds3)
     # get the statistics for the QC flags and write these to an Excel spreadsheet

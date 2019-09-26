@@ -185,8 +185,6 @@ def CheckUnits(ds, label, units, convert_units=False):
         return
     for label in label_list:
         if label not in ds.series.keys():
-            msg = "CheckUnits: requested series "+label+" not found"
-            logger.error(msg)
             continue
         variable = GetVariable(ds, label)
         if variable["Attr"]["units"] != units and convert_units:
@@ -1386,7 +1384,7 @@ def FixTimeStep(ds,fixtimestepmethod="round"):
         dtmax = numpy.max(dt)
         #log.info("After FixTimeGaps: "+str(dtmin)+" "+str(dtmax))
 
-def GetAverageSeriesKeys(cf, label, section=""):
+def GetAverageSeriesKeys(cf, label, section="Variables"):
     """
     Purpose:
      Get the AverageSeries Source key from the control file.
@@ -1394,16 +1392,14 @@ def GetAverageSeriesKeys(cf, label, section=""):
     Author: PRI
     Date: Back in the day
     """
-    if len(section)==0:
-        section = "Variables"
-    if "Source" in cf[section][label]["AverageSeries"].keys():
-        src_string = cf[section][label]["AverageSeries"]["Source"]
+    if "source" in cf[section][label]["AverageSeries"].keys():
+        src_string = cf[section][label]["AverageSeries"]["source"]
         if "," in src_string:
             src_list = src_string.split(",")
         else:
             src_list = [src_string]
     else:
-        msg = "  GetAverageSeriesKeys: Source not in AverageSeries section for " + label
+        msg = "  GetAverageSeriesKeys: 'source' not in AverageSeries section for " + label
         logger.error(msg)
         src_list = []
     return src_list
@@ -1603,7 +1599,7 @@ def GetGlobalAttributeValue(cf,ds,ThisOne):
             ds.globalattributes[ThisOne] = None
     return ds.globalattributes[ThisOne]
 
-def GetMergeSeriesKeys(cf, ThisOne, section=''):
+def GetMergeSeriesKeys(cf, ThisOne, section="Variables"):
     """
     Purpose:
      Get the MergeSeries Source key from the contro file.
@@ -1611,16 +1607,14 @@ def GetMergeSeriesKeys(cf, ThisOne, section=''):
     Author: PRI
     Date: Back in the day
     """
-    if len(section)==0:
-        section = 'Variables'
-    if 'Source' in cf[section][ThisOne]['MergeSeries'].keys():
-        src_string = cf[section][ThisOne]['MergeSeries']['Source']
+    if "source" in cf[section][ThisOne]["MergeSeries"].keys():
+        src_string = cf[section][ThisOne]["MergeSeries"]["source"]
         if "," in src_string:
             src_list = src_string.split(",")
         else:
             src_list = [src_string]
     else:
-        logger.error('  GetMergeSeriesKeys: key "Source" not in control file MergeSeries section for '+ThisOne)
+        logger.error("  GetMergeSeriesKeys: key 'source' not in control file MergeSeries section for " + ThisOne)
         src_list = []
     return src_list
 
@@ -2625,7 +2619,7 @@ def parse_rangecheck_limits(s):
             msg = "parse_rangecheck_limits: number of values must be 12 or 1"
             logger.error(msg)
             return []
-    return l
+    return [float(e) for e in l]
 
 def path_exists(pathname,mode="verbose"):
     if not os.path.isdir(pathname):

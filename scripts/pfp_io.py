@@ -1485,7 +1485,8 @@ def nc_concatenate(cf):
     # and make sure we have all of the meteorological variables
     pfp_ts.CalculateMeteorologicalVariables(ds, cc_info)
     # check units of Fc and convert if necessary
-    Fc_list = [label for label in ds.series.keys() if label[0:2] == "Fc" and "Flag" not in label]
+    #Fc_list = [label for label in ds.series.keys() if label[0:2] == "Fc" and "Flag" not in label]
+    Fc_list = ["Fc", "Fc_single", "Fc_profile", "Fc_storage"]
     pfp_utils.CheckUnits(ds, Fc_list, "umol/m2/s", convert_units=True)
     # re-calculate the synthetic Fsd
     pfp_ts.get_synthetic_fsd(ds)
