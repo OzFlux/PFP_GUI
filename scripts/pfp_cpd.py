@@ -2,7 +2,7 @@
 
 # standard modules
 import ast
-import datetime as dt
+import datetime
 import logging
 import os
 import pdb
@@ -123,63 +123,6 @@ def fit(temp_df):
 #------------------------------------------------------------------------------
 
 #------------------------------------------------------------------------------
-# Fetch the data and prepare it for analysis
-def get_data():
-
-    # Prompt user for configuration file and get it
-    cf = pfp_io.load_controlfile(path=".", title="Choose a control file")
-
-    # Set input file and output path and create directories for plots and results
-    file_in = os.path.join(cf['files']['input_path'], cf['files']['input_file'])
-    path_out = cf['files']['output_path']
-    plot_path_out = os.path.join(path_out,'Plots')
-    if not os.path.isdir(plot_path_out): os.makedirs(os.path.join(path_out, 'Plots'))
-    results_path_out=os.path.join(path_out, 'Results')
-    if not os.path.isdir(results_path_out): os.makedirs(os.path.join(path_out, 'Results'))
-
-    # Get user-set variable names from config file
-    vars_data = [cf['variables']['data'][i] for i in cf['variables']['data']]
-    vars_QC = [cf['variables']['QC'][i] for i in cf['variables']['QC']]
-    vars_all = vars_data + vars_QC
-
-    # Read .nc file
-    nc_obj = netCDF4.Dataset(file_in)
-    flux_period = int(nc_obj.time_step)
-    dates_list = [dt.datetime(*xlrd.xldate_as_tuple(elem, 0)) for elem in nc_obj.variables['xlDateTime']]
-    d = {}
-    for i in vars_all:
-        ndims = len(nc_obj.variables[i].shape)
-        if ndims == 3:
-            d[i] = nc_obj.variables[i][:,0,0]
-        elif ndims == 1:
-            d[i] = nc_obj.variables[i][:]
-    nc_obj.close()
-    df = pd.DataFrame(d, index = dates_list)
-
-    # Build dictionary of additional configs
-    d = {}
-    d['radiation_threshold'] = int(cf['options']['radiation_threshold'])
-    d['num_bootstraps'] = int(cf['options']['num_bootstraps'])
-    d['flux_period'] = flux_period
-    if cf['options']['output_plots'] == 'True':
-        d['plot_path'] = plot_path_out
-    if cf['options']['output_results'] == 'True':
-        d['results_path'] = results_path_out
-
-    # Replace configured error values with NaNs and remove data with unacceptable QC codes, then drop flags
-    df.replace(int(cf['options']['nan_value']), np.nan)
-    if 'QC_accept_codes' in cf['options']:
-        QC_accept_codes = ast.literal_eval(cf['options']['QC_accept_codes'])
-        eval_string = '|'.join(['(df[vars_QC[i]]=='+str(i)+')' for i in QC_accept_codes])
-        #for i in xrange(4):
-        for i in range(4):
-            df[vars_data[i]] = np.where(eval(eval_string), df[vars_data[i]], np.nan)
-    df = df[vars_data]
-
-    return df,d
-#------------------------------------------------------------------------------
-
-#------------------------------------------------------------------------------
 # Coordinate steps in CPD process
 def cpd_main(cf):
     """
@@ -201,7 +144,6 @@ def cpd_main(cf):
     * Season is just a 1000 point slice of nocturnal data - these slices also overlap by 50%.
     """
 
-#    master_df,d = get_data()
     master_df,d = CPD_run(cf)
 
     # Find number of years in df
@@ -226,7 +168,7 @@ def cpd_main(cf):
             if i==1: logger.info(' Analysing '+str(d['num_bootstraps'])+' bootstraps')
 
         # Create nocturnal dataframe (drop all records where any one of the variables is NaN)
-        temp_df = df[['Fc','Ta','ustar','xlDateTime','Year']][df['Fsd'] < d['radiation_threshold']].dropna(how = 'any',axis=0)
+        temp_df = df[['Fc','Ta','ustar','Year']][df['Fsd'] < d['radiation_threshold']].dropna(how = 'any',axis=0)
 
         # Arrange data into seasons
         # try: may be insufficient data, needs to be handled; if insufficient on first pass then return empty,otherwise next pass
@@ -366,14 +308,16 @@ def CPD_run(cf):
             names[item] = cf["Variables"][item]["AltVarName"]
         else:
             names[item] = item
-    # add the xlDateTime
-    names["xlDateTime"] = "xlDateTime"
-    names["Year"] = "Year"
     # read the netcdf file
     logger.info(' Reading netCDF file '+file_in)
     ds = pfp_io.nc_read_series(file_in)
-    dates_list = ds.series["DateTime"]["Data"]
     nrecs = int(ds.globalattributes["nc_nrecs"])
+    ts = int(ds.globalattributes["time_step"])
+    # get the datetime
+    dt = ds.series["DateTime"]["Data"]
+    # adjust the datetime so that the last time period in a year is correctly assigned.
+    # e.g. last period for 2013 is 2014-01-01 00:00, here we make the year 2013
+    dt = dt - datetime.timedelta(minutes=ts)
     # now get the data
     d = {}
     f = {}
@@ -388,7 +332,8 @@ def CPD_run(cf):
             if len(idx)!=0:
                 for itemd in d.keys():
                     d[itemd][idx] = np.nan
-    df=pd.DataFrame(d,index=dates_list)
+    d["Year"] = np.array([ldt.year for ldt in dt])
+    df=pd.DataFrame(d,index=dt)
     # replace missing values with NaN
     df.replace(c.missing_value,np.nan)
     # Build dictionary of additional configs
@@ -651,8 +596,7 @@ def sort(df, flux_period, years_index, i):
 
     # Set up the results df
     results_df = pd.DataFrame({'T_avg':seasons_df['Ta'].groupby(level = ['year','season','T_class']).mean(),
-                               'Year':seasons_df['Year'].groupby(level = ['year','season','T_class']).mean(),
-                               'xlDateTime':seasons_df["xlDateTime"].groupby(level = ['year','season','T_class']).mean()})
+                               'Year':seasons_df['Year'].groupby(level = ['year','season','T_class']).mean()})
 
     # Sort the seasons by ustar, then bin average and drop the bin level from the index
     # ugly hack to avoid FutureWarning from pandas V0.16.2 and older
