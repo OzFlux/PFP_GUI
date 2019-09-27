@@ -33,7 +33,10 @@ logger = logging.getLogger("pfp_log")
 # Return a bootstrapped sample of the passed dataframe
 def bootstrap(df):
     #return df.iloc[np.random.random_integers(0, len(df)-1, len(df))]
-    return df.iloc[np.random.randint(0, len(df)-1, len(df))]
+    if len(df) <= 1:
+        return df
+    else:
+        return df.iloc[np.random.randint(0, len(df)-1, len(df))]
 #------------------------------------------------------------------------------
 
 #------------------------------------------------------------------------------
@@ -147,13 +150,14 @@ def cpd_main(cf):
     master_df,d = CPD_run(cf)
 
     # Find number of years in df
-    years_index = list(set(master_df.index.year))
+    years_index = sorted(list(set(master_df.index.year)))
 
     # Create df to keep counts of total samples and QC passed samples
     counts_df = pd.DataFrame(index=years_index,columns = ['Total'])
     counts_df.fillna(0,inplace = True)
 
-    logger.info(' Starting CPD analysis...')
+    msg = " Starting CPD analysis for " + str(years_index)
+    logger.info(msg)
 
     # Bootstrap the data and run the CPD algorithm
     #for i in xrange(d['num_bootstraps']):
