@@ -629,9 +629,18 @@ def get_ustar_thresholds(cf, ds):
     ustar_dict = {}
     if "cpd_filename" in cf["Files"]:
         results_name = os.path.join(cf["Files"]["file_path"], cf["Files"]["cpd_filename"])
-        ustar_dict["cpd"] = get_ustarthreshold_from_results(results_name)
+        if os.path.isfile(results_name):
+            ustar_dict["cpd"] = get_ustarthreshold_from_results(results_name)
+        else:
+            msg = " CPD results file not found (" + results_name + ")"
+            logger.error(msg)
     if "mpt_filename" in cf["Files"]:
         results_name = os.path.join(cf["Files"]["file_path"], cf["Files"]["mpt_filename"])
+        if os.path.isfile(results_name):
+            ustar_dict["cpd"] = get_ustarthreshold_from_results(results_name)
+        else:
+            msg = " MPT results file not found (" + results_name + ")"
+            logger.error(msg)
         ustar_dict["mpt"] = get_ustarthreshold_from_results(results_name)
     if "ustar_threshold" in cf:
         ustar_dict["cf"] = get_ustarthreshold_from_cf(cf)
