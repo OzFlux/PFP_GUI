@@ -88,7 +88,7 @@ def ApplyTurbulenceFilter(cf, ds, l5_info, ustar_threshold=None):
     ts = int(ds.globalattributes["time_step"])
     # dictionary of utar thresold values
     if ustar_threshold==None:
-        ustar_dict = pfp_rp.get_ustar_thresholds(cf,ldt)
+        ustar_dict = pfp_rp.get_ustar_thresholds(cf, ds)
     else:
         ustar_dict = pfp_rp.get_ustar_thresholds_annual(ldt,ustar_threshold)
     # initialise a dictionary for the indicator series

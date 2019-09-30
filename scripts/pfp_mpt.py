@@ -36,36 +36,34 @@ def get_temperature_class_results(contents):
     return temperature_classes
 
 def get_bootstrap_results(contents):
+    # get the number of seasons
+    season_values = numpy.array([float(s) for s in contents[2].split()])
+    number_seasons = len(season_values)
     # get the individual bootstrap results
     bootstrap_results = {}
-    bootstrap_values = {}
-    bootstrap_counts = {}
+    for i in range(number_seasons):
+        bootstrap_results[i] = {"values": [], "counts": []}
+    # on Windows machines, len(contents[n]) == 1 for the first empty line after the bootstrap section
     n = 17
-    season_values = numpy.array([float(s) for s in contents[n][:contents[n].index("forward")].split()])
-    number_seasons = len(season_values)
-    for i in range(0, number_seasons):
-        bootstrap_values[i] = numpy.array([])
-        bootstrap_counts[i] = numpy.array([])
-    # on Windows machines, len(contents[n]) == 1 for the first empty line after thhe bootstrap section
     while len(contents[n]) > 1:
         season_values = numpy.array([float(s) for s in contents[n][0:contents[n].index("forward")].split()])
         season_counts = numpy.array([int(s) for s in contents[n+1][0:].split()])
-        for i in range(0, number_seasons):
-            bootstrap_values[i] = numpy.append(bootstrap_values[i], season_values[i])
-            bootstrap_counts[i] = numpy.append(bootstrap_counts[i], season_counts[i])
+        for i in range(number_seasons):
+            if i < len(season_values):
+                bootstrap_results[i]["values"] = numpy.append(bootstrap_results[i]["values"], season_values[i])
+                bootstrap_results[i]["counts"] = numpy.append(bootstrap_results[i]["counts"], season_counts[i])
+            else:
+                bootstrap_results[i]["values"] = numpy.append(bootstrap_results[i]["values"], float(-9999))
+                bootstrap_results[i]["counts"] = numpy.append(bootstrap_results[i]["counts"], float(-9999))
         n = n + 2
-    for i in range(0, number_seasons):
-        bootstrap_results[i] = {}
-        bootstrap_results[i]["values"] = bootstrap_values[i]
-        bootstrap_results[i]["counts"] = bootstrap_counts[i]
     return bootstrap_results
 
 def make_data_array(ds, current_year):
     ldt = pfp_utils.GetVariable(ds, "DateTime")
-    nrecs = ds.globalattributes["nc_nrecs"]
+    nrecs = int(ds.globalattributes["nc_nrecs"])
     ts = int(ds.globalattributes["time_step"])
-    start = datetime.datetime(current_year,1,1,0,30,0)
-    end = datetime.datetime(current_year+1,1,1,0,0,0)
+    start = datetime.datetime(current_year, 1, 1, 0, 0, 0) + datetime.timedelta(minutes=ts)
+    end = datetime.datetime(current_year+1, 1, 1, 0, 0, 0)
     cdt = numpy.array([dt for dt in pfp_utils.perdelta(start, end, datetime.timedelta(minutes=ts))])
     mt = numpy.ones(len(cdt))*float(-9999)
     data = numpy.stack([cdt, mt, mt, mt, mt, mt, mt, mt], axis=-1)
@@ -86,42 +84,66 @@ def mpt_main(cf):
     nc_file_path = os.path.join(base_file_path, nc_file_name)
     ds = pfp_io.nc_read_series(nc_file_path)
     out_file_paths = run_mpt_code(ds, nc_file_name)
+    if len(out_file_paths) == 0:
+        return
     ustar_results = read_mpt_output(out_file_paths)
     mpt_file_path = nc_file_path.replace(".nc", "_MPT.xls")
     xl_write_mpt(mpt_file_path, ustar_results)
     return
 
 def run_mpt_code(ds, nc_file_name):
-    ldt = pfp_utils.GetVariable(ds, "DateTime")
+    """
+    Purpose:
+     Runs the MPT u* threshold detection code for each year in the data set.
+    Usage:
+    Side effects:
+     Writes an ASCII file of results which is read by later code.
+    Author: Alessio Ribeca wrote the C code
+            PRI wrote this wrapper
+    Date: Back in the day
+    """
+    # set up file paths, headers and formats etc
     out_file_paths = {}
     header = "TIMESTAMP,NEE,VPD,USTAR,TA,SW_IN,H,LE"
     fmt = "%12i,%f,%f,%f,%f,%f,%f,%f"
-    first_year = ldt["Data"][0].year
-    last_year = ldt["Data"][-1].year
     log_file_path = os.path.join("mpt", "log", "mpt.log")
     mptlogfile = open(log_file_path, "wb")
     in_base_path = os.path.join("mpt", "input", "")
     out_base_path = os.path.join("mpt", "output", "")
-    for current_year in range(first_year, last_year+1):
-        msg = " MPT: processing year " + str(current_year)
+    # get the time step
+    ts = int(ds.globalattributes["time_step"])
+    if (ts != 30) and (ts != 60):
+        msg = "MPT: time step must be 30 or 60 minutes (" + str(ts) + "), skipping MPT ..."
+        logger.error(msg)
+        return out_file_paths
+    # get the datetime
+    dt = pfp_utils.GetVariable(ds, "DateTime")
+    # subtract 1 time step to avoid orphan years
+    cdt = dt["Data"] - datetime.timedelta(minutes=ts)
+    # get a list of the years in the data set
+    years = sorted(list(set([ldt.year for ldt in cdt])))
+    # loop over years
+    for year in years:
+        msg = " MPT: processing year " + str(year)
         logger.info(msg)
-        in_name = nc_file_name.replace(".nc","_"+str(current_year)+"_MPT.csv")
+        in_name = nc_file_name.replace(".nc","_"+str(year)+"_MPT.csv")
         in_full_path = os.path.join(in_base_path, in_name)
         out_full_path = in_full_path.replace("input", "output").replace(".csv", "_ut.txt")
-        data = make_data_array(ds, current_year)
+        data = make_data_array(ds, year)
         numpy.savetxt(in_full_path, data, header=header, delimiter=",", comments="", fmt=fmt)
         ustar_mp_exe = os.path.join(".", "mpt", "bin", "ustar_mp")
-        cmd = [ustar_mp_exe, "-input_path="+in_full_path, "-output_path="+out_base_path]
+        if ts == 30:
+            cmd = [ustar_mp_exe, "-input_path="+in_full_path, "-output_path="+out_base_path]
+        elif ts == 60:
+            cmd = [ustar_mp_exe, "-input_path="+in_full_path, "-output_path="+out_base_path, "-hourly"]
         subprocess.call(cmd, stdout=mptlogfile)
         if os.path.isfile(out_full_path):
-            out_file_paths[current_year] = out_full_path
+            out_file_paths[year] = out_full_path
     mptlogfile.close()
     return out_file_paths
 
 def read_mpt_output(out_file_paths):
     ustar_results = {"Annual":{}, "Years":{}}
-    seasons = ["Summer", "Autumn", "Winter", "Spring"]
-    ura = ustar_results["Annual"]
     ury = ustar_results["Years"]
     year_list = sorted(out_file_paths.keys())
     for year in year_list:
@@ -152,10 +174,11 @@ def write_mpt_year_results(xl_sheet, mpt_results):
         xl_sheet.write(row, 0, n)
         xl_sheet.write(row, 1, mpt_results["seasonal"]["value"][n])
         xl_sheet.write(row, 2, mpt_results["seasonal"]["count"][n])
-        values = mpt_results["bootstraps"][n]["values"]
-        values = numpy.ma.masked_values(values, -9999)
-        if numpy.ma.count(values) > 0:
-            xl_sheet.write(row, 3, numpy.ma.std(values))
+        if n in mpt_results["bootstraps"].keys():
+            values = mpt_results["bootstraps"][n]["values"]
+            values = numpy.ma.masked_values(values, -9999)
+            if numpy.ma.count(values) > 0:
+                xl_sheet.write(row, 3, numpy.ma.std(values))
     # write the temperature class results
     row = 10
     # write the headers

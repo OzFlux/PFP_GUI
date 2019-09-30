@@ -115,7 +115,7 @@ def CalculateNEP(cf, ds):
         attr["description_l6"] = "Calculated as -1*" + nee_name
         pfp_utils.CreateSeries(ds, nep_name, nep, flag, attr)
 
-def cleanup_ustar_dict(ldt,ustar_dict):
+def cleanup_ustar_dict(ds, ustar_in):
     """
     Purpose:
      Clean up the ustar dictionary;
@@ -125,30 +125,41 @@ def cleanup_ustar_dict(ldt,ustar_dict):
     Author: PRI
     Date: September 2015
     """
-    start_year = ldt[0].year
-    end_year = ldt[-1].year
-    data_years = range(start_year,end_year+1)
-    ustar_years = ustar_dict.keys()
-    ustar_list = ustar_dict[ustar_years[0]]
+    dt = pfp_utils.GetVariable(ds, "DateTime")
+    ts = int(ds.globalattributes["time_step"])
+    cdt = dt["Data"] - datetime.timedelta(minutes=ts)
+    data_years = sorted(list(set([ldt.year for ldt in cdt])))
+    # get the years for which we have u* thresholds in ustar_in
+    years = []
+    for item in ustar_in:
+        for year in ustar_in[item]:
+            years.append(int(year))
+    ustar_years = sorted(list(set(years)))
+    ustar_out = {}
     for year in data_years:
-        if str(year) not in ustar_years:
-            ustar_dict[str(year)] = {}
-            for item in ustar_list:
-                ustar_dict[str(year)][item] = float(c.missing_value)
-    # loop over the list of ustar thresholds
-    year_list = ustar_dict.keys()
-    year_list.sort()
+        ustar_out[str(year)] = {"ustar_mean": float(-9999)}
+        for item in ["cpd", "mpt", "cf"]:
+            if item in ustar_in:
+                if str(year) in ustar_in[item]:
+                    if ((ustar_in[item][str(year)]["ustar_mean"] != float(-9999)) and
+                         ustar_out[str(year)]["ustar_mean"] == float(-9999)):
+                        ustar_out[str(year)]["ustar_mean"] = ustar_in[item][str(year)]["ustar_mean"]
     # get the average of good ustar threshold values
     good_values = []
-    for year in year_list:
-        ustar_threshold = float(ustar_dict[year]["ustar_mean"])
-        if ustar_threshold!=float(c.missing_value):
+    for year in sorted(list(ustar_out.keys())):
+        ustar_threshold = float(ustar_out[year]["ustar_mean"])
+        if ustar_threshold != float(-9999):
             good_values.append(ustar_threshold)
+    if len(good_values) == 0:
+        msg = " No u* thresholds found, using default of 0.25 m/s"
+        logger.error(msg)
+        good_values = [0.25]
     ustar_threshold_mean = numpy.sum(numpy.array(good_values))/len(good_values)
     # replace missing vaues with mean
-    for year in year_list:
-        if ustar_dict[year]["ustar_mean"]==float(c.missing_value):
-            ustar_dict[year]["ustar_mean"] = ustar_threshold_mean
+    for year in sorted(list(ustar_out.keys())):
+        if ustar_out[year]["ustar_mean"] == float(-9999):
+            ustar_out[year]["ustar_mean"] = ustar_threshold_mean
+    return ustar_out
 
 def ERUsingLasslop(ds, l6_info):
     """
@@ -614,14 +625,17 @@ def check_for_missing_data(series_list, label_list):
             return 0
     return 1
 
-def get_ustar_thresholds(cf,ldt):
+def get_ustar_thresholds(cf, ds):
+    ustar_dict = {}
     if "cpd_filename" in cf["Files"]:
-        ustar_dict = get_ustarthreshold_from_cpdresults(cf)
-    else:
-        msg = " CPD results filename not in control file"
-        logger.warning(msg)
-        ustar_dict = get_ustarthreshold_from_cf(cf,ldt)
-    cleanup_ustar_dict(ldt,ustar_dict)
+        results_name = os.path.join(cf["Files"]["file_path"], cf["Files"]["cpd_filename"])
+        ustar_dict["cpd"] = get_ustarthreshold_from_results(results_name)
+    if "mpt_filename" in cf["Files"]:
+        results_name = os.path.join(cf["Files"]["file_path"], cf["Files"]["mpt_filename"])
+        ustar_dict["mpt"] = get_ustarthreshold_from_results(results_name)
+    if "ustar_threshold" in cf:
+        ustar_dict["cf"] = get_ustarthreshold_from_cf(cf)
+    cleanup_ustar_dict(ds, ustar_dict)
     return ustar_dict
 
 def get_daynight_indicator(cf, ds):
@@ -913,75 +927,58 @@ def get_turbulence_indicator_ustar_evg(ldt, ind_day, ind_ustar, ustar, ustar_dic
     turbulence_indicator["values"] = turbulence_indicator["values"]*ind_evg
     return turbulence_indicator
 
-def get_ustarthreshold_from_cf(cf,ldt):
+def get_ustarthreshold_from_cf(cf):
     """
     Purpose:
      Returns a dictionary containing ustar thresholds for each year read from
      the control file.  If no [ustar_threshold] section is found then a
      default value of 0.25 is used.
     Usage:
-     ustar_dict = pfp_rp.get_ustarthreshold_from_cf(cf,ldt)
+     ustar_dict = pfp_rp.get_ustarthreshold_from_cf(cf)
      where cf is the control file object
-           ldt is the Python datetime series from the data structure
     Author: PRI
     Date: July 2015
     """
     ustar_dict = collections.OrderedDict()
     ustar_threshold_list = []
-    if "ustar_threshold" in cf.keys():
-        msg = " Using values from ustar_threshold section"
-        logger.info(msg)
-        for n in cf["ustar_threshold"].keys():
-            ustar_string = cf["ustar_threshold"][str(n)]
-            ustar_list = ustar_string.split(",")
-            ustar_threshold_list.append(ustar_list)
-        for item in ustar_threshold_list:
-            startdate = dateutil.parser.parse(item[0])
-            year = startdate.year
-            ustar_dict[str(year)] = {}
-            ustar_dict[str(year)]["ustar_mean"] = float(item[2])
-    else:
-        logger.error(" No [ustar_threshold] section in control file")
-        logger.error(" ... using default value of 0.25 m/s")
-        startyear = ldt[0].year
-        endyear = ldt[-1].year
-        years = range(startyear,endyear+1)
-        for year in years:
-            ustar_dict[str(year)] = {}
-            ustar_dict[str(year)]["ustar_mean"] = float(0.25)
+    msg = " Using values from control file ustar_threshold section"
+    logger.info(msg)
+    for n in cf["ustar_threshold"].keys():
+        ustar_string = cf["ustar_threshold"][str(n)]
+        ustar_list = ustar_string.split(",")
+        ustar_threshold_list.append(ustar_list)
+    for item in ustar_threshold_list:
+        startdate = dateutil.parser.parse(item[0])
+        year = startdate.year
+        ustar_dict[str(year)] = {}
+        ustar_dict[str(year)]["ustar_mean"] = float(item[2])
     return ustar_dict
 
-def get_ustarthreshold_from_cpdresults(cf):
+def get_ustarthreshold_from_results(results_name):
     """
     Purpose:
      Returns a dictionary containing ustar thresholds for each year read from
-     the CPD results file.  If there is no CPD results file name found in the
-     control file then return an empty dictionary
+     the CPD or MPT results file.  If there is no results file name found in the
+     control file then return an empty dictionary.
     Usage:
-     ustar_dict = pfp_rp.get_ustarthreshold_from_cpdresults(cf)
-     where cf is the control file object
-           ustar_dict is a dictionary of ustar thtresholds, 1 entry per year
+     ustar_dict = pfp_rp.get_ustarthreshold_from_results(results_name)
+     where results_name is the CPD or MPT results file name
+           ustar_dict is a dictionary of ustar thresholds, 1 entry per year
     Author: PRI
     Date: July 2015
     """
     ustar_dict = collections.OrderedDict()
-    if "cpd_filename" not in cf["Files"]:
-        msg = " CPD results filename not in control file"
-        logger.warning(msg)
-        return ustar_dict
-    cpd_path = cf["Files"]["file_path"]
-    cpd_name = cpd_path+cf["Files"]["cpd_filename"]
-    cpd_wb = xlrd.open_workbook(cpd_name)
+    cpd_wb = xlrd.open_workbook(results_name)
     annual_ws = cpd_wb.sheet_by_name("Annual")
     header_list = [x for x in annual_ws.row_values(0)]
-    year_list = [str(int(x)) for x in annual_ws.col_values(0)[1:]]
+    year_list = sorted([str(int(x)) for x in annual_ws.col_values(0)[1:]])
     for i,year in enumerate(year_list):
         ustar_dict[year] = collections.OrderedDict()
         for item in header_list:
             xlcol = header_list.index(item)
             val = annual_ws.col_values(xlcol)[i+1]
             typ = annual_ws.col_types(xlcol)[i+1]
-            if typ==2:
+            if typ == 2:
                 ustar_dict[year][item] = float(val)
             else:
                 ustar_dict[year][item] = float(c.missing_value)
@@ -1577,6 +1574,59 @@ def L6_summary_annual(ds, series_dict):
             annual_dict["variables"][item]["attr"]["format"] = series_dict["annual"][item]["format"]
     return annual_dict
 
+#def L6_summary_cumulative(ds, series_dict):
+    #"""
+    #Purpose:
+     #Calculate the cumulative sums of various quantities and write
+     #them to a worksheet in an Excel workbook.
+    #Usage:
+     #L6_summary_cumulative(xl_file,ds,series_dict)
+     #where xl_file is an Excel file object
+           #ds is an OzFluxQC data structure
+           #series_dict is a dictionary of various variable lists
+    #Author: PRI
+    #Date: June 2015
+    #"""
+    #logger.info(" Doing the cumulative summaries at L6")
+    #dt = ds.series["DateTime"]["Data"]
+    #ts = int(ds.globalattributes["time_step"])
+    #si = pfp_utils.GetDateIndex(dt, str(dt[0]), ts=ts, default=0, match="startnextday")
+    #ei = pfp_utils.GetDateIndex(dt, str(dt[-1]), ts=ts, default=len(dt)-1, match="endpreviousday")
+    #ldt = dt[si:ei+1]
+    #start_year = ldt[0].year
+    #end_year = ldt[-1].year
+    #year_list = range(start_year, end_year+1, 1)
+    #series_list = series_dict["cumulative"].keys()
+    #cumulative_dict = {}
+    #for year in year_list:
+        #cumulative_dict[str(year)] = cdyr = {"globalattributes":{}, "variables":{}}
+        ## copy the global attributes
+        #cdyr["globalattributes"] = copy.deepcopy(ds.globalattributes)
+        #if ts==30:
+            #start_date = str(year)+"-01-01 00:30"
+        #elif ts==60:
+            #start_date = str(year)+"-01-01 01:00"
+        #end_date = str(year+1)+"-01-01 00:00"
+        #si = pfp_utils.GetDateIndex(dt, start_date, ts=ts, default=0)
+        #ei = pfp_utils.GetDateIndex(dt, end_date, ts=ts, default=len(dt)-1)
+        #ldt = dt[si:ei+1]
+        #f0 = numpy.zeros(len(ldt), dtype=numpy.int32)
+        #cdyr["variables"]["DateTime"] = {"data":ldt,"flag":f0,
+                                         #"attr":{"units":"Year","format":"dd/mm/yyyy HH:MM",
+                                                 #"time_step":str(ts)}}
+        #for item in series_list:
+            #cdyr["variables"][item] = {"data":[],"attr":{}}
+            #variable = pfp_utils.GetVariable(ds, item, start=si, end=ei)
+            #if item in series_dict["lists"]["co2"]:
+                #variable = pfp_utils.convert_units_func(ds, variable, "gC/m2")
+                #cdyr["variables"][item]["attr"]["units"] = "gC/m2"
+            #else:
+                #cdyr["variables"][item]["attr"]["units"] = variable["Attr"]["units"]
+            #cdyr["variables"][item]["data"] = numpy.ma.cumsum(variable["Data"])
+            #cdyr["variables"][item]["attr"]["format"] = series_dict["cumulative"][item]["format"]
+            #cdyr["variables"][item]["attr"]["units"] = cdyr["variables"][item]["attr"]["units"]+"/year"
+    #return cumulative_dict
+
 def L6_summary_cumulative(ds, series_dict):
     """
     Purpose:
@@ -1591,34 +1641,30 @@ def L6_summary_cumulative(ds, series_dict):
     Date: June 2015
     """
     logger.info(" Doing the cumulative summaries at L6")
-    dt = ds.series["DateTime"]["Data"]
+    # get the datetime series and the time step
+    dt = pfp_utils.GetVariable(ds, "DateTime")
     ts = int(ds.globalattributes["time_step"])
-    si = pfp_utils.GetDateIndex(dt, str(dt[0]), ts=ts, default=0, match="startnextday")
-    ei = pfp_utils.GetDateIndex(dt, str(dt[-1]), ts=ts, default=len(dt)-1, match="endpreviousday")
-    ldt = dt[si:ei+1]
-    start_year = ldt[0].year
-    end_year = ldt[-1].year
-    year_list = range(start_year, end_year+1, 1)
+    nrecs = int(ds.globalattributes["nc_nrecs"])
+    # subtract 1 time step from the datetime to avoid orphan years
+    cdt = dt["Data"] - datetime.timedelta(minutes=ts)
+    years = sorted(list(set([ldt.year for ldt in cdt])))
     series_list = series_dict["cumulative"].keys()
     cumulative_dict = {}
-    for year in year_list:
+    for year in years:
         cumulative_dict[str(year)] = cdyr = {"globalattributes":{}, "variables":{}}
         # copy the global attributes
         cdyr["globalattributes"] = copy.deepcopy(ds.globalattributes)
-        if ts==30:
-            start_date = str(year)+"-01-01 00:30"
-        elif ts==60:
-            start_date = str(year)+"-01-01 01:00"
-        end_date = str(year+1)+"-01-01 00:00"
-        si = pfp_utils.GetDateIndex(dt, start_date, ts=ts, default=0)
-        ei = pfp_utils.GetDateIndex(dt, end_date, ts=ts, default=len(dt)-1)
-        ldt = dt[si:ei+1]
+        start_date = datetime.datetime(year, 1, 1, 0, 0, 0) + datetime.timedelta(minutes=ts)
+        end_date = datetime.datetime(year+1, 1, 1, 0, 0, 0)
+        si = pfp_utils.GetDateIndex(dt["Data"], start_date, ts=ts, default=0)
+        ei = pfp_utils.GetDateIndex(dt["Data"], end_date, ts=ts, default=nrecs-1)
+        ldt = dt["Data"][si:ei+1]
         f0 = numpy.zeros(len(ldt), dtype=numpy.int32)
-        cdyr["variables"]["DateTime"] = {"data":ldt,"flag":f0,
-                                         "attr":{"units":"Year","format":"dd/mm/yyyy HH:MM",
+        cdyr["variables"]["DateTime"] = {"data":ldt, "flag":f0,
+                                         "attr":{"units":"Year", "format":"dd/mm/yyyy HH:MM",
                                                  "time_step":str(ts)}}
         for item in series_list:
-            cdyr["variables"][item] = {"data":[],"attr":{}}
+            cdyr["variables"][item] = {"data":[], "attr":{}}
             variable = pfp_utils.GetVariable(ds, item, start=si, end=ei)
             if item in series_dict["lists"]["co2"]:
                 variable = pfp_utils.convert_units_func(ds, variable, "gC/m2")
