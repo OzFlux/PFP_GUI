@@ -1381,16 +1381,20 @@ def GetAverageSeriesKeys(cf, label, section=""):
     """
     if len(section)==0:
         section = "Variables"
-    if "Source" in cf[section][label]["AverageSeries"].keys():
-        src_string = cf[section][label]["AverageSeries"]["Source"]
-        if "," in src_string:
-            src_list = src_string.split(",")
-        else:
-            src_list = [src_string]
-    else:
-        msg = "  GetAverageSeriesKeys: Source not in AverageSeries section for " + label
-        logger.error(msg)
-        src_list = []
+    src_list = []
+    got_source = False
+    for key in cf[section][label]['AverageSeries'].keys():
+        if key.lower() == "source":
+            got_source = True
+            src_string = cf[section][label]['AverageSeries'][key]
+            if "," in src_string:
+                src_list = src_string.split(",")
+            else:
+                src_list = [src_string]
+    if not got_source:
+        msg = "  GetAverageSeriesKeys: "
+        msg += "key 'source' not in control file AverageSeries section for " + label
+        logger.error()
     return src_list
 
 def GetAltName(cf,ds,ThisOne):
@@ -1598,15 +1602,20 @@ def GetMergeSeriesKeys(cf, ThisOne, section=''):
     """
     if len(section)==0:
         section = 'Variables'
-    if 'Source' in cf[section][ThisOne]['MergeSeries'].keys():
-        src_string = cf[section][ThisOne]['MergeSeries']['Source']
-        if "," in src_string:
-            src_list = src_string.split(",")
-        else:
-            src_list = [src_string]
-    else:
-        logger.error('  GetMergeSeriesKeys: key "Source" not in control file MergeSeries section for '+ThisOne)
-        src_list = []
+    src_list = []
+    got_source = False
+    for key in cf[section][ThisOne]['MergeSeries'].keys():
+        if key.lower() == "source":
+            got_source = True
+            src_string = cf[section][ThisOne]['MergeSeries'][key]
+            if "," in src_string:
+                src_list = src_string.split(",")
+            else:
+                src_list = [src_string]
+    if not got_source:
+        msg = "  GetMergeSeriesKeys: "
+        msg += "key 'source' not in control file MergeSeries section for " + ThisOne
+        logger.error(msg)
     return src_list
 
 def GetPlotTitleFromCF(cf, nFig):
