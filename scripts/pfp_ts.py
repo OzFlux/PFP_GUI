@@ -869,6 +869,41 @@ def CheckCovarianceUnits(ds):
             if "H" in item: item = item.replace("H","A")
             pfp_utils.CreateSeries(ds,item,data,flag,attr)
 
+def CombineSeries(cf, ds, label, convert_units=False, save_originals=False):
+    """
+    Purpose:
+     Combine two variables by merging or element-wise averaging.
+     This is a wrapper that decides whether to merge or average 2 variables
+     based on the key specified in the control file.
+    Usage:
+     pfp_ts.CombineSeries(cf, ds, label, convert_units=False, save_originals=False)
+     where cf is a cotrol file
+           ds is a data structure
+           label is the label of the output (merged or averaged) variable
+           convert_units=True if you want to check all variables have the same units
+                              before merging or averaging
+           save_originals=True if you want to save the orginal series if the output
+                               label is the same as an input variable
+    Side effects:
+    Author: PRI
+    Date: October 2019
+    """
+    if label not in cf["Variables"]:
+        msg = " CombineSeries: Variable " + label + " not found in control file"
+        msg += ", skipping ..."
+        logger.warning(msg)
+        return
+    if "MergeSeries" in cf["Variables"][label]:
+        MergeSeries(cf, ds, label, convert_units=convert_units, save_originals=save_originals)
+    elif "AverageSeries" in cf["Variables"][label]:
+        AverageSeriesByElements(cf, ds, label)
+    else:
+        msg = " CombineSeries: Neither MergeSeries nor AverageSeries "
+        msg += " option given for variable " + label
+        msg += ", skipping ..."
+        logger.warning(msg)
+    return
+
 def CoordRotation2D(cf,ds):
     """
         2D coordinate rotation to force v = w = 0.  Based on Lee et al, Chapter
@@ -2483,19 +2518,32 @@ def MergeSeriesUsingDict(ds, info, merge_order="standard"):
         pfp_utils.CreateSeries(ds, target, data, flag1, attr)
     return
 
-def MergeHumidities(cf,ds,convert_units=False):
+def MergeHumidities(cf, ds, convert_units=False):
     if "Ah" not in cf["Variables"] and "RH" not in cf["Variables"] and "q" not in cf["Variables"]:
         logger.error(" MergeHumidities: No humidities found in control file, returning ...")
         return
     if "Ah" in cf["Variables"]:
-        MergeSeries(cf,ds,"Ah",convert_units=convert_units)
-        pfp_utils.CheckUnits(ds,"Ah","g/m3",convert_units=True)
+        if "MergeSeries" in cf["Variables"]["Ah"]:
+            MergeSeries(cf, ds, "Ah", convert_units=convert_units)
+            pfp_utils.CheckUnits(ds, "Ah", "g/m3", convert_units=True)
+        elif "AverageSeries" in cf["Variables"]["Ah"]:
+            AverageSeriesByElements(cf, ds, "Ah")
+            pfp_utils.CheckUnits(ds, "Ah", "g/m3", convert_units=True)
     if "RH" in cf["Variables"]:
-        MergeSeries(cf,ds,'RH',convert_units=convert_units)
-        pfp_utils.CheckUnits(ds,"RH","%",convert_units=True)
+        if "MergeSeries" in cf["Variables"]["RH"]:
+            MergeSeries(cf, ds, "RH", convert_units=convert_units)
+            pfp_utils.CheckUnits(ds, "RH", "%", convert_units=True)
+        elif "AverageSeries" in cf["Variables"]["RH"]:
+            AverageSeriesByElements(cf, ds, "RH", convert_units=convert_units)
+            pfp_utils.CheckUnits(ds, "RH", "%", convert_units=True)
     if "q" in cf["Variables"]:
-        MergeSeries(cf,ds,'q',convert_units=convert_units)
-        pfp_utils.CheckUnits(ds,"q","kg/kg",convert_units=False)
+        if "MergeSeries" in cf["Variables"]["q"]:
+            MergeSeries(cf, ds, "q", convert_units=convert_units)
+            pfp_utils.CheckUnits(ds, "q", "kg/kg", convert_units=True)
+        elif "AverageSeries" in cf["Variables"]["q"]:
+            AverageSeriesByElements(cf, ds, "q", convert_units=convert_units)
+            pfp_utils.CheckUnits(ds, "q", "kg/kg", convert_units=True)
+    return
 
 def MergeSeries(cf,ds,series,okflags=[0,10,20,30,40,50,60],convert_units=False,save_originals=False):
     """
@@ -2539,7 +2587,6 @@ def MergeSeries(cf,ds,series,okflags=[0,10,20,30,40,50,60],convert_units=False,s
             msg = msg + " not found for " + str(series)
             logger.warning(msg)
             return
-        #mdata,mflag,mattr = pfp_utils.GetSeriesasMA(ds,primary_series)
         primary = pfp_utils.GetVariable(ds, primary_series)
         if (primary_series == series) and save_originals:
             tmp = pfp_utils.CopyVariable(primary)
@@ -2554,7 +2601,11 @@ def MergeSeries(cf,ds,series,okflags=[0,10,20,30,40,50,60],convert_units=False,s
             logger.warning(msg)
             return
         primary_series = srclist[0]
-        #mdata,mflag,mattr = pfp_utils.GetSeriesasMA(ds,primary_series)
+        if primary_series not in ds.series.keys():
+            msg = "  MergeSeries: primary input series " + primary_series
+            msg = msg + " not found for " + str(series)
+            logger.warning(msg)
+            return
         primary = pfp_utils.GetVariable(ds, primary_series)
         p_recs = len(primary["Data"])
         if (primary_series == series) and save_originals:
@@ -2565,7 +2616,6 @@ def MergeSeries(cf,ds,series,okflags=[0,10,20,30,40,50,60],convert_units=False,s
         srclist.remove(primary_series)
         for secondary_series in srclist:
             if secondary_series in ds.series.keys():
-                #ndata,nflag,nattr = pfp_utils.GetSeriesasMA(ds,secondary_series)
                 secondary = pfp_utils.GetVariable(ds, secondary_series)
                 s_recs = len(secondary["Data"])
                 if (secondary_series == series) and save_originals:
