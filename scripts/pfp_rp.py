@@ -644,8 +644,8 @@ def get_ustar_thresholds(cf, ds):
         ustar_dict["mpt"] = get_ustarthreshold_from_results(results_name)
     if "ustar_threshold" in cf:
         ustar_dict["cf"] = get_ustarthreshold_from_cf(cf)
-    cleanup_ustar_dict(ds, ustar_dict)
-    return ustar_dict
+    ustar_out = cleanup_ustar_dict(ds, ustar_dict)
+    return ustar_out
 
 def get_daynight_indicator(cf, ds):
     Fsd, _, _ = pfp_utils.GetSeriesasMA(ds, "Fsd")
