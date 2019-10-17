@@ -255,7 +255,8 @@ def gfSOLO_plot(pd, ds, drivers, target, output, l5s, si=0, ei=-1):
     ts = int(ds.globalattributes['time_step'])
     # get a local copy of the datetime series
     xdt = ds.series["DateTime"]["Data"][si:ei+1]
-    Hdh, _, _ = pfp_utils.GetSeriesasMA(ds, 'Hdh', si=si, ei=ei)
+    #Hdh, _, _ = pfp_utils.GetSeriesasMA(ds, 'Hdh', si=si, ei=ei)
+    Hdh = numpy.array([dt.hour+(dt.minute+dt.second/float(60))/float(60) for dt in xdt])
     # get the observed and modelled values
     obs, _, _ = pfp_utils.GetSeriesasMA(ds, target, si=si, ei=ei)
     mod, _, _ = pfp_utils.GetSeriesasMA(ds, output, si=si, ei=ei)

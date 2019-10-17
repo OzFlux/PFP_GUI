@@ -167,6 +167,7 @@ def ERUsingLasslop(ds, l6_info):
     output = outputs[0]
     drivers = ielo[output]["drivers"]
     target = ielo[output]["target"]
+    flag_code = ielo[output]["flag_code"]
     # get some useful things
     ldt = ds.series["DateTime"]["Data"]
     startdate = ldt[0]
@@ -259,12 +260,13 @@ def ERUsingLasslop(ds, l6_info):
     units = "umol/m2/s"
     long_name = "Base respiration at Tref from Lloyd-Taylor method used in Lasslop et al (2010)"
     attr = pfp_utils.MakeAttributeDictionary(long_name=long_name,units=units)
-    flag = numpy.zeros(len(rb),dtype=numpy.int32)
+    flag = numpy.zeros(nrecs, dtype=numpy.int32)
     pfp_utils.CreateSeries(ds,"rb_LL",rb,flag,attr)
     E0 = LL_results["E0_tts"]
     units = "C"
     long_name = "Activation energy from Lloyd-Taylor method used in Lasslop et al (2010)"
     attr = pfp_utils.MakeAttributeDictionary(long_name=long_name,units=units)
+    flag = numpy.zeros(nrecs, dtype=numpy.int32)
     pfp_utils.CreateSeries(ds,"E0_LL",E0,flag,attr)
     logger.info(" Calculating ER using Lloyd-Taylor with Lasslop parameters")
     ER_LL = pfp_rpLL.ER_LloydTaylor(T,rb,E0)
@@ -272,27 +274,32 @@ def ERUsingLasslop(ds, l6_info):
     units = Fc_attr["units"]
     long_name = "Ecosystem respiration modelled by Lasslop et al (2010)"
     attr = pfp_utils.MakeAttributeDictionary(long_name=long_name,units=units)
+    flag = numpy.full(nrecs, flag_code, dtype=numpy.int32)
     pfp_utils.CreateSeries(ds,output,ER_LL,flag,attr)
     # parameters associated with GPP and GPP itself
     alpha = LL_results["alpha_tts"]
     units = "umol/J"
     long_name = "Canopy light use efficiency"
     attr = pfp_utils.MakeAttributeDictionary(long_name=long_name,units=units)
+    flag = numpy.zeros(nrecs, dtype=numpy.int32)
     pfp_utils.CreateSeries(ds,"alpha_LL",alpha,flag,attr)
     beta = LL_results["beta_tts"]
     units = "umol/m2/s"
     long_name = "Maximum CO2 uptake at light saturation"
     attr = pfp_utils.MakeAttributeDictionary(long_name=long_name,units=units)
+    flag = numpy.zeros(nrecs, dtype=numpy.int32)
     pfp_utils.CreateSeries(ds,"beta_LL",beta,flag,attr)
     k = LL_results["k_tts"]
     units = "none"
     long_name = "Sensitivity of response to VPD"
     attr = pfp_utils.MakeAttributeDictionary(long_name=long_name,units=units)
+    flag = numpy.zeros(nrecs, dtype=numpy.int32)
     pfp_utils.CreateSeries(ds,"k_LL",k,flag,attr)
     GPP_LL = pfp_rpLL.GPP_RHLRC_D(Fsd,D,alpha,beta,k,D0)
     units = "umol/m2/s"
     long_name = "GPP modelled by Lasslop et al (2010)"
     attr = pfp_utils.MakeAttributeDictionary(long_name=long_name,units=units)
+    flag = numpy.zeros(nrecs, dtype=numpy.int32)
     pfp_utils.CreateSeries(ds,"GPP_LL_all",GPP_LL,flag,attr)
     # NEE
     data = {"Fsd":Fsd,"T":T,"D":D}
@@ -300,6 +307,7 @@ def ERUsingLasslop(ds, l6_info):
     units = "umol/m2/s"
     long_name = "NEE modelled by Lasslop et al (2010)"
     attr = pfp_utils.MakeAttributeDictionary(long_name=long_name,units=units)
+    flag = numpy.zeros(nrecs, dtype=numpy.int32)
     pfp_utils.CreateSeries(ds,"NEE_LL_all",NEE_LL,flag,attr)
     # plot the respiration estimated using Lasslop et al
     # set the figure number
@@ -497,7 +505,7 @@ def ERUsingLloydTaylor(cf, ds, l6_info):
             rb[idx] = rb_val
         ER_LT = pfp_rpLT.TRF(data_dict, E0, rb)
         ER_LT_flag = numpy.empty(len(ER_LT),dtype=numpy.int32)
-        ER_LT_flag.fill(30)
+        ER_LT_flag.fill(iel["outputs"][output]["flag_code"])
         target = iel["outputs"][output]["target"]
         drivers = iel["outputs"][output]["drivers"]
         ER_attr["comment1"] = "Drivers were "+str(drivers)
@@ -1640,11 +1648,11 @@ def ParseL6ControlFile(cf, ds):
     if "EcosystemRespiration" in cf.keys():
         for output in cf["EcosystemRespiration"].keys():
             if "ERUsingSOLO" in cf["EcosystemRespiration"][output].keys():
-                rpSOLO_createdict(cf, ds, l6_info, output, "ERUsingSOLO")
+                rpSOLO_createdict(cf, ds, l6_info, output, "ERUsingSOLO", 610)
             if "ERUsingLloydTaylor" in cf["EcosystemRespiration"][output].keys():
-                pfp_rpLT.rpLT_createdict(cf, ds, l6_info, output, "ERUsingLloydTaylor")
+                pfp_rpLT.rpLT_createdict(cf, ds, l6_info, output, "ERUsingLloydTaylor", 620)
             if "ERUsingLasslop" in cf["EcosystemRespiration"][output].keys():
-                pfp_rpLL.rpLL_createdict(cf, ds, l6_info, output, "ERUsingLasslop")
+                pfp_rpLL.rpLL_createdict(cf, ds, l6_info, output, "ERUsingLasslop", 630)
             if "MergeSeries" in cf["EcosystemRespiration"][output].keys():
                 rpMergeSeries_createdict(cf, ds, l6_info, output, "MergeSeries")
     if "NetEcosystemExchange" in cf.keys():
@@ -1763,7 +1771,7 @@ def rpMergeSeries_createdict(cf, ds, l6_info, label, called_by):
         pfp_utils.CreateVariable(ds, variable)
     return
 
-def rpSOLO_createdict(cf, ds, l6_info, output, called_by):
+def rpSOLO_createdict(cf, ds, l6_info, output, called_by, flag_code):
     """
     Purpose:
      Creates a dictionary in l6_info to hold information about the SOLO data
@@ -1784,7 +1792,7 @@ def rpSOLO_createdict(cf, ds, l6_info, output, called_by):
         # only need to create the ["gui"] dictionary on the first pass
         pfp_gf.gfSOLO_createdict_gui(cf, ds, l6_info, called_by)
     # get the outputs section
-    pfp_gf.gfSOLO_createdict_outputs(cf, l6_info, output, called_by)
+    pfp_gf.gfSOLO_createdict_outputs(cf, l6_info, output, called_by, flag_code)
     # create an empty series in ds if the SOLO output series doesn't exist yet
     Fc = pfp_utils.GetVariable(ds, l6_info[called_by]["info"]["source"])
     model_outputs = cf["EcosystemRespiration"][output][called_by].keys()
