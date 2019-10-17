@@ -196,6 +196,8 @@ def gfSOLO_main(ds, l5_info, called_by, outputs=None):
     if outputs == None:
         outputs = l5s["outputs"].keys()
     for output in outputs:
+        # get the QC flag code
+        flag_code = l5s["outputs"][output]["flag_code"]
         # get the target series label
         target = l5s["outputs"][output]["target"]
         # get the drivers
@@ -239,7 +241,8 @@ def gfSOLO_main(ds, l5_info, called_by, outputs=None):
         if result != 1:
             return
         # run seqsolo and put the solo_modelled data into the ds series
-        result = gfSOLO_runseqsolo(ds, drivers, target, output, nRecs, si=si, ei=ei)
+        result = gfSOLO_runseqsolo(ds, drivers, target, output, nRecs,
+                                   flag_code, si=si, ei=ei)
         if result != 1:
             return
         # plot the results
@@ -252,7 +255,8 @@ def gfSOLO_plot(pd, ds, drivers, target, output, l5s, si=0, ei=-1):
     ts = int(ds.globalattributes['time_step'])
     # get a local copy of the datetime series
     xdt = ds.series["DateTime"]["Data"][si:ei+1]
-    Hdh, _, _ = pfp_utils.GetSeriesasMA(ds, 'Hdh', si=si, ei=ei)
+    #Hdh, _, _ = pfp_utils.GetSeriesasMA(ds, 'Hdh', si=si, ei=ei)
+    Hdh = numpy.array([dt.hour+(dt.minute+dt.second/float(60))/float(60) for dt in xdt])
     # get the observed and modelled values
     obs, _, _ = pfp_utils.GetSeriesasMA(ds, target, si=si, ei=ei)
     mod, _, _ = pfp_utils.GetSeriesasMA(ds, output, si=si, ei=ei)
@@ -571,7 +575,7 @@ def gfSOLO_qcchecks(cfg, dsa, dsb):
     for output in outputs:
         # get the target label and the control file section that contains it
         label = dsb.solo[output]["label_tower"]
-        section = pfp_utils.get_cfsection(cfg, series=label)
+        section = pfp_utils.get_cfsection(cfg, label)
         # copy the variable from dsa to dsb
         variable = pfp_utils.GetVariable(dsa, label)
         pfp_utils.CreateVariable(dsb, variable)
@@ -730,7 +734,8 @@ def gfSOLO_run(ds, l5_info, called_by):
                 gfSOLO_plotsummary(ds, l5s)
         logger.info(" Finished auto (days) run ...")
 
-def gfSOLO_runseqsolo(dsb, drivers, targetlabel, outputlabel, nRecs, si=0, ei=-1):
+def gfSOLO_runseqsolo(dsb, drivers, targetlabel, outputlabel, nRecs,
+                      flag_code, si=0, ei=-1):
     '''
     Run SEQSOLO.
     '''
@@ -788,10 +793,10 @@ def gfSOLO_runseqsolo(dsb, drivers, targetlabel, outputlabel, nRecs, si=0, ei=-1
         # put the SOLO modelled data back into the data series
         if ei == -1:
             dsb.series[outputlabel]['Data'][si:][goodindex] = seqdata[:, 1]
-            dsb.series[outputlabel]['Flag'][si:][goodindex] = numpy.int32(30)
+            dsb.series[outputlabel]['Flag'][si:][goodindex] = numpy.int32(flag_code)
         else:
             dsb.series[outputlabel]['Data'][si:ei+1][goodindex] = seqdata[:, 1]
-            dsb.series[outputlabel]['Flag'][si:ei+1][goodindex] = numpy.int32(30)
+            dsb.series[outputlabel]['Flag'][si:ei+1][goodindex] = numpy.int32(flag_code)
         return 1
     else:
         msg = " SEQSOLO did not run correctly, check the GUI and the log files"

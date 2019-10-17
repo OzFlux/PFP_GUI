@@ -294,7 +294,7 @@ def optimise_annual_Eo(data_dict, params_dict, configs_dict, year_index_dict):
         logger.info(" Eo estimates passed QC for all years")
     return yearsEo_dict, yearsQC_dict, yearsEo_raw_dict, yearsQC_raw_dict, status
 
-def rpLT_createdict(cf, ds, l6_info, output, called_by):
+def rpLT_createdict(cf, ds, l6_info, output, called_by, flag_code):
     """
     Purpose:
      Creates a dictionary in ds to hold information about estimating ecosystem
@@ -312,7 +312,7 @@ def rpLT_createdict(cf, ds, l6_info, output, called_by):
     if ds.returncodes["value"] != 0:
         return
     # get the outputs section
-    rpLT_createdict_outputs(cf, l6_info[called_by], output, called_by)
+    rpLT_createdict_outputs(cf, l6_info[called_by], output, called_by, flag_code)
     # create an empty series in ds if the output series doesn't exist yet
     Fc = pfp_utils.GetVariable(ds, l6_info[called_by]["info"]["source"])
     model_outputs = cf["EcosystemRespiration"][output][called_by].keys()
@@ -390,7 +390,7 @@ def rpLT_createdict_info(cf, ds, erlt, called_by):
     erlt["info"]["plot_path"] = plot_path
     return
 
-def rpLT_createdict_outputs(cf, erlt, target, called_by):
+def rpLT_createdict_outputs(cf, erlt, target, called_by, flag_code):
     level = cf["level"]
     eo = erlt["outputs"]
     # loop over the outputs listed in the control file
@@ -403,6 +403,8 @@ def rpLT_createdict_outputs(cf, erlt, target, called_by):
         sl = [section, target, called_by, output]
         eo[output]["target"] = pfp_utils.get_keyvaluefromcf(cf, sl, "target", default=target)
         eo[output]["source"] = pfp_utils.get_keyvaluefromcf(cf, sl, "source", default="Fc")
+        # add the flag_code
+        eo[output]["flag_code"] = flag_code
         # list of drivers
         opt = pfp_utils.get_keyvaluefromcf(cf, sl, "drivers", default="Ta")
         eo[output]["drivers"] = pfp_cfg.cfg_string_to_list(opt)
@@ -449,7 +451,8 @@ def rpLT_plot(pd, ds, output, drivers, target, iel, si=0, ei=-1):
     else:
         dt = ds.series['DateTime']['Data'][si:ei+1]
     xdt = numpy.array(dt)
-    Hdh, f, a = pfp_utils.GetSeriesasMA(ds, 'Hdh', si=si, ei=ei)
+    #Hdh, f, a = pfp_utils.GetSeriesasMA(ds, 'Hdh', si=si, ei=ei)
+    Hdh = numpy.array([dt.hour+(dt.minute+dt.second/float(60))/float(60) for dt in xdt])
     # get the observed and modelled values
     obs, f, a = pfp_utils.GetSeriesasMA(ds, target, si=si, ei=ei)
     mod, f, a = pfp_utils.GetSeriesasMA(ds, output, si=si, ei=ei)
