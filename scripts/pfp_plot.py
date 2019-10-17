@@ -529,12 +529,11 @@ def plottimeseries(cf, nFig, dsa, dsb):
             hr2_ax = fig.add_axes([p['hr1_XAxOrg'],p['YAxOrg'],p['hr2_XAxLen'],p['ts_YAxLen']])
             #hr2_ax.hold(True)
             hr2_ax.plot(Hr2,Av2,'y-',Hr2,Mx2,'r-',Hr2,Mn2,'b-')
-            section = pfp_utils.get_cfsection(cf,series=ThisOne,mode='quiet')
-            if len(section)!=0:
-                if 'DiurnalCheck' in cf[section][ThisOne].keys():
-                    NSdarr = numpy.array(pfp_ck.parse_rangecheck_limit(cf[section][ThisOne]['DiurnalCheck']['NumSd']))
-                    nSd = NSdarr[Month-1]
-                    hr2_ax.plot(Hr2,Av2+nSd*Sd2,'r.',Hr2,Av2-nSd*Sd2,'b.')
+            section = pfp_utils.get_cfsection(cf, ThisOne, mode='quiet')
+            if 'DiurnalCheck' in cf[section][ThisOne].keys():
+                NSdarr = numpy.array(pfp_ck.parse_rangecheck_limit(cf[section][ThisOne]['DiurnalCheck']['NumSd']))
+                nSd = NSdarr[Month-1]
+                hr2_ax.plot(Hr2,Av2+nSd*Sd2,'r.',Hr2,Av2-nSd*Sd2,'b.')
             plt.xlim(0,24)
             plt.xticks([0,6,12,18,24])
             if n==0:

@@ -742,6 +742,7 @@ def gfalternate_initplot(data_dict, l4a, **kwargs):
 def gfalternate_loadoutputdata(ds_tower, data_dict, l4a):
     ldt_tower = ds_tower.series["DateTime"]["Data"]
     label_output = l4a["run"]["label_output"]
+    flag_code = l4a["outputs"][label_output]["flag_code"]
     label_composite = l4a["run"]["label_composite"]
     label_alternate = l4a["run"]["label_alternate"]
     ts = l4a["info"]["time_step"]
@@ -777,14 +778,14 @@ def gfalternate_loadoutputdata(ds_tower, data_dict, l4a):
         ind5 = numpy.where((abs(ds_tower.series[label_composite]["Data"][si:ei+1]-float(c.missing_value)) < c.eps)&
                            (numpy.ma.getmaskarray(data_dict[label_output][label_alternate]["fitcorr"]) == False))[0]
     ds_tower.series[label_composite]["Data"][si:ei+1][ind5] = numpy.ma.filled(data_dict[label_output][label_alternate]["fitcorr"][ind5], c.missing_value)
-    ds_tower.series[label_composite]["Flag"][si:ei+1][ind5] = numpy.int32(20)
+    ds_tower.series[label_composite]["Flag"][si:ei+1][ind5] = numpy.int32(flag_code)
     if l4a["gui"]["overwrite"]:
         ind6 = numpy.where(numpy.ma.getmaskarray(data_dict[label_output][label_alternate]["fitcorr"]) == False)[0]
     else:
         ind6 = numpy.where((abs(ds_tower.series[label_output]["Data"][si:ei+1]-float(c.missing_value)) < c.eps)&
                            (numpy.ma.getmaskarray(data_dict[label_output][label_alternate]["fitcorr"]) == False))[0]
     ds_tower.series[label_output]["Data"][si:ei+1][ind6] = numpy.ma.filled(data_dict[label_output][label_alternate]["fitcorr"][ind6], c.missing_value)
-    ds_tower.series[label_output]["Flag"][si:ei+1][ind6] = numpy.int32(20)
+    ds_tower.series[label_output]["Flag"][si:ei+1][ind6] = numpy.int32(flag_code)
 
 def gfalternate_main(ds_tower, ds_alt, l4_info, called_by, label_tower_list=None):
     """
