@@ -132,7 +132,7 @@ def l3qc(cf, ds2):
     # get the air temperature from the CSAT virtual temperature
     pfp_ts.TaFromTv(cf, ds3)
     # merge the HMP and corrected CSAT data
-    pfp_ts.MergeSeries(cf, ds3, "Ta", convert_units=True)
+    pfp_ts.CombineSeries(cf, ds3, "Ta", convert_units=True)
     pfp_utils.CheckUnits(ds3, "Ta", "C", convert_units=True)
     # ***************************
     # *** Calcuate humidities ***
@@ -155,7 +155,7 @@ def l3qc(cf, ds2):
         msg = "Label for CO2 ('CO2','Cc') not found in control file"
         logger.warning(msg)
         CO2 = None
-    pfp_ts.MergeSeries(cf, ds3, CO2, convert_units=True)
+    pfp_ts.CombineSeries(cf, ds3, CO2, convert_units=True)
     # ******************************************
     # *** Calculate meteorological variables ***
     # ******************************************
@@ -196,38 +196,38 @@ def l3qc(cf, ds2):
     cfv = cf["Variables"]
     merge_list = [l for l in cfv.keys() if l[0:2] == "Fc" and "MergeSeries" in cfv[l].keys()]
     for label in merge_list:
-        pfp_ts.MergeSeries(cf, ds3, label, save_originals=True)
+        pfp_ts.CombineSeries(cf, ds3, label, save_originals=True)
     # correct Fc for storage term - only recommended if storage calculated from profile available
     pfp_ts.CorrectFcForStorage(cf, ds3)
     # *************************
     # *** Radiation section ***
     # *************************
     # merge the incoming shortwave radiation
-    pfp_ts.MergeSeries(cf, ds3, 'Fsd')
+    pfp_ts.CombineSeries(cf, ds3, 'Fsd')
     # calculate the net radiation from the Kipp and Zonen CNR1
     pfp_ts.CalculateNetRadiation(cf, ds3)
-    pfp_ts.MergeSeries(cf, ds3, 'Fn')
+    pfp_ts.CombineSeries(cf, ds3, 'Fn')
     # ****************************************
     # *** Wind speed and direction section ***
     # ****************************************
     # combine wind speed from the Wind Sentry and the SONIC
-    pfp_ts.MergeSeries(cf,ds3, 'Ws')
+    pfp_ts.CombineSeries(cf,ds3, 'Ws')
     # combine wind direction from the Wind Sentry and the SONIC
-    pfp_ts.MergeSeries(cf,ds3, 'Wd')
+    pfp_ts.CombineSeries(cf,ds3, 'Wd')
     # ********************
     # *** Soil section ***
     # ********************
     # correct soil heat flux for storage
     #    ... either average the raw ground heat flux, soil temperature and moisture
     #        and then do the correction (OzFlux "standard")
-    pfp_ts.AverageSeriesByElements(cf, ds3, 'Ts')
-    pfp_ts.AverageSeriesByElements(cf, ds3, 'Sws')
+    pfp_ts.CombineSeries(cf, ds3, 'Ts')
+    pfp_ts.CombineSeries(cf, ds3, 'Sws')
     if pfp_utils.get_optionskeyaslogical(cf, "CorrectIndividualFg"):
         #    ... or correct the individual ground heat flux measurements (James' method)
         pfp_ts.CorrectIndividualFgForStorage(cf, ds3)
-        pfp_ts.AverageSeriesByElements(cf, ds3, 'Fg')
+        pfp_ts.CombineSeries(cf, ds3, 'Fg')
     else:
-        pfp_ts.AverageSeriesByElements(cf, ds3, 'Fg')
+        pfp_ts.CombineSeries(cf, ds3, 'Fg')
         pfp_ts.CorrectFgForStorage(cf, ds3)
     # calculate the available energy
     pfp_ts.CalculateAvailableEnergy(ds3)
