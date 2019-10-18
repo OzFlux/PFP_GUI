@@ -483,7 +483,7 @@ def rpLL_plot(pd, ds, output, drivers, target, l6_info, si=0, ei=-1):
         dt = ds.series['DateTime']['Data'][si:ei+1]
     xdt = numpy.array(dt)
     #Hdh, f, a = pfp_utils.GetSeriesasMA(ds, 'Hdh', si=si, ei=ei)
-    Hdh = numpy.array([dt.hour+(dt.minute+dt.second/float(60))/float(60) for dt in xdt])
+    Hdh = numpy.array([d.hour+(d.minute+d.second/float(60))/float(60) for d in xdt])
     # get the observed and modelled values
     obs, f, a = pfp_utils.GetSeriesasMA(ds, target, si=si, ei=ei)
     mod, f, a = pfp_utils.GetSeriesasMA(ds, output, si=si, ei=ei)
@@ -502,13 +502,13 @@ def rpLL_plot(pd, ds, output, drivers, target, l6_info, si=0, ei=-1):
     # get the diurnal stats of the observations
     mask = numpy.ma.mask_or(obs.mask, mod.mask)
     obs_mor = numpy.ma.array(obs, mask=mask)
-    dstats = pfp_utils.get_diurnalstats(dt, obs_mor, ieli)
+    dstats = pfp_utils.get_diurnalstats(xdt, obs_mor, ieli)
     ax1.plot(dstats["Hr"], dstats["Av"], 'b-', label="Obs")
     # get the diurnal stats of all predictions
-    dstats = pfp_utils.get_diurnalstats(dt, mod, ieli)
+    dstats = pfp_utils.get_diurnalstats(xdt, mod, ieli)
     ax1.plot(dstats["Hr"], dstats["Av"], 'r-', label="LL(all)")
     mod_mor = numpy.ma.masked_where(numpy.ma.getmaskarray(obs) == True, mod, copy=True)
-    dstats = pfp_utils.get_diurnalstats(dt, mod_mor, ieli)
+    dstats = pfp_utils.get_diurnalstats(xdt, mod_mor, ieli)
     ax1.plot(dstats["Hr"], dstats["Av"], 'g-', label="LL(obs)")
     plt.xlim(0, 24)
     plt.xticks([0, 6, 12, 18, 24])
