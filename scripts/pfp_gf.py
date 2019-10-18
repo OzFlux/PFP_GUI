@@ -601,6 +601,8 @@ def gfClimatology_createdict(cf, ds, l4_info, label, called_by):
     Author: PRI
     Date: August 2014
     """
+    # flag codes
+    flag_codes = {"interpolated daily": 450, "monthly": 460}
     # create the climatology directory in the data structure
     if called_by not in l4_info.keys():
         l4_info[called_by] = {"outputs": {}}
@@ -639,16 +641,16 @@ def gfClimatology_createdict(cf, ds, l4_info, label, called_by):
             l4co.pop(output, None)
             continue
         # climatology variable name if different from name used in control file
-        if "climatology_name" in cfcli[output]:
-            l4co[output]["climatology_name"] = cfcli[output]["climatology_name"]
-        else:
-            l4co[output]["climatology_name"] = label
+        opt = pfp_utils.get_keyvaluefromcf(cfcli, [output], "climatology_name", default=label)
+        l4co[output]["climatology_name"] = str(opt)
         # climatology gap filling method
-        if "method" not in cfcli[output].keys():
-            # default if "method" missing is "interpolated_daily"
-            l4co[output]["method"] = "interpolated_daily"
+        opt = pfp_utils.get_keyvaluefromcf(cfcli, [output], "method", default="interpolated daily")
+        if opt in ["interpolated daily", "monthly"]:
+            l4co[output]["method"] = opt
         else:
-            l4co[output]["method"] = cfcli[output]["method"]
+            l4co[output]["method"] = "interpolated daily"
+        # get the flag code
+        l4co[output]["flag_code"] = flag_codes[l4co[output]["method"]]
         # create an empty series in ds if the climatology output series doesn't exist yet
         if output not in ds.series.keys():
             data, flag, attr = pfp_utils.MakeEmptySeries(ds, output)
@@ -1072,16 +1074,17 @@ def GapFillFromClimatology(ds, l4_info, called_by):
         # local pointers to the series name and climatology method
         label = l4co[output]["target"]
         method = l4co[output]["method"]
+        flag_code = l4co[output]["flag_code"]
         # do the gap filling
         cli_xlbook = cli_xlbooks[cli_filename]
         # choose the gap filling method
         if method == "interpolated daily":
-            gfClimatology_interpolateddaily(ds, label, output, cli_xlbook)
+            gfClimatology_interpolateddaily(ds, label, output, cli_xlbook, flag_code)
         else:
             logger.error(" GapFillFromClimatology: unrecognised method option for %s", label)
             continue
 
-def gfClimatology_interpolateddaily(ds, series, output, xlbook):
+def gfClimatology_interpolateddaily(ds, series, output, xlbook, flag_code):
     """
     Gap fill using data interpolated over a 2D array where the days are
     the rows and the time of day is the columns.
@@ -1130,10 +1133,10 @@ def gfClimatology_interpolateddaily(ds, series, output, xlbook):
         try:
             jj = pfp_utils.find_nearest_value(cdt, ldt[ii])
             data[ii] = val1d[jj]
-            flag[ii] = numpy.int32(40)
+            flag[ii] = numpy.int32(flag_code)
         except ValueError:
             data[ii] = numpy.float64(c.missing_value)
-            flag[ii] = numpy.int32(41)
+            flag[ii] = numpy.int32(flag_code+1)
     # put the gap filled data back into the data structure
     pfp_utils.CreateSeries(ds, output, data, flag, attr)
 
