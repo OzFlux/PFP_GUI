@@ -564,7 +564,26 @@ class edit_cfg_L2(QtWidgets.QWidget):
 
     def add_linear(self):
         """ Add a linear correction to a variable."""
-        print " add Linear here"
+        new_qc = {"Linear": {"0": "YYYY-mm-dd HH:MM, YYYY-mm-dd HH:MM, 1.0, 0.0"}}
+        # get the index of the selected item
+        idx = self.view.selectedIndexes()[0]
+        # get the selected item from the index
+        selected_item = idx.model().itemFromIndex(idx)
+        self.add_qc_check(selected_item, new_qc)
+        self.update_tab_text()
+
+    def add_linearrange(self):
+        """ Add another date range to the Linear QC check."""
+        # get the index of the selected item
+        idx = self.view.selectedIndexes()[0]
+        # get the selected item from the index
+        selected_item = idx.model().itemFromIndex(idx)
+        # get the children
+        child0 = QtGui.QStandardItem(str(selected_item.rowCount()))
+        child1 = QtGui.QStandardItem("YYYY-mm-dd HH:MM, YYYY-mm-dd HH:MM, 1.0, 0.0")
+        # add them
+        selected_item.appendRow([child0, child1])
+        self.update_tab_text()
 
     def add_lowercheck(self):
         """ Add a lower range check to a variable."""
@@ -1042,14 +1061,15 @@ class edit_cfg_L2(QtWidgets.QWidget):
                     self.context_menu.actionAddWindDirectionCorrection.setText("Add CorrectWindDirection")
                     self.context_menu.addAction(self.context_menu.actionAddWindDirectionCorrection)
                     self.context_menu.actionAddWindDirectionCorrection.triggered.connect(self.add_winddirectioncorrection)
+                if "Linear" not in existing_entries:
+                    self.context_menu.actionAddLinear = QtWidgets.QAction(self)
+                    self.context_menu.actionAddLinear.setText("Add Linear")
+                    self.context_menu.addAction(self.context_menu.actionAddLinear)
+                    self.context_menu.actionAddLinear.triggered.connect(self.add_linear)
                 #self.context_menu.actionAddExcludeHours = QtWidgets.QAction(self)
                 #self.context_menu.actionAddExcludeHours.setText("Add ExcludeHours")
                 #self.context_menu.addAction(self.context_menu.actionAddExcludeHours)
                 #self.context_menu.actionAddExcludeHours.triggered.connect(self.add_excludehours)
-                #self.context_menu.actionAddLinear = QtWidgets.QAction(self)
-                #self.context_menu.actionAddLinear.setText("Add Linear")
-                #self.context_menu.addAction(self.context_menu.actionAddLinear)
-                #self.context_menu.actionAddLinear.triggered.connect(self.add_linear)
                 self.context_menu.addSeparator()
                 self.context_menu.actionRemoveVariable = QtWidgets.QAction(self)
                 self.context_menu.actionRemoveVariable.setText("Remove variable")
@@ -1086,6 +1106,12 @@ class edit_cfg_L2(QtWidgets.QWidget):
                 self.context_menu.addAction(self.context_menu.actionAddWindDirectionCorrectionRange)
                 self.context_menu.actionAddWindDirectionCorrectionRange.triggered.connect(self.add_winddirectioncorrectionrange)
                 add_separator = True
+            if str(idx.data()) in ["Linear"]:
+                self.context_menu.actionAddLinearRange = QtWidgets.QAction(self)
+                self.context_menu.actionAddLinearRange.setText("Add date range")
+                self.context_menu.addAction(self.context_menu.actionAddLinearRange)
+                self.context_menu.actionAddLinearRange.triggered.connect(self.add_linearrange)
+                add_separator = True
             if add_separator:
                 self.context_menu.addSeparator()
                 add_separator = False
@@ -1094,7 +1120,7 @@ class edit_cfg_L2(QtWidgets.QWidget):
             self.context_menu.addAction(self.context_menu.actionRemoveQCCheck)
             self.context_menu.actionRemoveQCCheck.triggered.connect(self.remove_item)
         elif level == 3:
-            if (str(idx.parent().data()) in ["ExcludeDates", "LowerCheck", "UpperCheck"] and
+            if (str(idx.parent().data()) in ["ExcludeDates", "LowerCheck", "UpperCheck", "Linear"] and
                 str(idx.data()) != "0"):
                 self.context_menu.actionRemoveExcludeDateRange = QtWidgets.QAction(self)
                 self.context_menu.actionRemoveExcludeDateRange.setText("Remove date range")
@@ -1294,7 +1320,7 @@ class edit_cfg_L2(QtWidgets.QWidget):
 
     def parse_cfg_plots_value(self, k, v):
         """ Parse the [Plots] section keys to remove unnecessary characters."""
-        if k == "Variables":
+        if k in ["Variables", "Type", "XSeries", "YSeries"]:
             if ("[" in v) and ("]" in v):
                 v = v.replace("[", "").replace("]", "")
                 self.cfg_changed = True
@@ -1322,7 +1348,7 @@ class edit_cfg_L2(QtWidgets.QWidget):
         # remove white space and quotes
         if k in ["RangeCheck", "DiurnalCheck", "DependencyCheck"]:
             strip_list = [" ", '"', "'"]
-        elif k in ["ExcludeDates", "ExcludeHours", "LowerCheck", "UpperCheck"]:
+        elif k in ["ExcludeDates", "ExcludeHours", "LowerCheck", "UpperCheck", "Linear"]:
             # don't remove white space between date and time
             strip_list = ['"', "'"]
         else:
@@ -2030,6 +2056,7 @@ class edit_cfg_L3(QtWidgets.QWidget):
                 self.context_menu.addAction(self.context_menu.actionRemovePlot)
                 self.context_menu.actionRemovePlot.triggered.connect(self.remove_item)
         elif level == 2:
+            add_separator = False
             # we are in a subsection
             selected_item = idx.model().itemFromIndex(idx)
             # get the subsection
@@ -2043,8 +2070,8 @@ class edit_cfg_L3(QtWidgets.QWidget):
                 self.context_menu.actionAddExcludeDateRange.setText("Add date range")
                 self.context_menu.addAction(self.context_menu.actionAddExcludeDateRange)
                 self.context_menu.actionAddExcludeDateRange.triggered.connect(self.add_excludedaterange)
-                self.context_menu.addSeparator()
-            elif (str(section.text()) == "Imports") and (selected_item.column() == 1):
+                add_separator = True
+            if (str(section.text()) == "Imports") and (selected_item.column() == 1):
                 # we are browsing for a file name in an Imports section
                 key = str(subsection.child(selected_item.row(),0).text())
                 if key in ["file_name"]:
@@ -2052,13 +2079,17 @@ class edit_cfg_L3(QtWidgets.QWidget):
                     self.context_menu.actionBrowseAlternateFile.setText("Browse...")
                     self.context_menu.addAction(self.context_menu.actionBrowseAlternateFile)
                     self.context_menu.actionBrowseAlternateFile.triggered.connect(self.browse_alternate_file)
-                    self.context_menu.addSeparator()
+                    add_separator = True
+            if add_separator:
+                self.context_menu.addSeparator()
+                add_separator = False
             self.context_menu.actionRemoveQCCheck = QtWidgets.QAction(self)
-            self.context_menu.actionRemoveQCCheck.setText("Remove item")
+            self.context_menu.actionRemoveQCCheck.setText("Remove QC check")
             self.context_menu.addAction(self.context_menu.actionRemoveQCCheck)
             self.context_menu.actionRemoveQCCheck.triggered.connect(self.remove_item)
         elif level == 3:
-            if str(idx.parent().data()) in ["ExcludeDates"]:
+            if (str(idx.parent().data()) in ["ExcludeDates"] and
+                str(idx.data()) != "0"):
                 self.context_menu.actionRemoveExcludeDateRange = QtWidgets.QAction(self)
                 self.context_menu.actionRemoveExcludeDateRange.setText("Remove date range")
                 self.context_menu.addAction(self.context_menu.actionRemoveExcludeDateRange)
@@ -2244,19 +2275,22 @@ class edit_cfg_L3(QtWidgets.QWidget):
                 # sections with 3 levels
                 self.sections[key1] = QtGui.QStandardItem(key1)
                 for key2 in self.cfg[key1]:
+                    if key2 in ["ustar_filtered"]:
+                        continue
                     parent2 = QtGui.QStandardItem(key2)
                     for key3 in self.cfg[key1][key2]:
-                        if key3 in ["ustar_threshold"]:
-                            continue
-                        parent3 = QtGui.QStandardItem(key3)
-                        for key4 in self.cfg[key1][key2][key3]:
-                            val = self.cfg[key1][key2][key3][key4]
-                            val = self.parse_cfg_variables_value(key3, val)
-                            child0 = QtGui.QStandardItem(key4)
-                            child1 = QtGui.QStandardItem(val)
-                            parent3.appendRow([child0, child1])
-                        parent2.appendRow(parent3)
-                    self.sections[key1].appendRow(parent2)
+                        if key3 in ["RangeCheck", "DependencyCheck", "DiurnalCheck", "ExcludeDates",
+                                    "ApplyFcStorage", "MergeSeries", "AverageSeries"]:
+                            parent3 = QtGui.QStandardItem(key3)
+                            for key4 in self.cfg[key1][key2][key3]:
+                                val = self.cfg[key1][key2][key3][key4]
+                                val = self.parse_cfg_variables_value(key3, val)
+                                child0 = QtGui.QStandardItem(key4)
+                                child1 = QtGui.QStandardItem(val)
+                                parent3.appendRow([child0, child1])
+                            parent2.appendRow(parent3)
+                    if parent2.hasChildren():
+                        self.sections[key1].appendRow(parent2)
                 self.model.appendRow(self.sections[key1])
 
     def handleItemChanged(self, item):
@@ -2283,7 +2317,7 @@ class edit_cfg_L3(QtWidgets.QWidget):
 
     def parse_cfg_plots_value(self, k, v):
         """ Parse the [Plots] section keys to remove unnecessary characters."""
-        if k == "Variables":
+        if k in ["Variables", "Type", "XSeries", "YSeries"]:
             if ("[" in v) and ("]" in v):
                 v = v.replace("[", "").replace("]", "")
                 self.cfg_changed = True
@@ -2327,9 +2361,13 @@ class edit_cfg_L3(QtWidgets.QWidget):
         if k in ["RangeCheck", "DiurnalCheck", "DependencyCheck",
                  "MergeSeries", "AverageSeries", "ApplyFcStorage"]:
             strip_list = [" ", '"', "'"]
-        elif k in ["ExcludeDates", "ExcludeHours", "Linear"]:
+        elif k in ["ExcludeDates", "ExcludeHours", "LowerCheck", "UpperCheck"]:
             # don't remove white space between date and time
             strip_list = ['"', "'"]
+        else:
+            msg = " QC check " + k + " not recognised"
+            logger.warning(msg)
+            return v
         for c in strip_list:
             if c in v:
                 if (v != '""') and (v != "''"):

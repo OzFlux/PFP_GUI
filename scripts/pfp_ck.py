@@ -446,8 +446,6 @@ def do_diurnalcheck(cf, ds, section, series,code=5):
             ds.series[series]['Data'][index] = numpy.float64(c.missing_value)
             ds.series[series]['Flag'][index] = numpy.int32(code)
             ds.series[series]['Attr']['diurnalcheck_numsd'] = cf[section][series]['DiurnalCheck']['NumSd']
-    if 'DiurnalCheck' not in ds.globalattributes['Functions']:
-        ds.globalattributes['Functions'] = ds.globalattributes['Functions']+',DiurnalCheck'
 
 def do_EC155check(cf,ds):
     """
@@ -622,8 +620,6 @@ def do_excludehours(cf,ds,section,series,code=7):
             ds.series[series]['Data'][index] = numpy.float64(c.missing_value)
             ds.series[series]['Flag'][index] = numpy.int32(code)
             ds.series[series]['Attr']['ExcludeHours_'+str(i)] = cf[section][series]['ExcludeHours'][str(i)]
-    if 'ExcludeHours' not in ds.globalattributes['Functions']:
-        ds.globalattributes['Functions'] = ds.globalattributes['Functions']+',ExcludeHours'
 
 def do_IRGAcheck(cf,ds):
     """
@@ -808,8 +804,6 @@ def do_li7500acheck(cf,ds):
         else:
             #logger.warning('  pfp_ck.do_7500acheck: series '+str(ThisOne)+' in LI75List not found in ds.series')
             pass
-    if '7500ACheck' not in ds.globalattributes['Functions']:
-        ds.globalattributes['Functions'] = ds.globalattributes['Functions']+',7500ACheck'
 
 def do_linear(cf,ds):
     level = ds.globalattributes['nc_level']
@@ -820,8 +814,6 @@ def do_linear(cf,ds):
             pfp_ts.ApplyLinearDrift(cf,ds,ThisOne)
         if pfp_utils.haskey(cf,ThisOne,'LocalDrift'):
             pfp_ts.ApplyLinearDriftLocal(cf,ds,ThisOne)
-    if 'do_linear' not in ds.globalattributes['Functions']:
-        ds.globalattributes['Functions'] = ds.globalattributes['Functions']+',do_linear'
 
 def parse_rangecheck_limit(s):
     """
@@ -965,8 +957,6 @@ def do_qcchecks_oneseries(cf,ds,section,series):
     do_excludehours(cf,ds,section,series,code=7)
     # do wind direction corrections
     do_winddirectioncorrection(cf,ds,section,series)
-    if 'do_qcchecks' not in ds.globalattributes['Functions']:
-        ds.globalattributes['Functions'] = ds.globalattributes['Functions']+',do_qcchecks'
 
 def do_winddirectioncorrection(cf, ds, section, series):
     if "CorrectWindDirection" not in cf[section][series].keys():

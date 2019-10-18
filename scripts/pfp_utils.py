@@ -330,11 +330,11 @@ def convert_units_func(ds, variable, new_units, mode="quiet"):
         return variable
     # check the units are something we understand
     # add more lists here to cope with water etc
-    co2_list = ["umol/m2/s","gC/m2","mg/m3","mgCO2/m3","umol/mol","mg/m2/s","mgCO2/m2/s"]
-    h2o_list = ["g/m3", "mmol/mol", "%", "frac", "kg/kg"]
+    co2_list = ["umol/m2/s", "gC/m2", "mg/m3", "mgCO2/m3", "umol/mol", "mg/m2/s", "mgCO2/m2/s"]
+    h2o_list = ["g/m3", "mmol/mol", "%", "percent", "frac", "fraction", "kg/kg"]
     t_list = ["C", "K"]
     ps_list = ["Pa", "hPa", "kPa"]
-    ok_list = co2_list+h2o_list+t_list+ps_list
+    ok_list = co2_list + h2o_list + t_list + ps_list
     # parse the original units
     if old_units not in ok_list:
         if "Label" in variable:
@@ -604,6 +604,8 @@ def convert_units_h2o(ds, var_in, new_units):
      Conversions supported are:
       g/m3 to mmol/mol
       mmol/mol to g/m3
+      fraction/frac to %/percent
+      %/percent to frac/fraction
     Usage:
      var_out = pfp_utils.convert_units_h2o(ds, var_in, new_units)
       where ds is a data structure
@@ -616,7 +618,7 @@ def convert_units_h2o(ds, var_in, new_units):
     nrecs = int(ds.globalattributes["nc_nrecs"])
     series_list = list(ds.series.keys())
     var_out = CopyVariable(var_in)
-    ok_units = ["mmol/mol", "g/m3", "frac", "%"]
+    ok_units = ["mmol/mol", "g/m3", "fraction", "frac", "%", "percent"]
     old_units = var_in["Attr"]["units"]
     if (old_units not in ok_units) or (new_units not in ok_units):
         msg = " Unrecognised conversion from " + old_units + " to " + new_units
@@ -670,7 +672,8 @@ def convert_units_h2o(ds, var_in, new_units):
             attr_in = var_out["Attr"]["rangecheck_lower"]
             attr_out = convert_units_h2o_upper_mmolpmol(attr_in, Ta["Data"], ps["Data"], month["Data"])
             var_out["Attr"]["rangecheck_lower"] = str(attr_out)
-    elif old_units=="frac" and new_units=="%":
+    elif (old_units in ["frac", "fraction"] and
+          new_units in ["%", "percent"]):
         var_out["Data"] = var_out["Data"] * float(100)
         var_out["Attr"]["units"] = new_units
         if "rangecheck_lower" in var_out["Attr"]:
@@ -683,7 +686,8 @@ def convert_units_h2o(ds, var_in, new_units):
             limits = parse_rangecheck_limits(attr_in)
             limits = [(l * float(100)) for l in limits]
             var_out["Attr"]["rangecheck_upper"] = ','.join(str(l) for l in limits)
-    elif old_units=="%" and new_units=="frac":
+    elif (old_units in ["%", "percent"] and
+          new_units in ["frac", "fraction"]):
         var_out["Data"] = var_out["Data"] / float(100)
         var_out["Attr"]["units"] = new_units
         if "rangecheck_lower" in var_out["Attr"]:
@@ -1392,16 +1396,22 @@ def GetAverageSeriesKeys(cf, label, section="Variables"):
     Author: PRI
     Date: Back in the day
     """
-    if "source" in cf[section][label]["AverageSeries"].keys():
-        src_string = cf[section][label]["AverageSeries"]["source"]
-        if "," in src_string:
-            src_list = src_string.split(",")
-        else:
-            src_list = [src_string]
-    else:
-        msg = "  GetAverageSeriesKeys: 'source' not in AverageSeries section for " + label
-        logger.error(msg)
-        src_list = []
+    if len(section)==0:
+        section = "Variables"
+    src_list = []
+    got_source = False
+    for key in cf[section][label]['AverageSeries'].keys():
+        if key.lower() == "source":
+            got_source = True
+            src_string = cf[section][label]['AverageSeries'][key]
+            if "," in src_string:
+                src_list = src_string.split(",")
+            else:
+                src_list = [src_string]
+    if not got_source:
+        msg = "  GetAverageSeriesKeys: "
+        msg += "key 'source' not in control file AverageSeries section for " + label
+        logger.error()
     return src_list
 
 def GetAltName(cf,ds,ThisOne):
@@ -1607,15 +1617,22 @@ def GetMergeSeriesKeys(cf, ThisOne, section="Variables"):
     Author: PRI
     Date: Back in the day
     """
-    if "source" in cf[section][ThisOne]["MergeSeries"].keys():
-        src_string = cf[section][ThisOne]["MergeSeries"]["source"]
-        if "," in src_string:
-            src_list = src_string.split(",")
-        else:
-            src_list = [src_string]
-    else:
-        logger.error("  GetMergeSeriesKeys: key 'source' not in control file MergeSeries section for " + ThisOne)
-        src_list = []
+    if len(section)==0:
+        section = 'Variables'
+    src_list = []
+    got_source = False
+    for key in cf[section][ThisOne]['MergeSeries'].keys():
+        if key.lower() == "source":
+            got_source = True
+            src_string = cf[section][ThisOne]['MergeSeries'][key]
+            if "," in src_string:
+                src_list = src_string.split(",")
+            else:
+                src_list = [src_string]
+    if not got_source:
+        msg = "  GetMergeSeriesKeys: "
+        msg += "key 'source' not in control file MergeSeries section for " + ThisOne
+        logger.error(msg)
     return src_list
 
 def GetPlotTitleFromCF(cf, nFig):

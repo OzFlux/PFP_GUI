@@ -311,9 +311,6 @@ def CalculateFluxes(cf,ds):
     Lv,f,a = pfp_utils.GetSeriesasMA(ds,"Lv")
 
     long_name = ''
-    if 'Massman' in ds.globalattributes['Functions']:
-        long_name = ', frequency response corrected'
-
     logger.info(" Calculating fluxes from covariances")
     if "wT" in ds.series.keys():
         ok_units = ["mC/s","Cm/s"]
@@ -384,8 +381,6 @@ def CalculateFluxes(cf,ds):
             logger.error("  CalculateFluxes: vw not found, Fm and ustar not calculated")
     else:
         logger.error("  CalculateFluxes: uw not found, Fm and ustar not calculated")
-    if 'CalculateFluxes' not in ds.globalattributes['Functions']:
-        ds.globalattributes['Functions'] = ds.globalattributes['Functions']+', CalculateFluxes'
 
 def CalculateLongwave(ds,Fl_out,Fl_in,Tbody_in):
     """
@@ -1128,8 +1123,6 @@ def CoordRotation2D(cf,ds):
         NonRotatedSeriesList = ['UzT','UzA','UzC','UxUz','UyUz']
         for ThisOne, ThatOne in zip(RotatedSeriesList,NonRotatedSeriesList):
             ReplaceWhereMissing(ds.series[ThisOne],ds.series[ThisOne],ds.series[ThatOne],FlagValue=21)
-        if 'RelaxRotation' not in ds.globalattributes['Functions']:
-            ds.globalattributes['Functions'] = ds.globalattributes['Functions']+', RelaxRotation'
 
 def CalculateComponentsFromWsWd(ds):
     """
@@ -1415,8 +1408,6 @@ def CorrectFgForStorage(cf,ds,Fg_out='Fg',Fg_in='Fg',Ts_in='Ts',Sws_in='Sws'):
     pfp_utils.CreateSeries(ds,'Cs',Cs,flag,attr)
     if pfp_utils.get_optionskeyaslogical(cf, "RelaxFgStorage"):
         ReplaceWhereMissing(ds.series['Fg'],ds.series['Fg'],ds.series['Fg_Av'],FlagValue=20)
-        if 'RelaxFgStorage' not in ds.globalattributes['Functions']:
-            ds.globalattributes['Functions'] = ds.globalattributes['Functions']+', RelaxFgStorage'
 
 def CorrectSWC(cf,ds):
     """
@@ -1961,8 +1952,6 @@ def Fe_WPL(cf,ds,Fe_wpl_out='Fe',Fe_raw_in='Fe',Fh_in='Fh',Ta_in='Ta',Ah_in='Ah'
     pfp_utils.CreateSeries(ds,'Fe_raw',Fe_raw,Fe_raw_flag,attr)
     if pfp_utils.get_optionskeyaslogical(cf, "RelaxFeWPL"):
         ReplaceWhereMissing(ds.series['Fe'],ds.series['Fe'],ds.series['Fe_raw'],FlagValue=20)
-        if 'RelaxFeWPL' not in ds.globalattributes['Functions']:
-            ds.globalattributes['Functions'] = ds.globalattributes['Functions']+', RelaxFeWPL'
     return 0
 
 def FhvtoFh(cf,ds,Fh_out='Fh',Fhv_in='Fhv',Tv_in='Tv_SONIC_Av',q_in='SH',wA_in='wA',wT_in='wT'):
@@ -2018,40 +2007,8 @@ def FhvtoFh(cf,ds,Fh_out='Fh',Fhv_in='Fhv',Tv_in='Tv_SONIC_Av',q_in='SH',wA_in='
     flag = numpy.where(numpy.ma.getmaskarray(Fh)==True,ones,zeros)
     pfp_utils.CreateSeries(ds,Fh_out,Fh,flag,attr)
     pfp_utils.CreateSeries(ds,"Fh_PFP",Fh,flag,attr)
-    if 'FhvtoFh' not in ds.globalattributes['Functions']:
-        ds.globalattributes['Functions'] = ds.globalattributes['Functions']+', FhvtoFh'
     if pfp_utils.get_optionskeyaslogical(cf, "RelaxFhvtoFh"):
         ReplaceWhereMissing(ds.series['Fh'],ds.series['Fh'],ds.series['Fhv'],FlagValue=20)
-        if 'RelaxFhvtoFh' not in ds.globalattributes['Functions']:
-            ds.globalattributes['Functions'] = ds.globalattributes['Functions']+', RelaxFhvtoFh'
-
-def FilterUstar(cf,ds,ustar_in='ustar',ustar_out='ustar_filtered'):
-    """
-    Filter ustar for low turbulence periods.  The filtering is done by checking the
-    friction velocity for each time period.  If ustar is less than or equal to the
-    threshold specified in the control file then ustar is set to missing.  If
-    the ustar is greater than the threshold, no action is taken.  Filtering is not
-    done "in place", a new series is created with the label given in the control file.
-    The QC flag is set to 18 to indicate the missing low ustar values.
-
-    Usage: pfp_ts.FilterUstar(cf,ds)
-    cf: control file object
-    ds: data structure object
-    """
-    if ustar_out not in cf['Variables'].keys(): return
-    if 'ustar_threshold' in cf['Variables'][ustar_out].keys():
-        logger.info(' Filtering ustar to remove values below threshold')
-        ustar_threshold = float(cf['Variables'][ustar_out]['ustar_threshold'])
-        ustar,ustar_flag,ustar_attr = pfp_utils.GetSeriesasMA(ds,ustar_in)
-        index = numpy.ma.where(ustar<=ustar_threshold)[0]
-        ustar = numpy.ma.masked_where(ustar<=ustar_threshold,ustar)
-        ustar_flag[index] = 18
-        descr = 'ustar filtered for low turbulence conditions (<'+str(ustar_threshold)+')'
-        units = pfp_utils.GetUnitsFromds(ds, ustar_in)
-        attr = pfp_utils.MakeAttributeDictionary(long_name=descr,units=units)
-        pfp_utils.CreateSeries(ds,ustar_out,ustar,ustar_flag,attr)
-    else:
-        logger.error(' ustar threshold (ustar_threshold) not found in '+ustar_out+' section of control file')
 
 def get_averages(Data):
     """
