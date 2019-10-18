@@ -464,8 +464,10 @@ def plot_fluxnet(cf):
 def plottimeseries(cf, nFig, dsa, dsb):
     SiteName = dsa.globalattributes['site_name']
     Level = dsb.globalattributes['nc_level']
-    dt = int(dsa.globalattributes['time_step'])
-    Month = dsa.series['Month']['Data'][0]
+    ts = int(dsa.globalattributes['time_step'])
+    ldt = dsa.series["DateTime"]["Data"]
+    Month = ldt[0].month
+    Hdh = [dt.hour+(dt.minute+dt.second/float(60))/float(60) for dt in ldt]
     p = plot_setup(cf,nFig)
     logger.info(' Plotting series: '+str(p['SeriesList']))
     L1XArray = dsa.series['DateTime']['Data']
@@ -521,7 +523,7 @@ def plottimeseries(cf, nFig, dsa, dsb):
             plot_onetimeseries_right(fig,n,ThisOne,L2XArray,L2YArray,p)
 
             #Plot the diurnal averages.
-            Hr2,Av2,Sd2,Mx2,Mn2=get_diurnalstats(dsb.series['Hdh']['Data'], dsb.series[ThisOne]['Data'], dt)
+            Hr2,Av2,Sd2,Mx2,Mn2=get_diurnalstats(dsb.series['Hdh']['Data'], dsb.series[ThisOne]['Data'], ts)
             Av2 = numpy.ma.masked_where(Av2==c.missing_value,Av2)
             Sd2 = numpy.ma.masked_where(Sd2==c.missing_value,Sd2)
             Mx2 = numpy.ma.masked_where(Mx2==c.missing_value,Mx2)
@@ -529,8 +531,8 @@ def plottimeseries(cf, nFig, dsa, dsb):
             hr2_ax = fig.add_axes([p['hr1_XAxOrg'],p['YAxOrg'],p['hr2_XAxLen'],p['ts_YAxLen']])
             #hr2_ax.hold(True)
             hr2_ax.plot(Hr2,Av2,'y-',Hr2,Mx2,'r-',Hr2,Mn2,'b-')
-            section = pfp_utils.get_cfsection(cf,series=ThisOne,mode='quiet')
-            if len(section)!=0:
+            section = pfp_utils.get_cfsection(cf, ThisOne, mode='quiet')
+            if section != None:
                 if 'DiurnalCheck' in cf[section][ThisOne].keys():
                     NSdarr = numpy.array(pfp_ck.parse_rangecheck_limit(cf[section][ThisOne]['DiurnalCheck']['NumSd']))
                     nSd = NSdarr[Month-1]

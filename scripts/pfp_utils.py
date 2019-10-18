@@ -1846,29 +1846,27 @@ def GetUnitsFromds(ds, ThisOne):
     units = ds.series[ThisOne]['Attr']['units']
     return units
 
-def get_cfsection(cf,series='',mode='quiet'):
+def get_cfsection(cf, label, mode='quiet'):
     '''
     Find the section in the control file that contains an entry for the series "series".
-    USEAGE:  section = pfp_utils.get_cfsection(cf,series=<series_name>)
-    INPUT:   cf            - a control file object (from ConfigObj)
-             <series_name> - the name of the series (string)
-    RETURNS: section       - the name of the section containing an entry for <series_name> (string)
+    USEAGE:  section = pfp_utils.get_cfsection(cf, label)
+    INPUT:   cf      - a control file object (from ConfigObj)
+             label   - the name of the series (string)
+    RETURNS: section - the name of the section containing an entry for <series_name> (string)
     Note that the returned section name is an empty string if there is no entry for <series_name> in
     the control file.
     '''
-    section = ''
-    sectionlist = ['Variables','Drivers','Fluxes','Respiration','Partition','ER','GPP','NEE']
-    if len(series)==0:
-        msgtxt = ' get_cfsection: no input series specified'
-        if mode!='quiet': logger.info(msgtxt)
-        return section
-    for ThisSection in sectionlist:
-        if ThisSection in cf.keys():
-            if series in cf[ThisSection]: section = ThisSection
-    if len(section)==0:
-        msgtxt = ' get_cfsection: series '+str(series)+' not found in control file'
-        if mode!='quiet': logger.info(msgtxt)
-    return section
+    got_section = False
+    sections = list(cf.keys())
+    for section in sections:
+        if label in cf[section]:
+            got_section = True
+            return section
+    if not got_section:
+        msg = " get_cfsection: variable " + str(label) + " not found in control file"
+        if mode != "quiet":
+            logger.warning(msg)
+    return None
 
 def get_coverage_groups(ds,rad=None,met=None,flux=None,soil=None):
     level = "L1"

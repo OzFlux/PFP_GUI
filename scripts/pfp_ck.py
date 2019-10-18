@@ -348,14 +348,16 @@ def do_dependencycheck(cf, ds, section, series, code=23, mode="quiet"):
     Author: PRI
     Date: Back in the day
     """
-    if len(section) == 0 and len(series) == 0:
+    if len(series)==0:
         return
     if len(section) == 0:
-        section = pfp_utils.get_cfsection(cf, series=series, mode='quiet')
+        section = pfp_utils.get_cfsection(cf, series, mode='quiet')
+        if section == None:
+            return
     if "DependencyCheck" not in cf[section][series].keys():
         return
-    if "source" not in cf[section][series]["DependencyCheck"]:
-        msg = " DependencyCheck: keyword 'source' not found for series " + series + ", skipping ..."
+    if "Source" not in cf[section][series]["DependencyCheck"]:
+        msg = " DependencyCheck: keyword Source not found for series " + series + ", skipping ..."
         logger.error(msg)
         return
     if mode == "verbose":
@@ -937,10 +939,11 @@ def do_qcchecks(cf,ds,mode="verbose"):
         # if so, do dependency check
         do_dependencycheck(cf,ds,section,series,code=23,mode="quiet")
 
-def do_qcchecks_oneseries(cf,ds,section,series):
-    if len(section)==0:
-        section = pfp_utils.get_cfsection(cf,series=series,mode='quiet')
-        if len(section)==0: return
+def do_qcchecks_oneseries(cf, ds, section, series):
+    if len(section) == 0:
+        section = pfp_utils.get_cfsection(cf, series, mode='quiet')
+        if section == None:
+            return
     # do the range check
     do_rangecheck(cf,ds,section,series,code=2)
     # do the lower range check
@@ -1086,8 +1089,8 @@ def UpdateVariableAttributes_QC(cf, variable):
     Date: November 2016
     """
     label = variable["Label"]
-    section = pfp_utils.get_cfsection(cf,series=label,mode='quiet')
-    if label not in cf[section]:
+    section = pfp_utils.get_cfsection(cf, label, mode='quiet')
+    if section == None:
         return
     if "RangeCheck" not in cf[section][label]:
         return

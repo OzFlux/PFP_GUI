@@ -2623,10 +2623,12 @@ def MergeSeries(cf,ds,series,okflags=[0,10,20,30,40,50,60],convert_units=False,s
      30/10/2018 - rewrote to use pfp_utils.GetVariable()
     """
     # check to see if the series is specified in the control file
-    section = pfp_utils.get_cfsection(cf,series=series)
-    if len(section) == 0: return
+    section = pfp_utils.get_cfsection(cf, series)
+    if section == None:
+        return
     # check to see if the entry for series in the control file has the MergeSeries key
-    if 'MergeSeries' not in cf[section][series].keys(): return
+    if 'MergeSeries' not in cf[section][series].keys():
+        return
     # check to see if the series has already been merged
     if series in ds.mergeserieslist: return
     # now get the source list and the standard name

@@ -276,17 +276,17 @@ def ParseL5ControlFile(cf, ds):
     l5_info["RemoveIntermediateSeries"] = {"KeepIntermediateSeries": opt, "not_output": []}
     for target in cf["Fluxes"].keys():
         if "GapFillUsingSOLO" in cf["Fluxes"][target].keys():
-            gfSOLO_createdict(cf, ds, l5_info, target, "GapFillUsingSOLO")
+            gfSOLO_createdict(cf, ds, l5_info, target, "GapFillUsingSOLO", 510)
             # check to see if something went wrong
             if ds.returncodes["value"] != 0:
                 # if it has, return to calling routine
                 return l5_info
         if "GapFillLongSOLO" in cf["Fluxes"][target].keys():
-            gfSOLO_createdict(cf, ds, l5_info, target, "GapFillLongSOLO")
+            gfSOLO_createdict(cf, ds, l5_info, target, "GapFillLongSOLO", 520)
             if ds.returncodes["value"] != 0:
                 return l5_info
         if "GapFillUsingMDS" in cf["Fluxes"][target].keys():
-            gfMDS_createdict(cf, ds, l5_info, target, "GapFillUsingMDS")
+            gfMDS_createdict(cf, ds, l5_info, target, "GapFillUsingMDS", 530)
             if ds.returncodes["value"] != 0:
                 return l5_info
         if "MergeSeries" in cf["Fluxes"][target].keys():
@@ -398,6 +398,7 @@ def gfalternate_createdict_info(cf, ds, l4_info, called_by):
     return
 
 def gfalternate_createdict_outputs(cf, l4_info, label, called_by):
+    flag_codes = {"default": 400, "aws": 410, "access": 420, "erai": 430, "era5": 440}
     # name of alternate output series in ds
     outputs = cf["Drivers"][label][called_by].keys()
     # loop over the outputs listed in the control file
@@ -412,7 +413,12 @@ def gfalternate_createdict_outputs(cf, l4_info, label, called_by):
         sl = ["Drivers", label, called_by, output]
         l4ao[output]["target"] = pfp_utils.get_keyvaluefromcf(cf, sl, "target", default=label)
         # source name
-        l4ao[output]["source"] = pfp_utils.get_keyvaluefromcf(cf, sl, "source", default="")
+        opt = pfp_utils.get_keyvaluefromcf(cf, sl, "source", default="")
+        l4ao[output]["source"] = opt.lower()
+        # output QC flag code
+        l4ao[output]["flag_code"] = flag_codes["default"]
+        if l4ao[output]["source"] in flag_codes.keys():
+            l4ao[output]["flag_code"] = flag_codes[l4ao[output]["source"]]
         # alternate data file name
         # first, look in the [Files] section for a generic file name
         file_list = cf["Files"].keys()
@@ -689,7 +695,7 @@ def gfClimatology_createdict(cf, ds, l4_info, label, called_by):
             attr[descr_level] = "CLI"
             pfp_utils.CreateSeries(ds, output, data, flag, attr)
 
-def gfMDS_createdict(cf, ds, l5_info, label, called_by):
+def gfMDS_createdict(cf, ds, l5_info, label, called_by, flag_code):
     """
     Purpose:
      Create an information dictionary for MDS gap filling from the contents
@@ -817,7 +823,7 @@ def gfMergeSeries_createdict(cf, ds, info, label, called_by):
         and tower data."""
     merge_prereq_list = ["Fsd","Fsu","Fld","Flu","Ts","Sws"]
     # get the section of the control file containing the series
-    section = pfp_utils.get_cfsection(cf,series=label,mode="quiet")
+    section = pfp_utils.get_cfsection(cf, label, mode="quiet")
     # create the merge directory in the data structure
     if called_by not in info:
         info[called_by] = {}
@@ -834,18 +840,15 @@ def gfMergeSeries_createdict(cf, ds, info, label, called_by):
     # output series name
     info[called_by][merge_order][label]["output"] = label
     # merge source list
-    src_string = cf[section][label]["MergeSeries"]["source"]
-    if "," in src_string:
-        src_list = src_string.split(",")
-    else:
-        src_list = [src_string]
+    section = pfp_utils.get_cfsection(cf, label, mode="quiet")
+    src_list = pfp_utils.GetMergeSeriesKeys(cf, label, section=section)
     info[called_by][merge_order][label]["source"] = src_list
     # create an empty series in ds if the output series doesn't exist yet
     if label not in ds.series.keys():
         data, flag, attr = pfp_utils.MakeEmptySeries(ds, label)
         pfp_utils.CreateSeries(ds, label, data, flag, attr)
 
-def gfSOLO_createdict(cf, ds, l5_info, target_label, called_by):
+def gfSOLO_createdict(cf, ds, l5_info, target, called_by, flag_code):
     """
     Purpose:
      Creates a dictionary in l5_info to hold information about the SOLO data
@@ -870,7 +873,7 @@ def gfSOLO_createdict(cf, ds, l5_info, target_label, called_by):
         # only need to create the ["gui"] dictionary on the first pass
         gfSOLO_createdict_gui(cf, ds, l5_info, called_by)
     # get the outputs section
-    gfSOLO_createdict_outputs(cf, l5_info, target_label, called_by)
+    gfSOLO_createdict_outputs(cf, l5_info, target, called_by, flag_code)
     # add the summary plors section
     if "SummaryPlots" in cf:
         l5_info[called_by]["SummaryPlots"] = cf["SummaryPlots"]
@@ -1039,7 +1042,7 @@ def gfSOLO_createdict_info(cf, ds, l5_info, called_by):
     l5s["info"]["plot_path"] = plot_path
     return
 
-def gfSOLO_createdict_outputs(cf, l5_info, target, called_by):
+def gfSOLO_createdict_outputs(cf, l5_info, target, called_by, flag_code):
     """
     Purpose:
      Create the l5_info[called_by]["outputs"] dictionary.
@@ -1075,6 +1078,8 @@ def gfSOLO_createdict_outputs(cf, l5_info, target, called_by):
         sl = [section, target, called_by, output]
         so[output]["target"] = pfp_utils.get_keyvaluefromcf(cf, sl, "target", default=target)
         so[output]["source"] = pfp_utils.get_keyvaluefromcf(cf, sl, "source", default=source)
+        # add the flag_code
+        so[output]["flag_code"] = flag_code
         # list of SOLO settings
         if "solo_settings" in cf[section][target][called_by][output]:
             src_string = cf[section][target][called_by][output]["solo_settings"]
