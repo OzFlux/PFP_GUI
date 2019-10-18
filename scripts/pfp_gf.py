@@ -850,7 +850,7 @@ def gfMergeSeries_createdict(cf, ds, info, label, called_by):
         data, flag, attr = pfp_utils.MakeEmptySeries(ds, label)
         pfp_utils.CreateSeries(ds, label, data, flag, attr)
 
-def gfSOLO_createdict(cf, ds, l5_info, target, called_by, flag_code):
+def gfSOLO_createdict(cf, ds, l5_info, target_label, called_by, flag_code):
     """
     Purpose:
      Creates a dictionary in l5_info to hold information about the SOLO data
@@ -875,7 +875,7 @@ def gfSOLO_createdict(cf, ds, l5_info, target, called_by, flag_code):
         # only need to create the ["gui"] dictionary on the first pass
         gfSOLO_createdict_gui(cf, ds, l5_info, called_by)
     # get the outputs section
-    gfSOLO_createdict_outputs(cf, l5_info, target, called_by, flag_code)
+    gfSOLO_createdict_outputs(cf, l5_info, target_label, called_by, flag_code)
     # add the summary plors section
     if "SummaryPlots" in cf:
         l5_info[called_by]["SummaryPlots"] = cf["SummaryPlots"]

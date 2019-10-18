@@ -191,7 +191,7 @@ def l3qc(cf, ds2):
     # convert Fc and Fc_storage units if required
     #pfp_utils.ConvertFcUnits(cf, ds3)
     Fc_list = ["Fc", "Fc_single", "Fc_profile", "Fc_storage"]
-    pfp_utils.CheckUnits(ds, Fc_list, "umol/m2/s", convert_units=True)
+    pfp_utils.CheckUnits(ds3, Fc_list, "umol/m2/s", convert_units=True)
     # merge Fc and Fc_storage series if required
     cfv = cf["Variables"]
     merge_list = [l for l in cfv.keys() if l[0:2] == "Fc" and "MergeSeries" in cfv[l].keys()]
