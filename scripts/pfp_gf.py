@@ -602,7 +602,7 @@ def gfClimatology_createdict(cf, ds, l4_info, label, called_by):
     Date: August 2014
     """
     # flag codes
-    flag_codes = {"interpolated_daily": 450, "monthly": 460}
+    flag_codes = {"interpolated daily": 450, "monthly": 460}
     # create the climatology directory in the data structure
     if called_by not in l4_info.keys():
         l4_info[called_by] = {"outputs": {}}
@@ -619,8 +619,6 @@ def gfClimatology_createdict(cf, ds, l4_info, label, called_by):
         l4co[output]["target"] = pfp_utils.get_keyvaluefromcf(cf, sl, "target", default=label)
         # get the source
         l4co[output]["source"] = pfp_utils.get_keyvaluefromcf(cf, sl, "source", default="climatology")
-        # set the climatology flag code
-        l4co[output]["flag_code"] = flag_code
         # Climatology file name
         file_list = cf["Files"].keys()
         lower_file_list = [item.lower() for item in file_list]
@@ -646,8 +644,11 @@ def gfClimatology_createdict(cf, ds, l4_info, label, called_by):
         opt = pfp_utils.get_keyvaluefromcf(cfcli, [output], "climatology_name", default=label)
         l4co[output]["climatology_name"] = str(opt)
         # climatology gap filling method
-        opt = pfp_utils.get_keyvaluefromcf(cfcli, [output], "method", default="interpolated_daily")
-        l4co[output]["method"] = str(opt)
+        opt = pfp_utils.get_keyvaluefromcf(cfcli, [output], "method", default="interpolated daily")
+        if opt in ["interpolated daily", "monthly"]:
+            l4co[output]["method"] = opt
+        else:
+            l4co[output]["method"] = "interpolated daily"
         # get the flag code
         l4co[output]["flag_code"] = flag_codes[l4co[output]["method"]]
         # create an empty series in ds if the climatology output series doesn't exist yet
