@@ -622,6 +622,11 @@ def GetERFromFc(cf, ds):
     for item in daynight_indicator["attr"]:
         ER["Attr"][item] = daynight_indicator["attr"][item]
     pfp_utils.CreateVariable(ds, ER)
+    pc1 = int((100*float(numpy.ma.count(ER["Data"]))/float(len(idx))) + 0.5)
+    pc2 = int((100*float(numpy.ma.count(ER["Data"]))/float(ER["Data"].size)) + 0.5)
+    msg = " GetERFromFc: ER contains " + str(pc1) + "% of all night-time data ("
+    msg += str(pc2) + "% of all data)"
+    logger.info(msg)
     return
 
 def check_for_missing_data(series_list, label_list):
@@ -645,7 +650,7 @@ def get_ustar_thresholds(cf, ds):
     if "mpt_filename" in cf["Files"]:
         results_name = os.path.join(cf["Files"]["file_path"], cf["Files"]["mpt_filename"])
         if os.path.isfile(results_name):
-            ustar_dict["cpd"] = get_ustarthreshold_from_results(results_name)
+            ustar_dict["mpt"] = get_ustarthreshold_from_results(results_name)
         else:
             msg = " MPT results file not found (" + results_name + ")"
             logger.error(msg)
@@ -886,6 +891,7 @@ def get_turbulence_indicator_ustar(ldt, ustar, ustar_dict, ts):
         # set the QC flag
         idx = numpy.ma.where(ustar[si:ei]>=ustar_threshold)[0]
         inds[si:ei][idx] = numpy.int32(1)
+        #print year, len(idx), ei-si+1
     return turbulence_indicator
 
 def get_turbulence_indicator_ustar_evg(ldt, ind_day, ind_ustar, ustar, ustar_dict):
@@ -1824,8 +1830,9 @@ def rpMergeSeries_createdict(cf, ds, l6_info, label, called_by):
     # output series name
     l6_info[called_by]["standard"][label]["output"] = label
     # source
-    opt = pfp_utils.get_keyvaluefromcf(cf, ["EcosystemRespiration", label, "MergeSeries"], "source", default="ER,ER_SOLO_all")
-    sources = pfp_cfg.cfg_string_to_list(opt)
+    #opt = pfp_utils.get_keyvaluefromcf(cf, ["EcosystemRespiration", label, "MergeSeries"], "source", default="ER,ER_SOLO_all")
+    #sources = pfp_cfg.cfg_string_to_list(opt)
+    sources = pfp_utils.GetMergeSeriesKeys(cf, label, section="EcosystemRespiration")
     l6_info[called_by]["standard"][label]["source"] = sources
     # create an empty series in ds if the output series doesn't exist yet
     if l6_info[called_by]["standard"][label]["output"] not in ds.series.keys():

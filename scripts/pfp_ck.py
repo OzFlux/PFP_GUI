@@ -136,8 +136,11 @@ def ApplyTurbulenceFilter(cf, ds, l5_info, ustar_threshold=None):
     # regardless of ustar value
     if opt["accept_day_times"].lower()=="yes":
         # if yes, then we force the final indicator to be 1
-        # if ustar is below the threshold during the day.
-        idx = numpy.where(indicators["day"]["values"]==1)[0]
+        # when ustar is below the threshold during the day ...
+        c1 = (indicators["day"]["values"] == 1)
+        # ... but only if the ustar data is not masked
+        c2 = (numpy.ma.getmaskarray(ustar) == False)
+        idx = numpy.where(c1 & c2)[0]
         indicators["final"]["values"][idx] = numpy.int(1)
         indicators["final"]["attr"].update(indicators["day"]["attr"])
     # get the evening indicator series
@@ -209,7 +212,8 @@ def ApplyTurbulenceFilter(cf, ds, l5_info, ustar_threshold=None):
         nnf = numpy.ma.count(data)
         nf = numpy.ma.count(data_filtered)
         pc = int(100*(float(nnf-nf)/float(nnf))+0.5)
-        msg = "  " + opt["turbulence_filter"] + " filter removed " + str(pc) + "% from " + series
+        msg = "  " + opt["turbulence_filter"] + " filter removed " + str(pc)
+        msg += "% of available data from " + series
         logger.info(msg)
     return
 
