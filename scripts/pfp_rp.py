@@ -582,26 +582,26 @@ def GetERFromFc(cf, ds):
     ER = {"Label": "ER"}
     Fc = pfp_utils.GetVariable(ds, "Fc")
     # check to see if a turbulence filter has been applied to the CO2 flux
-    if "turbulence_filter" not in Fc["Attr"]:
-        # print error message to the log window
-        msg = "CO2 flux series Fc did not have a turbulence filter applied."
-        logger.error(msg)
-        msg = "Please repeat the L5 processing and apply a turbulence filter."
-        logger.error(msg)
-        msg = "Quiting L6 processing ..."
-        logger.error(msg)
-        # check to see if we are running in interactive mode
-        if cf["Options"]["call_mode"].lower() == "interactive":
-            # if so, put up a message box
-            msg = "CO2 flux series Fc did not have a turbulence filter applied.\n"
-            msg = msg + "Please repeat the L5 processing and apply a turbulence filter.\n"
-            msg = msg + "Quiting L6 processing ..."
-            msgbox = pfp_gui.myMessageBox(msg, title="Critical")
-        # set the return code to non-zero ...
-        ds.returncodes["value"] = 1
-        ds.returncodes["message"] = "quit"
-        # ... and return
-        return
+    #if "turbulence_filter" not in Fc["Attr"]:
+        ## print error message to the log window
+        #msg = "CO2 flux series Fc did not have a turbulence filter applied."
+        #logger.error(msg)
+        #msg = "Please repeat the L5 processing and apply a turbulence filter."
+        #logger.error(msg)
+        #msg = "Quiting L6 processing ..."
+        #logger.error(msg)
+        ## check to see if we are running in interactive mode
+        #if cf["Options"]["call_mode"].lower() == "interactive":
+            ## if so, put up a message box
+            #msg = "CO2 flux series Fc did not have a turbulence filter applied.\n"
+            #msg = msg + "Please repeat the L5 processing and apply a turbulence filter.\n"
+            #msg = msg + "Quiting L6 processing ..."
+            #msgbox = pfp_gui.myMessageBox(msg, title="Critical")
+        ## set the return code to non-zero ...
+        #ds.returncodes["value"] = 1
+        #ds.returncodes["message"] = "quit"
+        ## ... and return
+        #return
     # get a copy of the Fc flag and make the attribute dictionary
     ER["Flag"] = numpy.array(Fc["Flag"])
     long_name = "Ecosystem respiration (observed) derived from Fc"
@@ -624,7 +624,7 @@ def GetERFromFc(cf, ds):
     pfp_utils.CreateVariable(ds, ER)
     pc1 = int((100*float(numpy.ma.count(ER["Data"]))/float(len(idx))) + 0.5)
     pc2 = int((100*float(numpy.ma.count(ER["Data"]))/float(ER["Data"].size)) + 0.5)
-    msg = " GetERFromFc: ER contains " + str(pc1) + "% of all night-time data ("
+    msg = " ER contains " + str(pc1) + "% of all nocturnal data ("
     msg += str(pc2) + "% of all data)"
     logger.info(msg)
     return
@@ -646,15 +646,14 @@ def get_ustar_thresholds(cf, ds):
             ustar_dict["cpd"] = get_ustarthreshold_from_results(results_name)
         else:
             msg = " CPD results file not found (" + results_name + ")"
-            logger.error(msg)
+            logger.warning(msg)
     if "mpt_filename" in cf["Files"]:
         results_name = os.path.join(cf["Files"]["file_path"], cf["Files"]["mpt_filename"])
         if os.path.isfile(results_name):
             ustar_dict["mpt"] = get_ustarthreshold_from_results(results_name)
         else:
             msg = " MPT results file not found (" + results_name + ")"
-            logger.error(msg)
-        ustar_dict["mpt"] = get_ustarthreshold_from_results(results_name)
+            logger.warning(msg)
     if "ustar_threshold" in cf:
         ustar_dict["cf"] = get_ustarthreshold_from_cf(cf)
     ustar_out = cleanup_ustar_dict(ds, ustar_dict)

@@ -204,6 +204,9 @@ def ApplyTurbulenceFilter(cf, ds, l5_info, ustar_threshold=None):
         attr_filtered[descr_level] = pfp_utils.append_string(attr_filtered[descr_level],
                                                              "turbulence filter applied")
         # and write the filtered data to the data structure
+        # write the annual ustar thresholds to the variable attributes
+        for year in sorted(list(ustar_dict.keys())):
+            attr_filtered["ustar_threshold_"+str(year)] = str(ustar_dict[year]["ustar_mean"])
         pfp_utils.CreateSeries(ds,series,data_filtered,flag_filtered,attr_filtered)
         # and write a copy of the filtered datas to the data structure so it
         # will still exist once the gap filling has been done
