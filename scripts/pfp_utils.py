@@ -1858,6 +1858,10 @@ def get_cfsection(cf, label, mode='quiet'):
     '''
     got_section = False
     sections = list(cf.keys())
+    for section in ["level", "controlfile_name", "Files", "Global", "Options",
+                    "Soil", "Massman", "GUI", "ustar_threshold", "Plots"]:
+        if section in sections:
+            sections.remove(section)
     for section in sections:
         if label in cf[section]:
             got_section = True
