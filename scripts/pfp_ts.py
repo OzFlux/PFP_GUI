@@ -1561,6 +1561,7 @@ def CorrectWindDirection(cf, ds, Wd_in):
         Wd_in: input/output wind direction variable in ds.  Example: 'Wd_CSAT'
         """
     logger.info(" Correcting wind direction")
+    ts = int(ds.globalattributes["time_step"])
     Wd,f,a = pfp_utils.GetSeriesasMA(ds,Wd_in)
     ldt = ds.series["DateTime"]["Data"]
     KeyList = cf["Variables"][Wd_in]["CorrectWindDirection"].keys()

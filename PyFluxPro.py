@@ -5,6 +5,7 @@ import os
 import platform
 import sys
 import traceback
+import warnings
 # 3rd party modules
 from configobj import ConfigObj
 import matplotlib
@@ -22,6 +23,9 @@ import pfp_compliance
 import pfp_gui
 import pfp_log
 import pfp_top_level
+
+warnings.filterwarnings("ignore", category=RuntimeWarning)
+
 # now check the logfiles and plots directories are present
 dir_list = ["./logfiles/", "./plots/"]
 for item in dir_list:
@@ -128,6 +132,8 @@ class pfp_main_ui(QtWidgets.QWidget):
         self.actionUtilitiesClimatology.setText("Climatology")
         self.actionUtilitiesUstarCPD = QtWidgets.QAction(self)
         self.actionUtilitiesUstarCPD.setText("u* threshold (CPD)")
+        self.actionUtilitiesUstarCPD2 = QtWidgets.QAction(self)
+        self.actionUtilitiesUstarCPD2.setText("u* threshold (CPD2)")
         self.actionUtilitiesUstarMPT = QtWidgets.QAction(self)
         self.actionUtilitiesUstarMPT.setText("u* threshold (MPT)")
         # add the actions to the menus
@@ -161,6 +167,7 @@ class pfp_main_ui(QtWidgets.QWidget):
         # Utilities menu
         self.menuUtilities.addAction(self.actionUtilitiesClimatology)
         self.menuUtilities.addAction(self.actionUtilitiesUstarCPD)
+        self.menuUtilities.addAction(self.actionUtilitiesUstarCPD2)
         self.menuUtilities.addAction(self.actionUtilitiesUstarMPT)
         # add individual menus to menu bar
         self.menubar.addAction(self.menuFile.menuAction())
@@ -222,6 +229,7 @@ class pfp_main_ui(QtWidgets.QWidget):
         # Utilities menu actions
         self.actionUtilitiesClimatology.triggered.connect(lambda:pfp_top_level.do_utilities_climatology(mode="standard"))
         self.actionUtilitiesUstarCPD.triggered.connect(lambda:pfp_top_level.do_utilities_ustar_cpd(mode="standard"))
+        self.actionUtilitiesUstarCPD2.triggered.connect(lambda:pfp_top_level.do_utilities_ustar_cpd2(mode="standard"))
         self.actionUtilitiesUstarMPT.triggered.connect(lambda:pfp_top_level.do_utilities_ustar_mpt(mode="standard"))
         # add the L4 GUI
         self.l4_ui = pfp_gui.pfp_l4_ui(self)

@@ -1495,7 +1495,7 @@ def GetRangesFromCF(cf,ThisOne,mode="verbose"):
         lower, upper = None
     return lower, upper
 
-def GetDateIndex(ldt,date,ts=30,default=0,match='exact'):
+def GetDateIndex(ldt, date, ts=30, default=0, match='exact'):
     """
     Purpose:
      Return the index of a date/datetime string in an array of datetime objects
@@ -1530,7 +1530,12 @@ def GetDateIndex(ldt,date,ts=30,default=0,match='exact'):
     if default == -1:
         default = len(ldt)-1
     # is the input date a string?
-    if isinstance(date, str):
+    if (isinstance(date, numbers.Number)):
+        if date >= 0 and date <= len(ldt):
+            i = date
+        else:
+            i = default
+    elif isinstance(date, str):
         # if so, is it an empty string?
         if len(date) != 0:
             # if not empty, see if we can parse it
@@ -1821,25 +1826,27 @@ def GetVariable(ds, label, start=0, end=-1, mode="truncate", out_type="ma"):
      The code snippet below will return the incoming shortwave data values
      (Fsd), the associated QC flag and the variable attributes;
       ds = pfp_io.nc_read_series("HowardSprings_2011_L3.nc")
-      Fsd = pfp_utils.GetSeriesAsDict(ds,"Fsd")
+      Fsd = pfp_utils.GetVariable(ds, "Fsd")
     Author: PRI
     """
     nrecs = int(ds.globalattributes["nc_nrecs"])
-    if end == -1:
-        end = nrecs
     ts = int(ds.globalattributes["time_step"])
     ldt = ds.series["DateTime"]["Data"]
-    si = get_start_index(ldt, start)
-    ei = get_end_index(ldt, end)
-    data,flag,attr = GetSeries(ds, label, si=si, ei=ei, mode=mode)
+    # get the start and end indices
+    si = GetDateIndex(ldt, start, ts=ts, default=0, match='exact')
+    ei = GetDateIndex(ldt, end, ts=ts, default=nrecs-1, match='exact')
+    dt = ldt[si:ei+1]
+    data, flag, attr = GetSeries(ds, label, si=si, ei=ei, mode=mode)
+    # check to see what kind of output the user wants
     if isinstance(data, numpy.ndarray) and out_type == "ma":
         # convert to a masked array
         data, WasND = SeriestoMA(data)
     elif isinstance(data, numpy.ndarray) and out_type == "nan":
         # leave as ndarray, convert c.missing_value to NaN
         data = numpy.where(data == c.missing_value, numpy.nan, data)
-    variable = {"Label":label,"Data":data,"Flag":flag,"Attr":attr,
-                "DateTime":ldt[si:ei+1],"time_step":ts}
+    # assemble the variable dictionary
+    variable = {"Label":label, "Data":data, "Flag":flag, "Attr":attr,
+                "DateTime":dt, "time_step":ts}
     return variable
 
 def GetUnitsFromds(ds, ThisOne):
@@ -2602,6 +2609,34 @@ def nxMom_nxScalar_alpha(zoL):
     alpha[stable] = 1
     return nxMom, nxScalar, alpha
 
+def PadVariable(var_in, start, end, out_type="nan"):
+    """
+    Purpose:
+     Pad a variable to the specified start and end dates.
+    Usage:
+    Side effects:
+    Author: PRI
+    Date: November 2019
+    """
+    ts = int(var_in["time_step"])
+    ts_dt = datetime.timedelta(minutes=ts)
+    dt_padded = numpy.array([d for d in perdelta(start, end, ts_dt)])
+    n_padded = len(dt_padded)
+    if out_type == "nan":
+        data_padded = numpy.full(n_padded, numpy.nan, dtype=numpy.float64)
+    elif out_type == "ma":
+        data_padded = numpy.ma.masked_all(n_padded, dtype=numpy.float64)
+    else:
+        data_padded = numpy.full(n_padded, c.missing_value, dtype=numpy.float64)
+    flag_padded = numpy.full(n_padded, 1, dtype=numpy.int32)
+    idxa, idxb = FindMatchingIndices(dt_padded, var_in["DateTime"])
+    data_padded[idxa] = var_in["Data"]
+    flag_padded[idxa] = var_in["Flag"]
+    var_out = {"Label":var_in["Label"], "Attr":var_in["Attr"],
+               "Data":data_padded, "Flag":flag_padded,
+               "DateTime":dt_padded, "time_step":ts}
+    return var_out
+
 def parse_rangecheck_limits(s):
     """
     Purpose:
@@ -2824,3 +2859,4 @@ def update_progress(progress):
     text = "\rPercent: [{0}] {1}% {2}".format( "#"*block + "-"*(barLength-block), progress*100, status)
     sys.stdout.write(text)
     sys.stdout.flush()
+    return

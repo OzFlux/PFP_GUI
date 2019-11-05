@@ -10,6 +10,7 @@ from PyQt5 import QtCore, QtWidgets, QtGui
 import pfp_clim
 import pfp_compliance
 import pfp_cpd
+import pfp_cpd2
 import pfp_mpt
 import pfp_io
 import pfp_levels
@@ -91,7 +92,7 @@ def do_file_convert_nc2ecostress(cfg=None):
         if "Options" not in cfg:
             cfg["Options"]={}
         cfg["Options"]["call_mode"] = "interactive"
-        cf["Options"]["show_plots"] = "Yes"
+        cfg["Options"]["show_plots"] = "Yes"
         result = pfp_io.write_csv_ecostress(cfg)
         if result == 0:
             logger.info(" Finished converting netCDF file")
@@ -172,7 +173,7 @@ def do_file_convert_ncupdate(cfg=None):
     if "Options" not in cfg:
         cfg["Options"]={}
     cfg["Options"]["call_mode"] = "interactive"
-    cf["Options"]["show_plots"] = "Yes"
+    cfg["Options"]["show_plots"] = "Yes"
     result = pfp_compliance.nc_update(cfg)
     if result == 0:
         logger.info(" Finished converting netCDF file")
@@ -754,6 +755,42 @@ def do_utilities_ustar_cpd(mode="standard"):
         logger.info("")
     except Exception:
         error_message = " An error occured while doing CPD u* threshold, see below for details ..."
+        logger.error(error_message)
+        error_message = traceback.format_exc()
+        logger.error(error_message)
+    return
+def do_utilities_ustar_cpd2(mode="standard"):
+    try:
+        logger.info(" Starting u* threshold detection (CPD2)")
+        if mode == "standard":
+            stdname = "controlfiles/standard/cpd2.txt"
+            if os.path.exists(stdname):
+                cf = pfp_io.get_controlfilecontents(stdname)
+                filename = pfp_io.get_filename_dialog(file_path="../Sites", title="Choose a netCDF file")
+                if not os.path.exists(filename):
+                    logger.info( " CPD2: no input file chosen")
+                    return
+                if "Files" not in cf:
+                    cf["Files"] = {}
+                cf["Files"]["file_path"] = os.path.join(os.path.split(filename)[0],"")
+                in_filename = os.path.split(filename)[1]
+                cf["Files"]["in_filename"] = in_filename
+                cf["Files"]["out_filename"] = in_filename.replace(".nc", "_CPD2.xls")
+            else:
+                cf = pfp_io.load_controlfile(path="controlfiles")
+                if len(cf) == 0:
+                    return
+        else:
+            logger.info("Loading control file ...")
+            cf = pfp_io.load_controlfile(path='controlfiles')
+            if len(cf) == 0:
+                return
+        logger.info("Doing u* threshold detection (CPD2)")
+        pfp_cpd2.cpd2_main(cf)
+        logger.info(" Finished u* threshold detection (CPD2)")
+        logger.info("")
+    except Exception:
+        error_message = " An error occured while doing CPD2 u* threshold, see below for details ..."
         logger.error(error_message)
         error_message = traceback.format_exc()
         logger.error(error_message)
