@@ -1258,6 +1258,7 @@ def netcdf_concatenate(info):
     Date: November 2019
     """
     # read the input files
+    # data is an OrderedDict
     data = netcdf_concatenate_read_input_files(info)
     # get the earliest start time, the latest end time and a list of unique variable names
     start_date = []
@@ -1308,7 +1309,10 @@ def netcdf_concatenate_create_ds_out(data, dt_out, chrono_files, labels):
         ds_out.series[label] = pfp_utils.CreateEmptyVariable(label, nrecs)
     # now loop over the files in chronological order
     for n, file_name in enumerate(chrono_files):
-        # get the time from the file
+        # copy the global attributes
+        for gattr in data[file_name].globalattributes:
+            ds_out.globalattributes[gattr] = data[file_name].globalattributes[gattr]
+        # get the time from the input file
         time_in = pfp_utils.GetVariable(data[file_name], "time")
         # find the indices of matching times
         indsa, indsb = pfp_utils.FindMatchingIndices(time_out["Data"], time_in["Data"])
@@ -1324,6 +1328,8 @@ def netcdf_concatenate_create_ds_out(data, dt_out, chrono_files, labels):
                 for attr in din["Attr"]:
                     if attr not in dout["Attr"]:
                         dout["Attr"][attr] = din["Attr"][attr]
+    # update the global attributes
+    ds_out.globalattributes["nc_nrecs"] = nrecs
     return ds_out
 
 def netcdf_concatenate_read_input_files(info):
