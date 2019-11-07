@@ -1248,6 +1248,102 @@ def load_controlfile(path='.', title='Choose a control file'):
     cf = get_controlfilecontents(name)
     return cf
 
+def netcdf_concatenate(info):
+    """
+    Purpose:
+     Concatenate multiple single year files in a single, multiple year file.
+    Usage:
+    Side effects:
+    Author: PRI
+    Date: November 2019
+    """
+    # read the input files
+    data = netcdf_concatenate_read_input_files(info)
+    # get the earliest start time, the latest end time and a list of unique variable names
+    start_date = []
+    end_date = []
+    labels = []
+    file_names = list(data.keys())
+    for file_name in file_names:
+        dt = pfp_utils.GetVariable(data[file_name], "DateTime")
+        start_date.append(dt["Data"][0])
+        end_date.append(dt["Data"][-1])
+        labels = labels + data[file_name].series.keys()
+    # get a list of files with start times in chronological order
+    chrono_files = [f for d, f in sorted(zip(start_date, info["in_file_names"]))]
+    # get a list of unique variable names
+    labels = list(set(labels))
+    # get a continuous time variable
+    ts = int(data[file_names[0]].globalattributes["time_step"])
+    tsd = datetime.timedelta(minutes=ts)
+    nsd = min(start_date)
+    xed = max(end_date)
+    dt_out = numpy.array([r for r in pfp_utils.perdelta(nsd, xed, tsd)])
+    ds_out = netcdf_concatenate_create_ds_out(data, dt_out, chrono_files, labels)
+    return
+
+def netcdf_concatenate_create_ds_out(data, dt_out, chrono_files, labels):
+    nrecs = len(dt_out)
+    zeros = numpy.zeros(nrecs, dtype=numpy.int32)
+    # get the output data structure
+    ds_out = DataStructure()
+    # create the DateTime variable
+    dt = {"Data": dt_out, "Flag": zeros,
+          "Attr": {"long_name": "Datetime in local timezone", "units": "None"},
+          "Label": "DateTime"}
+    # create the netCDF time variable
+    time_in = pfp_utils.GetVariable(data[chrono_files[0]], "time")
+    units = time_in["Attr"]["units"]
+    calendar = time_in["Attr"]["calendar"]
+    time_out = {"Data": netCDF4.date2num(dt_out, units, calendar=calendar),
+                "Flag": zeros, "Attr": copy.deepcopy(time_in["Attr"]),
+                "Label": "time"}
+    pfp_utils.CreateVariable(ds_out, time_out)
+    # remove the DateTime and time labels
+    for item in ["DateTime", "time"]:
+        if item in labels:
+            labels.remove(item)
+    # make the empty variables
+    for label in labels:
+        ds_out.series[label] = pfp_utils.CreateEmptyVariable(label, nrecs)
+    # now loop over the files in chronological order
+    for n, file_name in enumerate(chrono_files):
+        # get the time from the file
+        time_in = pfp_utils.GetVariable(data[file_name], "time")
+        # find the indices of matching times
+        indsa, indsb = pfp_utils.FindMatchingIndices(time_out["Data"], time_in["Data"])
+        # loop over the variables
+        for label in labels:
+            dout = ds_out.series[label]
+            if label in data[file_name].series.keys():
+                din = data[file_name].series[label]
+                # copy input data to output variable
+                dout["Data"][indsa] = din["Data"][indsb]
+                dout["Flag"][indsa] = din["Flag"][indsb]
+                # copy the variable attributes but only if they don't already exist
+                for attr in din["Attr"]:
+                    if attr not in dout["Attr"]:
+                        dout["Attr"][attr] = din["Attr"][attr]
+    return ds_out
+
+def netcdf_concatenate_read_input_files(info):
+    data = OrderedDict()
+    file_name = info["in_file_names"][0]
+    data[file_name] = nc_read_series(file_name)
+    ts0 = int(data[file_name].globalattributes["time_step"])
+    for file_name in info["in_file_names"][1:]:
+        ds = nc_read_series(file_name)
+        tsn = int(ds.globalattributes["time_step"])
+        if tsn == ts0:
+            data[file_name] = ds
+        else:
+            path, name = os.path.split(file_name)
+            msg = " Time stamp wrong for " + name + ", skipping ..."
+            logger.warning(msg)
+            msg = "  Expected " + str(ts0) + ", got " + str(tsn)
+            logger.warning(msg)
+    return data
+
 def nc_concatenate(cf):
     """
     Purpose:
@@ -1483,10 +1579,12 @@ def nc_concatenate(cf):
     pfp_ts.CalculateHumidities(ds)
     # and make sure we have all of the meteorological variables
     pfp_ts.CalculateMeteorologicalVariables(ds, cc_info)
+
     # check units of Fc and convert if necessary
     #Fc_list = [label for label in ds.series.keys() if label[0:2] == "Fc" and "Flag" not in label]
     Fc_list = ["Fc", "Fc_single", "Fc_profile", "Fc_storage"]
     pfp_utils.CheckUnits(ds, Fc_list, "umol/m2/s", convert_units=True)
+
     # re-calculate the synthetic Fsd
     pfp_ts.get_synthetic_fsd(ds)
     # re-apply the quality control checks (range, diurnal and rules)

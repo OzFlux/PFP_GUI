@@ -31,6 +31,10 @@ def cpd2_main(cf):
     nBoot = int(opt)
     opt = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "Fsd_threshold", default=5)
     Fsd_threshold = float(opt)
+    opt = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "ApplyFcStorage", default="No")
+    apply_storage = True
+    if opt.lower() != "yes":
+        apply_storage = False
     fPlot = 0
     # Set input file and output path and create directories for plots and results
     path_out = cf["Files"]["file_path"]
@@ -59,7 +63,12 @@ def cpd2_main(cf):
     # read the netcdf file
     logger.info(" Reading netCDF file " + file_in)
     ds = pfp_io.nc_read_series(file_in)
-
+    # get the single-point storage, Fc_single, if available
+    if apply_storage and "Fc_storage" not in ds.series.keys():
+        pfp_ts.CalculateFcStorageSinglePoint(cf, ds, Fc_out="Fc_single")
+        Fc_single = pfp_utils.GetVariable(ds, "Fc_single")
+        Fc_single["Label"] = "Fc_storage"
+        pfp_utils.CreateVariable(ds, Fc_single)
     cSiteYr = ds.globalattributes["site_name"]
     ts = int(ds.globalattributes["time_step"])
     dt = pfp_utils.GetVariable(ds, "DateTime")
@@ -75,6 +84,8 @@ def cpd2_main(cf):
         end = datetime.datetime(year+1, 1, 1, 0, 0)
         Fsd = pfp_utils.GetVariable(ds, "Fsd", start=start, end=end, out_type="nan")
         Fc = pfp_utils.GetVariable(ds, "Fc", start=start, end=end, out_type="nan")
+        if apply_storage:
+            pfp_ts.CorrectFcForStorage(cf,ds,Fc_out='Fc',Fc_in='Fc',Fc_storage_in='Fc_single')
         ustar = pfp_utils.GetVariable(ds, "ustar", start=start, end=end, out_type="nan")
         Ta = pfp_utils.GetVariable(ds, "Ta", start=start, end=end, out_type="nan")
         if start < Fsd["DateTime"][0] or end > Fsd["DateTime"][-1]:

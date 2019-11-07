@@ -1,6 +1,7 @@
 # standard modules
 import copy
 import logging
+import ntpath
 import os
 import platform
 import traceback
@@ -186,11 +187,79 @@ def ParseConcatenateControlFile(cf):
     Author: PRI
     Date: August 2019
     """
-    cc_info = {}
+    info = {"OK": True}
+    # check the control file has a Files section
+    if "Files" not in cf:
+        msg = " Files section missing from control file"
+        logger.error(msg)
+        info["OK"] = False
+        return info
+    # check the [Files] section contains an [Out] section and an [In] section
+    for item in ["Out", "In"]:
+        if item not in cf["Files"]:
+            msg = " " + item + " subsection missing from Files section"
+            logger.error(msg)
+            info["OK"] = False
+            return info
+    # check the [In] section contains at least 1 entry
+    if len(cf["Files"]["In"].keys()) < 2:
+        msg = " Less than 2 input files specified"
+        logger.error(msg)
+        info["OK"] = False
+        return info
+    # get a list of the input file names
+    info["in_file_names"] = []
+    for key in sorted(list(cf["Files"]["In"].keys())):
+        file_name = cf["Files"]["In"][key]
+        if os.path.isfile(file_name):
+            info["in_file_names"].append(file_name)
+        else:
+            msg = " File not found (" + ntpath.basename(file_name) + ")"
+            logger.warning(msg)
+    # get the output file name
+    if "ncFileName" not in cf["Files"]["Out"]:
+        msg = " No ncFileName key in Out subsection of Files section"
+        logger.error(msg)
+        info["OK"] = False
+        return info
+    info["out_file_name"] = cf["Files"]["Out"]["ncFileName"]
+    # check the output path exists, create if it doesn't
+    file_path, file_name = os.path.split(info["out_file_name"])
+    if not os.path.isdir(file_path):
+        os.makedirs(file_path)
+    # work through the choices in the [Options] section
+    opt = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "NumberOfDimensions", default=3)
+    info["NumberOfDimensions"] = int(opt)
+    opt = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "MaxGapInterpolate", default=0)
+    info["MaxGapInterpolate"] = int(opt)
+    opt = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "FixTimeStepMethod", default="round")
+    info["FixTimeStepMethod"] = str(opt)
+    opt = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "Truncate", default="Yes")
+    info["Truncate"] = str(opt)
+    opt = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "TruncateThreshold", default=50)
+    info["TruncateThreshold"] = float(opt)
+    s = "Ah,Cc,Fa,Fg,Fld,Flu,Fn,Fsd,Fsu,ps,Sws,Ta,Ts,Ws,Wd,Precip"
+    opt = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "SeriesToCheck", default=s)
+    info["SeriesToCheck"] = pfp_utils.csv_string_to_list(s)
     # add key for suppressing output of intermediate variables e.g. Cpd etc
     opt = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "KeepIntermediateSeries", default="No")
-    cc_info["RemoveIntermediateSeries"] = {"KeepIntermediateSeries": opt, "not_output": []}
-    return cc_info
+    info["RemoveIntermediateSeries"] = {"KeepIntermediateSeries": opt, "not_output": []}
+    return info
+
+#def ParseConcatenateControlFile(cf):
+    #"""
+    #Purpose:
+     #Make the concatenate information dictionary
+    #Usage:
+    #Side effects:
+    #Author: PRI
+    #Date: August 2019
+    #"""
+    #cc_info = {}
+    ## add key for suppressing output of intermediate variables e.g. Cpd etc
+    #opt = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "KeepIntermediateSeries", default="No")
+    #cc_info["RemoveIntermediateSeries"] = {"KeepIntermediateSeries": opt, "not_output": []}
+    #return cc_info
 
 def ParseL3ControlFile(cf, ds):
     """

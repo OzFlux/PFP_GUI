@@ -1157,6 +1157,14 @@ def CreateVariable(ds,variable):
     # delete the temporary series
     del ds.series['_tmp_']
 
+def csv_string_to_list(input_string):
+    """ Convert a string containing items separated by commas into a list."""
+    if "," in input_string:
+        output_list = input_string.split(",")
+    else:
+        output_list = [input_string]
+    return output_list
+
 def file_exists(filename,mode="verbose"):
     if not os.path.exists(filename):
         if mode=="verbose":
@@ -2832,6 +2840,12 @@ def startlog(loggername,loggerfile):
     logger.addHandler(fh)
     logger.addHandler(ch)
     return logger
+
+def strip_non_numeric(s):
+    """
+    Strip non-numeric characters from a string.
+    """
+    return "".join([c for c in s if c in "-1234567890."])
 
 def UpdateGlobalAttributes(cf,ds,level):
     ds.globalattributes["nc_level"] = str(level)
