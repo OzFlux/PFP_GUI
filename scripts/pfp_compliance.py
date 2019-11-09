@@ -8,6 +8,7 @@ import traceback
 # 3rd party modules
 import timezonefinder
 # PFP modules
+import constants as c
 import pfp_gui
 import pfp_io
 import pfp_utils
@@ -187,32 +188,34 @@ def ParseConcatenateControlFile(cf):
     Author: PRI
     Date: August 2019
     """
-    info = {"OK": True}
+    info = {}
+    info["NetCDFConcatenate"] = {"OK": True}
+    inc = info["NetCDFConcatenate"]
     # check the control file has a Files section
     if "Files" not in cf:
         msg = " Files section missing from control file"
         logger.error(msg)
-        info["OK"] = False
+        inc["OK"] = False
         return info
     # check the [Files] section contains an [Out] section and an [In] section
     for item in ["Out", "In"]:
         if item not in cf["Files"]:
             msg = " " + item + " subsection missing from Files section"
             logger.error(msg)
-            info["OK"] = False
+            inc["OK"] = False
             return info
     # check the [In] section contains at least 1 entry
     if len(cf["Files"]["In"].keys()) < 2:
         msg = " Less than 2 input files specified"
         logger.error(msg)
-        info["OK"] = False
+        inc["OK"] = False
         return info
     # get a list of the input file names
-    info["in_file_names"] = []
+    inc["in_file_names"] = []
     for key in sorted(list(cf["Files"]["In"].keys())):
         file_name = cf["Files"]["In"][key]
         if os.path.isfile(file_name):
-            info["in_file_names"].append(file_name)
+            inc["in_file_names"].append(file_name)
         else:
             msg = " File not found (" + ntpath.basename(file_name) + ")"
             logger.warning(msg)
@@ -220,27 +223,34 @@ def ParseConcatenateControlFile(cf):
     if "ncFileName" not in cf["Files"]["Out"]:
         msg = " No ncFileName key in Out subsection of Files section"
         logger.error(msg)
-        info["OK"] = False
+        inc["OK"] = False
         return info
-    info["out_file_name"] = cf["Files"]["Out"]["ncFileName"]
+    inc["out_file_name"] = cf["Files"]["Out"]["ncFileName"]
     # check the output path exists, create if it doesn't
-    file_path, file_name = os.path.split(info["out_file_name"])
+    file_path, file_name = os.path.split(inc["out_file_name"])
     if not os.path.isdir(file_path):
         os.makedirs(file_path)
     # work through the choices in the [Options] section
     opt = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "NumberOfDimensions", default=3)
-    info["NumberOfDimensions"] = int(opt)
+    inc["NumberOfDimensions"] = int(opt)
     opt = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "MaxGapInterpolate", default=0)
-    info["MaxGapInterpolate"] = int(opt)
+    inc["MaxGapInterpolate"] = int(opt)
     opt = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "FixTimeStepMethod", default="round")
-    info["FixTimeStepMethod"] = str(opt)
+    inc["FixTimeStepMethod"] = str(opt)
     opt = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "Truncate", default="Yes")
-    info["Truncate"] = str(opt)
+    inc["Truncate"] = str(opt)
     opt = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "TruncateThreshold", default=50)
-    info["TruncateThreshold"] = float(opt)
+    inc["TruncateThreshold"] = float(opt)
     s = "Ah,Cc,Fa,Fg,Fld,Flu,Fn,Fsd,Fsu,ps,Sws,Ta,Ts,Ws,Wd,Precip"
     opt = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "SeriesToCheck", default=s)
-    info["SeriesToCheck"] = pfp_utils.csv_string_to_list(s)
+    inc["SeriesToCheck"] = pfp_utils.csv_string_to_list(s)
+    # now add the bits and pieces
+    inc["start_date"] = []
+    inc["end_date"] = []
+    inc["chrono_files"] = []
+    inc["labels"] = []
+    inc["attributes"] = ["height", "instrument", "long_name", "serial_number", "standard_name",
+                         "units", "valid_range"]
     # add key for suppressing output of intermediate variables e.g. Cpd etc
     opt = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "KeepIntermediateSeries", default="No")
     info["RemoveIntermediateSeries"] = {"KeepIntermediateSeries": opt, "not_output": []}

@@ -44,11 +44,11 @@ def do_file_concatenate(cfg=None):
                 logger.info("Quitting concatenation (no control file)")
                 return
         info = pfp_compliance.ParseConcatenateControlFile(cfg)
-        if not info["OK"]:
+        if not info["NetCDFConcatenate"]["OK"]:
             msg = " An error occurred when parsing the control file"
             logger.error(msg)
             return
-        pfp_io.netcdf_concatenate(info)
+        pfp_io.NetCDFConcatenate(info)
         logger.info(" Finished concatenating files")
         logger.info("")
     except Exception:

@@ -1233,9 +1233,6 @@ def GapFillUsingInterpolation(cf, ds):
     Author: PRI
     Date: September 2016
     """
-    ts = int(ds.globalattributes["time_step"])
-    # get list of variables from control file
-    label_list = pfp_utils.get_label_list_from_cf(cf)
     # get the maximum gap length to be filled by interpolation
     max_length_hours = int(pfp_utils.get_keyvaluefromcf(cf, ["Options"], "MaxGapInterpolate", default=3))
     # bug out if interpolation disabled in control file
@@ -1243,16 +1240,16 @@ def GapFillUsingInterpolation(cf, ds):
         msg = " Gap fill by interpolation disabled in control file"
         logger.info(msg)
         return
+    ts = int(ds.globalattributes["time_step"])
+    # get list of variables from control file
+    labels = pfp_utils.get_label_list_from_cf(cf)
     # get the interpolation type
     int_type = str(pfp_utils.get_keyvaluefromcf(cf, ["Options"], "InterpolateType", default="Akima"))
     # tell the user what we are doing
     msg = " Using " + int_type +" interpolation (max. gap = " + str(max_length_hours) +" hours)"
     logger.info(msg)
     # do the business
-    # convert from max. gap length in hours to number of time steps
-    max_length_points = int((max_length_hours*float(60)/float(ts))+0.5)
-    for label in label_list:
-        pfp_ts.InterpolateOverMissing(ds, series=label, maxlen=max_length_points, int_type=int_type)
+    pfp_ts.InterpolateOverMissing(ds, labels, max_length_hours=max_length_hours, int_type=int_type)
 
 # miscellaneous L4 routines
 def gf_getdiurnalstats(DecHour,Data,ts):
