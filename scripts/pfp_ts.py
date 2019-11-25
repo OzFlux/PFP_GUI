@@ -1196,9 +1196,11 @@ def CalculateFcStorageSinglePoint(cf, ds, Fc_out="Fc_single", CO2_in="CO2"):
         zeros = numpy.zeros(nRecs, dtype=numpy.int32)
         ones = numpy.ones(nRecs, dtype=numpy.int32)
         ts = int(ds.globalattributes["time_step"])
+        level = str(ds.globalattributes["nc_level"])
+        descr = "description_" + level
         # create an empty output variable
-        dt = pfp_utils.GetVariable(ds, "DateTime")
-        Fc_single = pfp_utils.CreateEmptyVariable(Fc_out, nRecs, datetime=dt)
+        ldt = pfp_utils.GetVariable(ds, "DateTime")
+        Fc_single = pfp_utils.CreateEmptyVariable(Fc_out, nRecs, datetime=ldt)
         # get the input data
         if CO2_in not in ds.series.keys():
             if "Cc" in ds.series.keys():
@@ -1247,31 +1249,39 @@ def CalculateFcStorageSinglePoint(cf, ds, Fc_out="Fc_single", CO2_in="CO2"):
         if got_zms:
             # check the CO2 concentration units
             # if the units are mg/m3, convert CO2 concentration to umol/mol before taking the difference
-            if CO2["Attr"]["units"] == "mg/m3":
-                CO2["Data"] = pfp_mf.co2_ppmfrommgCO2pm3(CO2["Data"], Ta["Data"], ps["Data"])
+            pfp_utils.convert_units_co2(ds, CO2, "umol/mol")
             # calculate the change in CO2 concentration between time steps
             # CO2 concentration assumed to be in umol/mol
             dc = numpy.ma.ediff1d(CO2["Data"], to_begin=0)
-            # convert the CO2 concentration difference from umol/mol to mg/m3
-            dc = pfp_mf.co2_mgCO2pm3fromppm(dc, Ta["Data"], ps["Data"])
+            # convert the CO2 concentration difference from umol/mol to umol/m3
+            dc = pfp_mf.co2_umolpm3fromppm(dc, Ta["Data"], ps["Data"])
             # calculate the time step in seconds
-            dt = 86400*numpy.ediff1d(ds.series["time"]["Data"], to_begin=float(ts)/1440)
+            epoch = datetime.datetime(1970, 1, 1, 0, 0, 0)
+            seconds = numpy.array([(dt-epoch).total_seconds() for dt in ldt["Data"]])
+            dt = numpy.ediff1d(seconds, to_begin=float(ts)*60)
             # calculate the CO2 flux based on storage below the measurement height
             Fc_single["Data"] = zms*dc/dt
             # do the attributes
-            Fc_single["Attr"] = copy.deepcopy(CO2["Attr"])
-            Fc_single["Attr"]["units"] = "mg/m2/s"
-            long_name = "Fc storage component calcuated using single point CO2 measurement"
-            Fc_single["Attr"]["long_name"] = long_name
+            Fc_single["Attr"] = {}
+            for attr in ["height", "instrument", "serial_number"]:
+                Fc_single["Attr"][attr] = CO2["Attr"][attr]
+            Fc_single["Attr"]["units"] = "umol/m2/s"
+            Fc_single["Attr"]["standard_name"] = "not defined"
+            Fc_single["Attr"]["long_name"] = "CO2 flux (storage term)"
+            Fc_single["Attr"]["group_name"] = "flux"
+            Fc_single["Attr"][descr] = "Fc storage component calcuated using single point \
+                                        CO2 measurement"
             # put the storage flux in the data structure
             mask = numpy.ma.getmaskarray(Fc_single["Data"])
             Fc_single["Flag"] = numpy.where(mask == True, ones, zeros)
+            # match the units of Fc_single to the units of Fc
+            pfp_utils.convert_units_co2(ds, Fc_single, Fc["Attr"]["units"])
         else:
             msg = "  Measurement height not found, storage not calculated"
             logger.error(msg)
         pfp_utils.CreateVariable(ds, Fc_single)
     else:
-        msg = "  " + Fc_out + "found in data structure, not calculated"
+        msg = "  " + Fc_out + " found in data structure, not calculated"
         logger.info(msg)
     return
 

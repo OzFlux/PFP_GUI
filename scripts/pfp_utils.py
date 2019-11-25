@@ -399,12 +399,15 @@ def convert_units_co2(ds, variable, new_units):
     """
     # get the current units and the timestep
     old_units = variable["Attr"]["units"]
-    ts = variable["time_step"]
+    if old_units == new_units:
+        # nothing to do here, folks
+        return
+    ts = int(ds.globalattributes["time_step"])
     # default values for the valid_range minimum and maximum
     valid_range_minimum = -1E35
     valid_range_maximum = 1E35
     # now check the units and see what we have to convert
-    if old_units=="umol/m2/s" and new_units=="gC/m2":
+    if old_units == "umol/m2/s" and new_units == "gC/m2":
         # convert the data
         variable["Data"] = variable["Data"]*12.01*ts*60/1E6
         # update the range check limits in the variable attribute
@@ -420,16 +423,17 @@ def convert_units_co2(ds, variable, new_units):
                     valid_range_maximum = numpy.amax(attr_limit)
                 else:
                     # we shouldn't get here
-                    msg = "convert_units_co2: unexpected option for attr ("+attr+")"
+                    msg = "convert_units_co2: unexpected option for attr (" + attr + ")"
                     logger.error(msg)
                     continue
         # is the valid_range attribute defined for this variable?
         if "valid_range" in variable["Attr"]:
             # if so, then update it
-            variable["Attr"]["valid_range"] = str(valid_range_minimum)+","+str(valid_range_maximum)
+            variable["Attr"]["valid_range"] = repr(valid_range_minimum)
+            variable["Attr"]["valid_range"] += "," + repr(valid_range_maximum)
         # update the variable attributes to the new units
         variable["Attr"]["units"] = new_units
-    elif old_units=="gC/m2" and new_units=="umol/m2/s":
+    elif old_units == "gC/m2" and new_units == "umol/m2/s":
         # convert the data
         variable["Data"] = variable["Data"]*1E6/(12.01*ts*60)
         # update the range check limits in the variable attribute
@@ -445,16 +449,17 @@ def convert_units_co2(ds, variable, new_units):
                     valid_range_maximum = numpy.amax(attr_limit)
                 else:
                     # we shouldn't get here
-                    msg = "convert_units_co2: unexpected option for attr ("+attr+")"
+                    msg = "convert_units_co2: unexpected option for attr (" + attr + ")"
                     logger.error(msg)
                     continue
         # is the valid_range attribute defined for this variable?
         if "valid_range" in variable["Attr"]:
             # if so, then update it
-            variable["Attr"]["valid_range"] = str(valid_range_minimum)+","+str(valid_range_maximum)
+            variable["Attr"]["valid_range"] = repr(valid_range_minimum)
+            variable["Attr"]["valid_range"] += "," + repr(valid_range_maximum)
         # update the variable attributes to the new units
         variable["Attr"]["units"] = new_units
-    elif old_units in ["mg/m3", "mgCO2/m3"] and new_units=="umol/mol":
+    elif old_units in ["mg/m3", "mgCO2/m3"] and new_units == "umol/mol":
         # convert the data
         Ta = GetVariable(ds, "Ta")
         ps = GetVariable(ds, "ps")
@@ -491,7 +496,7 @@ def convert_units_co2(ds, variable, new_units):
                         attr_limit[m] = numpy.ma.min(limit)
                     else:
                         # we shouldn't get here
-                        msg = "convert_units_co2: unexpected option for attr ("+attr+")"
+                        msg = "convert_units_co2: unexpected option for attr (" + attr + ")"
                         logger.error(msg)
                         continue
                 # update the variable attribute with the converted limits
@@ -503,14 +508,15 @@ def convert_units_co2(ds, variable, new_units):
                     valid_range_maximum = numpy.amax(attr_limit)
                 else:
                     # we shouldn't get here
-                    msg = "convert_units_co2: unexpected option for attr ("+attr+")"
+                    msg = "convert_units_co2: unexpected option for attr (" + attr + ")"
                     logger.error(msg)
                     continue
         if "valid_range" in variable["Attr"]:
-            variable["Attr"]["valid_range"] = str(valid_range_minimum)+","+str(valid_range_maximum)
+            variable["Attr"]["valid_range"] = repr(valid_range_minimum)
+            variable["Attr"]["valid_range"] += "," + repr(valid_range_maximum)
         # update the variable attributes to the new units
         variable["Attr"]["units"] = new_units
-    elif old_units=="umol/mol" and new_units in ["mg/m3","mgCO2/m3"]:
+    elif old_units == "umol/mol" and new_units in ["mg/m3", "mgCO2/m3"]:
         Ta = GetVariable(ds, "Ta")
         ps = GetVariable(ds, "ps")
         Ta_def = numpy.full(12, numpy.ma.mean(Ta["Data"]))
@@ -529,7 +535,7 @@ def convert_units_co2(ds, variable, new_units):
                 for m, item in enumerate(limit_list):
                     month = m + 1
                     # get an index of the months
-                    idx = numpy.where(ds.series["Month"]==month)[0]
+                    idx = numpy.where(ds.series["Month"] == month)[0]
                     # move on to next month if this one not in data
                     if len(idx) == 0:
                         continue
@@ -546,7 +552,7 @@ def convert_units_co2(ds, variable, new_units):
                         attr_limit[m] = numpy.ma.min(limit)
                     else:
                         # we shouldn't get here
-                        msg = "convert_units_co2: unexpected option for attr ("+attr+")"
+                        msg = "convert_units_co2: unexpected option for attr (" + attr + ")"
                         logger.error(msg)
                         continue
                 # update the variable attribute with the converted limits
@@ -558,14 +564,15 @@ def convert_units_co2(ds, variable, new_units):
                     valid_range_maximum = numpy.amax(attr_limit)
                 else:
                     # we shouldn't get here
-                    msg = "convert_units_co2: unexpected option for attr ("+attr+")"
+                    msg = "convert_units_co2: unexpected option for attr (" + attr + ")"
                     logger.error(msg)
                     continue
         if "valid_range" in variable["Attr"]:
-            variable["Attr"]["valid_range"] = str(valid_range_minimum)+","+str(valid_range_maximum)
+            variable["Attr"]["valid_range"] = repr(valid_range_minimum)
+            variable["Attr"]["valid_range"] += "," + repr(valid_range_maximum)
         # update the variable attributes to the new units
         variable["Attr"]["units"] = new_units
-    elif old_units in ["mg/m2/s","mgCO2/m2/s"] and new_units=="umol/m2/s":
+    elif old_units in ["mg/m2/s", "mgCO2/m2/s"] and new_units == "umol/m2/s":
         # convert the data
         variable["Data"] = pfp_mf.Fc_umolpm2psfrommgCO2pm2ps(variable["Data"])
         # update the range check limits in the variable attribute
@@ -581,17 +588,44 @@ def convert_units_co2(ds, variable, new_units):
                     valid_range_maximum = numpy.amax(attr_limit)
                 else:
                     # we shouldn't get here
-                    msg = "convert_units_co2: unexpected option for attr ("+attr+")"
+                    msg = "convert_units_co2: unexpected option for attr (" + attr + ")"
                     logger.error(msg)
                     continue
         # is the valid_range attribute defined for this variable?
         if "valid_range" in variable["Attr"]:
             # if so, then update it
-            variable["Attr"]["valid_range"] = str(valid_range_minimum)+","+str(valid_range_maximum)
+            variable["Attr"]["valid_range"] = repr(valid_range_minimum)
+            variable["Attr"]["valid_range"] += "," + repr(valid_range_maximum)
+        # update the variable attributes to the new units
+        variable["Attr"]["units"] = new_units
+    elif old_units == "umol/m2/s" and new_units in ["mg/m2/s", "mgCO2/m2/s"]:
+        # convert the data
+        variable["Data"] = pfp_mf.Fc_mgCO2pm2psfromumolpm2ps(variable["Data"])
+        # update the range check limits in the variable attribute
+        # this one is easy because it is a simple numerical change
+        for attr in ["rangecheck_lower", "rangecheck_upper"]:
+            if attr in variable["Attr"]:
+                attr_limit = numpy.array(parse_rangecheck_limits(variable["Attr"][attr]))
+                attr_limit = pfp_mf.Fc_mgCO2pm2psfromumolpm2ps(attr_limit)
+                variable["Attr"][attr] = list(attr_limit)
+                if attr == "rangecheck_lower":
+                    valid_range_minimum = numpy.amin(attr_limit)
+                elif attr == "rangecheck_upper":
+                    valid_range_maximum = numpy.amax(attr_limit)
+                else:
+                    # we shouldn't get here
+                    msg = "convert_units_co2: unexpected option for attr (" + attr + ")"
+                    logger.error(msg)
+                    continue
+        # is the valid_range attribute defined for this variable?
+        if "valid_range" in variable["Attr"]:
+            # if so, then update it
+            variable["Attr"]["valid_range"] = repr(valid_range_minimum)
+            variable["Attr"]["valid_range"] += "," + repr(valid_range_maximum)
         # update the variable attributes to the new units
         variable["Attr"]["units"] = new_units
     else:
-        msg = " Unrecognised conversion from "+old_units+" to "+new_units
+        msg = " Unrecognised conversion from " + old_units + " to " + new_units
         logger.error(msg)
 
     return variable
@@ -1164,6 +1198,31 @@ def csv_string_to_list(input_string):
     else:
         output_list = [input_string]
     return output_list
+
+def DeleteVariable(ds, variable):
+    """
+    Purpose:
+     Delete a variable from the data structure.
+    Usage:
+     Fsd = pfp_utils.GetVariable(ds, Fsd)
+     pfp_utils.DeleteVariable(ds, Fsd)
+    Author: PRI
+    Date: November 2019
+    """
+    if isinstance(variable, basestring):
+        label = variable
+    elif isinstance(variable, dict):
+        label = variable["Label"]
+    else:
+        msg = " DeleteVariable: argument must be a variable dictionary or label"
+        logger.warning(msg)
+        return
+    if label in list(ds.series.keys()):
+        del ds.series[label]
+    else:
+        msg = " DeleteVariable: variable (" + label + ") not found in data structure"
+        logger.warning(msg)
+    return
 
 def file_exists(filename,mode="verbose"):
     if not os.path.exists(filename):
@@ -2188,7 +2247,7 @@ def get_number_from_heightstring(height):
     try:
         z = float(z)
     except:
-        z = 0.0
+        z = None
     return z
 
 def get_nctime_from_datetime(ds, time_units="seconds since 1970-01-01 00:00:00.0",
@@ -2499,7 +2558,7 @@ def MakeAttributeDictionary(**kwargs):
     if len(default_list)!=0:
         for item in default_list:
             if item == "valid_range":
-                attr[item] = str(c.small_value)+","+str(c.large_value)
+                attr[item] = repr(c.small_value)+","+repr(c.large_value)
             else:
                 attr[item] = ""
     attr["missing_value"] = c.missing_value

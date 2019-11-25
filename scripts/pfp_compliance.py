@@ -1,16 +1,22 @@
 # standard modules
 import copy
+import datetime
 import logging
 import ntpath
 import os
 import platform
+import time
 import traceback
 # 3rd party modules
+import numpy
+from PyQt5 import QtWidgets
 import timezonefinder
 # PFP modules
 import constants as c
+import pfp_cfg
 import pfp_gui
 import pfp_io
+import pfp_ts
 import pfp_utils
 
 logger = logging.getLogger("pfp_log")
@@ -24,12 +30,12 @@ def change_variable_names(cfg, ds):
     Date: October 2018
     """
     # get a list of potential mappings
-    rename_list = [v for v in list(cfg["Variables"].keys()) if "rename" in cfg["Variables"][v]]
+    rename_list = [v for v in list(cfg["rename"].keys())]
     # loop over the variables in the data structure
     series_list = list(ds.series.keys())
     for label in series_list:
         if label in rename_list:
-            new_name = cfg["Variables"][label]["rename"]
+            new_name = cfg["rename"][label]["rename"]
             ds.series[new_name] = ds.series.pop(label)
     return
 
@@ -158,6 +164,54 @@ def check_l6_controlfile(cf):
         error_message = traceback.format_exc()
         logger.error(error_message)
     return ok
+
+def consistent_Fc_storage(ds, file_name):
+    """
+    Purpose:
+     Make the various incarnations of single point Fc storage consistent.
+    Author: PRI
+    Date: November 2019
+    """
+    # save Fc_single if it exists - debug only
+    labels = ds.series.keys()
+    if "Fc_single" in labels:
+        variable = pfp_utils.GetVariable(ds, "Fc_single")
+        variable["Label"] = "Fc_sinorg"
+        pfp_utils.CreateVariable(ds, variable)
+        pfp_utils.DeleteVariable(ds, "Fc_single")
+    # do nothing if Fc_single exists
+    labels = ds.series.keys()
+    if "Fc_single" in labels:
+        pass
+    # Fc_single may be called Fc_storage
+    elif "Fc_storage" in labels:
+        level = ds.globalattributes["nc_level"]
+        descr = "description_" + level
+        variable = pfp_utils.GetVariable(ds, "Fc_storage")
+        if "using single point CO2 measurement" in variable["Attr"][descr]:
+            variable["Label"] = "Fc_single"
+            pfp_utils.CreateVariable(ds, variable)
+            pfp_utils.DeleteVariable(ds, "Fc_storage")
+    else:
+        # neither Fc_single nor Fc_storage exist, try to calculate
+        # check to see if the measurement height is defined
+        CO2 = pfp_utils.GetVariable(ds, "CO2")
+        zms = pfp_utils.get_number_from_heightstring(CO2["Attr"]["height"])
+        if zms == None:
+            while zms == None:
+                text, ok = QtWidgets.QInputDialog.getText(None, file_name,
+                                                          "Enter CO2 measuement height in metres",
+                                                          QtWidgets.QLineEdit.Normal,"")
+                zms = pfp_utils.get_number_from_heightstring(text)
+        # update the CO2 variable attribute
+        CO2["Attr"]["height"] = zms
+        pfp_utils.CreateVariable(ds, CO2)
+        # calculate single point Fc storage term
+        cf = {"Options": {"zms": zms}}
+        pfp_ts.CalculateFcStorageSinglePoint(cf, ds)
+        # convert Fc_single from mg/m2/s to umol/m2/s
+        pfp_utils.CheckUnits(ds, "Fc_single", "umol/m2/s", convert_units=True)
+    return
 
 def copy_ws_wd(ds):
     """
@@ -288,6 +342,39 @@ def ParseL3ControlFile(cf, ds):
     l3_info["RemoveIntermediateSeries"] = {"KeepIntermediateSeries": opt, "not_output": []}
     return l3_info
 
+def parse_variable_attributes(attributes):
+    """
+    Purpose:
+     Clean up the variable attributes.
+    Usage:
+    Author: PRI
+    Date: September 2019
+    """
+    for attr in attributes:
+        value = attributes[attr]
+        if not isinstance(value, basestring):
+            continue
+        if attr in ["rangecheck_lower", "rangecheck_upper", "diurnalcheck_numsd"]:
+            if ("[" in value) and ("]" in value) and ("*" in value):
+                # old style of [value]*12
+                value = value[value.index("[")+1:value.index("]")]
+            elif ("[" in value) and ("]" in value) and ("*" not in value):
+                # old style of [1,2,3,4,5,6,7,8,9,10,11,12]
+                value = value.replace("[", "").replace("]", "")
+            strip_list = [" ", '"', "'"]
+        elif ("ExcludeDates" in attr or
+              "ExcludeHours" in attr or
+              "LowerCheck" in attr or
+              "UpperCheck" in attr):
+            strip_list = ["[", "]", '"', "'"]
+        else:
+            strip_list = ['"', "'"]
+        for c in strip_list:
+            if c in value:
+                value = value.replace(c, "")
+        attributes[attr] = value
+    return attributes
+
 def strip_characters_from_string(v, strip_list):
     """ Parse key values to remove unnecessary characters."""
     for c in strip_list:
@@ -343,23 +430,23 @@ def change_global_attributes(cfg, ds):
     # check site_name is in ds.globalattributes
     gattr_list = list(ds.globalattributes.keys())
     if "site_name" not in gattr_list:
-        logger.warning("Globel attributes: site_name not found")
+        print "Global attributes: site_name not found"
     # check latitude and longitude are in ds.globalattributes
     if "latitude" not in gattr_list:
-        logger.warning("Global attributes: latitude not found")
+        print "Global attributes: latitude not found"
     else:
         lat_string = str(ds.globalattributes["latitude"])
         if len(lat_string) == 0:
-            logger.warning("Global attributes: latitude empty")
+            print "Global attributes: latitude empty"
         else:
             lat = pfp_utils.convert_anglestring(lat_string)
         ds.globalattributes["latitude"] = str(lat)
     if "longitude" not in gattr_list:
-        logger.warning("Global attributes: longitude not found")
+        print "Global attributes: longitude not found"
     else:
         lon_string = str(ds.globalattributes["longitude"])
         if len(lon_string) == 0:
-            logger.warning("Global attributes: longitude empty")
+            print "Global attributes: longitude empty"
         else:
             lon = pfp_utils.convert_anglestring(lon_string)
         ds.globalattributes["longitude"] = str(lon)
@@ -381,7 +468,7 @@ def change_global_attributes(cfg, ds):
                     tz = tf.timezone_at(lng=lon, lat=lat)
                     ds.globalattributes["time_zone"] = tz
                 else:
-                    logger.warning("Global attributes: unable to define time zone")
+                    print "Global attributes: unable to define time zone"
                     ds.globalattributes["time_zone"] = ""
     # add or change global attributes as required
     gattr_list = sorted(list(cfg["Global"].keys()))
@@ -389,7 +476,7 @@ def change_global_attributes(cfg, ds):
         ds.globalattributes[gattr] = cfg["Global"][gattr]
     # remove deprecated global attributes
     flag_list = [g for g in ds.globalattributes.keys() if "Flag" in g]
-    others_list = ["end_datetime", "start_datetime", "doi"]
+    others_list = ["end_datetime", "start_datetime", "Functions", "doi"]
     remove_list = others_list + flag_list
     for gattr in list(ds.globalattributes.keys()):
         if gattr in remove_list:
@@ -402,20 +489,133 @@ def change_global_attributes(cfg, ds):
             ds.globalattributes[new_key] = ds.globalattributes.pop(item)
     return
 
-def nc_update(cfg):
+def change_variable_attributes(cfg, ds):
     """
     Purpose:
-     Update a PFP-style netCDF file by changing variable names and attributes.
+     Clean up the variable attributes.
+    Usage:
+    Author: PRI
+    Date: November 2018
+    """
+    # rename existing long_name to description, introduce a
+    # consistent long_name attribute and introduce the group_name
+    # attribute
+    vattr_list = list(cfg["variable_attributes"].keys())
+    series_list = list(ds.series.keys())
+    descr = "description_" + ds.globalattributes["nc_level"]
+    for label in series_list:
+        variable = pfp_utils.GetVariable(ds, label)
+        variable["Attr"][descr] = copy.deepcopy(variable["Attr"]["long_name"])
+        for item in vattr_list:
+            if label[:len(item)] == item:
+                for key in list(cfg["variable_attributes"][item].keys()):
+                    variable["Attr"][key] = cfg["variable_attributes"][item][key]
+        pfp_utils.CreateVariable(ds, variable)
+    # parse variable attributes to new format, remove deprecated variable attributes
+    # and fix valid_range == "-1e+35,1e+35"
+    tmp = cfg["variable_attributes"]["deprecated"]
+    deprecated = pfp_cfg.cfg_string_to_list(tmp)
+    series_list = list(ds.series.keys())
+    for label in series_list:
+        variable = pfp_utils.GetVariable(ds, label)
+        # parse variable attributes to new format
+        variable["Attr"] = parse_variable_attributes(variable["Attr"])
+        # remove deprecated variable attributes
+        for vattr in deprecated:
+            if vattr in list(variable["Attr"].keys()):
+                del variable["Attr"][vattr]
+        # fix valid_range == "-1e+35,1e+35"
+        if "valid_range" in variable["Attr"]:
+            valid_range = variable["Attr"]["valid_range"]
+            if valid_range == "-1e+35,1e+35":
+                mn = pfp_utils.round2sig(numpy.ma.minimum.reduce(variable["Data"]), 4)
+                mn = numpy.sign(mn)*10**numpy.ceil(numpy.log10(abs(mn)))
+                mx = pfp_utils.round2sig(numpy.ma.maximum.reduce(variable["Data"]), 4)
+                mx = numpy.sign(mx)*10**numpy.ceil(numpy.log10(abs(mx)))
+                variable["Attr"]["valid_range"] = repr(mn) + "," + repr(mx)
+        pfp_utils.CreateVariable(ds, variable)
+    return
+
+def exclude_variables(cfg, ds):
+    """
+    Purpose:
+     Remove deprecated variables from a netCDF file.
     Usage:
     Author: PRI
     Date: October 2018
     """
+    series_list = sorted(list(ds.series.keys()))
+    var_list = [v for v in list(cfg["exclude"].keys())]
+    flag_list = [v+"_QCFlag" for v in var_list if v+"_QCFlag" in series_list]
+    remove_list = var_list + flag_list
+    for label in series_list:
+        if label in remove_list:
+            ds.series.pop(label)
+    return
+
+def include_variables(cfg, ds_in):
+    """
+    Purpose:
+     Only pick variables that match the specified string for the length
+     of the specified string.
+    Usage:
+    Author: PRI
+    Date: November 2018
+    """
+    # get a new data structure
+    ds_out = pfp_io.DataStructure()
+    # copy the global attributes
+    for gattr in ds_in.globalattributes:
+        ds_out.globalattributes[gattr] = ds_in.globalattributes[gattr]
+    # loop over variables to be included
+    include_list = list(cfg["include"].keys())
+    series_list = list(ds_in.series.keys())
+    for item in include_list:
+        for label in series_list:
+            if label[0:len(item)] == item:
+                ds_out.series[label] = ds_in.series[label]
+    return ds_out
+
+def nc_update(cfg):
+    """
+    Purpose:
+     Update an OFQC-style netCDF by changing variable names and attributes.
+    Usage:
+    Author: PRI
+    Date: October 2018
+    """
+    # get the input file path
     nc_file_path = pfp_io.get_infilenamefromcf(cfg)
-    ds = pfp_io.nc_read_series(nc_file_path)
-    change_variable_names(cfg, ds)
-    copy_ws_wd(ds)
-    remove_variables(cfg, ds)
-    change_global_attributes(cfg, ds)
+    msg = " Converting file " + os.path.split(nc_file_path)[1]
+    logger.info(msg)
+    # read the input file
+    ds1 = pfp_io.nc_read_series(nc_file_path)
+    # update the variable names
+    change_variable_names(cfg, ds1)
+    # makes sure there are Ws and Wd series
+    copy_ws_wd(ds1)
+    # make sure we have all the variables we want ...
+    ds2 = include_variables(cfg, ds1)
+    # ... but not the ones we don't
+    exclude_variables(cfg, ds2)
+    # update the global attributes
+    change_global_attributes(cfg, ds2)
+    # update the variable attributes
+    change_variable_attributes(cfg, ds2)
+    # Fc single point storage
+    consistent_Fc_storage(ds2, os.path.split(nc_file_path)[1])
+    # rename the original file to prevent it being overwritten
+    t = time.localtime()
+    rundatetime = datetime.datetime(t[0], t[1], t[2], t[3], t[4], t[5]).strftime("%Y%m%d%H%M")
+    new_ext = "_" + rundatetime + ".nc"
+    # add the current local datetime the base file name
+    new_file_path = nc_file_path.replace(".nc", new_ext)
+    msg = " Renaming original file to " + os.path.split(new_file_path)[1]
+    logger.info(msg)
+    # ... and rename the base file to preserve it
+    os.rename(nc_file_path, new_file_path)
+    # write the updated file
     nc_file = pfp_io.nc_open_write(nc_file_path)
-    pfp_io.nc_write_series(nc_file, ds)
+    pfp_io.nc_write_series(nc_file, ds2)
+
     return 0

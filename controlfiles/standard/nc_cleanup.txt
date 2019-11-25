@@ -168,6 +168,7 @@
     [[Ws]]
 # variable attributes section
 [variable_attributes]
+    deprecated = ancillary_variables
     [[Ah]]
         long_name = Absolute humidity
         group_name = meteorology
@@ -182,6 +183,15 @@
         group_name = flux
     [[Fc]]
         long_name = CO2 flux
+        group_name = flux
+    [[Fc_single]]
+        long_name = CO2 flux (storage term)
+        group_name = flux
+    [[Fc_profile]]
+        long_name = CO2 flux (storage term)
+        group_name = flux
+    [[Fc_storage]]
+        long_name = CO2 flux (storage term)
         group_name = flux
     [[Fe]]
         long_name = Latent heat flux
@@ -237,6 +247,7 @@
     [[Sws]]
         long_name = Soil water content
         group_name = soil
+        units = m3/m3
     [[Ta]]
         long_name = Air temperature
         group_name = meteorology

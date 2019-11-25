@@ -2151,13 +2151,16 @@ def nc_write_var(ncFile, ds, ThisOne, dim):
         msg = "Unrecognised dimension request for netCDF variable: "+ThisOne
         raise RuntimeError(msg)
     # write the attributes
-    for item in ds.series[ThisOne]["Attr"]:
+    vattrs = sorted(list(ds.series[ThisOne]["Attr"].keys()))
+    for item in vattrs:
         if item != "_FillValue":
             attr = str(ds.series[ThisOne]["Attr"][item])
             ncVar.setncattr(item, attr)
-    ## make sure the missing_value attribute is written
-    #if "missing_value" not in ds.series[ThisOne]["Attr"]:
-        #ncVar.setncattr("missing_value", c.missing_value)
+    # make sure the missing_value attribute is written
+    if dt == "d":
+        ncVar.setncattr("missing_value", repr(float(c.missing_value)))
+    else:
+        ncVar.setncattr("missing_value", repr(int(c.missing_value)))
     # get the data type of the QC flag
     dt = get_ncdtype(ds.series[ThisOne]["Flag"])
     # create the variable

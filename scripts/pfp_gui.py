@@ -61,6 +61,11 @@ class MsgBox_Quit(QtWidgets.QMessageBox):
         self.button(QtWidgets.QMessageBox.No).setText("Quit")
         self.exec_()
 
+class myTxtBox(QtWidgets.QInputDialog):
+    def __init__(self, title="", prompt="", parent=None):
+        super(myTxtBox, self).__init__(parent)
+        self.getText(None, title, prompt, QtWidgets.QLineEdit.Normal,"")
+
 class edit_cfg_L1(QtWidgets.QWidget):
     def __init__(self, main_gui):
 

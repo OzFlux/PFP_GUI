@@ -178,47 +178,45 @@ def do_file_convert_nc2fluxnet():
 def do_file_convert_nc2reddyproc():
     logger.warning("File/Convert/nc to REddyProc not implemented yet")
     return
-def do_file_convert_ncupdate(cfg=None):
+def do_file_convert_ncupdate():
     """
     Purpose:
-     Convert from original netCDF files to V1 (October 2018).
+     Convert from OFQC netCDF files to PFP V1 (October 2018).
     Usage:
     Author: PRI
     Date: October 2018
     """
     logger.info(" Starting conversion of netCDF")
-    if not cfg:
-        # check to see if there is an nc2ecostress.txt control file in controlfiles/standard
-        #  if there is
-        #   open controlfiles/standard/nc2csv_ecostress.txt
-        #   ask for netCDF file name
-        #   add [Files] section to control file
-        stdname = os.path.join("controlfiles", "standard", "map_old_to_new.txt")
-        if os.path.exists(stdname):
-            cfg = pfp_io.get_controlfilecontents(stdname)
-            filename = pfp_io.get_filename_dialog(file_path="../OzFlux/Sites", title="Choose a netCDF file")
-            if len(filename) == 0:
-                return
-            if "Files" not in dir(cfg):
-                cfg["Files"] = {}
-            cfg["Files"]["file_path"] = os.path.join(os.path.split(filename)[0], "")
-            cfg["Files"]["in_filename"] = os.path.split(filename)[1]
-        else:
-            cfg = pfp_io.load_controlfile(path="controlfiles")
-            if len(cfg) == 0:
-                return
-    if "Options" not in cfg:
-        cfg["Options"]={}
-    cfg["Options"]["call_mode"] = "interactive"
-    cfg["Options"]["show_plots"] = "Yes"
-    result = pfp_compliance.nc_update(cfg)
-    if result == 0:
-        logger.info(" Finished converting netCDF file")
-        logger.info("")
-    else:
-        logger.error("")
-        logger.error(" An error occured, check the log messages")
-        logger.error("")
+    try:
+        # get a list of netCDF files to update
+        file_names = QtWidgets.QFileDialog.getOpenFileNames(caption="Choose netCDF files", filter="*.nc")[0]
+        if len(file_names) == 0: return
+        # get the control file
+        stdname = os.path.join("controlfiles", "standard", "nc_cleanup.txt")
+        cfg = pfp_io.get_controlfilecontents(stdname)
+        if len(cfg) == 0: return
+        # loop over the selected files
+        for file_name in file_names:
+            # make the [Files] section
+            cfg["Files"] = {"file_path": os.path.join(os.path.split(file_name)[0], ""),
+                            "in_filename": os.path.split(file_name)[1]}
+            # make the [Options] section
+            cfg["Options"] = {"call_mode": "interactive", "show_plots": "Yes"}
+
+            result = pfp_compliance.nc_update(cfg)
+
+            if result == 0:
+                logger.info(" Finished converting netCDF file")
+                logger.info("")
+            else:
+                logger.error("")
+                logger.error(" An error occured, check the log messages")
+                logger.error("")
+    except Exception:
+        msg = " Error running netCDF update, see below for details ..."
+        logger.error(msg)
+        error_message = traceback.format_exc()
+        logger.error(error_message)
     return
 def do_file_split():
     Dialog = QtWidgets.QDialog()

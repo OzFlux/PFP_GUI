@@ -901,7 +901,7 @@ def do_rangecheck(cf, ds, section, series, code=2):
     # update the variable attributes
     attr["rangecheck_lower"] = cf[section][series]["RangeCheck"]["Lower"]
     attr["rangecheck_upper"] = cf[section][series]["RangeCheck"]["Upper"]
-    attr["valid_range"] = str(valid_lower)+","+str(valid_upper)
+    attr["valid_range"] = repr(valid_lower) + "," + repr(valid_upper)
     # and now put the data back into the data structure
     pfp_utils.CreateSeries(ds, series, data, Flag=flag, Attr=attr)
     # now we can return
