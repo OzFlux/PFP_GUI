@@ -1133,7 +1133,7 @@ def CreateDatetimeRange(start,stop,step=datetime.timedelta(minutes=30)):
         start = start + step
     return result
 
-def CreateEmptyVariable(label, nrecs, datetime=[], out_type="ma", attr=None):
+def CreateEmptyVariable(label, nrecs, datetime=None, out_type="ma", attr=None):
     """
     Purpose:
      Returns an empty variable.  Data values are set to -9999, flag values are set to 1
@@ -1151,8 +1151,16 @@ def CreateEmptyVariable(label, nrecs, datetime=[], out_type="ma", attr=None):
     flag = numpy.ones(nrecs, dtype=numpy.int32)
     attr_new = make_attribute_dictionary(attr)
     variable = {"Label": label, "Data": data, "Flag": flag, "Attr": attr_new}
-    if len(datetime) == nrecs:
-        variable["DateTime"] = datetime
+    if datetime != None:
+        if isinstance(datetime, numpy.ndarray):
+            if len(datetime) == nrecs:
+                variable["DateTime"] = datetime
+        elif isinstance(datetime, list):
+            if len(datetime) == nrecs:
+                variable["DateTime"] = numpy.array(datetime)
+        else:
+            msg = " Unrecognised type for datetime: " + type(datetime)
+            logger.warning(msg)
     return variable
 
 def CreateVariable(ds,variable):
@@ -1178,8 +1186,7 @@ def CreateVariable(ds,variable):
     ds.series["_tmp_"] = {}
     # put the data into the temporary series
     if numpy.ma.isMA(variable["Data"]):
-        ds.series["_tmp_"]["Data"] = numpy.ma.filled(variable["Data"],
-                                                     float(c.missing_value))
+        ds.series["_tmp_"]["Data"] = numpy.ma.filled(variable["Data"], float(c.missing_value))
     else:
         ds.series["_tmp_"]["Data"] = numpy.array(variable["Data"])
     # copy or make the QC flag
@@ -1742,10 +1749,7 @@ def GetPlotVariableNamesFromCF(cf, n):
 def GetSeries(ds,ThisOne,si=0,ei=-1,mode="truncate"):
     """ Returns the data, QC flag and attributes of a series from the data structure."""
     # number of records
-    if "nc_nrecs" in ds.globalattributes:
-        nRecs = int(ds.globalattributes["nc_nrecs"])
-    else:
-        nRecs = len(ds.series[ThisOne]["Data"])
+    nRecs = int(ds.globalattributes["nc_nrecs"])
     # check the series requested is in the data structure
     if ThisOne in ds.series.keys():
         # series is in the data structure
@@ -1768,8 +1772,9 @@ def GetSeries(ds,ThisOne,si=0,ei=-1,mode="truncate"):
         else:
             Attr = MakeAttributeDictionary()
     else:
-        # make an empty series if the requested series does not exist in the data structure
-        logger.warning("GetSeries: "+ThisOne+" not found, making empty series ...")
+        # tell the user we can't find the series
+        msg = " GetSeries: " + ThisOne + " not found, creating empty series ..."
+        logger.warning(msg)
         Series,Flag,Attr = MakeEmptySeries(ds,ThisOne)
     # tidy up
     if ei==-1: ei = nRecs - 1
@@ -1833,7 +1838,7 @@ def GetSeries(ds,ThisOne,si=0,ei=-1,mode="truncate"):
             raise ValueError(msg)
     else:
         raise ValueError("GetSeries: unrecognised mode option "+str(mode))
-    return Series,Flag,Attr
+    return Series, Flag, Attr
 
 def MakeEmptySeries(ds,ThisOne):
     nRecs = int(ds.globalattributes['nc_nrecs'])

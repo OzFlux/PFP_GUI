@@ -57,38 +57,6 @@ def do_file_concatenate(cfg=None):
         error_message = traceback.format_exc()
         logger.error(error_message)
     return
-#def do_file_concatenate(cfg=None):
-    #"""
-    #Purpose:
-     #Top level routine for concatenating multiple, single-year files into
-     #a single, multiple-year file.
-     #NOTE: The input files must be listed in the control file in chronological
-           #order.
-    #Usage:
-     #pfp_top_level.do_file_concatenate()
-    #Side effects:
-     #Creates a single netCDF file containing the contents of the input files.
-    #Author: PRI
-    #Date: Back in the day
-    #Mods:
-     #June 2018: rewrite for use with new GUI.
-    #"""
-    #logger.info(" Starting concatenation of netCDF files")
-    #try:
-        #if not cfg:
-            #cfg = pfp_io.load_controlfile(path="controlfiles")
-            #if len(cfg) == 0:
-                #logger.info("Quitting concatenation (no control file)")
-                #return
-        #pfp_io.nc_concatenate(cfg)
-        #logger.info(" Finished concatenating files")
-        #logger.info("")
-    #except Exception:
-        #error_message = " Error concatenating netCDF files, see below for details ... "
-        #logger.error(error_message)
-        #error_message = traceback.format_exc()
-        #logger.error(error_message)
-    #return
 def do_file_convert_biomet():
     logger.warning("File/Convert/nc to biomet not implemented yet")
     return

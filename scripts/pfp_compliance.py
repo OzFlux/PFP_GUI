@@ -295,7 +295,7 @@ def ParseConcatenateControlFile(cf):
     inc["Truncate"] = str(opt)
     opt = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "TruncateThreshold", default=50)
     inc["TruncateThreshold"] = float(opt)
-    s = "Ah,Cc,Fa,Fg,Fld,Flu,Fn,Fsd,Fsu,ps,Sws,Ta,Ts,Ws,Wd,Precip"
+    s = "Ah,CO2,Fa,Fg,Fld,Flu,Fn,Fsd,Fsu,ps,Sws,Ta,Ts,Ws,Wd,Precip"
     opt = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "SeriesToCheck", default=s)
     inc["SeriesToCheck"] = pfp_utils.csv_string_to_list(s)
     # now add the bits and pieces
@@ -303,27 +303,12 @@ def ParseConcatenateControlFile(cf):
     inc["end_date"] = []
     inc["chrono_files"] = []
     inc["labels"] = []
-    inc["attributes"] = ["height", "instrument", "long_name", "serial_number", "standard_name",
-                         "units", "valid_range"]
+    inc["attributes"] = ["height", "instrument", "long_name", "serial_number",
+                         "standard_name", "units", "valid_range"]
     # add key for suppressing output of intermediate variables e.g. Cpd etc
     opt = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "KeepIntermediateSeries", default="No")
     info["RemoveIntermediateSeries"] = {"KeepIntermediateSeries": opt, "not_output": []}
     return info
-
-#def ParseConcatenateControlFile(cf):
-    #"""
-    #Purpose:
-     #Make the concatenate information dictionary
-    #Usage:
-    #Side effects:
-    #Author: PRI
-    #Date: August 2019
-    #"""
-    #cc_info = {}
-    ## add key for suppressing output of intermediate variables e.g. Cpd etc
-    #opt = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "KeepIntermediateSeries", default="No")
-    #cc_info["RemoveIntermediateSeries"] = {"KeepIntermediateSeries": opt, "not_output": []}
-    #return cc_info
 
 def ParseL3ControlFile(cf, ds):
     """
