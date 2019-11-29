@@ -423,7 +423,3 @@ level = L2
         Variables = ps,Ux,Uy,Uz,Precip,Vbat,Tpanel
     [[Wind speed and direction]]
         Variables = Ws_CSAT,Ws_RMY_2m,Ws_RMY_10m,Wd_CSAT,Wd_RMY_2m,Wd_RMY_10m
-    [[xy plots:  Ah]]
-        Type = xy
-        XSeries = Ah_HMP_2m
-        YSeries = Ah_7500_Av
