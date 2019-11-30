@@ -320,6 +320,7 @@ def rpLT_createdict(cf, ds, l6_info, output, called_by, flag_code):
     model_outputs = cf["EcosystemRespiration"][output][called_by].keys()
     for model_output in model_outputs:
         if model_output not in ds.series.keys():
+            l6_info["RemoveIntermediateSeries"]["not_output"].append(model_output)
             # create an empty variable
             variable = pfp_utils.CreateEmptyVariable(model_output, nrecs)
             variable["Attr"]["long_name"] = "Ecosystem respiration"

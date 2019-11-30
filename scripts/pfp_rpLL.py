@@ -350,6 +350,7 @@ def rpLL_createdict(cf, ds, l6_info, output, called_by, flag_code):
     model_outputs = cf["EcosystemRespiration"][output][called_by].keys()
     for model_output in model_outputs:
         if model_output not in ds.series.keys():
+            l6_info["RemoveIntermediateSeries"]["not_output"].append(model_output)
             # create an empty variable
             variable = pfp_utils.CreateEmptyVariable(model_output, nrecs)
             variable["Attr"]["long_name"] = "Ecosystem respiration"
@@ -359,6 +360,10 @@ def rpLL_createdict(cf, ds, l6_info, output, called_by, flag_code):
             variable["Attr"]["source"] = l6_info[called_by]["info"]["source"]
             variable["Attr"]["units"] = Fc["Attr"]["units"]
             pfp_utils.CreateVariable(ds, variable)
+    # intermediate series to be deleted
+    for item in ["alpha_LL", "beta_LL", "E0_LL", "k_LL", "rb_LL",
+                 "NEE_LL_all", "GPP_LL_all"]:
+        l6_info["RemoveIntermediateSeries"]["not_output"].append(item)
     return
 
 def rpLL_createdict_info(cf, ds, erll, called_by):

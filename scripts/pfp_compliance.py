@@ -327,6 +327,61 @@ def ParseL3ControlFile(cf, ds):
     l3_info["RemoveIntermediateSeries"] = {"KeepIntermediateSeries": opt, "not_output": []}
     return l3_info
 
+#def ParseL6ControlFile(cf, ds):
+    #"""
+    #Purpose:
+     #Parse the L6 control file.
+    #Usage:
+    #Side effects:
+    #Author: PRI
+    #Date: Back in the day
+    #"""
+    ## create the L6 information dictionary
+    #l6_info = {}
+    ## add key for suppressing output of intermediate variables e.g. Ta_aws
+    #opt = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "KeepIntermediateSeries", default="No")
+    #l6_info["RemoveIntermediateSeries"] = {"KeepIntermediateSeries": opt, "not_output": []}
+    #if "EcosystemRespiration" in cf.keys():
+        #for output in cf["EcosystemRespiration"].keys():
+            #if "ERUsingSOLO" in cf["EcosystemRespiration"][output].keys():
+                #rpSOLO_createdict(cf, ds, l6_info, output, "ERUsingSOLO", 610)
+            #if "ERUsingLloydTaylor" in cf["EcosystemRespiration"][output].keys():
+                #pfp_rpLT.rpLT_createdict(cf, ds, l6_info, output, "ERUsingLloydTaylor", 620)
+            #if "ERUsingLasslop" in cf["EcosystemRespiration"][output].keys():
+                #pfp_rpLL.rpLL_createdict(cf, ds, l6_info, output, "ERUsingLasslop", 630)
+            #if "MergeSeries" in cf["EcosystemRespiration"][output].keys():
+                #rpMergeSeries_createdict(cf, ds, l6_info, output, "MergeSeries")
+    #if "NetEcosystemExchange" in cf.keys():
+        #l6_info["NetEcosystemExchange"] = {}
+        #for output in cf["NetEcosystemExchange"].keys():
+            #rpNEE_createdict(cf, ds, l6_info["NetEcosystemExchange"], output)
+    #if "GrossPrimaryProductivity" in cf.keys():
+        #l6_info["GrossPrimaryProductivity"] = {}
+        #for output in cf["GrossPrimaryProductivity"].keys():
+            #rpGPP_createdict(cf, ds, l6_info["GrossPrimaryProductivity"], output)
+    #return l6_info
+    # check to see if a turbulence filter has been applied to the CO2 flux
+    #if "turbulence_filter" not in Fc["Attr"]:
+        ## print error message to the log window
+        #msg = "CO2 flux series Fc did not have a turbulence filter applied."
+        #logger.error(msg)
+        #msg = "Please repeat the L5 processing and apply a turbulence filter."
+        #logger.error(msg)
+        #msg = "Quiting L6 processing ..."
+        #logger.error(msg)
+        ## check to see if we are running in interactive mode
+        #if cf["Options"]["call_mode"].lower() == "interactive":
+            ## if so, put up a message box
+            #msg = "CO2 flux series Fc did not have a turbulence filter applied.\n"
+            #msg = msg + "Please repeat the L5 processing and apply a turbulence filter.\n"
+            #msg = msg + "Quiting L6 processing ..."
+            #msgbox = pfp_gui.myMessageBox(msg, title="Critical")
+        ## set the return code to non-zero ...
+        #ds.returncodes["value"] = 1
+        #ds.returncodes["message"] = "quit"
+        ## ... and return
+        #return
+
 def parse_variable_attributes(attributes):
     """
     Purpose:
