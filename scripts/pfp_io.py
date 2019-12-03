@@ -1273,6 +1273,7 @@ def NetCDFConcatenate(info):
     file_names = list(data.keys())
     # get the earliest start time, the latest end time and a list of unique variable names
     for file_name in file_names:
+        # get the start and end times
         dt = pfp_utils.GetVariable(data[file_name], "DateTime")
         inc["start_date"].append(dt["Data"][0])
         inc["end_date"].append(dt["Data"][-1])

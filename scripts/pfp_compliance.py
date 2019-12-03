@@ -305,6 +305,9 @@ def ParseConcatenateControlFile(cf):
     inc["labels"] = []
     inc["attributes"] = ["height", "instrument", "long_name", "serial_number",
                          "standard_name", "units", "valid_range"]
+    # add key for updating netCDF files
+    stdname = os.path.join("controlfiles", "standard", "nc_cleanup.txt")
+    info["NetCDFUpdate"] = pfp_io.get_controlfilecontents(stdname)
     # add key for suppressing output of intermediate variables e.g. Cpd etc
     opt = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "KeepIntermediateSeries", default="No")
     info["RemoveIntermediateSeries"] = {"KeepIntermediateSeries": opt, "not_output": []}
@@ -568,10 +571,10 @@ def change_variable_attributes(cfg, ds):
         if "valid_range" in variable["Attr"]:
             valid_range = variable["Attr"]["valid_range"]
             if valid_range == "-1e+35,1e+35":
-                mn = pfp_utils.round2sig(numpy.ma.minimum.reduce(variable["Data"]), 4)
-                mn = numpy.sign(mn)*10**numpy.ceil(numpy.log10(abs(mn)))
-                mx = pfp_utils.round2sig(numpy.ma.maximum.reduce(variable["Data"]), 4)
-                mx = numpy.sign(mx)*10**numpy.ceil(numpy.log10(abs(mx)))
+                d = numpy.ma.min(variable["Data"])
+                mn = pfp_utils.round2significant(d, 4, direction='down')
+                d = numpy.ma.max(variable["Data"])
+                mx = pfp_utils.round2significant(d, 4, direction='up')
                 variable["Attr"]["valid_range"] = repr(mn) + "," + repr(mx)
         pfp_utils.CreateVariable(ds, variable)
     return
@@ -632,7 +635,7 @@ def nc_update(cfg):
     ds1 = pfp_io.nc_read_series(nc_file_path)
     # update the variable names
     change_variable_names(cfg, ds1)
-    # makes sure there are Ws and Wd series
+    # make sure there are Ws and Wd series
     copy_ws_wd(ds1)
     # make sure we have all the variables we want ...
     ds2 = include_variables(cfg, ds1)

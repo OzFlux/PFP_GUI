@@ -24,7 +24,7 @@ import pfp_gui
 import pfp_log
 import pfp_top_level
 
-warnings.filterwarnings("ignore", category=RuntimeWarning)
+warnings.filterwarnings("ignore", category=Warning)
 
 # now check the logfiles and plots directories are present
 dir_list = ["./logfiles/", "./plots/"]

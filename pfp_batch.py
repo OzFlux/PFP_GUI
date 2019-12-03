@@ -10,6 +10,7 @@ from configobj import ConfigObj
 sys.path.append("scripts")
 import pfp_cfg
 import pfp_clim
+import pfp_compliance
 import pfp_cpd
 import pfp_io
 import pfp_levels
@@ -141,7 +142,12 @@ def do_concatenate_batch(cf_level):
         logger.info(msg)
         try:
             cf_cc = pfp_io.get_controlfilecontents(cf_level[i])
-            pfp_io.nc_concatenate(cf_cc)
+            info = pfp_compliance.ParseConcatenateControlFile(cf_cc)
+            if not info["NetCDFConcatenate"]["OK"]:
+                msg = " Error occurred parsing the control file " + cf_file_name[1]
+                logger.error(msg)
+                continue
+            pfp_io.NetCDFConcatenate(info)
             msg = "Finished concatenation with " + cf_file_name[1]
             logger.info(msg)
             # now plot the fingerprints for the concatenated files

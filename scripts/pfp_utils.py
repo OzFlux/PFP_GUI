@@ -460,6 +460,8 @@ def convert_units_co2(ds, variable, new_units):
         # update the variable attributes to the new units
         variable["Attr"]["units"] = new_units
     elif old_units in ["mg/m3", "mgCO2/m3"] and new_units == "umol/mol":
+        ldt = GetVariable(ds, "DateTime")
+        months = numpy.array([dt.month for dt in ldt["Data"]])
         # convert the data
         Ta = GetVariable(ds, "Ta")
         ps = GetVariable(ds, "ps")
@@ -479,7 +481,7 @@ def convert_units_co2(ds, variable, new_units):
                 for m, item in enumerate(limit_list):
                     month = m + 1
                     # get an index of the months
-                    idx = numpy.where(ds.series["Month"]==month)[0]
+                    idx = numpy.where(months == month)[0]
                     # move on to next month if this one not in data
                     if len(idx) == 0:
                         continue
@@ -517,6 +519,8 @@ def convert_units_co2(ds, variable, new_units):
         # update the variable attributes to the new units
         variable["Attr"]["units"] = new_units
     elif old_units == "umol/mol" and new_units in ["mg/m3", "mgCO2/m3"]:
+        ldt = GetVariable(ds, "DateTime")
+        months = numpy.array([dt.month for dt in ldt["Data"]])
         Ta = GetVariable(ds, "Ta")
         ps = GetVariable(ds, "ps")
         Ta_def = numpy.full(12, numpy.ma.mean(Ta["Data"]))
@@ -535,7 +539,7 @@ def convert_units_co2(ds, variable, new_units):
                 for m, item in enumerate(limit_list):
                     month = m + 1
                     # get an index of the months
-                    idx = numpy.where(ds.series["Month"] == month)[0]
+                    idx = numpy.where(months == month)[0]
                     # move on to next month if this one not in data
                     if len(idx) == 0:
                         continue
@@ -1151,16 +1155,17 @@ def CreateEmptyVariable(label, nrecs, datetime=None, out_type="ma", attr=None):
     flag = numpy.ones(nrecs, dtype=numpy.int32)
     attr_new = make_attribute_dictionary(attr)
     variable = {"Label": label, "Data": data, "Flag": flag, "Attr": attr_new}
-    if datetime != None:
-        if isinstance(datetime, numpy.ndarray):
-            if len(datetime) == nrecs:
-                variable["DateTime"] = datetime
-        elif isinstance(datetime, list):
-            if len(datetime) == nrecs:
-                variable["DateTime"] = numpy.array(datetime)
-        else:
-            msg = " Unrecognised type for datetime: " + type(datetime)
-            logger.warning(msg)
+    if datetime is None:
+        pass
+    elif isinstance(datetime, numpy.ndarray):
+        if len(datetime) == nrecs:
+            variable["DateTime"] = datetime
+    elif isinstance(datetime, list):
+        if len(datetime) == nrecs:
+            variable["DateTime"] = numpy.array(datetime)
+    else:
+        msg = " Unrecognised type for datetime: " + type(datetime)
+        logger.warning(msg)
     return variable
 
 def CreateVariable(ds,variable):
@@ -2855,11 +2860,24 @@ def round_datetime(ds,mode="nearest_timestep"):
 def roundtobase(x,base=5):
     return int(base*round(float(x)/base))
 
-def round2sig(x,sig=2):
-    '''
-    Round a float to a specified number of significant digits (default is 2).
-    '''
-    return round(x, sig-int(math.floor(math.log10(abs(x))))-1)
+def round2significant(x, d, direction='nearest'):
+    """
+    Round to 'd' significant digits with the option to round to
+    the nearest number, round up or round down.
+    """
+    if numpy.ma.is_masked(x):
+        y = float(0)
+    elif numpy.isclose(x, 0.0):
+        y = float(0)
+    else:
+        n = d - numpy.ceil(numpy.log10(abs(x)))
+        if direction.lower() == 'up':
+            y = round(numpy.ceil(x*10**n))/float(10**n)
+        elif direction.lower() == 'down':
+            y = round(numpy.floor(x*10**n))/float(10**n)
+        else:
+            y = round(x*10**n)/float(10**n)
+    return y
 
 def r(b, p, alpha):
     """

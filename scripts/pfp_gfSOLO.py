@@ -303,7 +303,7 @@ def gfSOLO_plot(pd, ds, drivers, target, output, l5s, si=0, ei=-1):
     ax2.set_xlabel(target + '_SOLO')
     # plot the best fit line
     coefs = numpy.ma.polyfit(numpy.ma.copy(mod), numpy.ma.copy(obs), 1)
-    xfit = numpy.ma.array([numpy.ma.minimum.reduce(mod), numpy.ma.maximum.reduce(mod)])
+    xfit = numpy.ma.array([numpy.ma.min(mod), numpy.ma.max(mod)])
     yfit = numpy.polyval(coefs, xfit)
     r = numpy.ma.corrcoef(mod, obs)
     ax2.plot(xfit, yfit, 'r--', linewidth=3)
@@ -318,7 +318,7 @@ def gfSOLO_plot(pd, ds, drivers, target, output, l5s, si=0, ei=-1):
     l5s["outputs"][output]["results"]["Bias"].append(bias)
     l5s["outputs"][output]["results"]["Frac Bias"].append(fractional_bias)
     rmse = numpy.ma.sqrt(numpy.ma.mean((obs-mod)*(obs-mod)))
-    data_range = numpy.ma.maximum.reduce(obs)-numpy.ma.minimum.reduce(obs)
+    data_range = numpy.ma.max(obs)-numpy.ma.min(obs)
     nmse = rmse/data_range
     plt.figtext(0.65, 0.225, 'No. points')
     plt.figtext(0.75, 0.225, str(numpoints))
@@ -336,16 +336,16 @@ def gfSOLO_plot(pd, ds, drivers, target, output, l5s, si=0, ei=-1):
     plt.figtext(0.65, 0.075, 'Iterations')
     plt.figtext(0.75, 0.075, str(l5s["gui"]["iterations"]))
     plt.figtext(0.815, 0.225, 'Slope')
-    plt.figtext(0.915, 0.225, str(pfp_utils.round2sig(coefs[0], sig=4)))
+    plt.figtext(0.915, 0.225, str(pfp_utils.round2significant(coefs[0], 4)))
     l5s["outputs"][output]["results"]["m_ols"].append(trap_masked_constant(coefs[0]))
     plt.figtext(0.815, 0.200, 'Offset')
-    plt.figtext(0.915, 0.200, str(pfp_utils.round2sig(coefs[1], sig=4)))
+    plt.figtext(0.915, 0.200, str(pfp_utils.round2significant(coefs[1], 4)))
     l5s["outputs"][output]["results"]["b_ols"].append(trap_masked_constant(coefs[1]))
     plt.figtext(0.815, 0.175, 'r')
-    plt.figtext(0.915, 0.175, str(pfp_utils.round2sig(r[0][1], sig=4)))
+    plt.figtext(0.915, 0.175, str(pfp_utils.round2significant(r[0][1], 4)))
     l5s["outputs"][output]["results"]["r"].append(trap_masked_constant(r[0][1]))
     plt.figtext(0.815, 0.150, 'RMSE')
-    plt.figtext(0.915, 0.150, str(pfp_utils.round2sig(rmse, sig=4)))
+    plt.figtext(0.915, 0.150, str(pfp_utils.round2significant(rmse, 4)))
     l5s["outputs"][output]["results"]["RMSE"].append(trap_masked_constant(rmse))
     l5s["outputs"][output]["results"]["NMSE"].append(trap_masked_constant(nmse))
     var_obs = numpy.ma.var(obs)
@@ -1025,8 +1025,8 @@ def gf_getdiurnalstats(DecHour,Data,ts):
             if Num[i]!=0:
                 Av[i] = numpy.ma.mean(Data[li])
                 Sd[i] = numpy.ma.std(Data[li])
-                Mx[i] = numpy.ma.maximum.reduce(Data[li])
-                Mn[i] = numpy.ma.minimum.reduce(Data[li])
+                Mx[i] = numpy.ma.max(Data[li])
+                Mn[i] = numpy.ma.min(Data[li])
     return Num, Hr, Av, Sd, Mx, Mn
 
 def trap_masked_constant(num):

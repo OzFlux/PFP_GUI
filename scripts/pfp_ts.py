@@ -1200,7 +1200,7 @@ def CalculateFcStorageSinglePoint(cf, ds, Fc_out="Fc_single", CO2_in="CO2"):
         descr = "description_" + level
         # create an empty output variable
         ldt = pfp_utils.GetVariable(ds, "DateTime")
-        Fc_single = pfp_utils.CreateEmptyVariable(Fc_out, nRecs, datetime=ldt)
+        Fc_single = pfp_utils.CreateEmptyVariable(Fc_out, nRecs, datetime=ldt["Data"])
         # get the input data
         if CO2_in not in ds.series.keys():
             if "Cc" in ds.series.keys():
@@ -1264,7 +1264,8 @@ def CalculateFcStorageSinglePoint(cf, ds, Fc_out="Fc_single", CO2_in="CO2"):
             # do the attributes
             Fc_single["Attr"] = {}
             for attr in ["height", "instrument", "serial_number"]:
-                Fc_single["Attr"][attr] = CO2["Attr"][attr]
+                if attr in CO2["Attr"]:
+                    Fc_single["Attr"][attr] = CO2["Attr"][attr]
             Fc_single["Attr"]["units"] = "umol/m2/s"
             Fc_single["Attr"]["standard_name"] = "not defined"
             Fc_single["Attr"]["long_name"] = "CO2 flux (storage term)"

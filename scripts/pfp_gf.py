@@ -1269,8 +1269,8 @@ def gf_getdiurnalstats(DecHour,Data,ts):
             if Num[i]!=0:
                 Av[i] = numpy.ma.mean(Data[li])
                 Sd[i] = numpy.ma.std(Data[li])
-                Mx[i] = numpy.ma.maximum.reduce(Data[li])
-                Mn[i] = numpy.ma.minimum.reduce(Data[li])
+                Mx[i] = numpy.ma.max(Data[li])
+                Mn[i] = numpy.ma.min(Data[li])
     return Num, Hr, Av, Sd, Mx, Mn
 
 def gf_getdateticks(start, end):

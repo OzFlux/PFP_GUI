@@ -1,3 +1,6 @@
+[Files]
+    site_information = /mnt/OzFlux/Sites/site_information.xls
+    
 [Global]
     license_type = CC BY 4.0
     license_url = https://creativecommons.org/licenses/by/4.0/
