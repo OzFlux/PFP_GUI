@@ -2328,7 +2328,7 @@ def InterpolateOverMissing(ds, labels, max_length_hours=0, int_type="linear"):
         msg = " Input label " + labels + " must be a string or a list"
         logger.error(msg)
         return
-    ts = int(ds.globalattribute["time_step"])
+    ts = int(ds.globalattributes["time_step"])
     max_length_points = int((max_length_hours * float(60)/float(ts)) + 0.5)
     for label in labels:
         # check that series is in the data structure
