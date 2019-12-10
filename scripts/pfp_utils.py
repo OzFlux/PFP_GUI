@@ -1910,8 +1910,8 @@ def GetVariable(ds, label, start=0, end=-1, mode="truncate", out_type="ma"):
     ts = int(ds.globalattributes["time_step"])
     ldt = ds.series["DateTime"]["Data"]
     # get the start and end indices
-    si = GetDateIndex(ldt, start, ts=ts, default=0, match='exact')
-    ei = GetDateIndex(ldt, end, ts=ts, default=nrecs-1, match='exact')
+    si = GetDateIndex(ldt, start, ts=ts, default=0, match="exact")
+    ei = GetDateIndex(ldt, end, ts=ts, default=nrecs-1, match="exact")
     dt = ldt[si:ei+1]
     data, flag, attr = GetSeries(ds, label, si=si, ei=ei, mode=mode)
     # check to see what kind of output the user wants
