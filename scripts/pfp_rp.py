@@ -1782,6 +1782,7 @@ def L6_summary_cumulative(ds, series_dict):
     cdyr = cumulative_dict["all"] = {"globalattributes":{}, "variables":{}}
     cdyr["globalattributes"] = copy.deepcopy(ds.globalattributes)
     cdyr["variables"]["DateTime"] = {"data":dt["Data"], "flag":dt["Flag"], "attr":dt["Attr"]}
+    cdyr["variables"]["DateTime"]["attr"]["format"] = "dd/mm/yyyy HH:MM"
     for item in series_list:
         cdyr["variables"][item] = {"data":[],"attr":{}}
         variable = pfp_utils.GetVariable(ds, item)
