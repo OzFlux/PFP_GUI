@@ -349,12 +349,13 @@ else:
 
 rp = os.path.join(os.sep, "mnt", "OzFlux", "Sites")
 #sites = sorted([d for d in os.listdir(rp) if os.path.isdir(os.path.join(rp,d))])
-#sites = ["AdelaideRiver", "AliceSpringsMulga", "Calperum", "CapeTribulation", "CowBay", "CumberlandPlain",
-         #"DalyPasture", "DalyUncleared", "DryRiver", "Emerald", "FoggDam", "Gingin", "GreatWesternWoodlands",
-         #"HowardSprings", "Litchfield", "Loxton", "Otway", "RedDirtMelonFarm", "Ridgefield", "RiggsCreek",
-         #"RobsonCreek", "Samford", "SturtPlains", "TiTreeEast", "Tumbarumba", "WallabyCreek", "Warra",
-         #"Whroo", "WombatStateForest", "Yanco"]
-sites = ["Samford"]
+sites = ["AdelaideRiver", "AliceSpringsMulga", "Boyagin", "Calperum", "CapeTribulation", "Collie",
+         "CowBay", "CumberlandPlain", "DalyPasture", "DalyUncleared", "DryRiver", "Emerald",
+         "FoggDam", "Gingin", "GreatWesternWoodlands", "HowardSprings", "Litchfield", "Longreach",
+         "Loxton", "Otway", "RedDirtMelonFarm", "Ridgefield", "RiggsCreek", "RobsonCreek", "Samford",
+         "SturtPlains", "TiTreeEast", "Tumbarumba", "WallabyCreek", "Warra", "Whroo",
+         "WombatStateForest", "Yanco"]
+#sites = ["Samford"]
 for site in sites:
     sp = os.path.join(rp, site, "Data", "Portal")
     op = os.path.join(rp, site, "Data", "Processed")

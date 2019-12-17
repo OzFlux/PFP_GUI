@@ -166,9 +166,9 @@ def gfalternate_autocomplete(ds_tower, ds_alt, l4_info, called_by, mode="verbose
                 gap[1] = min(nRecs_gui - 1, gap[1] + l4a["gui"]["nperday"])
                 if gap[0] == 0 and gap[1] == nRecs_gui - 1:
                     msg = " Unable to find enough good points in data set for " + label_tower
-                    logger.error(msg)
+                    logger.warning(msg)
                     msg = " Replacing missing tower data with unmodified alternate data"
-                    logger.error(msg)
+                    logger.warning(msg)
                     gap[0] = 0; gap[1] = -1
                     l4a["gui"]["autoforce"] = True
                     not_enough_points = True
