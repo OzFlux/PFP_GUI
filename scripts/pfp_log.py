@@ -59,12 +59,12 @@ def change_logger_filename(logger_name, new_file_name):
     # create formatter
     formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s', '%H:%M:%S')
     # remove the existing file handlers
-    for hdlr in logger.handlers[:]:
-        if isinstance(hdlr, logging.FileHandler):
-            old_log_path = hdlr.baseFilename
-            old_log_level = hdlr.level
-            old_log_formatter = hdlr.formatter
-            logger.removeHandler(hdlr)
+    for handler in logger.handlers:
+        if isinstance(handler, logging.FileHandler):
+            old_log_path = handler.baseFilename
+            old_log_level = handler.level
+            old_log_formatter = handler.formatter
+            logger.removeHandler(handler)
             old_dir_name = os.path.dirname(os.path.abspath(old_log_path))
             old_base_name = os.path.basename(os.path.abspath(old_log_path))
             old_file_name = os.path.splitext(old_base_name)[0]
@@ -75,6 +75,22 @@ def change_logger_filename(logger_name, new_file_name):
             fh.setFormatter(old_log_formatter)
             logger.addHandler(fh)
     return logger
+
+def disable_console_log(logger_name):
+    console_handler = None
+    logger = logging.getLogger(name=logger_name)
+    for handler in logger.handlers:
+        if isinstance(handler, logging.StreamHandler):
+            console_handler = handler
+            logger.removeHandler(handler)
+    return console_handler
+
+def enable_console_log(logger_name, console_handler):
+    if console_handler is None:
+        return
+    logger = logging.getLogger(name=logger_name)
+    logger.addHandler(console_handler)
+    return
 
 def get_batch_log_path(log_path):
     if not os.path.isdir(log_path):
