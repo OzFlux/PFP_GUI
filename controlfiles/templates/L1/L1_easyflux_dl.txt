@@ -1,0 +1,786 @@
+level = L1
+[Files]
+    file_path = Right click to browse
+    in_filename = Right click to browse (*.xls)
+    in_headerrow = 2
+    in_firstdatarow = 5
+    out_filename = Right click to browse (*.nc)
+[Global]
+    acknowledgement = '''This work used eddy covariance data collected by the TERN-OzFlux facility. OzFlux
+would like to acknowledge the financial support of the Australian Federal Government via
+the National Collaborative Research Infrastructure Scheme and the Education Investment
+Fund.'''
+    contact = ""
+    canopy_height = <canopy_height>m
+    comment = CF metadata, OzFlux standard variable names
+    conventions = CF-1.6
+    conventions_names = CF convention standard names table version 27, 28 Nov 2013, audited 4 Jan 2015
+    data_url = http://data.ozflux.org.au/
+    doi = ""
+    history = ""
+    institution = ""
+    latitude = <latitude>
+    license_type = CC BY 4.0
+    license_url = https://creativecommons.org/licenses/by/4.0/
+    longitude = <longitude>
+    metadata_url = http://http://www.ozflux.org.au/monitoringsites/<site_name>/index.html
+    ozflux_url = http://ozflux.org.au/
+    references = None
+    site_name = <site_name>
+    site_pi = ""
+    soil = ""
+    source = ""
+    title = Flux tower data set from the <site_name> site for the calendar year <year>
+    time_step = 30
+    time_zone = <country>/<time_zone>
+    tower_height = ""
+    vegetation = ""
+    altitude = <altitude>m
+[Variables]
+    [[xlDateTime]]
+        [[[xl]]]
+            sheet = CSFormat
+            name = TIMESTAMP
+        [[[Attr]]]
+            long_name = Date/time in Excel format
+            units = days since 1899-12-31 00:00:00
+            standard_name =
+            cf_role = timeseries_id
+    [[Fc_EF]]
+        [[[xl]]]
+            sheet = CSFormat
+            name = FC_mass
+        [[[Attr]]]
+            height =
+            instrument = CSAT/EC150
+            long_name = CO2 flux
+            serial_number =
+            standard_name =
+            units = mg/m2/s
+    [[Fc_EF_QC]]
+        [[[xl]]]
+            sheet = CSFormat
+            name = FC_QC
+        [[[Attr]]]
+            height =
+            instrument = CSAT/EC150
+            long_name = CO2 flux QC flag
+            serial_number =
+            standard_name =
+            units =
+    [[Fc_EF_Num]]
+        [[[xl]]]
+            sheet = CSFormat
+            name = FC_samples
+        [[[Attr]]]
+            height =
+            instrument = CSAT/EC150
+            long_name = CO2 flux accepted samples
+            serial_number =
+            standard_name =
+            units =
+    [[Fe_EF]]
+        [[[xl]]]
+            sheet = CSFormat
+            name = LE
+        [[[Attr]]]
+            height =
+            instrument = CSAT/EC150
+            long_name = Latent heat flux
+            serial_number =
+            standard_name =
+            units = W/m2
+    [[Fe_EF_QC]]
+        [[[xl]]]
+            sheet = CSFormat
+            name = LE_QC
+        [[[Attr]]]
+            height =
+            instrument = CSAT/EC150
+            long_name = Latent heat flux QC flag
+            serial_number =
+            standard_name =
+            units =
+    [[Fe_EF_Num]]
+        [[[xl]]]
+            sheet = CSFormat
+            name = LE_samples
+        [[[Attr]]]
+            height =
+            instrument = CSAT/EC150
+            long_name = Latent heat flux accepted samples
+            serial_number =
+            standard_name =
+            units =
+    [[Fh_EF]]
+        [[[xl]]]
+            sheet = CSFormat
+            name = H
+        [[[Attr]]]
+            height =
+            instrument = CSAT
+            long_name = Sensible heat flux
+            serial_number =
+            standard_name =
+            units = W/m2
+    [[Fh_EF_QC]]
+        [[[xl]]]
+            sheet = CSFormat
+            name = H_QC
+        [[[Attr]]]
+            height =
+            instrument = CSAT
+            long_name = Sensible heat flux QC flag
+            serial_number =
+            standard_name =
+            units =
+    [[Fh_EF_Num]]
+        [[[xl]]]
+            sheet = CSFormat
+            name = H_samples
+        [[[Attr]]]
+            height =
+            instrument = CSAT
+            long_name = Sensible heat flux accepted samples
+            serial_number =
+            standard_name =
+            units =
+    [[Fn]]
+        [[[xl]]]
+            sheet = CSFormat
+            name = NETRAD
+        [[[Attr]]]
+            height =
+            instrument = NR Lite
+            long_name = Net radiation
+            serial_number =
+            standard_name = surface_net_downwawrd_radiative_flux
+            units = W/m2
+    [[Fg_EF]]
+        [[[xl]]]
+            sheet = CSFormat
+            name = G
+        [[[Attr]]]
+            height =
+            instrument = 
+            long_name = Ground heat flux
+            serial_number =
+            standard_name = downward_heat_flux_at_ground_level_in_soil
+            units = W/m2
+    [[Fm_EF]]
+        [[[xl]]]
+            sheet = CSFormat
+            name = TAU
+        [[[Attr]]]
+            height =
+            instrument = CSAT
+            long_name = Momentum flux
+            serial_number =
+            standard_name =
+            units = kg/m/s2
+    [[Fm_EF_QC]]
+        [[[xl]]]
+            sheet = CSFormat
+            name = TAU_QC
+        [[[Attr]]]
+            height =
+            instrument = CSAT
+            long_name = Momentum flux QC flag
+            serial_number =
+            standard_name =
+            units =
+    [[ustar]]
+        [[[xl]]]
+            sheet = CSFormat
+            name = USTAR
+        [[[Attr]]]
+            height =
+            instrument = CSAT
+            long_name = Friction velocity
+            serial_number =
+            standard_name =
+            units = m/s
+    [[Tstar]]
+        [[[xl]]]
+            sheet = CSFormat
+            name = TSTAR
+        [[[Attr]]]
+            height =
+            instrument = CSAT
+            long_name = Scaling temperature
+            serial_number =
+            standard_name =
+            units = C
+    [[Ta_<inst>_<height>m]]
+        [[[xl]]]
+            sheet = CSFormat
+            name = Ta_1_1_1
+        [[[Attr]]]
+            height =
+            instrument = HMP155
+            long_name = Air temperature
+            serial_number =
+            standard_name = air_temperature
+            units = C
+    [[RH_<inst>_<height>m]]
+        [[[xl]]]
+            sheet = CSFormat
+            name = RH_1_1_1
+        [[[Attr]]]
+            height =
+            instrument = HMP155
+            long_name = Relative humidity
+            serial_number =
+            standard_name = relative_humidity
+            units = %
+    [[ps]]
+        [[[xl]]]
+            sheet = CSFormat
+            name = PA
+        [[[Attr]]]
+            height =
+            instrument = Li-7500
+            long_name = Air pressure
+            serial_number =
+            standard_name = surface_air_pressure
+            units = kPa
+    [[Ux_SONIC_Av]]
+        [[[xl]]]
+            sheet = CSFormat
+            name = Ux
+        [[[Attr]]]
+            height =
+            instrument = CSAT
+            long_name = Wind speed, longitudinal component
+            serial_number =
+            standard_name =
+            units = m/s
+    [[Ux_SONIC_Sd]]
+        [[[xl]]]
+            sheet = CSFormat
+            name = Ux_SIGMA
+        [[[Attr]]]
+            height =
+            instrument = CSAT
+            long_name = Wind speed, longitudinal component, standard deviation
+            serial_number =
+            standard_name =
+            units = m/s
+    [[Uy_SONIC_Av]]
+        [[[xl]]]
+            sheet = CSFormat
+            name = Uy
+        [[[Attr]]]
+            height =
+            instrument = CSAT
+            long_name = Wind speed, lateral component
+            serial_number =
+            standard_name =
+            units = m/s
+    [[Uy_SONIC_Sd]]
+        [[[xl]]]
+            sheet = CSFormat
+            name = Uy_SIGMA
+        [[[Attr]]]
+            height =
+            instrument = CSAT
+            long_name = Wind speed, lateral component, standard deviation
+            serial_number =
+            standard_name =
+            units = m/s
+    [[Uz_SONIC_Av]]
+        [[[xl]]]
+            sheet = CSFormat
+            name = Uz
+        [[[Attr]]]
+            height =
+            instrument = CSAT
+            long_name = Wind speed, vertical component
+            serial_number =
+            standard_name =
+            units = m/s
+    [[Uz_SONIC_Sd]]
+        [[[xl]]]
+            sheet = CSFormat
+            name = Uz_SIGMA
+        [[[Attr]]]
+            height =
+            instrument = CSAT
+            long_name = Wind speed, vertical component, standard deviation
+            serial_number =
+            standard_name =
+            units = m/s
+    [[Tv_SONIC_Av]]
+        [[[xl]]]
+            sheet = CSFormat
+            name = T_SONIC
+        [[[Attr]]]
+            height =
+            instrument = CSAT
+            long_name = Virtual air temperature
+            serial_number =
+            standard_name =
+            units = C
+    [[Tv_SONIC_Sd]]
+        [[[xl]]]
+            sheet = CSFormat
+            name = T_SONIC_SIGMA
+        [[[Attr]]]
+            height =
+            instrument = CSAT
+            long_name = Virtual air temperature, standard deviation
+            serial_number =
+            standard_name =
+            units = C
+    [[Ws_SONIC_Av]]
+        [[[xl]]]
+            sheet = CSFormat
+            name = WS
+        [[[Attr]]]
+            height =
+            instrument = CSAT
+            long_name = Wind speed
+            serial_number =
+            standard_name = wind_speed
+            units = m/s
+    [[Wd_SONIC_Av]]
+        [[[xl]]]
+            sheet = CSFormat
+            name = WD
+        [[[Attr]]]
+            height =
+            instrument = CSAT
+            long_name = Wind direction
+            serial_number =
+            standard_name = wind_from_direction
+            units = deg
+    [[Wd_SONIC_Sd]]
+        [[[xl]]]
+            sheet = CSFormat
+            name = WD_SIGMA
+        [[[Attr]]]
+            height =
+            instrument = CSAT
+            long_name = Wind direction, standard deviation
+            serial_number =
+            standard_name =
+            units = deg
+    [[CO2_IRGA_Av]]
+        [[[xl]]]
+            sheet = CSFormat
+            name = CO2_density
+        [[[Attr]]]
+            height = 
+            instrument = EC150
+            long_name = CO2 concentration
+            serial_number =
+            standard_name = mass_concentration_of_carbon_dioxide_in_air
+            units = mg/m3
+    [[CO2_IRGA_Sd]]
+        [[[xl]]]
+            sheet = CSFormat
+            name = CO2_density_SIGMA
+        [[[Attr]]]
+            height =
+            instrument = EC150
+            long_name = CO2 concentration, standard deviation
+            serial_number =
+            standard_name =
+            units = mg/m3
+    [[H2O_IRGA_Av]]
+        [[[xl]]]
+            sheet = CSFormat
+            name = H2O_density
+        [[[Attr]]]
+            height =
+            instrument = EC150
+            long_name = H2O concentration
+            serial_number =
+            standard_name = mass_concentration_of_water_vapor_in_air
+            units = g/m3
+    [[H2O_IRGA_Sd]]
+        [[[xl]]]
+            sheet = CSFormat
+            name = H2O_density_SIGMA
+        [[[Attr]]]
+            height =
+            instrument = EC150
+            long_name = H2O concentration, standard deviation
+            serial_number =
+            standard_name =
+            units = g/m3
+    [[Signal_CO2]]
+        [[[xl]]]
+            sheet = CSFormat
+            name = CO2_sig_strgth_Min
+        [[[Attr]]]
+            height =
+            instrument = EC150
+            long_name = CO2 signal strength, minimum
+            serial_number =
+            standard_name =
+            units = fraction
+    [[Signal_H2O]]
+        [[[xl]]]
+            sheet = CSFormat
+            name = H2O_sig_strgth_Min
+        [[[Attr]]]
+            height =
+            instrument = EC150
+            long_name = H2O signal strength, minimum
+            serial_number =
+            standard_name =
+            units = fraction
+    [[Precip]]
+        [[[xl]]]
+            sheet = CSFormat
+            name = P
+        [[[Attr]]]
+            height =
+            instrument = Rain guage
+            long_name = Rainfall, total
+            serial_number =
+            standard_name = rainfall_amount
+            units = mm
+    [[Fld]]
+        [[[xl]]]
+            sheet = CSFormat
+            name = LW_IN
+        [[[Attr]]]
+            height =
+            instrument = Kipp and Zonen CNR4
+            long_name = Down-welling long wave
+            serial_number =
+            standard_name = surface_downwelling_longwave_flux_in_air
+            units = W/m2
+    [[Flu]]
+        [[[xl]]]
+            sheet = CSFormat
+            name = LW_OUT
+        [[[Attr]]]
+            height =
+            instrument = Kipp and Zonen CNR4
+            long_name = Up-welling long wave
+            serial_number =
+            standard_name = surface_upwelling_longwave_flux_in_air
+            units = W/m2
+    [[Fsu]]
+        [[[xl]]]
+            sheet = CSFormat
+            name = SW_OUT
+        [[[Attr]]]
+            height =
+            instrument = Kipp and Zonen CNR4
+            long_name = Up-welling short wave
+            serial_number =
+            standard_name = surface_upwelling_shortwave_flux_in_air
+            units = W/m2
+    [[Fsd]]
+        [[[xl]]]
+            sheet = CSFormat
+            name = SW_IN
+        [[[Attr]]]
+            height =
+            instrument = Kipp and Zonen CNR4
+            long_name = Down-welling short wave
+            serial_number =
+            standard_name = surface_downwelling_shortwave_flux_in_air
+            units = W/m2
+# soil
+    [[Fg_<depth>cma]]
+        [[[xl]]]
+            sheet = CSFormat
+            name = G_plate_1_1_1
+        [[[Attr]]]
+            height =
+            instrument =
+            long_name = Ground heat flux, sensor 1a
+            serial_number =
+            standard_name = downward_heat_flux_in_soil
+            units = W/m2
+    [[Fg_<depth>cmb]]
+        [[[xl]]]
+            sheet = CSFormat
+            name = G_plate_2_1_1
+        [[[Attr]]]
+            height =
+            instrument =
+            long_name = Ground heat flux, sensor 1b
+            serial_number =
+            standard_name = downward_heat_flux_in_soil
+            units = W/m2
+    [[Fg_<depth>cmc]]
+        [[[xl]]]
+            sheet = CSFormat
+            name = G_plate_3_1_1
+        [[[Attr]]]
+            height =
+            instrument =
+            long_name = Ground heat flux, sensor 1c
+            serial_number =
+            standard_name = downward_heat_flux_in_soil
+            units = W/m2
+    [[Sws_<depth>cma]]
+        [[[xl]]]
+            sheet = CSFormat
+            name = SWC_1_1_1
+        [[[Attr]]]
+            height =
+            instrument =
+            long_name = Soil water fraction, sensor 1a
+            serial_number =
+            standard_name = soil_moisture_content
+            units = %
+    [[Sws_<depth>cmb]]
+        [[[xl]]]
+            sheet = CSFormat
+            name = SWC_2_1_1
+        [[[Attr]]]
+            height =
+            instrument =
+            long_name = Soil water fraction, sensor 1b
+            serial_number =
+            standard_name = soil_moisture_content
+            units = %
+    [[Sws_<depth>cmc]]
+        [[[xl]]]
+            sheet = CSFormat
+            name = SWC_3_1_1
+        [[[Attr]]]
+            height =
+            instrument =
+            long_name = Soil water fraction, sensor 1c
+            serial_number =
+            standard_name = soil_moisture_content
+            units = %
+    [[Ts_<depth>cma]]
+        [[[xl]]]
+            sheet = CSFormat
+            name = TS_1_1_1
+        [[[Attr]]]
+            height =
+            instrument =
+            long_name = Soil temperature, sensor 1a
+            serial_number =
+            standard_name = soil_temperature
+            units = C
+    [[Ts_<depth>cmb]]
+        [[[xl]]]
+            sheet = CSFormat
+            name = TS_2_1_1
+        [[[Attr]]]
+            height =
+            instrument =
+            long_name = Soil temperature, sensor 1b
+            serial_number =
+            standard_name = soil_temperature
+            units = C
+    [[Ts_<depth>cmc]]
+        [[[xl]]]
+            sheet = CSFormat
+            name = TS_3_1_1
+        [[[Attr]]]
+            height =
+            instrument =
+            long_name = Soil temperature, sensor 1c
+            serial_number =
+            standard_name = soil_temperature
+            units = C
+# Covariances
+    [[UxUy]]
+        [[[xl]]]
+            sheet = Notes
+            name = UxUy_Cov
+        [[[Attr]]]
+            height =
+            instrument = CSAT
+            long_name = Covariance of Ux and Uy
+            serial_number =
+            standard_name =
+            units = m2/s2
+    [[UxUz]]
+        [[[xl]]]
+            sheet = Notes
+            name = UxUz_Cov
+        [[[Attr]]]
+            height =
+            instrument = CSAT3
+            long_name = Covariance of Ux and Uz
+            serial_number =
+            standard_name =
+            units = m2/s2
+    [[UyUz]]
+        [[[xl]]]
+            sheet = Notes
+            name = UyUz_Cov
+        [[[Attr]]]
+            height =
+            instrument = CSAT3
+            long_name = Covariance of Uy and Uz
+            serial_number =
+            standard_name =
+            units = m2/s2
+    [[UxT]]
+        [[[xl]]]
+            sheet = Notes
+            name = TsUx_Cov
+        [[[Attr]]]
+            height =
+            instrument = CSAT3
+            long_name = Covariance of Ux and T
+            serial_number =
+            standard_name =
+            units = mC/s
+    [[UyT]]
+        [[[xl]]]
+            sheet = Notes
+            name = TsUy_Cov
+        [[[Attr]]]
+            height =
+            instrument = CSAT3
+            long_name = Covariance of Uy and T
+            serial_number =
+            standard_name =
+            units = mC/s
+    [[UzT]]
+        [[[xl]]]
+            sheet = Notes
+            name = TsUz_Cov
+        [[[Attr]]]
+            height =
+            instrument = CSAT3
+            long_name = Covariance of Uz and T
+            serial_number =
+            standard_name =
+            units = mC/s
+    [[Diag_SONIC]]
+        [[[xl]]]
+            sheet = Notes
+            name = diag_sonic_aggregate
+        [[[Attr]]]
+            height =
+            instrument = CSAT
+            long_name = CSAT diagnostic value
+            serial_number =
+            standard_name =
+            units = none
+    [[UxC]]
+        [[[xl]]]
+            sheet = Notes
+            name = UxCO2_Cov
+        [[[Attr]]]
+            height = 
+            instrument = CSAT3, EC150
+            long_name = Covariance of Ux and CO2
+            serial_number =
+            standard_name =
+            units = mg/m2/s
+    [[UyC]]
+        [[[xl]]]
+            sheet = Notes
+            name = UyCO2_Cov
+        [[[Attr]]]
+            height =
+            instrument = CSAT3, EC150
+            long_name = Covariance of Uy and CO2
+            serial_number =
+            standard_name =
+            units = mg/m2/s
+    [[UzC]]
+        [[[xl]]]
+            sheet = Notes
+            name = UzCO2_Cov
+        [[[Attr]]]
+            height =
+            instrument = CSAT3, EC150
+            long_name = Covariance of Uz and CO2
+            serial_number =
+            standard_name =
+            units = mg/m2/s
+  
+    [[UxA]]
+        [[[xl]]]
+            sheet = Notes
+            name = UxH2O_Cov
+        [[[Attr]]]
+            height =
+            instrument = CSAT3, EC150
+            long_name = Covariance of Ux and H2O
+            serial_number =
+            standard_name =
+            units = g/m2/s
+    [[UyA]]
+        [[[xl]]]
+            sheet = Notes
+            name = UyH2O_Cov
+        [[[Attr]]]
+            height =
+            instrument = CSAT3, EC150
+            long_name = Covariance of Uy and H2O
+            serial_number =
+            standard_name =
+            units = g/m2/s
+    [[UzA]]
+        [[[xl]]]
+            sheet = Notes
+            name = UzH2O_Cov
+        [[[Attr]]]
+            height =
+            instrument = CSAT3, EC150
+            long_name = Covariance of Uz and H2O
+            serial_number =
+            standard_name =
+            units = g/m2/s
+    [[CO2_Samples]]
+        [[[xl]]]
+            sheet = Notes
+            name = CO2_samples
+        [[[Attr]]]
+            height =
+            instrument = EC150
+            long_name = Number of accepted CO2 samples
+            serial_number =
+            standard_name =
+            units = none
+    [[H2O_Samples]]
+        [[[xl]]]
+            sheet = Notes
+            name = H2O_samples
+        [[[Attr]]]
+            height =
+            instrument = EC150
+            long_name = Number of accepted H2O samples
+            serial_number =
+            standard_name =
+            units = none
+   [[Diag_IRGA]]
+        [[[xl]]]
+            sheet = Notes
+            name = diag_irga_aggregate
+        [[[Attr]]]
+            height =
+            instrument = EC150
+            long_name = EC150 diagnostic value
+            serial_number =
+            standard_name =
+            units = none
+    [[Tpanel]]
+        [[[xl]]]
+            sheet = Notes
+            name = T_panel
+        [[[Attr]]]
+            instrument = Campbell Scientific CR3000 logger
+            long_name = Panel temperature at logger
+            serial_number =
+            standard_name =
+            units = C
+    [[Vbat]]
+        [[[xl]]]
+            sheet = Notes
+            name = batt_volt
+        [[[Attr]]]
+            instrument = Campbell Scientific CR3000 logger
+            long_name = Battery voltage at logger
+            serial_number =
+            standard_name =
+            units = V
