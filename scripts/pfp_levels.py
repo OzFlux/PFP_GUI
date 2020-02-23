@@ -17,58 +17,38 @@ import pfp_utils
 logger = logging.getLogger("pfp_log")
 
 def l1qc(cf):
-    # get the data series from the Excel file
-    in_filename = pfp_io.get_infilenamefromcf(cf)
-    if not pfp_utils.file_exists(in_filename,mode="quiet"):
-        msg = " Input file "+in_filename+" not found ..."
-        logger.error(msg)
-        ds1 = pfp_io.DataStructure()
-        ds1.returncodes = {"value":1,"message":msg}
-        return ds1
-    file_name,file_extension = os.path.splitext(in_filename)
-    if "csv" in file_extension.lower():
-        ds1 = pfp_io.csv_read_series(cf)
-        if ds1.returncodes["value"] != 0:
-            return ds1
-        # get a series of Excel datetime from the Python datetime objects
-        #pfp_utils.get_xldatefromdatetime(ds1)
-    else:
-        ds1 = pfp_io.xl_read_series(cf)
-        if ds1.returncodes["value"] != 0:
-            return ds1
-        # get a series of Python datetime objects from the Excel datetime
-        #pfp_utils.get_datetimefromxldate(ds1)
-    # get the netCDF attributes from the control file
-    #pfp_ts.do_attributes(cf,ds1)
-    pfp_utils.get_datetime(cf, ds1)
-    # round the Python datetime to the nearest second
-    pfp_utils.round_datetime(ds1, mode="nearest_second")
-    #check for gaps in the Python datetime series and fix if present
-    fixtimestepmethod = pfp_utils.get_keyvaluefromcf(cf, ["options"], "FixTimeStepMethod", default="round")
-    if pfp_utils.CheckTimeStep(ds1):
-        pfp_utils.FixTimeStep(ds1, fixtimestepmethod=fixtimestepmethod)
-    # recalculate the Excel datetime
-    pfp_utils.get_xldatefromdatetime(ds1)
-    # get the Year, Month, Day etc from the Python datetime
-    pfp_utils.get_ymdhmsfromdatetime(ds1)
+    """
+    Purpose:
+     Reads input files, either an Excel workbook or a collection of CSV files,
+     and returns the data as a data structure.
+    Usage:
+    Side effects:
+     Returns a data structure containing the data specified in the L1
+     control file.
+    Author: PRI
+    Date: February 2020
+    """
+    # get a new data structure
+    ds = pfp_io.DataStructure()
+    # parse the L1 control file
+    l1_info = pfp_compliance.ParseL1ControlFile(cf)
+    # return if parsing throws an error
+    if not pfp_compliance.check_status_ok(ds, l1_info): return ds
+    # check the Excel workbook
+    xl_data = pfp_compliance.CheckExcelWorkbook(l1_info)
+    # copy data from the worksheets to individual data structures
+    ds_dict = pfp_io.ExcelToDataStructures(xl_data, l1_info)
+    # merge the individual data structures to a single data structure
+    ds = pfp_ts.MergeDataStructures(ds_dict, l1_info)
     # write the processing level to a global attribute
-    ds1.globalattributes['nc_level'] = str("L1")
-    # get the start and end date from the datetime series unless they were
-    # given in the control file
-    if 'start_date' not in ds1.globalattributes.keys():
-        ds1.globalattributes['start_date'] = str(ds1.series['DateTime']['Data'][0])
-    if 'end_date' not in ds1.globalattributes.keys():
-        ds1.globalattributes['end_date'] = str(ds1.series['DateTime']['Data'][-1])
+    ds.globalattributes["nc_level"] = "L1"
     # calculate variances from standard deviations and vice versa
-    pfp_ts.CalculateStandardDeviations(cf,ds1)
+    pfp_ts.CalculateStandardDeviations(ds)
     # create new variables using user defined functions
-    pfp_ts.DoFunctions(cf,ds1)
-    # create a series of synthetic downwelling shortwave radiation
-    pfp_ts.get_synthetic_fsd(ds1)
+    pfp_ts.DoFunctions(ds, l1_info["read_excel"])
     # check missing data and QC flags are consistent
-    pfp_utils.CheckQCFlags(ds1)
-
-    return ds1
+    pfp_utils.CheckQCFlags(ds)
+    return ds
 
 def l2qc(cf,ds1):
     """

@@ -10,7 +10,9 @@ import traceback
 # 3rd party modules
 import numpy
 from PyQt5 import QtWidgets
+import scipy.stats
 import timezonefinder
+import xlrd
 # PFP modules
 import constants as c
 import pfp_cfg
@@ -38,6 +40,74 @@ def change_variable_names(cfg, ds):
             new_name = cfg["rename"][label]["rename"]
             ds.series[new_name] = ds.series.pop(label)
     return
+
+def CheckExcelWorkbook(l1_info):
+    """
+    Purpose:
+     Check that the requested sheets and variables are in the Excel workbook.
+    Usage:
+    Side effects:
+    Author: PRI
+    Date: February 2020
+    """
+    l1ire = l1_info["read_excel"]
+    # get the labels of variables in the netCDF file
+    # need to add check for duplicate variables on multiple sheets
+    nc_labels = list(l1ire["Variables"].keys())
+    l1ire["xl_sheets"] = {}
+    # check the requested sheets are present and get a list of variables for each sheet
+    msg = " Reading Excel workbook " + os.path.basename(l1ire["Files"]["file_name"])
+    logger.info(msg)
+    xl_book = xlrd.open_workbook(l1ire["Files"]["file_name"], on_demand=True)
+    # put the Excel workbook datemode into the global attributes
+    l1ire["Global"]["xl_datemode"] = str(xl_book.datemode)
+    xl_sheets_present = xl_book.sheet_names()
+    for nc_label in nc_labels:
+        xl_sheet = l1ire["Variables"][nc_label]["xl"]["sheet"]
+        xl_label = l1ire["Variables"][nc_label]["xl"]["name"]
+        #print xl_sheet, xl_label, nc_label
+        if xl_sheet not in xl_sheets_present:
+            msg = " Sheet " + xl_sheet + " (" + xl_label + ") not found in workbook, skipping ..."
+            logger.warning(msg)
+            del l1ire["Variables"][nc_label]
+            continue
+        if xl_sheet not in list(l1ire["xl_sheets"].keys()):
+            l1ire["xl_sheets"][xl_sheet] = {}
+        l1ire["xl_sheets"][xl_sheet][xl_label] = nc_label
+    # check the requested variables are on the specified sheets
+    xl_data = {}
+    for xl_sheet in list(l1ire["xl_sheets"].keys()):
+        xl_data[xl_sheet] = xl_book.sheet_by_name(xl_sheet)
+        headers = xl_data[xl_sheet].row_values(l1ire["Files"]["in_headerrow"])
+        for xl_label in list(l1ire["xl_sheets"][xl_sheet].keys()):
+            if xl_label not in headers:
+                msg = " Variable " + xl_label + " not found on sheet " + xl_sheet + ", skipping ..."
+                logger.warning(msg)
+                del l1ire["xl_sheets"][xl_sheet][xl_label]
+    # now we know what variables on which sheets have been requested and are present
+    # find the timestamp label for each sheet
+    fdr = int(l1ire["Files"]["in_firstdatarow"])
+    for xl_sheet in list(l1ire["xl_sheets"].keys()):
+        got_timestamp = False
+        ldr = int(xl_data[xl_sheet].nrows)
+        xl_labels = xl_data[xl_sheet].row_values(l1ire["Files"]["in_headerrow"])
+        for xl_label in xl_labels:
+            col = xl_labels.index(xl_label)
+            types = numpy.array(xl_data[xl_sheet].col_types(col)[fdr:ldr])
+            mode = scipy.stats.mode(types)
+            #print xl_sheet, xl_label, col, mode[0][0], fdr, ldr
+            if mode[0][0] == 3 and 100*mode[1][0]/len(types) > 75:
+                got_timestamp = True
+                #print " Time stamp is " + xl_label + " for sheet " + xl_sheet
+                if xl_label not in l1ire["xl_sheets"][xl_sheet]:
+                    l1ire["xl_sheets"][xl_sheet][xl_label] = "DateTime"
+                break
+        if not got_timestamp:
+            msg = " Time stamp not found for sheet " + xl_sheet +", skipping ..."
+            logger.warning(msg)
+            del l1ire["xl_sheets"][xl_sheet]
+
+    return xl_data
 
 def check_executables():
     # check for the executable files required
@@ -164,6 +234,15 @@ def check_l6_controlfile(cf):
         error_message = traceback.format_exc()
         logger.error(error_message)
     return ok
+
+def check_status_ok(ds, info):
+    if info["status"]["value"] != 0:
+        ds.returncodes["value"] = info["status"]["value"]
+        ds.returncodes["message"] = info["status"]["message"]
+        logger.error(info["status"]["message"])
+        return False
+    else:
+        return True
 
 def consistent_Fc_storage(ds, file_name):
     """
@@ -312,6 +391,134 @@ def ParseConcatenateControlFile(cf):
     opt = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "KeepIntermediateSeries", default="No")
     info["RemoveIntermediateSeries"] = {"KeepIntermediateSeries": opt, "not_output": []}
     return info
+
+def ParseL1ControlFile(cf):
+    """
+    Purpose:
+     Check the contents of the Li control file.
+     If the L1 control file contents are OK, return with the required information.
+     If the L1 control file contents are not OK, return with an error message.
+    """
+    logger.info(" Parsing the L1 control file")
+    # create the settings dictionary
+    l1_info = {"status": {"value": 0, "message": "OK"},
+              "read_excel": {}}
+    l1ire = l1_info["read_excel"]
+    # check we have an L1 control file
+    if "level" not in cf:
+        error_handler(l1_info, "Key 'level' not found in control file", 1)
+        return l1_info
+    if cf["level"] != "L1":
+        error_handler(l1_info, "Not an L1 control file", 1)
+        return l1_info
+    # check the expected sections are in the control file
+    for item in ["Files", "Global", "Variables"]:
+        if item not in list(cf.keys()):
+            msg = "Section '" + item + "' not in control file"
+            error_handler(l1_info, msg, 1)
+            return l1_info
+    # copy the files section from the control file
+    l1ire["Files"] = copy.deepcopy(cf["Files"])
+    # get the input file and check it exists
+    xl_file_name = pfp_io.get_infilenamefromcf(cf)
+    if not os.path.isfile(xl_file_name):
+        msg = "Input file not found: " + xl_file_name
+        error_handler(l1_info, msg, 1)
+        return l1_info
+    l1ire["Files"]["file_name"] = xl_file_name
+    # get the header row
+    try:
+        opt = pfp_utils.get_keyvaluefromcf(cf, ["Files"], "in_headerrow", default=2)
+        l1ire["Files"]["in_headerrow"] = int(opt) - 1
+    except ValueError:
+        error_handler(l1_info, "in_headerrow is not a number", 1)
+        return l1_info
+    # get the first data row
+    try:
+        opt = pfp_utils.get_keyvaluefromcf(cf, ["Files"], "in_firstdatarow", default=5)
+        l1ire["Files"]["in_firstdatarow"] = int(opt) - 1
+    except ValueError:
+        error_handler(l1_info, "in_firstdatarow is not a number", 1)
+        return l1_info
+    # get the global attributes
+    l1ire["Global"] = copy.deepcopy(cf["Global"])
+    # check time step is present and makes sense
+    try:
+        ts = int(l1ire["Global"]["time_step"])
+    except ValueError:
+        error_handler(l1_info, "Global attribute 'time_step' is not a number", 1)
+        return l1_info
+    if ts not in [15, 20, 30, 60]:
+        msg = "Global attribute 'time_step' must be 15, 20, 30 or 60"
+        error_handler(l1_info, msg, 1)
+        return l1_info
+    # check latitude and longitude are present and make sense
+    try:
+        lat = float(l1ire["Global"]["latitude"])
+    except ValueError:
+        error_handler(l1_info, "Global attribute 'latitude' is not a number", 1)
+        return l1_info
+    if lat < -90.0 or lat > 90.0:
+        msg = "Global attribute 'latitude' must be between -90 and 90"
+        error_handler(l1_info, msg, 1)
+        return l1_info
+    try:
+        lon = float(l1ire["Global"]["longitude"])
+    except ValueError:
+        error_handler(l1_info, "Global attribute 'longitude' is not a number", 1)
+        return l1_info
+    if lat < -180.0 or lat > 180.0:
+        msg = "Global attribute 'longitude' must be between -180 and 180"
+        error_handler(l1_info, msg, 1)
+        return l1_info
+    # check the time zone
+    try:
+        tf = timezonefinder.TimezoneFinder()
+        tz_from_lat_lon = tf.timezone_at(lng=lon, lat=lat)
+        opt = pfp_utils.get_keyvaluefromcf(l1ire, ["Global"], "time_zone", default=tz_from_lat_lon)
+        if opt.lower() != tz_from_lat_lon.lower():
+            msg = "Global attribute 'time_zone' inconsistent with latitude and longitude"
+            error_handler(l1_info, msg, 1)
+            return l1_info
+        l1ire["Global"]["time_zone"] = opt
+    except:
+        error_handler(l1_info, "Error checking global attribute 'time_zone'", 1)
+        return l1_info
+    # get the variables
+    l1ire["Variables"] = copy.deepcopy(cf["Variables"])
+    # checks of the 'Variables' sections would go here
+    for label in list(l1ire["Variables"].keys()):
+        # check the 'xl' and 'Attr' subsections are present
+        ok = True
+        for item in ["xl", "Attr"]:
+            if item not in list(l1ire["Variables"][label].keys()):
+                msg = " Skipping " + label + " (subsection '" + item + "' not found)"
+                logger.warning(msg)
+                ok = False
+        if not ok:
+            del l1ire["Variables"][label]
+            continue
+        # check 'sheet' and 'name' are in the 'xl' subsection
+        ok = True
+        for item in ["sheet", "name"]:
+            if item not in list(l1ire["Variables"][label]["xl"].keys()):
+                msg = " Skipping " + label + " (subsection '" + item + "' not found)"
+                logger.warning(msg)
+                ok = False
+        if not ok:
+            del l1ire["Variables"][label]
+            continue
+        # check the 'Attr' subsection
+        ok = True
+        for item in ["long_name", "units"]:
+            if item not in list(l1ire["Variables"][label]["Attr"].keys()):
+                msg = " Skipping " + label + " (subsection '" + item + "' not found)"
+                logger.warning(msg)
+                ok = False
+        if not ok:
+            del l1ire["Variables"][label]
+            continue
+    return l1_info
 
 def ParseL3ControlFile(cf, ds):
     """
@@ -577,6 +784,17 @@ def change_variable_attributes(cfg, ds):
                 mx = pfp_utils.round2significant(d, 4, direction='up')
                 variable["Attr"]["valid_range"] = repr(mn) + "," + repr(mx)
         pfp_utils.CreateVariable(ds, variable)
+    return
+
+def error_handler(info, msg, val):
+    """
+    Purpose:
+     Handle errors from ParseL1ControlFile().
+    """
+    #print msg
+    logger.error(msg)
+    info["status"]["message"] = msg
+    info["status"]["value"] = val
     return
 
 def exclude_variables(cfg, ds):

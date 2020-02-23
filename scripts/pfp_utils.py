@@ -1168,7 +1168,7 @@ def CreateEmptyVariable(label, nrecs, datetime=None, out_type="ma", attr=None):
         logger.warning(msg)
     return variable
 
-def CreateVariable(ds,variable):
+def CreateVariable(ds, variable, over_write=True):
     """
     Purpose:
      Create a variable in the data structure.
@@ -1187,21 +1187,57 @@ def CreateVariable(ds,variable):
     Date: September 2016
     """
     label = variable["Label"]
+    if label in list(ds.series.keys()) and not over_write:
+        msg = " Variable " + label + " already exists in data structure, not over written"
+        logger.warning(msg)
+        return
     # create a temporary series to avoid premature overwrites
-    ds.series["_tmp_"] = {}
+    ds.series[label] = {}
     # put the data into the temporary series
     if numpy.ma.isMA(variable["Data"]):
-        ds.series["_tmp_"]["Data"] = numpy.ma.filled(variable["Data"], float(c.missing_value))
+        ds.series[label]["Data"] = numpy.ma.filled(variable["Data"], float(c.missing_value))
     else:
-        ds.series["_tmp_"]["Data"] = numpy.array(variable["Data"])
+        ds.series[label]["Data"] = variable["Data"]
     # copy or make the QC flag
-    ds.series["_tmp_"]["Flag"] = numpy.array(variable["Flag"])
+    ds.series[label]["Flag"] = variable["Flag"]
     # do the attributes
-    ds.series["_tmp_"]["Attr"] = copy.deepcopy(variable["Attr"])
-    # and copy the temporary series back to the original label
-    ds.series[unicode(label)] = copy.deepcopy(ds.series['_tmp_'])
-    # delete the temporary series
-    del ds.series['_tmp_']
+    ds.series[label]["Attr"] = variable["Attr"]
+    return
+
+#def CreateVariable(ds,variable):
+    #"""
+    #Purpose:
+     #Create a variable in the data structure.
+     #If the variable already exists in the data structure, data values, QC flags and
+     #attributes will be overwritten.
+     #This utility is the prefered method for creating or updating a data series because
+     #it implements a consistent method for creating series in the data structure.  Direct
+     #writes to the contents of the data structure are discouraged (unless PRI wrote the code:=P).
+    #Usage:
+     #Fsd = pfp_utils.GetVariable(ds,"Fsd")
+      #... do something to Fsd here ...
+      #... and don't forget to update the QC flag ...
+      #... and the attributes ...
+     #pfp_utils.CreateVariable(ds,Fsd)
+    #Author: PRI
+    #Date: September 2016
+    #"""
+    #label = variable["Label"]
+    ## create a temporary series to avoid premature overwrites
+    #ds.series["_tmp_"] = {}
+    ## put the data into the temporary series
+    #if numpy.ma.isMA(variable["Data"]):
+        #ds.series["_tmp_"]["Data"] = numpy.ma.filled(variable["Data"], float(c.missing_value))
+    #else:
+        #ds.series["_tmp_"]["Data"] = numpy.array(variable["Data"])
+    ## copy or make the QC flag
+    #ds.series["_tmp_"]["Flag"] = numpy.array(variable["Flag"])
+    ## do the attributes
+    #ds.series["_tmp_"]["Attr"] = copy.deepcopy(variable["Attr"])
+    ## and copy the temporary series back to the original label
+    #ds.series[unicode(label)] = copy.deepcopy(ds.series['_tmp_'])
+    ## delete the temporary series
+    #del ds.series['_tmp_']
 
 def csv_string_to_list(input_string):
     """ Convert a string containing items separated by commas into a list."""
@@ -1297,6 +1333,17 @@ def FindIndicesOfBInA(a,b):
     return indices
 
 def FindMatchingIndices(a, b):
+    """
+    Purpose:
+     Find the indices of elements in a that match elements in b and
+     vice versa.
+     inds_a - the indices of elements in a that match elements in b
+     inds_b - the indices of elements in b that match elements in a
+    Usage:
+    Side effects:
+    Author: PRI but taken from Stackoverflow
+    Date: Back in the day.
+    """
     a1=numpy.argsort(a)
     b1=numpy.argsort(b)
     # use searchsorted:
@@ -2029,6 +2076,13 @@ def get_datetimefromnctime(ds,time,time_units):
     ds.series["DateTime"]["Attr"] = {}
     ds.series["DateTime"]["Attr"]["long_name"] = "Datetime in local timezone"
     ds.series["DateTime"]["Attr"]["units"] = "None"
+
+def get_datetime_from_excel_date(values, xl_datemode):
+    values = numpy.array(values)
+    xl_date = values + 1462*int(xl_datemode)
+    base_date = datetime.datetime(1899, 12, 30)
+    dt = [base_date + datetime.timedelta(days=xl_date[i]) for i in range(len(values))]
+    return dt
 
 def get_datetimefromxldate(ds):
     ''' Creates a series of Python datetime objects from the Excel date read from the Excel file.

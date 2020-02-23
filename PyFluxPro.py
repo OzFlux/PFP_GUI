@@ -49,6 +49,7 @@ for item in dir_list:
 
 now = datetime.datetime.now()
 log_file_name = "pfp_" + now.strftime("%Y%m%d%H%M") + ".log"
+log_file_name = os.path.join("./logfiles", log_file_name)
 logger = pfp_log.init_logger("pfp_log", log_file_name, to_file=True, to_screen=False)
 
 class pfp_main_ui(QtWidgets.QWidget):

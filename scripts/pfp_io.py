@@ -12,6 +12,7 @@ import numpy
 import ntpath
 import os
 import platform
+import scipy.stats
 import sys
 import time
 import xlrd
@@ -771,55 +772,6 @@ def write_csv_ecostress(cf):
     csv_file.close()
     return 0
 
-def xl2nc(cf,InLevel):
-    # get the data series from the Excel file
-    in_filename = get_infilenamefromcf(cf)
-    if not pfp_utils.file_exists(in_filename,mode="quiet"):
-        msg = " Input file "+in_filename+" not found ..."
-        logger.error(msg)
-        return 0
-    file_name,file_extension = os.path.splitext(in_filename)
-    if "csv" in file_extension.lower():
-        ds = csv_read_series(cf)
-        if ds==0: return 0
-        # get a series of Excel datetime from the Python datetime objects
-        pfp_utils.get_xldatefromdatetime(ds)
-    else:
-        ds = xl_read_series(cf)
-        if ds==0: return 0
-        # get a series of Python datetime objects from the Excel datetime
-        pfp_utils.get_datetimefromxldate(ds)
-    # get the netCDF attributes from the control file
-    pfp_ts.do_attributes(cf,ds)
-    # round the Python datetime to the nearest second
-    pfp_utils.round_datetime(ds,mode="nearest_second")
-    #check for gaps in the Python datetime series and fix if present
-    fixtimestepmethod = pfp_utils.get_keyvaluefromcf(cf,["options"],"FixTimeStepMethod",default="round")
-    if pfp_utils.CheckTimeStep(ds): pfp_utils.FixTimeStep(ds,fixtimestepmethod=fixtimestepmethod)
-    # recalculate the Excel datetime
-    pfp_utils.get_xldatefromdatetime(ds)
-    # get the Year, Month, Day etc from the Python datetime
-    pfp_utils.get_ymdhmsfromdatetime(ds)
-    # write the processing level to a global attribute
-    ds.globalattributes['nc_level'] = str(InLevel)
-    # get the start and end date from the datetime series unless they were
-    # given in the control file
-    if 'start_date' not in ds.globalattributes.keys():
-        ds.globalattributes['start_date'] = str(ds.series['DateTime']['Data'][0])
-    if 'end_date' not in ds.globalattributes.keys():
-        ds.globalattributes['end_date'] = str(ds.series['DateTime']['Data'][-1])
-    # calculate variances from standard deviations and vice versa
-    pfp_ts.CalculateStandardDeviations(cf,ds)
-    # create new variables using user defined functions
-    pfp_ts.DoFunctions(cf,ds)
-    # create a series of synthetic downwelling shortwave radiation
-    pfp_ts.get_synthetic_fsd(ds)
-    # write the data to the netCDF file
-    outfilename = get_outfilenamefromcf(cf)
-    ncFile = nc_open_write(outfilename)
-    nc_write_series(ncFile,ds)
-    return 1
-
 def ep_biomet_write_csv(cf):
     """
     Purpose:
@@ -912,6 +864,66 @@ def ep_biomet_get_data(cf,ds):
             strfmt = "{0:d}"
         data[ep_series]["fmt"] = strfmt
     return data
+
+def ExcelToDataStructures(xl_data, l1_info):
+    """
+    Purpose:
+     Read an Excel workbook and return a dictionary of work sheets.
+    Usage:
+    Side effects:
+    Author: PRI
+    Date: February 2020
+    """
+    l1ire = l1_info["read_excel"]
+    # first data row
+    fdr = int(l1ire["Files"]["in_firstdatarow"])
+    # header row
+    hdr = int(l1ire["Files"]["in_headerrow"])
+    xl_datemode = l1ire["Global"]["xl_datemode"]
+    xl_sheets = list(xl_data.keys())
+    # read each sheet to a data structure
+    ds = {}
+    for xl_sheet in xl_sheets:
+        ds[xl_sheet] = DataStructure()
+        ds[xl_sheet].globalattributes = copy.deepcopy(l1ire["Global"])
+        active_sheet = xl_data[xl_sheet]
+        headers = active_sheet.row_values(hdr)
+        ldr = int(active_sheet.nrows)
+        ds[xl_sheet].globalattributes["nc_nrecs"] = nrecs = ldr - fdr
+        xl_labels = list(l1ire["xl_sheets"][xl_sheet].keys())
+        for xl_label in xl_labels:
+            nc_label = l1ire["xl_sheets"][xl_sheet][xl_label]
+            col = headers.index(xl_label)
+            #print nc_label, xl_label, xl_sheet, col
+            values = numpy.array(active_sheet.col_values(col)[fdr:ldr])
+            types = numpy.array(active_sheet.col_types(col)[fdr:ldr])
+            mode = scipy.stats.mode(types)
+            #print xl_label, mode[0][0], mode[1][0]
+            if mode[0][0] == 3 and 100*mode[1][0]/nrecs > 75:
+                # time stamp (Excel cell type = 3)
+                msg = " Got time stamp " + xl_label + " from sheet " + xl_sheet
+                logger.info(msg)
+                dt = pfp_utils.get_datetime_from_excel_date(values, xl_datemode)
+                var = pfp_utils.CreateEmptyVariable(nc_label, nrecs)
+                var["Label"] = "DateTime"
+                var["Data"] = numpy.ma.masked_where(types != 3, dt)
+                var["Flag"] = numpy.where(types != 3, numpy.ones(nrecs), numpy.zeros(nrecs))
+                var["Attr"] = {"long_name": "Datetime in local timezone",
+                               "cf_role": "timeseries_id",
+                               "units": "days since 1899-12-31 00:00:00"}
+                pfp_utils.CreateVariable(ds[xl_sheet], var)
+            elif mode[0][0] == 2:
+                msg = " Got data for " + nc_label + " from sheet " + xl_sheet
+                logger.info(msg)
+                var = pfp_utils.CreateEmptyVariable(nc_label, nrecs)
+                var["Label"] = nc_label
+                var["Data"] = numpy.ma.masked_where(types != 2, values)
+                var["Flag"] = numpy.where(types != 2, numpy.ones(nrecs), numpy.zeros(nrecs))
+                var["Attr"] = l1ire["Variables"][nc_label]["Attr"]
+                pfp_utils.CreateVariable(ds[xl_sheet], var)
+        # round the Python datetime to the nearest second
+        pfp_utils.round_datetime(ds[xl_sheet], mode="nearest_second")
+    return ds
 
 def fn_write_csv(cf):
     # get the file names
@@ -1152,66 +1164,6 @@ def get_seriesstats(cf,ds):
     xlFile = xlwt.Workbook()
     xlFlagSheet = xlFile.add_sheet('Flag')
     # get the flag statistics
-    #xlRow = 0
-    #xlCol = 0
-    #xlFlagSheet.write(xlRow,xlCol,'0:')
-    #xlFlagSheet.write(xlRow,xlCol+1,ds.globalattributes['Flag00'])
-    #xlFlagSheet.write(xlRow,xlCol+2,'1:')
-    #xlFlagSheet.write(xlRow,xlCol+3,ds.globalattributes['Flag01'])
-    #xlFlagSheet.write(xlRow,xlCol+4,'2:')
-    #xlFlagSheet.write(xlRow,xlCol+5,ds.globalattributes['Flag02'])
-    #xlFlagSheet.write(xlRow,xlCol+6,'3:')
-    #xlFlagSheet.write(xlRow,xlCol+7,ds.globalattributes['Flag03'])
-    #xlFlagSheet.write(xlRow,xlCol+8,'4:')
-    #xlFlagSheet.write(xlRow,xlCol+9,ds.globalattributes['Flag04'])
-    #xlFlagSheet.write(xlRow,xlCol+10,'5:')
-    #xlFlagSheet.write(xlRow,xlCol+11,ds.globalattributes['Flag05'])
-    #xlFlagSheet.write(xlRow,xlCol+12,'6:')
-    #xlFlagSheet.write(xlRow,xlCol+13,ds.globalattributes['Flag06'])
-    #xlFlagSheet.write(xlRow,xlCol+14,'7:')
-    #xlFlagSheet.write(xlRow,xlCol+15,ds.globalattributes['Flag07'])
-    #xlRow = xlRow + 1
-    #xlFlagSheet.write(xlRow,xlCol,'10:')
-    #xlFlagSheet.write(xlRow,xlCol+1,ds.globalattributes['Flag10'])
-    #xlFlagSheet.write(xlRow,xlCol+2,'11:')
-    #xlFlagSheet.write(xlRow,xlCol+3,ds.globalattributes['Flag11'])
-    #xlFlagSheet.write(xlRow,xlCol+4,'12:')
-    #xlFlagSheet.write(xlRow,xlCol+5,ds.globalattributes['Flag12'])
-    #xlFlagSheet.write(xlRow,xlCol+6,'13:')
-    #xlFlagSheet.write(xlRow,xlCol+7,ds.globalattributes['Flag13'])
-    #xlFlagSheet.write(xlRow,xlCol+8,'14:')
-    #xlFlagSheet.write(xlRow,xlCol+9,ds.globalattributes['Flag14'])
-    #xlFlagSheet.write(xlRow,xlCol+10,'15:')
-    #xlFlagSheet.write(xlRow,xlCol+11,ds.globalattributes['Flag15'])
-    #xlFlagSheet.write(xlRow,xlCol+12,'16:')
-    #xlFlagSheet.write(xlRow,xlCol+13,ds.globalattributes['Flag16'])
-    #xlFlagSheet.write(xlRow,xlCol+14,'17:')
-    #xlFlagSheet.write(xlRow,xlCol+15,ds.globalattributes['Flag17'])
-    #xlFlagSheet.write(xlRow,xlCol+16,'18:')
-    #xlFlagSheet.write(xlRow,xlCol+17,ds.globalattributes['Flag18'])
-    #xlFlagSheet.write(xlRow,xlCol+18,'19:')
-    #xlFlagSheet.write(xlRow,xlCol+19,ds.globalattributes['Flag19'])
-    #xlRow = xlRow + 1
-    #xlFlagSheet.write(xlRow,xlCol,'30:')
-    #xlFlagSheet.write(xlRow,xlCol+1,ds.globalattributes['Flag30'])
-    #xlFlagSheet.write(xlRow,xlCol+2,'31:')
-    #xlFlagSheet.write(xlRow,xlCol+3,ds.globalattributes['Flag31'])
-    #xlFlagSheet.write(xlRow,xlCol+4,'32:')
-    #xlFlagSheet.write(xlRow,xlCol+5,ds.globalattributes['Flag32'])
-    #xlFlagSheet.write(xlRow,xlCol+6,'33:')
-    #xlFlagSheet.write(xlRow,xlCol+7,ds.globalattributes['Flag33'])
-    #xlFlagSheet.write(xlRow,xlCol+8,'34:')
-    #xlFlagSheet.write(xlRow,xlCol+9,ds.globalattributes['Flag34'])
-    #xlFlagSheet.write(xlRow,xlCol+10,'35:')
-    #xlFlagSheet.write(xlRow,xlCol+11,ds.globalattributes['Flag35'])
-    #xlFlagSheet.write(xlRow,xlCol+12,'36:')
-    #xlFlagSheet.write(xlRow,xlCol+13,ds.globalattributes['Flag36'])
-    #xlFlagSheet.write(xlRow,xlCol+14,'37:')
-    #xlFlagSheet.write(xlRow,xlCol+15,ds.globalattributes['Flag37'])
-    #xlFlagSheet.write(xlRow,xlCol+16,'38:')
-    #xlFlagSheet.write(xlRow,xlCol+17,ds.globalattributes['Flag38'])
-    #xlFlagSheet.write(xlRow,xlCol+18,'39:')
-    #xlFlagSheet.write(xlRow,xlCol+19,ds.globalattributes['Flag39'])
     bins = numpy.arange(-0.5,23.5)
     xlRow = 5
     xlCol = 1
@@ -1220,8 +1172,7 @@ def get_seriesstats(cf,ds):
         xlCol = xlCol + 1
     xlRow = xlRow + 1
     xlCol = 0
-    dsVarNames = ds.series.keys()
-    dsVarNames.sort(key=unicode.lower)
+    dsVarNames = sorted(ds.series.keys())
     for ThisOne in dsVarNames:
         data,flag,attr = pfp_utils.GetSeries(ds, ThisOne)
         hist, bin_edges = numpy.histogram(flag, bins=bins)

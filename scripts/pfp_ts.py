@@ -1446,10 +1446,11 @@ def CorrectFgForStorage(cf,ds,Fg_out='Fg',Fg_in='Fg',Ts_in='Ts',Sws_in='Sws'):
     Ts,Ts_flag,Ts_attr = pfp_utils.GetSeriesasMA(ds,Ts_in)
     Sws,Sws_flag,Sws_attr = pfp_utils.GetSeriesasMA(ds,Sws_in)
     iom = numpy.where(numpy.mod(Sws_flag,10)!=0)[0]
-    if len(iom)!=0:
-        logger.warning('  CorrectFgForStorage: Sws_default used for '+str(len(iom))+' values')
+    if len(iom) != 0:
+        msg = "  CorrectFgForStorage: default soil moisture used for "
+        msg += str(len(iom)) + " values"
+        logger.warning(msg)
         Sws[iom] = Sws_default
-        #Sws_flag[iom] = numpy.int32(22)
     # get the soil temperature difference from time step to time step
     dTs = numpy.ma.zeros(nRecs)
     dTs[1:] = numpy.ma.diff(Ts)
@@ -1460,7 +1461,7 @@ def CorrectFgForStorage(cf,ds,Fg_out='Fg',Fg_in='Fg',Ts_in='Ts',Sws_in='Sws'):
     index = numpy.where(numpy.ma.getmaskarray(dTs)==True)[0]
     #index = numpy.ma.where(numpy.ma.getmaskarray(dTs)==True)[0]
     dTs_flag[index] = numpy.int32(1)
-    logger.warning('  Setting first SHFstorage in series to missing value')
+    #logger.warning('  Setting first SHFstorage in series to missing value')
     attr = pfp_utils.MakeAttributeDictionary(long_name='Change in soil temperature',units='C')
     pfp_utils.CreateSeries(ds,"dTs",dTs,dTs_flag,attr)
     # get the time difference
@@ -1709,7 +1710,7 @@ def do_attributes(cf,ds):
                 if "missing_value" not in ds.series[ThisOne]['Attr'].keys():
                     ds.series[ThisOne]['Attr']["missing_value"] = numpy.int32(c.missing_value)
 
-def DoFunctions(cf,ds):
+def DoFunctions(ds, info):
     """
     Purpose:
      Evaluate functions used in the L1 control file.
@@ -1721,15 +1722,15 @@ def DoFunctions(cf,ds):
     functions = {}
     convert_vars = []
     function_vars = []
-    for var in cf["Variables"].keys():
+    for var in info["Variables"].keys():
         # datetime functions handled elsewhere for now
         if var == "DateTime": continue
-        if "Function" not in cf["Variables"][var].keys(): continue
-        if "func" not in cf["Variables"][var]["Function"].keys():
+        if "Function" not in info["Variables"][var].keys(): continue
+        if "func" not in info["Variables"][var]["Function"].keys():
             msg = " DoFunctions: 'func' keyword not found in [Functions] for "+var
             logger.error(msg)
             continue
-        function_string = cf["Variables"][var]["Function"]["func"]
+        function_string = info["Variables"][var]["Function"]["func"]
         function_string = function_string.replace('"','')
         function_name = function_string.split("(")[0]
         function_args = function_string.split("(")[1].replace(")","").replace(" ","").split(",")
@@ -1754,7 +1755,7 @@ def DoFunctions(cf,ds):
             msg = " Completed function for " + var
             logger.info(msg)
 
-def CalculateStandardDeviations(cf,ds):
+def CalculateStandardDeviations(ds):
     logger.info(' Getting variances from standard deviations & vice versa')
     if 'AhAh' in ds.series.keys() and 'Ah_7500_Sd' not in ds.series.keys():
         AhAh,flag,attr = pfp_utils.GetSeriesasMA(ds,'AhAh')
@@ -2602,6 +2603,80 @@ def MergeSeriesUsingDict(ds, info, merge_order="standard"):
         attr[descr_level] = pfp_utils.append_string(attr[descr_level], s2add)
         pfp_utils.CreateSeries(ds, target, data, flag1, attr)
     return
+
+def MergeDataStructures(ds_dict, l1_info):
+    """
+    Purpose:
+     Merge multiple data structures into a single data structure.
+     Merging is done on the time axis as follows:
+      1) find the earliest start time
+      2) find the latest end time
+      3) construct a datetime series between the earliest start datetime
+         and the latest end datetime at the time step interval
+      4) create the datetime series in the merged data structure
+      5) insert the data from each individual data structure into
+         the merged data structure by matching the datetimes
+    Usage:
+    Side effects:
+     Returns a new data structure with the contents of the individual
+     data structures passed in as ds_dict.
+    Author: PRI
+    Date: February 2020
+    """
+    msg = " Merging " + str(list(ds_dict.keys()))
+    logger.info(msg)
+    l1ire = l1_info["read_excel"]
+    # data structure to hold all data
+    ds = pfp_io.DataStructure()
+    ds.globalattributes = copy.deepcopy(l1ire["Global"])
+    # get the earliest start datetime and the latest datetime
+    start = []
+    end = []
+    for item in list(ds_dict.keys()):
+        start.append(ds_dict[item].series["DateTime"]["Data"][0])
+        end.append(ds_dict[item].series["DateTime"]["Data"][-1])
+    start = min(start)
+    end = max(end)
+    # put the datetime into the data structure
+    ts = int(ds.globalattributes["time_step"])
+    dts = datetime.timedelta(minutes=ts)
+    # generate an aray of datetime from start to end with spacing of ts
+    dt = numpy.array([d for d in pfp_utils.perdelta(start, end, dts)])
+    nrecs = len(dt)
+    var = pfp_utils.CreateEmptyVariable("DateTime", nrecs)
+    var["Label"] = "DateTime"
+    var["Data"] = dt
+    var["Flag"] = numpy.zeros(len(var["Data"]), dtype=numpy.int32)
+    var["Attr"] = {"long_name": "Datetime in local timezone",
+                   "cf_role": "timeseries_id",
+                   "units": "days since 1899-12-31 00:00:00"}
+    pfp_utils.CreateVariable(ds, var)
+    # update the global attributes
+    ds.globalattributes["start_date"] = str(dt[0])
+    ds.globalattributes["end_date"] = str(dt[-1])
+    ds.globalattributes["nc_nrecs"] = len(dt)
+    # put the data into the data structure
+    dt1 = pfp_utils.GetVariable(ds, "DateTime")
+    for item in list(ds_dict.keys()):
+        #print item
+        dtn = pfp_utils.GetVariable(ds_dict[item], "DateTime")
+        idxa, idxb = pfp_utils.FindMatchingIndices(dt1["Data"], dtn["Data"])
+        # check that all datetimes in ds_dict[item] were found in ds
+        if len(idxa) != len(dtn["Data"]):
+            no_match = 100*(len(dtn["Data"]) - len(idxa))/len(dtn["Data"])
+            msg = no_match + "% of time stamps for " + item + " do not match"
+            logger.warning(msg)
+        labels = list(ds_dict[item].series.keys())
+        if "DateTime" in labels:
+            labels.remove("DateTime")
+        for label in labels:
+            var1 = pfp_utils.CreateEmptyVariable(label, nrecs)
+            varn = pfp_utils.GetVariable(ds_dict[item], label)
+            var1["Data"][idxa] = varn["Data"]
+            var1["Flag"][idxa] = varn["Flag"]
+            var1["Attr"] = varn["Attr"]
+            pfp_utils.CreateVariable(ds, var1)
+    return ds
 
 def MergeHumidities(cf, ds, convert_units=False):
     if "Ah" not in cf["Variables"] and "RH" not in cf["Variables"] and "SH" not in cf["Variables"]:
