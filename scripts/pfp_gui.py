@@ -101,7 +101,7 @@ class edit_cfg_L1(QtWidgets.QWidget):
         # set the QTreeView model
         self.view.setModel(self.model)
         # enable drag and drop
-        #self.view.setDragDropMode(QtGui.QAbstractItemView.InternalMove)
+        self.view.setDragDropMode(QtWidgets.QAbstractItemView.InternalMove)
         # build the model
         self.get_model_from_data()
         # set the default width for the first column
@@ -1155,7 +1155,7 @@ class edit_cfg_L2(QtWidgets.QWidget):
         # set the QTreeView model
         self.view.setModel(self.model)
         # enable drag and drop
-        #self.view.setDragDropMode(QtGui.QAbstractItemView.InternalMove)
+        self.view.setDragDropMode(QtWidgets.QAbstractItemView.InternalMove)
         # build the model
         self.get_model_from_data()
         # set the default width for the first column
@@ -2141,7 +2141,7 @@ class edit_cfg_L3(QtWidgets.QWidget):
         self.view.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectItems)
         self.view.setModel(self.model)
         # enable drag and drop
-        #self.view.setDragDropMode(QtGui.QAbstractItemView.InternalMove)
+        self.view.setDragDropMode(QtWidgets.QAbstractItemView.InternalMove)
         # build the model
         self.get_model_from_data()
         # set the default width for the first column

@@ -1,0 +1,298 @@
+level = L2
+[Files]
+    file_path = Right click to browse
+    in_filename = Right click to browse (*.nc)
+    out_filename = Right click to browse (*.nc)
+    plot_path = Right click to browse
+[Options]
+    irga_type = EC150
+    SONIC_Check = Yes
+    IRGA_Check = Yes
+[Variables]
+    [[Fc_EF]]
+        [[[RangeCheck]]]
+            Lower = -50
+            Upper = 50
+    [[Fc_EF_QC]]
+        [[[RangeCheck]]]
+            Lower = -0.5
+            Upper = 10.5
+    [[Fc_EF_Num]]
+        [[[RangeCheck]]]
+            Lower = -0.5
+            Upper = 18000.5
+    [[Fe_EF]]
+        [[[RangeCheck]]]
+            Lower = -100
+            Upper = 600
+    [[Fe_EF_QC]]
+        [[[RangeCheck]]]
+            Lower = -0.5
+            Upper = 10.5
+    [[Fe_EF_Num]]
+        [[[RangeCheck]]]
+            Lower = -0.5
+            Upper = 18000.5
+    [[Fh_EF]]
+        [[[RangeCheck]]]
+            Lower = -100
+            Upper = 600
+    [[Fh_EF_QC]]
+        [[[RangeCheck]]]
+            Lower = -0.5
+            Upper = 10.5
+    [[Fh_EF_Num]]
+        [[[RangeCheck]]]
+            Lower = -0.5
+            Upper = 18000.5
+    [[Fn]]
+        [[[RangeCheck]]]
+            Lower = -100
+            Upper = 1000
+    [[Fg_EF]]
+        [[[RangeCheck]]]
+            Lower = -300
+            Upper = 300
+    [[Fm_EF]]
+        [[[RangeCheck]]]
+            Lower = -1
+            Upper = 1
+    [[Fm_EF_QC]]
+        [[[RangeCheck]]]
+            Lower = -0.5
+            Upper = 10.5
+    [[ustar]]
+        [[[RangeCheck]]]
+            Lower = 0
+            Upper = 2
+    [[Tstar]]
+        [[[RangeCheck]]]
+            Lower = -1
+            Upper = 1
+    [[Ta_<inst>_<height>m]]
+        [[[RangeCheck]]]
+            Lower = -10
+            Upper = 50
+    [[RH_<inst>_<height>m]]
+        [[[RangeCheck]]]
+            Lower = 0
+            Upper = 110
+    [[ps]]
+        [[[RangeCheck]]]
+            Lower = 85
+            Upper = 100
+    [[Ux_SONIC_Av]]
+        [[[RangeCheck]]]
+            Lower = -20
+            Upper = 20
+    [[Ux_SONIC_Sd]]
+        [[[RangeCheck]]]
+            Lower = 0
+            Upper = 3
+    [[Uy_SONIC_Av]]
+        [[[RangeCheck]]]
+            Lower = -20
+            Upper = 20
+    [[Uy_SONIC_Sd]]
+        [[[RangeCheck]]]
+            Lower = 0
+            Upper = 3
+    [[Uz_SONIC_Av]]
+        [[[RangeCheck]]]
+            Lower = -2
+            Upper = 2
+    [[Uz_SONIC_Sd]]
+        [[[RangeCheck]]]
+            Lower = 0
+            Upper = 1
+    [[Tv_SONIC_Av]]
+        [[[RangeCheck]]]
+            Lower = -10
+            Upper = 50
+    [[Tv_SONIC_Sd]]
+        [[[RangeCheck]]]
+            Lower = 0
+            Upper = 2
+    [[Ws_SONIC_Av]]
+        [[[RangeCheck]]]
+            Lower = 0
+            Upper = 20
+    [[Wd_SONIC_Av]]
+        [[[RangeCheck]]]
+            Lower = 0
+            Upper = 360
+    [[Wd_SONIC_Sd]]
+        [[[RangeCheck]]]
+            Lower = 0
+            Upper = 60
+    [[CO2_IRGA_Av]]
+        [[[RangeCheck]]]
+            Lower = 500
+            Upper = 2000
+    [[CO2_IRGA_Sd]]
+        [[[RangeCheck]]]
+            Lower = 0
+            Upper = 50
+    [[H2O_IRGA_Av]]
+        [[[RangeCheck]]]
+            Lower = 0
+            Upper = 20
+    [[H2O_IRGA_Sd]]
+        [[[RangeCheck]]]
+            Lower = 0
+            Upper = 1
+    [[Signal_CO2]]
+        [[[RangeCheck]]]
+            Lower = 0
+            Upper = 1
+    [[Signal_H2O]]
+        [[[RangeCheck]]]
+            Lower = 0
+            Upper = 1
+    [[Precip]]
+        [[[RangeCheck]]]
+            Lower = 0
+            Upper = 50
+    [[Fld]]
+        [[[RangeCheck]]]
+            Lower = 250
+            Upper = 700
+    [[Flu]]
+        [[[RangeCheck]]]
+            Lower = 300
+            Upper = 700
+    [[Fsu]]
+        [[[RangeCheck]]]
+            Lower = -10
+            Upper = 500
+    [[Fsd]]
+        [[[RangeCheck]]]
+            Lower = -10
+            Upper = 1500
+# soil
+    [[Fg_<depth>cma]]
+        [[[RangeCheck]]]
+            Lower = -100
+            Upper = 150
+    [[Fg_<depth>cmb]]
+        [[[RangeCheck]]]
+            Lower = -100
+            Upper = 150
+    [[Fg_<depth>cmc]]
+        [[[RangeCheck]]]
+            Lower = -100
+            Upper = 150
+    [[Sws_<depth>cma]]
+        [[[RangeCheck]]]
+            Lower = 0
+            Upper = 0.5
+    [[Sws_<depth>cmb]]
+        [[[RangeCheck]]]
+            Lower = 0
+            Upper = 0.5
+    [[Sws_<depth>cmc]]
+        [[[RangeCheck]]]
+            Lower = 0
+            Upper = 0.5
+    [[Ts_<depth>cma]]
+        [[[RangeCheck]]]
+            Lower = -10
+            Upper = 50
+    [[Ts_<depth>cmb]]
+        [[[RangeCheck]]]
+            Lower = -10
+            Upper = 50
+    [[Ts_<depth>cmc]]
+        [[[RangeCheck]]]
+            Lower = -10
+            Upper = 50
+# Covariances
+    [[UxUy]]
+        [[[RangeCheck]]]
+            Lower = -1
+            Upper = 1
+    [[UyUz]]
+        [[[RangeCheck]]]
+            Lower = -1
+            Upper = 1
+    [[UxT]]
+        [[[RangeCheck]]]
+            Lower = -2
+            Upper = 2
+    [[UyT]]
+        [[[RangeCheck]]]
+            Lower = -2
+            Upper = 2
+    [[UzT]]
+        [[[RangeCheck]]]
+            Lower = -0.2
+            Upper = 1
+    [[Diag_SONIC]]
+        [[[RangeCheck]]]
+            Lower = -0.5
+            Upper = 20.5
+    [[UxC]]
+        [[[RangeCheck]]]
+            Lower = -4
+            Upper = 4
+    [[UyC]]
+        [[[RangeCheck]]]
+            Lower = -4
+            Upper = 4
+    [[UzC]]
+        [[[RangeCheck]]]
+            Lower = -2
+            Upper = 2
+    [[UxA]]
+        [[[RangeCheck]]]
+            Lower = -1
+            Upper = 1
+    [[UyA]]
+        [[[RangeCheck]]]
+            Lower = -1
+            Upper = 1
+    [[UzA]]
+        [[[RangeCheck]]]
+            Lower = -0.01
+            Upper = 0.5
+    [[CO2_Samples]]
+        [[[RangeCheck]]]
+            Lower = 0
+            Upper = 18000
+    [[H2O_Samples]]
+        [[[RangeCheck]]]
+            Lower = 0
+            Upper = 18000
+   [[Diag_IRGA]]
+        [[[RangeCheck]]]
+            Lower = -0.5
+            Upper = 10.5
+    [[Tpanel]]
+        [[[RangeCheck]]]
+            Lower = -10
+            Upper = 50
+    [[Vbat]]
+        [[[RangeCheck]]]
+            Lower = 10
+            Upper = 15
+[Plots]
+    [[Radiative fluxes]]
+        Variables = Fsd,Fsu,Fld,Flu,Fn
+    [[Turbulent fluxes]]
+        Variables = Fm_EF,Fh_EF,Fe_EF,Fc_EF
+    [[Covariances (SONIC)]]
+        Variables = UzT,UxT,UyT,UxUz,UyUz,UxUx,UyUy
+    [[Covariances (SONIC&IRGA)]]
+        Variables = UzA,UxA,UyA,UzC,UxC,UyC
+    [[Sonic & IRGA diagnostics]]
+        Variables = Diag_SONIC,Diag_IRGA,CO2_Samples,H2O_Samples,Signal_CO2,Signal_H2O
+    [[Air temperature, humidity and CO2]]
+        Variables = Ta_<inst>_<height>m,Tv_SONIC_Av,RH_<inst>_<height>m,H2O_IRGA_Av,CO2_IRGA_Av
+    [[Soil temperature & rain]]
+        Variables = Ts_<depth>cma,Ts_<depth>cmb,Ts_<depth>cmc,Precip
+    [[Soil moisture & rain]]
+        Variables = Sws_<depth>cma,Sws_<depth>cmb,Sws_<depth>cmc,Precip
+    [[Soil heat flux & rain]]
+        Variables = Fg_<depth>cma,Fg_<depth>cmb,Fg_<depth>cmc,Precip
+    [[Pressure, wind speed, wind direction & rainfall]]
+        Variables = ps,Ws_SONIC_Av,Ux,Uy,Uz,Wd_SONIC_Av,Precip
