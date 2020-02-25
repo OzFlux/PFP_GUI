@@ -2659,11 +2659,22 @@ def MergeDataStructures(ds_dict, l1_info):
     dt1 = pfp_utils.GetVariable(ds, "DateTime")
     for item in list(ds_dict.keys()):
         #print item
+        # get the datetime for this worksheet
         dtn = pfp_utils.GetVariable(ds_dict[item], "DateTime")
-        idxa, idxb = pfp_utils.FindMatchingIndices(dt1["Data"], dtn["Data"])
+        # remove duplicate timestamps
+        dtn_unique, index_unique = numpy.unique(dtn["Data"], return_index=True)
+        # restore the original order of the unique timestamps
+        dtn_sorted = dtn_unique[numpy.argsort(index_unique)]
+        # check to see if there were duplicates
+        if len(dtn_sorted) < len(dtn["Data"]):
+            n = len(dtn["Data"]) - len(dtn_sorted)
+            msg = str(n) + " duplicate time stamps were removed for sheet " + item
+            logger.warning(msg)
+        # get the indices where the timestamps match
+        idxa, idxb = pfp_utils.FindMatchingIndices(dt1["Data"], dtn_sorted)
         # check that all datetimes in ds_dict[item] were found in ds
-        if len(idxa) != len(dtn["Data"]):
-            no_match = 100*(len(dtn["Data"]) - len(idxa))/len(dtn["Data"])
+        if len(idxa) != len(dtn_sorted):
+            no_match = 100*(len(dtn_sorted) - len(idxa))/len(dtn_sorted)
             msg = no_match + "% of time stamps for " + item + " do not match"
             logger.warning(msg)
         labels = list(ds_dict[item].series.keys())
@@ -2672,8 +2683,8 @@ def MergeDataStructures(ds_dict, l1_info):
         for label in labels:
             var1 = pfp_utils.CreateEmptyVariable(label, nrecs)
             varn = pfp_utils.GetVariable(ds_dict[item], label)
-            var1["Data"][idxa] = varn["Data"]
-            var1["Flag"][idxa] = varn["Flag"]
+            var1["Data"][idxa] = varn["Data"][idxb]
+            var1["Flag"][idxa] = varn["Flag"][idxb]
             var1["Attr"] = varn["Attr"]
             pfp_utils.CreateVariable(ds, var1)
     return ds
