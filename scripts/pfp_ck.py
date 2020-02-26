@@ -391,7 +391,7 @@ def do_dependencycheck(cf, ds, section, series, code=23, mode="quiet"):
     Author: PRI
     Date: Back in the day
     """
-    if len(series)==0:
+    if len(series) == 0:
         return
     if len(section) == 0:
         section = pfp_utils.get_cfsection(cf, series, mode='quiet')
@@ -399,15 +399,18 @@ def do_dependencycheck(cf, ds, section, series, code=23, mode="quiet"):
             return
     if "DependencyCheck" not in cf[section][series].keys():
         return
-    if "Source" not in cf[section][series]["DependencyCheck"]:
-        msg = " DependencyCheck: keyword Source not found for series "+series+", skipping ..."
+    if ("Source" in cf[section][series]["DependencyCheck"]):
+        source_string = cf[section][series]["DependencyCheck"]["Source"]
+    elif ("source" in cf[section][series]["DependencyCheck"]):
+        source_string = cf[section][series]["DependencyCheck"]["source"]
+    else:
+        msg = " DependencyCheck: keyword 'source' not found for series " + series + ", skipping ..."
         logger.error(msg)
         return
-    if mode=="verbose":
-        msg = " Doing DependencyCheck for "+series
+    if mode == "verbose":
+        msg = " Doing DependencyCheck for " + series
         logger.info(msg)
-    # get the precursor source list from the control file
-    source_string = cf[section][series]["DependencyCheck"]["Source"]
+    # convert the source string into a list
     if "," in source_string:
         source_list = source_string.split(",")
     else:
