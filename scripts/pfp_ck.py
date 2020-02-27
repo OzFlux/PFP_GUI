@@ -399,9 +399,7 @@ def do_dependencycheck(cf, ds, section, series, code=23, mode="quiet"):
             return
     if "DependencyCheck" not in cf[section][series].keys():
         return
-    if ("Source" in cf[section][series]["DependencyCheck"]):
-        source_string = cf[section][series]["DependencyCheck"]["Source"]
-    elif ("source" in cf[section][series]["DependencyCheck"]):
+    if ("source" in cf[section][series]["DependencyCheck"]):
         source_string = cf[section][series]["DependencyCheck"]["source"]
     else:
         msg = " DependencyCheck: keyword 'source' not found for series " + series + ", skipping ..."
@@ -544,31 +542,31 @@ def do_EC155check(cf,ds):
         #else:
             #logger.warning(' do_EC155check: series '+str(ThisOne)+' in EC155 list not found in data structure')
 
-def do_EPQCFlagCheck(cf,ds,section,series,code=9):
-    """
-    Purpose:
-     Mask data according to the value of an EddyPro QC flag.
-    Usage:
-    Author: PRI
-    Date: August 2017
-    """
-    if 'EPQCFlagCheck' not in cf[section][series].keys(): return
-    nRecs = int(ds.globalattributes["nc_nrecs"])
-    flag = numpy.zeros(nRecs, dtype=numpy.int32)
-    source_list = ast.literal_eval(cf[section][series]['EPQCFlagCheck']["Source"])
-    reject_list = ast.literal_eval(cf[section][series]['EPQCFlagCheck']["Reject"])
-    variable = pfp_utils.GetVariable(ds, series)
-    for source in source_list:
-        epflag = pfp_utils.GetVariable(ds, source)
-        for value in reject_list:
-            bool_array = numpy.isclose(epflag["Data"], float(value))
-            idx = numpy.where(bool_array == True)[0]
-            flag[idx] = numpy.int32(1)
-    idx = numpy.where(flag == 1)[0]
-    variable["Data"][idx] = numpy.float(c.missing_value)
-    variable["Flag"][idx] = numpy.int32(9)
-    pfp_utils.CreateVariable(ds, variable)
-    return
+#def do_EPQCFlagCheck(cf,ds,section,series,code=9):
+    #"""
+    #Purpose:
+     #Mask data according to the value of an EddyPro QC flag.
+    #Usage:
+    #Author: PRI
+    #Date: August 2017
+    #"""
+    #if 'EPQCFlagCheck' not in cf[section][series].keys(): return
+    #nRecs = int(ds.globalattributes["nc_nrecs"])
+    #flag = numpy.zeros(nRecs, dtype=numpy.int32)
+    #source_list = ast.literal_eval(cf[section][series]['EPQCFlagCheck']["Source"])
+    #reject_list = ast.literal_eval(cf[section][series]['EPQCFlagCheck']["Reject"])
+    #variable = pfp_utils.GetVariable(ds, series)
+    #for source in source_list:
+        #epflag = pfp_utils.GetVariable(ds, source)
+        #for value in reject_list:
+            #bool_array = numpy.isclose(epflag["Data"], float(value))
+            #idx = numpy.where(bool_array == True)[0]
+            #flag[idx] = numpy.int32(1)
+    #idx = numpy.where(flag == 1)[0]
+    #variable["Data"][idx] = numpy.float(c.missing_value)
+    #variable["Flag"][idx] = numpy.int32(9)
+    #pfp_utils.CreateVariable(ds, variable)
+    #return
 
 def do_excludedates(cf,ds,section,series,code=6):
     if 'ExcludeDates' not in cf[section][series].keys():

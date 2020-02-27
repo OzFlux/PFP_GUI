@@ -2033,7 +2033,7 @@ def get_end_index(ldt, end, mode="quiet"):
         ei = len(ldt)
     return ei
 
-def get_keyvaluefromcf(cf,sections,key,default=None,mode="quiet"):
+def get_keyvaluefromcf(cf, sections, key, default=None, mode="quiet"):
     """
     Purpose:
      General return a keyword value from a control file.
@@ -2051,7 +2051,7 @@ def get_keyvaluefromcf(cf,sections,key,default=None,mode="quiet"):
     Author: PRI
     Date: February 2015
     """
-    if len(sections)<1:
+    if len(sections) < 1:
         msg = " get_keyvaluefromsections: no sections specified"
         if mode.lower()!="quiet": logger.info(msg)
     if sections[0] in cf:

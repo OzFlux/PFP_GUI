@@ -1554,7 +1554,7 @@ class edit_cfg_L3(QtWidgets.QWidget):
 
     def add_diurnalcheck(self):
         """ Add a diurnal check to a variable."""
-        new_qc = {"DiurnalCheck":{"NumSd":"5"}}
+        new_qc = {"DiurnalCheck":{"numsd":"5"}}
         # get the index of the selected item
         idx = self.view.selectedIndexes()[0]
         # get the selected item from the index
@@ -1701,7 +1701,7 @@ class edit_cfg_L3(QtWidgets.QWidget):
 
     def add_rangecheck(self):
         """ Add a range check to a variable."""
-        new_qc = {"RangeCheck":{"Lower":0, "Upper": 1}}
+        new_qc = {"RangeCheck":{"lower":0, "upper": 1}}
         # get the index of the selected item
         idx = self.view.selectedIndexes()[0]
         # get the selected item from the index
@@ -1741,7 +1741,7 @@ class edit_cfg_L3(QtWidgets.QWidget):
         self.update_tab_text()
 
     def add_variable(self):
-        new_var_qc = {"RangeCheck":{"Lower":0, "Upper": 1}}
+        new_var_qc = {"RangeCheck":{"lower":0, "upper": 1}}
         parent2 = QtGui.QStandardItem("New variable")
         for key3 in new_var_qc:
             parent3 = QtGui.QStandardItem(key3)
@@ -2100,14 +2100,12 @@ class edit_cfg_L3(QtWidgets.QWidget):
     def correct_legacy_variable_names(self):
         """ Correct some legacy variable names."""
         # change Fn_KZ to Fn_4cmpt
-        for item in ["Source", "source"]:
-            opt = pfp_utils.get_keyvaluefromcf(self.cfg, ["Variables", "Fn", "MergeSeries"],
-                                               item, default="", mode="quiet")
-            if len(opt) != 0:
-                if "Fn_KZ" in opt:
-                    opt = opt.replace("Fn_KZ", "Fn_4cmpt")
-                    self.cfg["Variables"]["Fn"]["MergeSeries"]["source"] = opt
-                    self.cfg_changed = True
+        opt = pfp_utils.get_keyvaluefromcf(self.cfg, ["Variables", "Fn", "MergeSeries"], "source")
+        if len(opt) != 0:
+            if "Fn_KZ" in opt:
+                opt = opt.replace("Fn_KZ", "Fn_4cmpt")
+                self.cfg["Variables"]["Fn"]["MergeSeries"]["source"] = opt
+                self.cfg_changed = True
         return
 
     def disable_plot(self):
@@ -2233,8 +2231,6 @@ class edit_cfg_L3(QtWidgets.QWidget):
         """ Build the data model."""
         self.model.setHorizontalHeaderLabels(['Parameter', 'Value'])
         self.model.itemChanged.connect(self.handleItemChanged)
-        # correct legacy variable names in the control file
-        self.correct_legacy_variable_names()
         # transfer anything in the [General] section to [Options]
         self.transfer_general_to_options()
         # there must be some way to do this recursively
@@ -2286,13 +2282,15 @@ class edit_cfg_L3(QtWidgets.QWidget):
                             for key4 in self.cfg[key1][key2][key3]:
                                 val = self.cfg[key1][key2][key3][key4]
                                 val = self.parse_cfg_variables_value(key3, val)
-                                child0 = QtGui.QStandardItem(key4)
+                                child0 = QtGui.QStandardItem(key4.lower())
                                 child1 = QtGui.QStandardItem(val)
                                 parent3.appendRow([child0, child1])
                             parent2.appendRow(parent3)
                     if parent2.hasChildren():
                         self.sections[key1].appendRow(parent2)
                 self.model.appendRow(self.sections[key1])
+        # correct legacy variable names in the control file
+        self.correct_legacy_variable_names()
 
     def handleItemChanged(self, item):
         """ Handler for when view items are edited."""
