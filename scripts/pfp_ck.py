@@ -424,7 +424,7 @@ def do_diurnalcheck(cf, ds, section, series,code=5):
     """
     if 'DiurnalCheck' not in cf[section][series].keys():
         return
-    if 'NumSd' not in cf[section][series]["DiurnalCheck"].keys():
+    if 'numsd' not in cf[section][series]["DiurnalCheck"].keys():
         return
     dt = ds.series["DateTime"]["Data"]
     Hdh = numpy.array([d.hour+d.minute/float(60) for d in dt])
@@ -433,7 +433,7 @@ def do_diurnalcheck(cf, ds, section, series,code=5):
     nInts = int((1440.0/ts)+0.5)        #Number of timesteps per day
     Av = numpy.array([c.missing_value]*nInts,dtype=numpy.float64)
     Sd = numpy.array([c.missing_value]*nInts,dtype=numpy.float64)
-    NSd = numpy.array(parse_rangecheck_limit(cf[section][series]["DiurnalCheck"]["NumSd"]))
+    NSd = numpy.array(parse_rangecheck_limit(cf[section][series]["DiurnalCheck"]["numsd"]))
     for m in range(1,13):
         mindex = numpy.where(ds.series["Month"]["Data"]==m)[0]
         if len(mindex)!=0:
@@ -454,7 +454,7 @@ def do_diurnalcheck(cf, ds, section, series,code=5):
                                 ((l2ds!=float(c.missing_value))&(l2ds>Upr[hindex])))[0] + mindex[0]
             ds.series[series]['Data'][index] = numpy.float64(c.missing_value)
             ds.series[series]['Flag'][index] = numpy.int32(code)
-            ds.series[series]['Attr']['diurnalcheck_numsd'] = cf[section][series]['DiurnalCheck']['NumSd']
+            ds.series[series]['Attr']['diurnalcheck_numsd'] = cf[section][series]['DiurnalCheck']['numsd']
 
 def do_EC155check(cf,ds):
     """
@@ -867,24 +867,24 @@ def do_rangecheck(cf, ds, section, series, code=2):
     if 'RangeCheck' not in cf[section][series].keys():
         return
     # check that the upper and lower limits have been given
-    if ("Lower" not in cf[section][series]["RangeCheck"].keys() or
-        "Upper" not in cf[section][series]["RangeCheck"].keys()):
+    if ("lower" not in cf[section][series]["RangeCheck"].keys() or
+        "upper" not in cf[section][series]["RangeCheck"].keys()):
         msg = "RangeCheck: key not found in control file for "+series+", skipping ..."
         logger.warning(msg)
         return
     # get the upper and lower limits
-    upper = cf[section][series]['RangeCheck']['Upper']
+    upper = cf[section][series]['RangeCheck']['upper']
     upr = numpy.array(parse_rangecheck_limit(upper))
     if len(upr) != 12:
-        msg = " Need 12 'Upper' values, got "+str(len(upr))+" for "+series
+        msg = " Need 12 'upper' values, got "+str(len(upr))+" for "+series
         logger.error(msg)
         return
     valid_upper = numpy.min(upr)
     upr = upr[ds.series['Month']['Data']-1]
-    lower = cf[section][series]['RangeCheck']['Lower']
+    lower = cf[section][series]['RangeCheck']['lower']
     lwr = numpy.array(parse_rangecheck_limit(lower))
     if len(lwr) != 12:
-        msg = " Need 12 'Lower' values, got "+str(len(lwr))+" for "+series
+        msg = " Need 12 'lower' values, got "+str(len(lwr))+" for "+series
         logger.error(msg)
         return
     valid_lower = numpy.min(lwr)
@@ -899,8 +899,8 @@ def do_rangecheck(cf, ds, section, series, code=2):
     data[idx] = numpy.float64(c.missing_value)
     flag[idx] = numpy.int32(code)
     # update the variable attributes
-    attr["rangecheck_lower"] = cf[section][series]["RangeCheck"]["Lower"]
-    attr["rangecheck_upper"] = cf[section][series]["RangeCheck"]["Upper"]
+    attr["rangecheck_lower"] = cf[section][series]["RangeCheck"]["lower"]
+    attr["rangecheck_upper"] = cf[section][series]["RangeCheck"]["upper"]
     attr["valid_range"] = repr(valid_lower) + "," + repr(valid_upper)
     # and now put the data back into the data structure
     pfp_utils.CreateSeries(ds, series, data, Flag=flag, Attr=attr)
@@ -1101,8 +1101,8 @@ def UpdateVariableAttributes_QC(cf, variable):
         return
     if "RangeCheck" not in cf[section][label]:
         return
-    if "Lower" in cf[section][label]["RangeCheck"]:
-        variable["Attr"]["rangecheck_lower"] = cf[section][label]["RangeCheck"]["Lower"]
-    if "Upper" in cf[section][label]["RangeCheck"]:
-        variable["Attr"]["rangecheck_upper"] = cf[section][label]["RangeCheck"]["Upper"]
+    if "lower" in cf[section][label]["RangeCheck"]:
+        variable["Attr"]["rangecheck_lower"] = cf[section][label]["RangeCheck"]["lower"]
+    if "upper" in cf[section][label]["RangeCheck"]:
+        variable["Attr"]["rangecheck_upper"] = cf[section][label]["RangeCheck"]["upper"]
     return

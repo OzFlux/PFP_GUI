@@ -2404,7 +2404,8 @@ def MassmanStandard(cf, ds, Ta_in='Ta', Ah_in='Ah', ps_in='ps', u_in="U_SONIC_Av
         1) calculate ustar and L using rotated but otherwise uncorrected covariances
        """
     if "Massman" not in cf:
-        logger.info(" Massman section not in control file, skipping correction ...")
+        msg = " Massman section not in control file, skipping correction ..."
+        logger.warning(msg)
         return
     logger.info(" Correcting for flux loss from spectral attenuation")
     nRecs = int(ds.globalattributes["nc_nrecs"])

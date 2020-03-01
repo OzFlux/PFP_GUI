@@ -257,14 +257,14 @@ def pltfingerprint_createdict(cf,ds):
         else:
             fp_info["variables"][var]["nc_varname"] = str(var)
         # get the upper and lower range limits
-        if "Lower" in cf["Variables"][var]:
-            fp_info["variables"][var]["Lower"] = float(cf["Variables"][var]["Lower"])
+        if "lower" in cf["Variables"][var]:
+            fp_info["variables"][var]["lower"] = float(cf["Variables"][var]["lower"])
         else:
-            fp_info["variables"][var]["Lower"] = float(-1)*c.large_value
-        if "Upper" in cf["Variables"][var]:
-            fp_info["variables"][var]["Upper"] = float(cf["Variables"][var]["Upper"])
+            fp_info["variables"][var]["lower"] = float(-1)*c.large_value
+        if "upper" in cf["Variables"][var]:
+            fp_info["variables"][var]["upper"] = float(cf["Variables"][var]["upper"])
         else:
-            fp_info["variables"][var]["Upper"] = c.large_value
+            fp_info["variables"][var]["upper"] = c.large_value
     # get the start and end datetimes for all files and find the overlap period
     var_list = fp_info["variables"].keys()
     ds_0 = ds[fp_info["variables"][var_list[0]]["in_filename"]]
@@ -367,7 +367,7 @@ def plot_fingerprint(cf):
                     logger.warning(msg)
                     continue
             data,flag,attr = pfp_utils.GetSeriesasMA(ds[infilename],nc_varname,si=si,ei=ei)
-            data = pfp_ck.cliptorange(data,fp_info["variables"][var]["Lower"],fp_info["variables"][var]["Upper"])
+            data = pfp_ck.cliptorange(data,fp_info["variables"][var]["lower"], fp_info["variables"][var]["upper"])
             data_daily = data.reshape(nDays,nPerDay)
             units = str(ds[infilename].series[nc_varname]['Attr']['units'])
             label = var + ' (' + units + ')'
@@ -535,7 +535,7 @@ def plottimeseries(cf, nFig, dsa, dsb):
             section = pfp_utils.get_cfsection(cf, ThisOne, mode='quiet')
             if section != None:
                 if 'DiurnalCheck' in cf[section][ThisOne].keys():
-                    NSdarr = numpy.array(pfp_ck.parse_rangecheck_limit(cf[section][ThisOne]['DiurnalCheck']['NumSd']))
+                    NSdarr = numpy.array(pfp_ck.parse_rangecheck_limit(cf[section][ThisOne]['DiurnalCheck']['numsd']))
                     nSd = NSdarr[Month-1]
                     hr2_ax.plot(Hr2,Av2+nSd*Sd2,'r.',Hr2,Av2-nSd*Sd2,'b.')
             plt.xlim(0,24)

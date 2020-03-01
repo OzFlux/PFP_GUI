@@ -498,7 +498,7 @@ class edit_cfg_L2(QtWidgets.QWidget):
 
     def add_diurnalcheck(self):
         """ Add a diurnal check to a variable."""
-        new_qc = {"DiurnalCheck":{"NumSd":"5"}}
+        new_qc = {"DiurnalCheck":{"numsd":"5"}}
         # get the index of the selected item
         idx = self.view.selectedIndexes()[0]
         # get the selected item from the index
@@ -662,7 +662,7 @@ class edit_cfg_L2(QtWidgets.QWidget):
 
     def add_rangecheck(self):
         """ Add a range check to a variable."""
-        new_qc = {"RangeCheck":{"Lower":0, "Upper": 1}}
+        new_qc = {"RangeCheck":{"lower":0, "upper": 1}}
         # get the index of the selected item
         idx = self.view.selectedIndexes()[0]
         # get the selected item from the index
@@ -747,7 +747,7 @@ class edit_cfg_L2(QtWidgets.QWidget):
         idx = self.view.selectedIndexes()[0]
         # get the selected item from the index
         parent = idx.model().itemFromIndex(idx)
-        new_var_qc = {"RangeCheck":{"Lower":0, "Upper": 1}}
+        new_var_qc = {"RangeCheck":{"lower":0, "upper": 1}}
         subsection = QtGui.QStandardItem("New variable")
         self.add_subsubsection(subsection, new_var_qc)
         parent.appendRow(subsection)
@@ -1487,10 +1487,8 @@ class edit_cfg_L3(QtWidgets.QWidget):
         super(edit_cfg_L3, self).__init__()
 
         self.cfg = copy.deepcopy(main_gui.cfg)
-        self.cfg_changed = False
-
+        self.cfg_changed = self.cfg["changed"]
         self.tabs = main_gui.tabs
-
         self.edit_L3_gui()
 
     def add_2dcoordrotation(self):
@@ -1559,7 +1557,7 @@ class edit_cfg_L3(QtWidgets.QWidget):
 
     def add_diurnalcheck(self):
         """ Add a diurnal check to a variable."""
-        new_qc = {"DiurnalCheck":{"NumSd":"5"}}
+        new_qc = {"DiurnalCheck":{"numsd":"5"}}
         # get the index of the selected item
         idx = self.view.selectedIndexes()[0]
         # get the selected item from the index
@@ -1706,7 +1704,7 @@ class edit_cfg_L3(QtWidgets.QWidget):
 
     def add_rangecheck(self):
         """ Add a range check to a variable."""
-        new_qc = {"RangeCheck":{"Lower":0, "Upper": 1}}
+        new_qc = {"RangeCheck":{"lower":0, "upper": 1}}
         # get the index of the selected item
         idx = self.view.selectedIndexes()[0]
         # get the selected item from the index
@@ -1746,7 +1744,7 @@ class edit_cfg_L3(QtWidgets.QWidget):
         self.update_tab_text()
 
     def add_variable(self):
-        new_var_qc = {"RangeCheck":{"Lower":0, "Upper": 1}}
+        new_var_qc = {"RangeCheck":{"lower":0, "upper": 1}}
         parent2 = QtGui.QStandardItem("New variable")
         for key3 in new_var_qc:
             parent3 = QtGui.QStandardItem(key3)
@@ -2102,18 +2100,6 @@ class edit_cfg_L3(QtWidgets.QWidget):
 
         self.context_menu.exec_(self.view.viewport().mapToGlobal(position))
 
-    def correct_legacy_variable_names(self):
-        """ Correct some legacy variable names."""
-        # change Fn_KZ to Fn_4cmpt
-        opt = pfp_utils.get_keyvaluefromcf(self.cfg, ["Variables", "Fn", "MergeSeries"],
-                                           "source", default="", mode="quiet")
-        if len(opt) != 0:
-            if "Fn_KZ" in opt:
-                opt = opt.replace("Fn_KZ", "Fn_4cmpt")
-                self.cfg["Variables"]["Fn"]["MergeSeries"]["source"] = opt
-                self.cfg_changed = True
-        return
-
     def disable_plot(self):
         # get the index of the selected item
         idx = self.view.selectedIndexes()[0]
@@ -2163,7 +2149,7 @@ class edit_cfg_L3(QtWidgets.QWidget):
             section = model.item(i)
             key1 = str(section.text())
             cfg[key1] = {}
-            if key1 in ["Files", "Global", "Output", "General", "Options", "Soil", "Massman"]:
+            if key1 in ["Files", "Global", "Options", "Soil", "Massman"]:
                 # sections with only 1 level
                 for j in range(section.rowCount()):
                     key2 = str(section.child(j, 0).text())
@@ -2237,21 +2223,14 @@ class edit_cfg_L3(QtWidgets.QWidget):
         """ Build the data model."""
         self.model.setHorizontalHeaderLabels(['Parameter', 'Value'])
         self.model.itemChanged.connect(self.handleItemChanged)
-        # correct legacy variable names in the control file
-        self.correct_legacy_variable_names()
-        # transfer anything in the [General] section to [Options]
-        self.transfer_general_to_options()
         # there must be some way to do this recursively
         self.sections = {}
         for key1 in self.cfg:
-            if not self.cfg[key1]:
-                continue
             if key1 in ["Files", "Global", "Output", "Options", "Soil", "Massman"]:
                 # sections with only 1 level
                 self.sections[key1] = QtGui.QStandardItem(key1)
                 for key2 in self.cfg[key1]:
                     val = self.cfg[key1][key2]
-                    val = self.parse_cfg_values(key2, val, ['"', "'", "[", "]"])
                     child0 = QtGui.QStandardItem(key2)
                     child1 = QtGui.QStandardItem(val)
                     self.sections[key1].appendRow([child0, child1])
@@ -2260,17 +2239,9 @@ class edit_cfg_L3(QtWidgets.QWidget):
                 # sections with 2 levels
                 self.sections[key1] = QtGui.QStandardItem(key1)
                 for key2 in self.cfg[key1]:
-                    if key1 == "Plots":
-                        # handle old-style control files with separate Title key
-                        title = self.parse_cfg_plots_title(key1, key2)
-                        parent2 = QtGui.QStandardItem(title)
-                    else:
-                        parent2 = QtGui.QStandardItem(key2)
+                    parent2 = QtGui.QStandardItem(key2)
                     for key3 in self.cfg[key1][key2]:
-                        if key3 in ["source"]:
-                            continue
                         val = self.cfg[key1][key2][key3]
-                        val = self.parse_cfg_plots_value(key3, val)
                         child0 = QtGui.QStandardItem(key3)
                         child1 = QtGui.QStandardItem(val)
                         parent2.appendRow([child0, child1])
@@ -2280,8 +2251,6 @@ class edit_cfg_L3(QtWidgets.QWidget):
                 # sections with 3 levels
                 self.sections[key1] = QtGui.QStandardItem(key1)
                 for key2 in self.cfg[key1]:
-                    if key2 in ["ustar_filtered"]:
-                        continue
                     parent2 = QtGui.QStandardItem(key2)
                     for key3 in self.cfg[key1][key2]:
                         if key3 in ["RangeCheck", "DependencyCheck", "DiurnalCheck", "ExcludeDates",
@@ -2289,7 +2258,6 @@ class edit_cfg_L3(QtWidgets.QWidget):
                             parent3 = QtGui.QStandardItem(key3)
                             for key4 in self.cfg[key1][key2][key3]:
                                 val = self.cfg[key1][key2][key3][key4]
-                                val = self.parse_cfg_variables_value(key3, val)
                                 child0 = QtGui.QStandardItem(key4)
                                 child1 = QtGui.QStandardItem(val)
                                 parent3.appendRow([child0, child1])
@@ -2304,81 +2272,6 @@ class edit_cfg_L3(QtWidgets.QWidget):
         self.cfg = self.get_data_from_model()
         # add an asterisk to the tab text to indicate the tab contents have changed
         self.update_tab_text()
-
-    def parse_cfg_plots_title(self, key1, key2):
-        """ Parse the [Plots] section for a title."""
-        if "Title" in self.cfg[key1][key2]:
-            title = self.cfg[key1][key2]["Title"]
-            del self.cfg[key1][key2]["Title"]
-            self.cfg_changed = True
-        else:
-            title = key2
-        strip_list = ['"', "'"]
-        for c in strip_list:
-            if c in title:
-                self.cfg_changed = True
-                title = title.replace(c, "")
-        return title
-
-    def parse_cfg_plots_value(self, k, v):
-        """ Parse the [Plots] section keys to remove unnecessary characters."""
-        if k in ["Variables", "Type", "XSeries", "YSeries"]:
-            if ("[" in v) and ("]" in v):
-                v = v.replace("[", "").replace("]", "")
-                self.cfg_changed = True
-        strip_list = [" ", '"', "'"]
-        for c in strip_list:
-            if c in v:
-                if (v != '""') and (v != "''"):
-                    self.cfg_changed = True
-                v = v.replace(c, "")
-        return v
-
-    def parse_cfg_values(self, k, v, strip_list):
-        """ Parse key values to remove unnecessary characters."""
-        for c in strip_list:
-            if c in v:
-                if (v != '""') and (v != "''"):
-                    self.cfg_changed = True
-                v = v.replace(c, "")
-        if k in ["file_path", "plot_path"] and "browse" not in v:
-            if os.path.join(str(v), "") != v:
-                v = os.path.join(str(v), "")
-                self.cfg_changed = True
-        return v
-
-    def parse_cfg_variables_value(self, k, v):
-        """ Parse value from control file to remove unnecessary characters."""
-        strip_list = []
-        try:
-            # check to see if it is a number
-            r = float(v)
-        except ValueError as e:
-            if ("[" in v) and ("]" in v) and ("*" in v):
-                # old style of [value]*12
-                v = v[v.index("[")+1:v.index("]")]
-                self.cfg_changed = True
-            elif ("[" in v) and ("]" in v) and ("*" not in v):
-                # old style of [1,2,3,4,5,6,7,8,9,10,11,12]
-                v = v.replace("[", "").replace("]", "")
-                self.cfg_changed = True
-        # remove white space and quotes
-        if k in ["RangeCheck", "DiurnalCheck", "DependencyCheck",
-                 "MergeSeries", "AverageSeries", "ApplyFcStorage"]:
-            strip_list = [" ", '"', "'"]
-        elif k in ["ExcludeDates", "ExcludeHours", "LowerCheck", "UpperCheck"]:
-            # don't remove white space between date and time
-            strip_list = ['"', "'"]
-        else:
-            msg = " QC check " + k + " not recognised"
-            logger.warning(msg)
-            return v
-        for c in strip_list:
-            if c in v:
-                if (v != '""') and (v != "''"):
-                    self.cfg_changed = True
-                v = v.replace(c, "")
-        return v
 
     def remove_daterange(self):
         """ Remove a date range from the ustar_threshold section."""
@@ -2417,16 +2310,6 @@ class edit_cfg_L3(QtWidgets.QWidget):
         # remove the row
         root.removeRow(selected_item.row())
         self.update_tab_text()
-
-    def transfer_general_to_options(self):
-        """ Copy any entries in [General] to [Options] then delete [General]."""
-        if "General" in self.cfg:
-            if "Options" not in self.cfg:
-                self.cfg["Options"] = {}
-            for item in self.cfg["General"]:
-                self.cfg["Options"][item] = self.cfg["General"][item]
-            del self.cfg["General"]
-        return
 
     def update_tab_text(self):
         """ Add an asterisk to the tab title text to indicate tab contents have changed."""
@@ -3327,7 +3210,7 @@ class edit_cfg_L4(QtWidgets.QWidget):
 
     def add_diurnalcheck(self):
         """ Add a diurnal check to a variable."""
-        dict_to_add = {"DiurnalCheck":{"NumSd":"5"}}
+        dict_to_add = {"DiurnalCheck":{"numsd":"5"}}
         # add the subsubsection (DiurnalCheck)
         self.add_subsubsection(dict_to_add)
 
@@ -3387,7 +3270,7 @@ class edit_cfg_L4(QtWidgets.QWidget):
 
     def add_rangecheck(self):
         """ Add a range check to a variable."""
-        dict_to_add = {"RangeCheck":{"Lower":0, "Upper": 1}}
+        dict_to_add = {"RangeCheck":{"lower":0, "upper": 1}}
         # add the subsubsection (RangeCheck)
         self.add_subsubsection(dict_to_add)
 
@@ -4254,7 +4137,7 @@ class edit_cfg_L5(QtWidgets.QWidget):
 
     def add_diurnalcheck(self):
         """ Add a diurnal check to a variable."""
-        dict_to_add = {"DiurnalCheck":{"NumSd":"5"}}
+        dict_to_add = {"DiurnalCheck":{"numsd":"5"}}
         # add the subsubsection (DiurnalCheck)
         self.add_subsubsection(dict_to_add)
         # update the list of altered series
@@ -4472,7 +4355,7 @@ class edit_cfg_L5(QtWidgets.QWidget):
 
     def add_rangecheck(self):
         """ Add a range check to a variable."""
-        dict_to_add = {"RangeCheck":{"Lower":0, "Upper": 1}}
+        dict_to_add = {"RangeCheck":{"lower":0, "upper": 1}}
         # add the subsubsection (RangeCheck)
         self.add_subsubsection(dict_to_add)
         # update the list of altered series

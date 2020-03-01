@@ -130,55 +130,6 @@ def check_executables():
         result = pfp_gui.MsgBox_Quit(msg, title="Critical")
     return
 
-def check_l4_controlfile(cf):
-    """
-    Purpose:
-     Parse the L4 control file to make sure the syntax is correct and that the
-     control file contains all of the information needed.
-    Usage:
-     result = pfp_compliance.check_l4_controlfile(cf)
-     where cf is a ConfigObj object
-           result is True if the L4 control file is compliant
-                     False if it is not compliant
-    Side effects:
-    Author: PRI
-    Date: September 2019
-    """
-    # initialise the return logical
-    ok = True
-    try:
-        for key1 in cf:
-            if key1 in ["Files", "Global", "Options"]:
-                for key2 in cf[key1]:
-                    value = cf[key1][key2]
-                    if ("browse" not in value):
-                        value = strip_characters_from_string(value, ['"', "'"])
-            elif key1 in ["Drivers"]:
-                for key2 in cf[key1]:
-                    for key3 in cf[key1][key2]:
-                        if key3 in ["GapFillFromAlternate", "GapFillFromClimatology"]:
-                            for key4 in cf[key1][key2][key3]:
-                                for key5 in cf[key1][key2][key3][key4]:
-                                    cf[key1][key2][key3][key4].rename(key5, key5.lower())
-                                    value = cf[key1][key2][key3][key4][key5.lower()]
-                                    value = strip_characters_from_string(value, ['"', "'"])
-                        elif key3 in ["MergeSeries", "RangeCheck", "ExcludeDates"]:
-                            # strip out unwanted characters
-                            for key4 in cf[key1][key2][key3]:
-                                # force lower case
-                                cf[key1][key2][key3].rename(key4, key4.lower())
-                                value = cf[key1][key2][key3][key4.lower()]
-                                value = strip_characters_qc_checks(key3, value)
-        logger.info(" Saving " + cf.filename)
-        cf.write()
-    except Exception:
-        ok = False
-        msg = " An error occurred while parsing the L4 control file"
-        logger.error(msg)
-        error_message = traceback.format_exc()
-        logger.error(error_message)
-    return ok
-
 def check_l6_controlfile(cf):
     """
     Purpose:
@@ -837,6 +788,173 @@ def include_variables(cfg, ds_in):
                 ds_out.series[label] = ds_in.series[label]
     return ds_out
 
+def l3_correct_legacy_variable_names(cfg):
+    """ Correct some legacy variable names."""
+    # change Fn_KZ to Fn_4cmpt
+    opt = pfp_utils.get_keyvaluefromcf(cfg, ["Variables", "Fn", "MergeSeries"],
+                                       "source", default="", mode="quiet")
+    if len(opt) != 0:
+        if "Fn_KZ" in opt:
+            opt = opt.replace("Fn_KZ", "Fn_4cmpt")
+            cfg["Variables"]["Fn"]["MergeSeries"]["source"] = opt
+            cfg["changed"] = True
+    return
+
+def l3_parse_cfg_plots_title(cfg, key1, key2):
+    """ Parse the [Plots] section for a title."""
+    if "Title" in cfg[key1][key2]:
+        title = cfg[key1][key2]["Title"]
+        del cfg[key1][key2]["Title"]
+        cfg["changed"] = True
+    else:
+        title = key2
+    strip_list = ['"', "'"]
+    for c in strip_list:
+        if c in title:
+            cfg["changed"] = True
+            title = title.replace(c, "")
+    return title
+
+def l3_parse_cfg_plots_value(cfg, k, v):
+    """ Parse the [Plots] section keys to remove unnecessary characters."""
+    if k in ["Variables", "Type", "XSeries", "YSeries"]:
+        if ("[" in v) and ("]" in v):
+            v = v.replace("[", "").replace("]", "")
+            cfg["changed"] = True
+    strip_list = [" ", '"', "'"]
+    for c in strip_list:
+        if c in v:
+            if (v != '""') and (v != "''"):
+                cfg["changed"] = True
+            v = v.replace(c, "")
+    return v
+
+def l3_parse_cfg_values(cfg, k, v, strip_list):
+    """ Parse key values to remove unnecessary characters."""
+    for c in strip_list:
+        if c in v:
+            if (v != '""') and (v != "''"):
+                cfg["changed"] = True
+            v = v.replace(c, "")
+    if k in ["file_path", "plot_path"] and "browse" not in v:
+        if os.path.join(str(v), "") != v:
+            v = os.path.join(str(v), "")
+            cfg["changed"] = True
+    return v
+
+def l3_parse_cfg_variables_value(cfg, k, v):
+    """ Parse value from control file to remove unnecessary characters."""
+    strip_list = []
+    try:
+        # check to see if it is a number
+        r = float(v)
+    except ValueError as e:
+        if ("[" in v) and ("]" in v) and ("*" in v):
+            # old style of [value]*12
+            v = v[v.index("[")+1:v.index("]")]
+            cfg["changed"] = True
+        elif ("[" in v) and ("]" in v) and ("*" not in v):
+            # old style of [1,2,3,4,5,6,7,8,9,10,11,12]
+            v = v.replace("[", "").replace("]", "")
+            cfg["changed"] = True
+    # remove white space and quotes
+    if k in ["RangeCheck", "DiurnalCheck", "DependencyCheck",
+             "MergeSeries", "AverageSeries", "ApplyFcStorage"]:
+        strip_list = [" ", '"', "'"]
+    elif k in ["ExcludeDates", "ExcludeHours", "LowerCheck", "UpperCheck"]:
+        # don't remove white space between date and time
+        strip_list = ['"', "'"]
+    else:
+        msg = " QC check " + k + " not recognised"
+        logger.warning(msg)
+        return v
+    for c in strip_list:
+        if c in v:
+            if (v != '""') and (v != "''"):
+                cfg["changed"] = True
+            v = v.replace(c, "")
+    return v
+
+def l3_transfer_general_to_options(cfg):
+    """ Copy any entries in [General] to [Options] then delete [General]."""
+    if "General" in cfg:
+        if "Options" not in cfg:
+            cfg["Options"] = {}
+        for item in cfg["General"]:
+            cfg["Options"][item] = cfg["General"][item]
+        del cfg["General"]
+    return
+
+def l3_update_controlfile(cfg):
+    """
+    Purpose:
+     Parse the L3 control file to update the syntax from earlier OFQC/PFP versions
+     to the syntax used by this version.
+    Usage:
+     result = pfp_compliance.update_l3_controlfile(cfg)
+     where cfg is a ConfigObj object
+           result is True if the L3 control file was updated successfully
+                     False if it couldn't be updated
+    Side effects:
+    Author: PRI
+    Date: February 2020
+    """
+    # initialise the return logical
+    ok = True
+    cfg["changed"] = False
+    try:
+        # transfer anything in the [General] section to [Options]
+        l3_transfer_general_to_options(cfg)
+        strip_list = ['"', "'", "[", "]"]
+        for key1 in cfg:
+            if key1 in ["Output"]:
+                # deprecated sections
+                del cfg[key1]
+                continue
+            elif key1 in ["Files", "Global", "Soil", "Massman"]:
+                for key2 in cfg[key1]:
+                    cfg[key1][key2] = l3_parse_cfg_values(cfg, key2, cfg[key1][key2], strip_list)
+            elif key1 in ["Options"]:
+                for key2 in cfg[key1]:
+                    if key2 in ["MassmanCorrection", "CO2Units", "FcUnits", "UseL2Fluxes",
+                                "2DCoordRotation", "ApplyFcStorage", "CorrectIndividualFg",
+                                "CorrectFgForStorage", "zms"]:
+                        cfg[key1][key2] = l3_parse_cfg_values(cfg, key2, cfg[key1][key2], strip_list)
+                    else:
+                        del cfg[key1][key2]
+            elif key1 in ["Plots", "Imports"]:
+                if key1 == "Plots":
+                    for key2 in cfg[key1]:
+                        title = l3_parse_cfg_plots_title(cfg, key1, key2)
+                        cfg[key1][title] = cfg[key1].pop(key2)
+                        for key3 in cfg[key1][title]:
+                            cfg[key1][title][key3] = l3_parse_cfg_plots_value(cfg, key3, cfg[key1][title][key3])
+            elif key1 in ["Variables"]:
+                for key2 in cfg[key1]:
+                    # deprecated variables
+                    if key2 in ["ustar_filtered"]:
+                        del cfg[key1][key2]
+                        continue
+                    for key3 in cfg[key1][key2]:
+                        if key3 in ["RangeCheck", "DependencyCheck", "DiurnalCheck", "ExcludeDates",
+                                    "ApplyFcStorage", "MergeSeries", "AverageSeries"]:
+                            cfg3 = cfg[key1][key2][key3]
+                            for key4 in cfg3:
+                                # for keywords to lower case
+                                if key4.lower() != key4:
+                                    cfg3[key4.lower()] = cfg3.pop(key4)
+                                    cfg["changed"] = True
+                                cfg3[key4.lower()] = l3_parse_cfg_variables_value(cfg, key3, cfg3[key4.lower()])
+        # correct legacy variable names in the control file
+        l3_correct_legacy_variable_names(cfg)
+    except Exception:
+        ok = False
+        msg = " An error occurred while updatinh the L4 control file syntax"
+        logger.error(msg)
+        error_message = traceback.format_exc()
+        logger.error(error_message)
+    return ok
+
 def nc_update(cfg):
     """
     Purpose:
@@ -880,3 +998,52 @@ def nc_update(cfg):
     pfp_io.nc_write_series(nc_file, ds2)
 
     return 0
+
+def update_l4_controlfile(cf):
+    """
+    Purpose:
+     Parse the L4 control file to make sure the syntax is correct and that the
+     control file contains all of the information needed.
+    Usage:
+     result = pfp_compliance.update_l4_controlfile(cf)
+     where cf is a ConfigObj object
+           result is True if the L4 control file is compliant
+                     False if it is not compliant
+    Side effects:
+    Author: PRI
+    Date: September 2019
+    """
+    # initialise the return logical
+    ok = True
+    try:
+        for key1 in cf:
+            if key1 in ["Files", "Global", "Options"]:
+                for key2 in cf[key1]:
+                    value = cf[key1][key2]
+                    if ("browse" not in value):
+                        value = strip_characters_from_string(value, ['"', "'"])
+            elif key1 in ["Drivers"]:
+                for key2 in cf[key1]:
+                    for key3 in cf[key1][key2]:
+                        if key3 in ["GapFillFromAlternate", "GapFillFromClimatology"]:
+                            for key4 in cf[key1][key2][key3]:
+                                for key5 in cf[key1][key2][key3][key4]:
+                                    cf[key1][key2][key3][key4].rename(key5, key5.lower())
+                                    value = cf[key1][key2][key3][key4][key5.lower()]
+                                    value = strip_characters_from_string(value, ['"', "'"])
+                        elif key3 in ["MergeSeries", "RangeCheck", "ExcludeDates"]:
+                            # strip out unwanted characters
+                            for key4 in cf[key1][key2][key3]:
+                                # force lower case
+                                cf[key1][key2][key3].rename(key4, key4.lower())
+                                value = cf[key1][key2][key3][key4.lower()]
+                                value = strip_characters_qc_checks(key3, value)
+        logger.info(" Saving " + cf.filename)
+        cf.write()
+    except Exception:
+        ok = False
+        msg = " An error occurred while parsing the L4 control file"
+        logger.error(msg)
+        error_message = traceback.format_exc()
+        logger.error(error_message)
+    return ok
