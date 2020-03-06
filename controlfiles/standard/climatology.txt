@@ -35,13 +35,3 @@
         Format = 0
     [[Fa]]
         Format = 0
-    [[Fe]]
-        Format = 0
-    [[Fh]]
-        Format = 0
-    [[Fc]]
-        Format = 0.00
-    [[Fm]]
-        Format = 0.000
-    [[ustar]]
-        Format = 0.00

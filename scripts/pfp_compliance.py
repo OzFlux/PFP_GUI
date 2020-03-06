@@ -162,19 +162,19 @@ def concatenate_update_controlfile(cfg):
         for key1 in cfg:
             if key1 in ["level"]:
                 cfg[key1] = parse_cfg_values(key1, cfg[key1], strip_list)
-            elif key1 in ["Files", "Global"]:
+            elif key1 in ["Options"]:
                 for key2 in cfg[key1]:
-                    cfg[key1][key2] = parse_cfg_values(key2, cfg[key1][key2], strip_list)
-            elif key1 in ["Variables"]:
+                    cfg2 = cfg[key1][key2]
+                    if key2 in ["MaxGapInterpolate"]:
+                        cfg2 = parse_cfg_values(key2, cfg2, strip_list)
+                    else:
+                        del cfg[key1][key2]
+            elif key1 in ["Files"]:
                 for key2 in cfg[key1]:
-                    for key3 in cfg[key1][key2]:
-                        if key3 in ["xl", "csv", "Attr"]:
-                            cfg3 = cfg[key1][key2][key3]
-                            for key4 in cfg3:
-                                # for keywords to lower case
-                                if key4.lower() != key4:
-                                    cfg3[key4.lower()] = cfg3.pop(key4)
-                                cfg3[key4.lower()] = parse_cfg_variables_value(key3, cfg3[key4.lower()])
+                    cfg2 = cfg[key1][key2]
+                    for key3 in cfg2:
+                        cfg3 = cfg[key1][key2][key3]
+                        cfg3 = parse_cfg_values(key3, cfg3, strip_list)
             else:
                 del cfg[key1]
         # check to see if the control file object has been changed
@@ -185,7 +185,7 @@ def concatenate_update_controlfile(cfg):
             cfg.write()
     except Exception:
         ok = False
-        msg = " An error occurred while updating the L1 control file syntax"
+        msg = " An error occurred while updating the concatenate control file syntax"
         logger.error(msg)
         error_message = traceback.format_exc()
         logger.error(error_message)

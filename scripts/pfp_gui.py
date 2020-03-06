@@ -2278,14 +2278,11 @@ class edit_cfg_concatenate(QtWidgets.QWidget):
         # there must be someway outa here, said the Joker to the Thief ...
         self.sections = {}
         for key1 in self.cfg:
-            if not self.cfg[key1]:
-                continue
             if key1 in ["Options"]:
                 # sections with only 1 level
                 self.sections[key1] = QtGui.QStandardItem(key1)
                 for key2 in self.cfg[key1]:
                     val = self.cfg[key1][key2]
-                    val = self.parse_cfg_values(key2, val, ["[","]",'"', "'"])
                     child0 = QtGui.QStandardItem(key2)
                     child1 = QtGui.QStandardItem(str(val))
                     self.sections[key1].appendRow([child0, child1])
