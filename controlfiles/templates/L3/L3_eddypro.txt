@@ -10,8 +10,6 @@ level = L3
     CO2Units = umol/mol
     FcUnits = umol/m2/s
 
-[Output]
-
 [Soil]
     FgDepth = <depth>
     BulkDensity = <soil_bulk_density>
@@ -22,83 +20,83 @@ level = L3
 [Variables]
     [[Fn]]
         [[[MergeSeries]]]
-            Source = Fn_4cmpt,Fn
+            source = Fn_4cmpt,Fn
         [[[RangeCheck]]]
-            Lower = -150
-            Upper = 1100
+            lower = -150
+            upper = 1100
     [[Ta]]
         [[[MergeSeries]]]
-            Source = Ta_<inst>_<height>m,Ta_SONIC_Av
+            source = Ta_<inst>_<height>m,Ta_SONIC_Av
         [[[RangeCheck]]]
-            Lower = -10
-            Upper = 50
+            lower = -10
+            upper = 50
     [[RH]]
         [[[MergeSeries]]]
-            Source = RH_<inst>_<height>m,RH_IRGA_Av
+            source = RH_<inst>_<height>m,RH_IRGA_Av
         [[[RangeCheck]]]
-            Upper = 100
-            Lower = 0
+            upper = 100
+            lower = 0
     [[H2O]]
         [[[MergeSeries]]]
-            Source = H2O_IRGA_Av
+            source = H2O_IRGA_Av
         [[[RangeCheck]]]
-            Upper = 3000
-            Lower = 0
+            upper = 3000
+            lower = 0
     [[CO2]]
         [[[MergeSeries]]]
-            Source = CO2_IRGA_Av
+            source = CO2_IRGA_Av
         [[[RangeCheck]]]
-            Lower = 250
-            Upper = 900
+            lower = 250
+            upper = 900
     [[Ws]]
         [[[MergeSeries]]]
-            Source = Ws_<inst>_Av,Ws_SONIC_Av
+            source = Ws_<inst>_Av,Ws_SONIC_Av
         [[[RangeCheck]]]
-            Lower = 0
-            Upper = 20
+            lower = 0
+            upper = 20
     [[Wd]]
         [[[MergeSeries]]]
-            Source = Wd_<inst>_Av,Wd_SONIC_Av
+            source = Wd_<inst>_Av,Wd_SONIC_Av
         [[[RangeCheck]]]
-            Lower = 0
-            Upper = 360
+            lower = 0
+            upper = 360
     [[Fg]]
         [[[AverageSeries]]]
-            Source = Fg_<depth>cma,Fg_<depth>cmb
+            source = Fg_<depth>cma,Fg_<depth>cmb
         [[[RangeCheck]]]
-            Lower = -300
-            Upper = 300
+            lower = -300
+            upper = 300
     [[Sws]]
         [[[AverageSeries]]]
-            Source = Sws_<depth>cma,Sws_<depth>cmb
+            source = Sws_<depth>cma,Sws_<depth>cmb
         [[[RangeCheck]]]
-            Lower = 0
-            Upper = 0.5
+            lower = 0
+            upper = 0.5
     [[Ts]]
         [[[AverageSeries]]]
-            Source = Ts_<depth>cma,Ts_<depth>cmb
+            source = Ts_<depth>cma,Ts_<depth>cmb
         [[[RangeCheck]]]
-            Lower = 0
-            Upper = 60
+            lower = 0
+            upper = 60
 
 [Plots]
     [[Radiative fluxes]]
-        Variables = Fsd,Fsu,Fld,Flu,Fn
+        variables = Fsd,Fsu,Fld,Flu,Fn
     [[Turbulent fluxes]]
-        Variables = Fh,Fe,Fc,ustar,Fm
+        variables = Fh,Fe,Fc,ustar,Fm
     [[Fh diagnostics]]
-        Variables = Fh,Fh_EPFlag,W_SONIC_Vr,Tv_SONIC_Vr
+        variables = Fh,Fh_EPFlag,W_SONIC_Vr,Tv_SONIC_Vr
     [[Fe diagnostics]]
-        Variables = Fe,Fe_EPFlag,W_SONIC_Vr,H2O_IRGA_Vr,CO2_IRGA_Vr
+        variables = Fe,Fe_EPFlag,W_SONIC_Vr,H2O_IRGA_Vr,CO2_IRGA_Vr
     [[Fc diagnostics]]
-        Variables = Fc,Fc_EPFlag,W_SONIC_Vr,H2O_IRGA_Vr,CO2_IRGA_Vr
+        variables = Fc,Fc_EPFlag,W_SONIC_Vr,H2O_IRGA_Vr,CO2_IRGA_Vr
     [[Air temperature, humidity and CO2]]
-        Variables = Ta,Ta_<inst>_<height>m,RH,RH_<inst>_<height>m,CO2_IRGA_Av
+        variables = Ta,Ta_<inst>_<height>m,RH,RH_<inst>_<height>m,CO2_IRGA_Av
     [[Soil temperature]]
-        Variables = Precip,Ts,Ts_<depth>cma,Ts_<depth>cmb
+        variables = Precip,Ts,Ts_<depth>cma,Ts_<depth>cmb
     [[Soil water content]]
-        Variables = Precip,Sws,Sws_<depth>cma,Sws_<depth>cmb
+        variables = Precip,Sws,Sws_<depth>cma,Sws_<depth>cmb
     [[Soil heat flux]]
-        Variables = Precip,Fg,Fg_<depth>cma,Fg_<depth>cmb
+        variables = Precip,Fg,Fg_<depth>cma,Fg_<depth>cmb
     [[Pressure, wind speed and direction]]
-        Variables = ps,Ws,Ws_<inst>_Av,Ws_SONIC_Av,Wd,Wd_<inst>_Av,Wd_SONIC_Av
+        variables = ps,Ws,Ws_<inst>_Av,Ws_SONIC_Av,Wd,Wd_<inst>_Av,Wd_SONIC_Av

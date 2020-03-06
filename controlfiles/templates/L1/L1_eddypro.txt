@@ -7,31 +7,31 @@ level = L1
     out_filename = Right click to browse (*.nc)
 
 [Global]
-    acknowledgement = ""
-    contact = ""
+    acknowledgement = 
+    contact = 
     canopy_height = <canopy_height>m
-    comment = ""
+    comment = 
     conventions = CF-1.6
     conventions_names = CF convention standard names table version 27, 28 Nov 2013, audited 4 Jan 2015
-    data_url = ""
-    doi = ""
-    history = ""
-    institution = ""
+    data_url = 
+    doi = 
+    history = 
+    institution = 
     latitude = <latitude>
     license_type = CC BY 4.0
     license_url = https://creativecommons.org/licenses/by/4.0/
     longitude = <longitude>
-    metadata_url = ""
-    references = ""
+    metadata_url = 
+    references = 
     site_name = <site_name>
-    site_pi = ""
-    soil = ""
-    source = ""
+    site_pi = 
+    soil = 
+    source = 
     title = Flux tower data set from the <site_name> site for the calendar year <year>
     time_step = 30
     time_zone = <country>/<time_zone>
     tower_height = <tower_height>m
-    vegetation = ""
+    vegetation = 
     altitude = <altitude>m
 
 [Variables]
@@ -49,16 +49,16 @@ level = L1
             name = date
         [[[Attr]]]
             long_name = Date from full_output file
-            standard_name = ""
-            units = ""
+            standard_name = 
+            units = 
     [[Time]]
         [[[xl]]]
             sheet = full_output
             name = time
         [[[Attr]]]
             long_name = Time from full_output file
-            standard_name = ""
-            units = ""
+            standard_name = 
+            units = 
     [[Fn]]
         [[[xl]]]
             sheet = biomet
@@ -67,7 +67,7 @@ level = L1
             height = <height>m
             instrument = Kipp and Zonen CNR1
             long_name = Net radiation (CNR1 4 components)
-            serial_number = ""
+            serial_number = 
             standard_name = surface_net_downwawrd_radiative_flux
             units = W/m2
     [[Fld]]
@@ -78,7 +78,7 @@ level = L1
             height = <height>m
             instrument = Kipp and Zonen CNR1
             long_name = Down-welling long wave radiation
-            serial_number = ""
+            serial_number = 
             standard_name = surface_downwelling_longwave_flux_in_air
             units = W/m2
     [[Flu]]
@@ -89,7 +89,7 @@ level = L1
             height = <height>m
             instrument = Kipp and Zonen CNR1
             long_name = Up-welling long wave radiation
-            serial_number = ""
+            serial_number = 
             standard_name = surface_upwelling_longwave_flux_in_air
             units = W/m2
     [[Fsu]]
@@ -100,7 +100,7 @@ level = L1
             height = <height>m
             instrument = Kipp and Zonen CNR1
             long_name = Up-welling short wave radiation
-            serial_number = ""
+            serial_number = 
             standard_name = surface_upwelling_shortwave_flux_in_air
             units = W/m2
     [[Fsd]]
@@ -111,7 +111,7 @@ level = L1
             height = <height>m
             instrument = Kipp and Zonen CNR1
             long_name = Down-welling short wave radiation
-            serial_number = ""
+            serial_number = 
             standard_name = surface_downwelling_shortwave_flux_in_air
             units = W/m2
     [[Fm]]
@@ -122,8 +122,8 @@ level = L1
             height = <height>m
             instrument = SONIC
             long_name = Momentum flux
-            serial_number = ""
-            standard_name = ""
+            serial_number = 
+            standard_name = 
             units = kg/m2
     [[Fm_EPFlag]]
         [[[xl]]]
@@ -133,9 +133,9 @@ level = L1
             height = <height>m
             instrument = SONIC
             long_name = Momentum flux quality control flag
-            serial_number = ""
-            standard_name = ""
-            units = ""
+            serial_number = 
+            standard_name = 
+            units = 
     [[Fh]]
         [[[xl]]]
             sheet = full_output
@@ -144,8 +144,8 @@ level = L1
             height = <height>m
             instrument = SONIC
             long_name = Sensible heat flux
-            serial_number = ""
-            standard_name = ""
+            serial_number = 
+            standard_name = 
             units = W/m2
     [[Fh_EPFlag]]
         [[[xl]]]
@@ -155,9 +155,9 @@ level = L1
             height = <height>m
             instrument = SONIC
             long_name = Sensible heat flux quality control flag
-            serial_number = ""
-            standard_name = ""
-            units = ""
+            serial_number = 
+            standard_name = 
+            units = 
     [[Fe]]
         [[[xl]]]
             sheet = full_output
@@ -166,8 +166,8 @@ level = L1
             height = <height>m
             instrument = SONIC/IRGA
             long_name = Latent heat flux
-            serial_number = ""
-            standard_name = ""
+            serial_number = 
+            standard_name = 
             units = W/m2
     [[Fe_EPFlag]]
         [[[xl]]]
@@ -177,9 +177,9 @@ level = L1
             height = <height>m
             instrument = SONIC/IRGA
             long_name = Latent heat flux quality control flag
-            serial_number = ""
-            standard_name = ""
-            units = ""
+            serial_number = 
+            standard_name = 
+            units = 
     [[Fc]]
         [[[xl]]]
             sheet = full_output
@@ -188,8 +188,8 @@ level = L1
             height = <height>m
             instrument = SONIC/IRGA
             long_name = Carbon dioxide flux
-            serial_number = ""
-            standard_name = ""
+            serial_number = 
+            standard_name = 
             units = umol/m2/s
     [[Fc_EPFlag]]
         [[[xl]]]
@@ -199,9 +199,9 @@ level = L1
             height = <height>m
             instrument = SONIC/IRGA
             long_name = Carbon dioxide flux quality control flag
-            serial_number = ""
-            standard_name = ""
-            units = ""
+            serial_number = 
+            standard_name = 
+            units = 
     [[ustar]]
         [[[xl]]]
             sheet = full_output
@@ -210,8 +210,8 @@ level = L1
             height = <height>m
             instrument = SONIC
             long_name = Friction velocity
-            serial_number = ""
-            standard_name = ""
+            serial_number = 
+            standard_name = 
             units = m/s
     [[Tv_SONIC_Av]]
         [[[xl]]]
@@ -221,7 +221,7 @@ level = L1
             height = <height>m
             instrument = RM Young 81000
             long_name = Virtual air temperature
-            serial_number = ""
+            serial_number = 
             standard_name = virtual_temperature
             units = K
         [[[Function]]]
@@ -234,8 +234,8 @@ level = L1
             height = <height>m
             instrument = SONIC
             long_name = Variance of virtual temperature from SONIC
-            serial_number = ""
-            standard_name = ""
+            serial_number = 
+            standard_name = 
             units = C2
     [[CO2_IRGA_Av]]
         [[[xl]]]
@@ -245,8 +245,8 @@ level = L1
             height = <height>m
             instrument = Li-7500A
             long_name = CO2 concentration, average
-            serial_number = ""
-            standard_name = ""
+            serial_number = 
+            standard_name = 
             units = umol/mol
     [[CO2_IRGA_Vr]]
         [[[xl]]]
@@ -256,7 +256,7 @@ level = L1
             height = <height>m
             instrument = Li-7500A
             long_name = CO2 concentration, variance
-            serial_number = ""
+            serial_number = 
             standard_name = not defined
             units = (mmol/m3)2
     [[H2O_IRGA_Av]]
@@ -267,8 +267,8 @@ level = L1
             height = <height>m
             instrument = Li-7500A
             long_name = h2o mixing ratio, average
-            serial_number = ""
-            standard_name = ""
+            serial_number = 
+            standard_name = 
             units = mmol/mol
     [[H2O_IRGA_Vr]]
         [[[xl]]]
@@ -278,7 +278,7 @@ level = L1
             height = <height>m
             instrument = Li-7500A
             long_name = H2O concentration, variance
-            serial_number = ""
+            serial_number = 
             standard_name = not defined
             units = (mmol/m3)2
     [[RH_IRGA_Av]]
@@ -289,8 +289,8 @@ level = L1
             height = <height>m
             instrument = Li-7500A
             long_name = Relative humidity, average
-            serial_number = ""
-            standard_name = ""
+            serial_number = 
+            standard_name = 
             units = %
     [[RH_<inst>_<height>m]]
         [[[xl]]]
@@ -300,8 +300,8 @@ level = L1
             height = <height>m
             instrument = <inst>
             long_name = Relative humidity, average
-            serial_number = ""
-            standard_name = ""
+            serial_number = 
+            standard_name = 
             units = %
     [[Ta_<inst>_<height>m]]
         [[[xl]]]
@@ -311,7 +311,7 @@ level = L1
             height = <height>m
             instrument = <inst>
             long_name = Air temperature, average
-            serial_number = ""
+            serial_number = 
             standard_name = air_temperature
             units = K
         [[[Function]]]
@@ -324,7 +324,7 @@ level = L1
             height = <height>m
             instrument = SONIC
             long_name = Wind speed, longitudinal component, coordinate rotated
-            serial_number = ""
+            serial_number = 
             standard_name = not defined
             units = m/s
     [[U_SONIC_Vr]]
@@ -335,8 +335,8 @@ level = L1
             height = <height>m
             instrument = SONIC
             long_name = Variance of longitudinal component of wind velocity
-            serial_number = ""
-            standard_name = ""
+            serial_number = 
+            standard_name = 
             units = (m/s)2
     [[V_SONIC_Av]]
         [[[xl]]]
@@ -346,7 +346,7 @@ level = L1
             height = <height>m
             instrument = SONIC
             long_name = Wind speed, lateral component, coordinate rotated
-            serial_number = ""
+            serial_number = 
             standard_name = not defined
             units = m/s
     [[V_SONIC_Vr]]
@@ -357,8 +357,8 @@ level = L1
             height = <height>m
             instrument = SONIC
             long_name = Variance of lateral component of wind velocity
-            serial_number = ""
-            standard_name = ""
+            serial_number = 
+            standard_name = 
             units = (m/s)2
     [[W_SONIC_Av]]
         [[[xl]]]
@@ -368,7 +368,7 @@ level = L1
             height = <height>m
             instrument = SONIC
             long_name = Wind speed, vertical component, coordinate rotated
-            serial_number = ""
+            serial_number = 
             standard_name = not defined
             units = m/s
     [[W_SONIC_Vr]]
@@ -379,8 +379,8 @@ level = L1
             height = <height>m
             instrument = SONIC
             long_name = Variance of veritcal component of wind velocity
-            serial_number = ""
-            standard_name = ""
+            serial_number = 
+            standard_name = 
             units = (m/s)2
     [[Ws_SONIC_Av]]
         [[[xl]]]
@@ -390,7 +390,7 @@ level = L1
             height = <height>m
             instrument = SONIC
             long_name = Wind speed
-            serial_number = ""
+            serial_number = 
             standard_name = wind_speed
             units = m/s
     [[Wd_SONIC_Av]]
@@ -401,7 +401,7 @@ level = L1
             height = <height>m
             instrument = SONIC
             long_name = Wind direction, true, degrees from North
-            serial_number = ""
+            serial_number = 
             standard_name = wind_from_direction
             units = deg
     [[Ws_<inst>_Av]]
@@ -412,7 +412,7 @@ level = L1
             height = <height>m
             instrument = <inst>
             long_name = Wind speed
-            serial_number = ""
+            serial_number = 
             standard_name = wind_speed
             units = m/s
     [[Wd_<inst>_Av]]
@@ -423,7 +423,7 @@ level = L1
             height = <height>m
             instrument = <inst>
             long_name = Wind direction, true, in degrees from North
-            serial_number = ""
+            serial_number = 
             standard_name = wind_from_direction
             units = deg
     [[Precip]]
@@ -432,9 +432,9 @@ level = L1
             name = P_1_1_1
         [[[Attr]]]
             height = <height>m
-            instrument = ""
+            instrument = 
             long_name = Rainfall, 30 minute total
-            serial_number = ""
+            serial_number = 
             standard_name = rainfall_amount
             units = mm
     [[ps]]
@@ -445,7 +445,7 @@ level = L1
             height = <height>m
             instrument = IRGA
             long_name = Air pressure, average
-            serial_number = ""
+            serial_number = 
             standard_name = surface_air_pressure
             units = Pa
         [[[Function]]]
@@ -456,9 +456,9 @@ level = L1
             name = SHF_1_1_1
         [[[Attr]]]
             height = <depth>m
-            instrument = ""
+            instrument = 
             long_name = Ground heat flux, sensor 1a
-            serial_number = ""
+            serial_number = 
             standard_name = downward_heat_flux_in_soil
             units = W/m2
     [[Fg_<depth>cmb]]
@@ -467,9 +467,9 @@ level = L1
             name = SHF_1_1_2
         [[[Attr]]]
             height = <depth>m
-            instrument = ""
+            instrument = 
             long_name = Ground heat flux, sensor 1b
-            serial_number = ""
+            serial_number = 
             standard_name = downward_heat_flux_in_soil
             units = W/m2
     [[Sws_<depth>cma]]
@@ -478,9 +478,9 @@ level = L1
             name = SWC_1_1_1
         [[[Attr]]]
             height = <depth>m
-            instrument = ""
+            instrument = 
             long_name = Soil water fraction, sensor <depth>cma
-            serial_number = ""
+            serial_number = 
             standard_name = soil_moisture_content
             units = m3/m3
     [[Sws_<depth>cmb]]
@@ -489,9 +489,9 @@ level = L1
             name = SWC_1_1_2
         [[[Attr]]]
             height = <depth>m
-            instrument = ""
+            instrument = 
             long_name = Soil water fraction, sensor <depth>cmb
-            serial_number = ""
+            serial_number = 
             standard_name = soil_moisture_content
             units = m3/m3
     [[Ts_<depth>cma]]
@@ -500,9 +500,9 @@ level = L1
             name = TS_1_1_1
         [[[Attr]]]
             height = <depth>m
-            instrument = ""
+            instrument = 
             long_name = Soil temperature, sensor <depth>cma
-            serial_number = ""
+            serial_number = 
             standard_name = soil_temperature
             units = K
         [[[Function]]]
@@ -513,9 +513,9 @@ level = L1
             name = TS_1_1_2
         [[[Attr]]]
             height = <depth>m
-            instrument = ""
+            instrument = 
             long_name = Soil temperature, sensor <depth>cmb
-            serial_number = ""
+            serial_number = 
             standard_name = soil_temperature
             units = K
         [[[Function]]]

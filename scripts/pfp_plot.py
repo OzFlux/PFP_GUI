@@ -335,7 +335,7 @@ def plot_fingerprint(cf):
         fig.clf()
         fig.canvas.set_window_title(title)
         plt.figtext(0.5, 0.95, title_str, horizontalalignment="center")
-        fig_var_list = pfp_cfg.cfg_string_to_list(cf["Plots"][title]["Variables"])
+        fig_var_list = pfp_cfg.cfg_string_to_list(cf["Plots"][title]["variables"])
         logger.info(" Plotting fingerprint: " + str(fig_var_list))
         nPlots = len(fig_var_list)
         for n,var in enumerate(fig_var_list):
@@ -985,7 +985,7 @@ def plot_setup(cf, title):
     else:
         p["plot_path"] = os.path.join("plots", cf["level"])
     p['PlotDescription'] = str(title)
-    var_string = cf['Plots'][str(title)]['Variables']
+    var_string = cf['Plots'][str(title)]['variables']
     if "," in var_string:
         p['SeriesList'] = var_string.split(",")
     else:
@@ -1104,14 +1104,14 @@ def plotxy(cf, title, plt_cf, dsa, dsb):
     fig.clf()
     fig.canvas.set_window_title(PlotDescription)
     plt.figtext(0.5,0.95,SiteName+': '+PlotDescription,ha='center',size=16)
-    if "," in plt_cf['XSeries']:
-        XSeries = plt_cf['XSeries'].split(",")
+    if "," in plt_cf['xseries']:
+        XSeries = plt_cf['xseries'].split(",")
     else:
-        XSeries = [plt_cf['XSeries']]
-    if "," in plt_cf['YSeries']:
-        YSeries = plt_cf['YSeries'].split(",")
+        XSeries = [plt_cf['xseries']]
+    if "," in plt_cf['yseries']:
+        YSeries = plt_cf['yseries'].split(",")
     else:
-        YSeries = [plt_cf['YSeries']]
+        YSeries = [plt_cf['yseries']]
     logger.info(' Plotting xy: '+str(XSeries)+' v '+str(YSeries))
     if dsa == dsb:
         for xname,yname in zip(XSeries,YSeries):

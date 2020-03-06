@@ -247,20 +247,35 @@ class pfp_main_ui(QtWidgets.QWidget):
         # read the contents of the control file
         logger.info(" Opening " + cfgpath)
         try:
-            self.cfg = ConfigObj(cfgpath, indent_type="    ", list_values=False)
+            self.cfg = ConfigObj(cfgpath, indent_type="    ", list_values=False,
+                                 write_empty_values=True)
         except Exception:
             msg = "Syntax error in control file, see below for line number"
             logger.error(msg)
             error_message = traceback.format_exc()
             logger.error(error_message)
             return
-        self.cfg["level"] = self.get_cf_level()
+        # check to see if the processing level is defined in the control file
+        if "level" not in self.cfg:
+            # if not, then sniff the control file to see what it is
+            self.cfg["level"] = self.get_cf_level()
+            # and save the control file
+            self.cfg.write()
         # create a QtTreeView to edit the control file
         if self.cfg["level"] in ["L1"]:
+            # update control file to new syntax
+            if not pfp_compliance.l1_update_controlfile(self.cfg): return
+            # put the GUI for editing the L1 control file in a new tab
             self.tabs.tab_dict[self.tabs.tab_index_all] = pfp_gui.edit_cfg_L1(self)
+            # !!!
+            # !!! compliance check of L1 control file goes here
+            # !!!
+            # get the control file data from the L1 edit GUI
             self.tabs.cfg_dict[self.tabs.tab_index_all] = self.tabs.tab_dict[self.tabs.tab_index_all].get_data_from_model()
+            # put the control file path into the cfg dictionary
             self.tabs.cfg_dict[self.tabs.tab_index_all]["controlfile_name"] = cfgpath
         elif self.cfg["level"] in ["L2"]:
+            if not pfp_compliance.l2_update_controlfile(self.cfg): return
             self.tabs.tab_dict[self.tabs.tab_index_all] = pfp_gui.edit_cfg_L2(self)
             self.tabs.cfg_dict[self.tabs.tab_index_all] = self.tabs.tab_dict[self.tabs.tab_index_all].get_data_from_model()
             self.tabs.cfg_dict[self.tabs.tab_index_all]["controlfile_name"] = cfgpath
@@ -270,20 +285,22 @@ class pfp_main_ui(QtWidgets.QWidget):
             self.tabs.cfg_dict[self.tabs.tab_index_all] = self.tabs.tab_dict[self.tabs.tab_index_all].get_data_from_model()
             self.tabs.cfg_dict[self.tabs.tab_index_all]["controlfile_name"] = cfgpath
         elif self.cfg["level"] in ["concatenate"]:
+            if not pfp_compliance.concatenate_update_controlfile(self.cfg): return
             self.tabs.tab_dict[self.tabs.tab_index_all] = pfp_gui.edit_cfg_concatenate(self)
             self.tabs.cfg_dict[self.tabs.tab_index_all] = self.tabs.tab_dict[self.tabs.tab_index_all].get_data_from_model()
             self.tabs.cfg_dict[self.tabs.tab_index_all]["controlfile_name"] = cfgpath
         elif self.cfg["level"] in ["L4"]:
-            if not pfp_compliance.update_l4_controlfile(self.cfg): return
+            if not pfp_compliance.l4_update_controlfile(self.cfg): return
             self.tabs.tab_dict[self.tabs.tab_index_all] = pfp_gui.edit_cfg_L4(self)
             self.tabs.cfg_dict[self.tabs.tab_index_all] = self.tabs.tab_dict[self.tabs.tab_index_all].get_data_from_model()
             self.tabs.cfg_dict[self.tabs.tab_index_all]["controlfile_name"] = cfgpath
         elif self.cfg["level"] in ["L5"]:
+            if not pfp_compliance.l5_update_controlfile(self.cfg): return
             self.tabs.tab_dict[self.tabs.tab_index_all] = pfp_gui.edit_cfg_L5(self)
             self.tabs.cfg_dict[self.tabs.tab_index_all] = self.tabs.tab_dict[self.tabs.tab_index_all].get_data_from_model()
             self.tabs.cfg_dict[self.tabs.tab_index_all]["controlfile_name"] = cfgpath
         elif self.cfg["level"] in ["L6"]:
-            if not pfp_compliance.check_l6_controlfile(self.cfg): return
+            if not pfp_compliance.l6_update_controlfile(self.cfg): return
             self.tabs.tab_dict[self.tabs.tab_index_all] = pfp_gui.edit_cfg_L6(self)
             self.tabs.cfg_dict[self.tabs.tab_index_all] = self.tabs.tab_dict[self.tabs.tab_index_all].get_data_from_model()
             self.tabs.cfg_dict[self.tabs.tab_index_all]["controlfile_name"] = cfgpath
@@ -308,8 +325,6 @@ class pfp_main_ui(QtWidgets.QWidget):
 
     def get_cf_level(self):
         """ Sniff the control file to find out it's type."""
-        if "level" in self.cfg:
-            return self.cfg["level"]
         self.cfg["level"] = ""
         # check for L1
         if self.check_cfg_L1():

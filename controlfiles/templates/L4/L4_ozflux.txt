@@ -25,13 +25,13 @@ level = L4
             [[[[Ah_cli]]]]
                 method = interpolated daily
         [[[MergeSeries]]]
-            Source = Ah,Ah_aws,Ah_access,Ah_erai,Ah_cli
+            source = Ah,Ah_aws,Ah_access,Ah_erai,Ah_cli
     [[CO2]]
         [[[GapFillFromClimatology]]]
             [[[[CO2_cli]]]]
                 method = interpolated daily
         [[[MergeSeries]]]
-            Source = CO2,CO2_cli
+            source = CO2,CO2_cli
     [[Fa]]
         [[[GapFillFromAlternate]]]
             [[[[Fa_access]]]]
@@ -42,7 +42,7 @@ level = L4
             [[[[Fa_cli]]]]
                 method = interpolated daily
         [[[MergeSeries]]]
-            Source = Fa,Fa_access,Fa_erai,Fa_cli
+            source = Fa,Fa_access,Fa_erai,Fa_cli
     [[Fg]]
         [[[GapFillFromAlternate]]]
             [[[[Fg_access]]]]
@@ -53,7 +53,7 @@ level = L4
             [[[[Fg_cli]]]]
                 method = interpolated daily
         [[[MergeSeries]]]
-            Source = Fg,Fg_access,Fg_erai,Fg_cli
+            source = Fg,Fg_access,Fg_erai,Fg_cli
     [[Fld]]
         [[[GapFillFromAlternate]]]
             [[[[Fld_access]]]]
@@ -64,7 +64,7 @@ level = L4
             [[[[Fld_cli]]]]
                 method = interpolated daily
         [[[MergeSeries]]]
-            Source = Fld,Fld_access,Fld_erai,Fld_cli
+            source = Fld,Fld_access,Fld_erai,Fld_cli
     [[Flu]]
         [[[GapFillFromAlternate]]]
             [[[[Flu_access]]]]
@@ -75,7 +75,7 @@ level = L4
             [[[[Flu_cli]]]]
                 method = interpolated daily
         [[[MergeSeries]]]
-            Source = Flu,Flu_access,Flu_erai,Flu_cli
+            source = Flu,Flu_access,Flu_erai,Flu_cli
     [[Fn]]
         [[[GapFillFromAlternate]]]
             [[[[Fn_access]]]]
@@ -86,7 +86,7 @@ level = L4
             [[[[Fn_cli]]]]
                 method = interpolated daily
         [[[MergeSeries]]]
-            Source = Fn,Fn_access,Fn_erai,Fn_cli
+            source = Fn,Fn_access,Fn_erai,Fn_cli
     [[Fsd]]
         [[[GapFillFromAlternate]]]
             [[[[Fsd_access]]]]
@@ -97,7 +97,7 @@ level = L4
             [[[[Fsd_cli]]]]
                 method = interpolated daily
         [[[MergeSeries]]]
-            Source = Fsd,Fsd_access,Fsd_erai,Fsd_cli
+            source = Fsd,Fsd_access,Fsd_erai,Fsd_cli
     [[Fsu]]
         [[[GapFillFromAlternate]]]
             [[[[Fsu_access]]]]
@@ -108,7 +108,7 @@ level = L4
             [[[[Fsu_cli]]]]
                 method = interpolated daily
         [[[MergeSeries]]]
-            Source = Fsu,Fsu_access,Fsu_erai,Fsu_cli
+            source = Fsu,Fsu_access,Fsu_erai,Fsu_cli
     [[ps]]
         [[[GapFillFromAlternate]]]
             [[[[ps_aws]]]]
@@ -121,7 +121,7 @@ level = L4
             [[[[ps_cli]]]]
                 method = interpolated daily
         [[[MergeSeries]]]
-            Source = ps,ps_aws,ps_access,ps_erai,ps_cli
+            source = ps,ps_aws,ps_access,ps_erai,ps_cli
     [[Sws]]
         [[[GapFillFromAlternate]]]
             [[[[Sws_access]]]]
@@ -134,7 +134,7 @@ level = L4
             [[[[Sws_cli]]]]
                 method = interpolated daily
         [[[MergeSeries]]]
-            Source = Sws,Sws_access,Sws_erai,Sws_cli
+            source = Sws,Sws_access,Sws_erai,Sws_cli
     [[Ta]]
         [[[GapFillFromAlternate]]]
             [[[[Ta_aws]]]]
@@ -147,7 +147,7 @@ level = L4
             [[[[Ta_cli]]]]
                 method = interpolated daily
         [[[MergeSeries]]]
-            Source = Ta,Ta_aws,Ta_access,Ta_erai,Ta_cli
+            source = Ta,Ta_aws,Ta_access,Ta_erai,Ta_cli
     [[Ts]]
         [[[GapFillFromAlternate]]]
             [[[[Ts_access]]]]
@@ -158,7 +158,7 @@ level = L4
             [[[[Ts_cli]]]]
                 method = interpolated daily
         [[[MergeSeries]]]
-            Source = Ts,Ts_access,Ts_erai,Ts_cli
+            source = Ts,Ts_access,Ts_erai,Ts_cli
     [[Ws]]
         [[[GapFillFromAlternate]]]
             [[[[Ws_aws]]]]
@@ -177,7 +177,7 @@ level = L4
             [[[[Ws_cli]]]]
                 method = interpolated daily
         [[[MergeSeries]]]
-            Source = Ws,Ws_aws,Ws_access,Ws_erai,Ws_cli
+            source = Ws,Ws_aws,Ws_access,Ws_erai,Ws_cli
     [[Wd]]
         [[[GapFillFromAlternate]]]
             [[[[Wd_aws]]]]
@@ -196,7 +196,7 @@ level = L4
             [[[[Wd_cli]]]]
                 method = interpolated daily
         [[[MergeSeries]]]
-            Source = Wd,Wd_aws,Wd_access,Wd_erai,Wd_cli
+            source = Wd,Wd_aws,Wd_access,Wd_erai,Wd_cli
     [[Precip]]
         [[[GapFillFromAlternate]]]
             [[[[Precip_aws]]]]
@@ -212,4 +212,4 @@ level = L4
                 fit = replace
                 lag = no
         [[[MergeSeries]]]
-            Source = Precip,Precip_aws,Precip_access,Precip_erai
+            source = Precip,Precip_aws,Precip_access,Precip_erai

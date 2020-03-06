@@ -308,8 +308,8 @@ def do_run_l2(cfg=None):
         logger.info("Plotting L1 and L2 data")
         for nFig in cfg['Plots'].keys():
             plt_cf = cfg['Plots'][str(nFig)]
-            if 'Type' in plt_cf.keys():
-                if str(plt_cf['Type']).lower() =='xy':
+            if 'type' in plt_cf.keys():
+                if str(plt_cf['type']).lower() =='xy':
                     pfp_plot.plotxy(cfg, nFig, plt_cf, ds1, ds2)
                 else:
                     pfp_plot.plottimeseries(cfg, nFig, ds1, ds2)
@@ -361,8 +361,8 @@ def do_run_l3(cfg=None):
         logger.info("Plotting L3 data")
         for nFig in cfg['Plots'].keys():
             plt_cf = cfg['Plots'][str(nFig)]
-            if 'Type' in plt_cf.keys():
-                if str(plt_cf['Type']).lower() =='xy':
+            if 'type' in plt_cf.keys():
+                if str(plt_cf['type']).lower() =='xy':
                     pfp_plot.plotxy(cfg, nFig, plt_cf, ds2, ds3)
                 else:
                     pfp_plot.plottimeseries(cfg, nFig, ds2, ds3)
