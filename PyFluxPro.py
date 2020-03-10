@@ -19,6 +19,7 @@ else:
 from PyQt5 import QtWidgets
 # PFP modules
 sys.path.append('scripts')
+import cfg
 import pfp_compliance
 import pfp_gui
 import pfp_log
@@ -53,7 +54,7 @@ log_file_name = os.path.join("./logfiles", log_file_name)
 logger = pfp_log.init_logger("pfp_log", log_file_name, to_file=True, to_screen=False)
 
 class pfp_main_ui(QtWidgets.QWidget):
-    def __init__(self):
+    def __init__(self, pfp_version):
         super(pfp_main_ui, self).__init__()
 
         logTextBox = pfp_log.QPlainTextEditLogger(self)
@@ -203,6 +204,7 @@ class pfp_main_ui(QtWidgets.QWidget):
         layout.addWidget(self.tabs)
         self.setLayout(layout)
         self.setGeometry(50,50,800, 600)
+        self.setWindowTitle(pfp_version)
 
         # Connect signals to slots
         # File menu actions
@@ -623,8 +625,10 @@ class pfp_main_ui(QtWidgets.QWidget):
             self.tabs.setTabText(self.tabs.tab_index_current, tab_text+"*")
 
 if (__name__ == '__main__'):
+    # get the application name and version
+    pfp_version = cfg.version_name + " " + cfg.version_number
     app = QtWidgets.QApplication(["PyFluxPro"])
-    ui = pfp_main_ui()
+    ui = pfp_main_ui(pfp_version)
     ui.show()
     pfp_compliance.check_executables()
     app.exec_()
