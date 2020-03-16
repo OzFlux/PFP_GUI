@@ -57,8 +57,57 @@ def do_file_concatenate(cfg=None):
         error_message = traceback.format_exc()
         logger.error(error_message)
     return
-def do_file_convert_biomet():
-    logger.warning("File/Convert/nc to biomet not implemented yet")
+def do_file_convert_nc2biomet(cfg=None):
+    """
+    Purpose:
+     Convert a PFP-style netCDF file to an EddyPro biomet CSV file.
+    Usage:
+    Side effects:
+     Creates a CSV file in the same directory as the netCDF file.
+    Author: PRI
+    Date: Back in the day
+    Mods:
+     March 2020: rewrite for use with new GUI
+    """
+    logger.info(" Starting conversion to EddyPro biomet file")
+    try:
+        if not cfg:
+            # check to see if there is an nc2ecostress.txt control file in controlfiles/standard
+            #  if there is
+            #   open controlfiles/standard/nc2csv_ecostress.txt
+            #   ask for netCDF file name
+            #   add [Files] section to control file
+            stdname = "controlfiles/standard/nc2csv_ecostress.txt"
+            if os.path.exists(stdname):
+                cfg = pfp_io.get_controlfilecontents(stdname)
+                filename = pfp_io.get_filename_dialog(file_path="../Sites", title="Choose a netCDF file")
+                if len(filename) == 0:
+                    return
+                if "Files" not in dir(cfg):
+                    cfg["Files"] = {}
+                cfg["Files"]["file_path"] = os.path.join(os.path.split(filename)[0], "")
+                cfg["Files"]["in_filename"] = os.path.split(filename)[1]
+            else:
+                cfg = pfp_io.load_controlfile(path="controlfiles")
+                if len(cfg) == 0:
+                    return
+        if "Options" not in cfg:
+            cfg["Options"] = {}
+        cfg["Options"]["call_mode"] = "interactive"
+        cfg["Options"]["show_plots"] = "Yes"
+        result = pfp_io.ep_biomet_write_csv(cfg)
+        if result == 1:
+            logger.info(" Finished converting netCDF file")
+            logger.info("")
+        else:
+            logger.error("")
+            logger.error(" An error occurred, check the log messages")
+            logger.error("")
+    except Exception:
+        error_message = " Error converting to BIOMET format, see below for details ... "
+        logger.error(error_message)
+        error_message = traceback.format_exc()
+        logger.error(error_message)
     return
 def do_file_convert_nc2ecostress(cfg=None):
     """
@@ -99,7 +148,7 @@ def do_file_convert_nc2ecostress(cfg=None):
         cfg["Options"]["call_mode"] = "interactive"
         cfg["Options"]["show_plots"] = "Yes"
         result = pfp_io.write_csv_ecostress(cfg)
-        if result == 0:
+        if result == 1:
             logger.info(" Finished converting netCDF file")
             logger.info("")
         else:

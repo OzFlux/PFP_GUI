@@ -208,7 +208,7 @@ class pfp_main_ui(QtWidgets.QWidget):
 
         # Connect signals to slots
         # File menu actions
-        self.actionFileConvertnc2biomet.triggered.connect(pfp_top_level.do_file_convert_biomet)
+        self.actionFileConvertnc2biomet.triggered.connect(pfp_top_level.do_file_convert_nc2biomet)
         self.actionFileConvertnc2ecostress.triggered.connect(pfp_top_level.do_file_convert_nc2ecostress)
         self.actionFileConvertnc2xls.triggered.connect(pfp_top_level.do_file_convert_nc2xls)
         self.actionFileConvertnc2fluxnet.triggered.connect(pfp_top_level.do_file_convert_nc2fluxnet)
@@ -304,6 +304,10 @@ class pfp_main_ui(QtWidgets.QWidget):
         elif self.cfg["level"] in ["L6"]:
             if not pfp_compliance.l6_update_controlfile(self.cfg): return
             self.tabs.tab_dict[self.tabs.tab_index_all] = pfp_gui.edit_cfg_L6(self)
+            self.tabs.cfg_dict[self.tabs.tab_index_all] = self.tabs.tab_dict[self.tabs.tab_index_all].get_data_from_model()
+            self.tabs.cfg_dict[self.tabs.tab_index_all]["controlfile_name"] = cfgpath
+        elif self.cfg["level"] in ["nc2csv_biomet"]:
+            self.tabs.tab_dict[self.tabs.tab_index_all] = pfp_gui.edit_cfg_nc2csv_biomet(self)
             self.tabs.cfg_dict[self.tabs.tab_index_all] = self.tabs.tab_dict[self.tabs.tab_index_all].get_data_from_model()
             self.tabs.cfg_dict[self.tabs.tab_index_all]["controlfile_name"] = cfgpath
         elif self.cfg["level"] in ["nc2csv_ecostress"]:
@@ -583,6 +587,8 @@ class pfp_main_ui(QtWidgets.QWidget):
             pfp_top_level.do_run_l6(self, cfg=cfg)
         elif self.tabs.cfg_dict[tab_index_current]["level"] == "nc2csv_ecostress":
             pfp_top_level.do_file_convert_nc2ecostress(cfg=cfg)
+        elif self.tabs.cfg_dict[tab_index_current]["level"] == "nc2csv_biomet":
+            pfp_top_level.do_file_convert_nc2biomet(cfg=cfg)
         else:
             logger.error("Level not implemented yet ...")
 

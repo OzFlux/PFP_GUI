@@ -678,13 +678,13 @@ def write_csv_ecostress(cf):
     if not os.path.isdir(file_path):
         msg = " Specified file path "+file_path+" doesn't exist ..."
         logger.error(msg)
-        return 1
+        return 0
     in_filename = pfp_utils.get_keyvaluefromcf(cf, ["Files"], "in_filename", default="")
     nc_file_name = os.path.join(file_path, in_filename)
     if not os.path.exists(nc_file_name):
         msg = " Specified input file "+nc_file_name+" not found ..."
         logger.error(msg)
-        return 1
+        return 0
     out_filename = pfp_utils.get_keyvaluefromcf(cf, ["Files"], "out_filename", default="")
     if len(out_filename) == 0:
         csv_file_name = nc_file_name.replace(".nc", "_ECOSTRESS.csv")
@@ -770,7 +770,7 @@ def write_csv_ecostress(cf):
         csv_writer.writerow(data_list)
     # close the csv file
     csv_file.close()
-    return 0
+    return 1
 
 def ep_biomet_write_csv(cf):
     """
@@ -786,37 +786,40 @@ def ep_biomet_write_csv(cf):
     """
     # get the file names
     ncFileName = get_infilenamefromcf(cf)
-    if not pfp_utils.file_exists(ncFileName,mode="verbose"): return 0
+    if not pfp_utils.file_exists(ncFileName, mode="verbose"):
+        return 0
     csvFileName = get_outfilenamefromcf(cf)
-    if not pfp_utils.path_exists(os.path.dirname(csvFileName),mode="verbose"): return 0
+    if not pfp_utils.path_exists(os.path.dirname(csvFileName), mode="verbose"):
+        return 0
     # open the csv file
-    csvfile = open(csvFileName,'wb')
+    csvfile = open(csvFileName, "wb")
     writer = csv.writer(csvfile)
     # read the netCDF file
     ds = nc_read_series(ncFileName)
     nrecs = int(ds.globalattributes["nc_nrecs"])
     # get the date and time data
-    Day,flag,attr = pfp_utils.GetSeries(ds,'Day')
-    Month,flag,attr = pfp_utils.GetSeries(ds,'Month')
-    Year,flag,attr = pfp_utils.GetSeries(ds,'Year')
-    Hour,flag,attr = pfp_utils.GetSeries(ds,'Hour')
-    Minute,flag,attr = pfp_utils.GetSeries(ds,'Minute')
+    ldt = pfp_utils.GetVariable(ds, "DateTime")
+    Minute = numpy.array([dt.minute for dt in ldt["Data"]])
+    Hour = numpy.array([dt.hour for dt in ldt["Data"]])
+    Day = numpy.array([dt.day for dt in ldt["Data"]])
+    Month = numpy.array([dt.month for dt in ldt["Data"]])
+    Year = numpy.array([dt.year for dt in ldt["Data"]])
     # get the data
-    data = ep_biomet_get_data(cf,ds)
+    data = ep_biomet_get_data(cf, ds)
     # check and adjust units if required
     # get a list of the EddyPro series to be output
     ep_series_list = data.keys()
     ep_series_list.sort()
     for ep_series in ep_series_list:
         # loop over the netCDF series names and check they exist in constants.units_synonyms dictionary
-        ncname = data[ep_series]["ncname"]
-        if ncname not in c.units_synonyms.keys():
-            msg = "No entry for "+ncname+" in cfg.units_synonyms, skipping ..."
+        in_name = data[ep_series]["in_name"]
+        if in_name not in c.units_synonyms.keys():
+            msg = "No entry for " + in_name + " in cfg.units_synonyms, skipping ..."
             logger.warning(msg)
             continue
-        if (data[ep_series]["Attr"]["units"] not in c.units_synonyms[ncname] and
-            ds.series[ncname]["Attr"]["units"] not in c.units_synonyms[ncname]):
-            msg = "Inconsistent units found for series "+ep_series+" and "+ncname
+        if (data[ep_series]["Attr"]["units"] not in c.units_synonyms[in_name] and
+            ds.series[in_name]["Attr"]["units"] not in c.units_synonyms[in_name]):
+            msg = "Inconsistent units found for series " + ep_series + " and " + in_name
             logger.warning(msg)
     # write the variable names to the csv file
     row_list = ['TIMESTAMP_1']
@@ -826,7 +829,7 @@ def ep_biomet_write_csv(cf):
     # write the units line to the csv file
     units_list = ["yyyy-mm-dd HHMM"]
     for item in ep_series_list:
-        units_list.append(data[item]["units"])
+        units_list.append(data[item]["out_units"])
     writer.writerow(units_list)
     # now write the data
     for i in range(nrecs):
@@ -834,7 +837,7 @@ def ep_biomet_write_csv(cf):
         dtstr = '%d-%02d-%02d %02d%02d'%(Year[i],Month[i],Day[i],Hour[i],Minute[i])
         data_list = [dtstr]
         for ep_series in ep_series_list:
-            strfmt = data[ep_series]["fmt"]
+            strfmt = data[ep_series]["out_format"]
             if "d" in strfmt:
                 data_list.append(strfmt.format(int(round(data[ep_series]["Data"][i]))))
             else:
@@ -844,25 +847,25 @@ def ep_biomet_write_csv(cf):
     csvfile.close()
     return 1
 
-def ep_biomet_get_data(cf,ds):
+def ep_biomet_get_data(cfg, ds):
     data = {}
-    ep_series_list = cf["Variables"].keys()
+    ep_series_list = cfg["Variables"].keys()
     for ep_series in ep_series_list:
-        ncname = cf["Variables"][ep_series]["ncname"]
-        if ncname not in ds.series.keys():
-            logger.error("Series "+ncname+" not in netCDF file, skipping ...")
+        in_name = cfg["Variables"][ep_series]["in_name"]
+        if in_name not in ds.series.keys():
+            logger.error("Series " + in_name + " not in netCDF file, skipping ...")
             ep_series_list.remove(ep_series)
             continue
-        data[ep_series] = copy.deepcopy(ds.series[ncname])
-        data[ep_series]["ncname"] = ncname
-        data[ep_series]["units"] = cf["Variables"][ep_series]["units"]
-        fmt = cf["Variables"][ep_series]["format"]
+        data[ep_series] = copy.deepcopy(ds.series[in_name])
+        data[ep_series]["in_name"] = in_name
+        data[ep_series]["out_units"] = cfg["Variables"][ep_series]["out_units"]
+        fmt = cfg["Variables"][ep_series]["out_format"]
         if "." in fmt:
             numdec = len(fmt) - (fmt.index(".") + 1)
-            strfmt = "{0:."+str(numdec)+"f}"
+            strfmt = "{0:." + str(numdec) + "f}"
         else:
             strfmt = "{0:d}"
-        data[ep_series]["fmt"] = strfmt
+        data[ep_series]["out_format"] = strfmt
     return data
 
 def ExcelToDataStructures(xl_data, l1_info):
