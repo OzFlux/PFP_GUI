@@ -20,7 +20,7 @@ import split_dialog
 
 logger = logging.getLogger("pfp_log")
 # top level routines for the File menu
-def do_file_concatenate(cfg=None):
+def do_file_concatenate(cfg):
     """
     Purpose:
      Top level routine for concatenating multiple, single-year files into
@@ -38,11 +38,6 @@ def do_file_concatenate(cfg=None):
     """
     logger.info(" Starting concatenation of netCDF files")
     try:
-        if not cfg:
-            cfg = pfp_io.load_controlfile(path="controlfiles")
-            if len(cfg) == 0:
-                logger.info("Quitting concatenation (no control file)")
-                return
         info = pfp_compliance.ParseConcatenateControlFile(cfg)
         if not info["NetCDFConcatenate"]["OK"]:
             msg = " An error occurred when parsing the control file"
@@ -57,7 +52,7 @@ def do_file_concatenate(cfg=None):
         error_message = traceback.format_exc()
         logger.error(error_message)
     return
-def do_file_convert_nc2biomet(cfg=None):
+def do_file_convert_nc2biomet(cfg):
     """
     Purpose:
      Convert a PFP-style netCDF file to an EddyPro biomet CSV file.
@@ -71,26 +66,6 @@ def do_file_convert_nc2biomet(cfg=None):
     """
     logger.info(" Starting conversion to EddyPro biomet file")
     try:
-        if not cfg:
-            # check to see if there is an nc2ecostress.txt control file in controlfiles/standard
-            #  if there is
-            #   open controlfiles/standard/nc2csv_ecostress.txt
-            #   ask for netCDF file name
-            #   add [Files] section to control file
-            stdname = "controlfiles/standard/nc2csv_ecostress.txt"
-            if os.path.exists(stdname):
-                cfg = pfp_io.get_controlfilecontents(stdname)
-                filename = pfp_io.get_filename_dialog(file_path="../Sites", title="Choose a netCDF file")
-                if len(filename) == 0:
-                    return
-                if "Files" not in dir(cfg):
-                    cfg["Files"] = {}
-                cfg["Files"]["file_path"] = os.path.join(os.path.split(filename)[0], "")
-                cfg["Files"]["in_filename"] = os.path.split(filename)[1]
-            else:
-                cfg = pfp_io.load_controlfile(path="controlfiles")
-                if len(cfg) == 0:
-                    return
         if "Options" not in cfg:
             cfg["Options"] = {}
         cfg["Options"]["call_mode"] = "interactive"
@@ -109,7 +84,7 @@ def do_file_convert_nc2biomet(cfg=None):
         error_message = traceback.format_exc()
         logger.error(error_message)
     return
-def do_file_convert_nc2ecostress(cfg=None):
+def do_file_convert_nc2ecostress(cfg):
     """
     Purpose:
      Convert a PFP-style netCDF file to an ECOSTRESS CSV file.
@@ -123,26 +98,6 @@ def do_file_convert_nc2ecostress(cfg=None):
     """
     logger.info(" Starting conversion to ECOSTRESS file")
     try:
-        if not cfg:
-            # check to see if there is an nc2ecostress.txt control file in controlfiles/standard
-            #  if there is
-            #   open controlfiles/standard/nc2csv_ecostress.txt
-            #   ask for netCDF file name
-            #   add [Files] section to control file
-            stdname = "controlfiles/standard/nc2csv_ecostress.txt"
-            if os.path.exists(stdname):
-                cfg = pfp_io.get_controlfilecontents(stdname)
-                filename = pfp_io.get_filename_dialog(file_path="../Sites", title="Choose a netCDF file")
-                if len(filename) == 0:
-                    return
-                if "Files" not in dir(cfg):
-                    cfg["Files"] = {}
-                cfg["Files"]["file_path"] = os.path.join(os.path.split(filename)[0], "")
-                cfg["Files"]["in_filename"] = os.path.split(filename)[1]
-            else:
-                cfg = pfp_io.load_controlfile(path="controlfiles")
-                if len(cfg) == 0:
-                    return
         if "Options" not in cfg:
             cfg["Options"]={}
         cfg["Options"]["call_mode"] = "interactive"
@@ -283,7 +238,7 @@ def do_file_split_run(ui):
         error_message = traceback.format_exc()
         logger.error(error_message)
 # top level routines for the Run menu
-def do_run_l1(cfg=None):
+def do_run_l1(cfg):
     """
     Purpose:
      Top level routine for running the L1 data import.
@@ -298,11 +253,6 @@ def do_run_l1(cfg=None):
     """
     try:
         logger.info("Starting L1 processing")
-        if not cfg:
-            cfg = pfp_io.load_controlfile()
-            if len(cfg)==0:
-                logger.info("Quiting L1 processing (no control file)")
-                return
         ds1 = pfp_levels.l1qc(cfg)
         if ds1.returncodes["value"] == 0:
             outfilename = pfp_io.get_outfilenamefromcf(cfg)
@@ -319,7 +269,7 @@ def do_run_l1(cfg=None):
         error_message = traceback.format_exc()
         logger.error(error_message)
     return
-def do_run_l2(cfg=None):
+def do_run_l2(cfg):
     """
     Purpose:
      Top level routine for running the L2 quality control.
@@ -334,11 +284,6 @@ def do_run_l2(cfg=None):
     """
     try:
         logger.info("Starting L2 processing")
-        if not cfg:
-            cfg = pfp_io.load_controlfile()
-            if len(cfg)==0:
-                logger.info("Quiting L2 processing (no control file)")
-                return
         in_filepath = pfp_io.get_infilenamefromcf(cfg)
         if not pfp_utils.file_exists(in_filepath):
             in_filename = os.path.split(in_filepath)
@@ -372,7 +317,7 @@ def do_run_l2(cfg=None):
         logger.error(error_message)
     logger.info("")
     return
-def do_run_l3(cfg=None):
+def do_run_l3(cfg):
     """
     Purpose:
      Top level routine for running the L23 post-processing.
@@ -387,11 +332,6 @@ def do_run_l3(cfg=None):
     """
     try:
         logger.info("Starting L3 processing")
-        if not cfg:
-            cfg = pfp_io.load_controlfile()
-            if len(cfg) == 0:
-                logger.info("Quiting L3 processing (no control file)")
-                return
         in_filepath = pfp_io.get_infilenamefromcf(cfg)
         if not pfp_utils.file_exists(in_filepath):
             in_filename = os.path.split(in_filepath)
@@ -425,7 +365,7 @@ def do_run_l3(cfg=None):
         logger.error(error_message)
     logger.info("")
     return
-def do_run_l4(main_gui, cfg=None):
+def do_run_l4(main_gui, cfg):
     """
     Purpose:
      Top level routine for running the L4 gap filling.
@@ -440,11 +380,6 @@ def do_run_l4(main_gui, cfg=None):
     """
     try:
         logger.info("Starting L4 processing")
-        if not cfg:
-            cfg = pfp_io.load_controlfile(path='controlfiles')
-            if len(cfg) == 0:
-                logger.info("Quiting L4 processing (no control file)")
-                return
         in_filepath = pfp_io.get_infilenamefromcf(cfg)
         if not pfp_utils.file_exists(in_filepath):
             in_filename = os.path.split(in_filepath)
@@ -472,7 +407,7 @@ def do_run_l4(main_gui, cfg=None):
         error_message = traceback.format_exc()
         logger.error(error_message)
     return
-def do_run_l5(main_gui, cfg=None):
+def do_run_l5(main_gui, cfg):
     """
     Purpose:
      Top level routine for running the L5 gap filling.
@@ -487,11 +422,6 @@ def do_run_l5(main_gui, cfg=None):
     """
     try:
         logger.info("Starting L5 processing")
-        if not cfg:
-            cfg = pfp_io.load_controlfile(path='controlfiles')
-            if len(cfg) == 0:
-                logger.info("Quiting L5 processing (no control file)")
-                return
         in_filepath = pfp_io.get_infilenamefromcf(cfg)
         if not pfp_utils.file_exists(in_filepath):
             in_filename = os.path.split(in_filepath)
@@ -519,7 +449,7 @@ def do_run_l5(main_gui, cfg=None):
         error_message = traceback.format_exc()
         logger.error(error_message)
     return
-def do_run_l6(main_gui, cfg=None):
+def do_run_l6(main_gui, cfg):
     """
     Purpose:
      Top level routine for running the L6 gap filling.
@@ -534,11 +464,6 @@ def do_run_l6(main_gui, cfg=None):
     """
     try:
         logger.info("Starting L6 processing")
-        if not cfg:
-            cfg = pfp_io.load_controlfile(path='controlfiles')
-            if len(cfg) == 0:
-                logger.info("Quiting L6 processing (no control file)")
-                return
         in_filepath = pfp_io.get_infilenamefromcf(cfg)
         if not pfp_utils.file_exists(in_filepath):
             in_filename = os.path.split(in_filepath)

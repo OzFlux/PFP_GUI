@@ -572,23 +572,23 @@ class pfp_main_ui(QtWidgets.QWidget):
         # call the appropriate processing routine depending on the level
         self.tabs.tab_index_running = tab_index_current
         if self.tabs.cfg_dict[tab_index_current]["level"] == "L1":
-            pfp_top_level.do_run_l1(cfg=cfg)
+            pfp_top_level.do_run_l1(cfg)
         elif self.tabs.cfg_dict[tab_index_current]["level"] == "L2":
-            pfp_top_level.do_run_l2(cfg=cfg)
+            pfp_top_level.do_run_l2(cfg)
         elif self.tabs.cfg_dict[tab_index_current]["level"] == "L3":
-            pfp_top_level.do_run_l3(cfg=cfg)
+            pfp_top_level.do_run_l3(cfg)
         elif self.tabs.cfg_dict[tab_index_current]["level"] == "concatenate":
-            pfp_top_level.do_file_concatenate(cfg=cfg)
+            pfp_top_level.do_file_concatenate(cfg)
         elif self.tabs.cfg_dict[tab_index_current]["level"] == "L4":
-            pfp_top_level.do_run_l4(self, cfg=cfg)
+            pfp_top_level.do_run_l4(self, cfg)
         elif self.tabs.cfg_dict[tab_index_current]["level"] == "L5":
-            pfp_top_level.do_run_l5(self, cfg=cfg)
+            pfp_top_level.do_run_l5(self, cfg)
         elif self.tabs.cfg_dict[tab_index_current]["level"] == "L6":
-            pfp_top_level.do_run_l6(self, cfg=cfg)
+            pfp_top_level.do_run_l6(self, cfg)
         elif self.tabs.cfg_dict[tab_index_current]["level"] == "nc2csv_ecostress":
-            pfp_top_level.do_file_convert_nc2ecostress(cfg=cfg)
+            pfp_top_level.do_file_convert_nc2ecostress(cfg)
         elif self.tabs.cfg_dict[tab_index_current]["level"] == "nc2csv_biomet":
-            pfp_top_level.do_file_convert_nc2biomet(cfg=cfg)
+            pfp_top_level.do_file_convert_nc2biomet(cfg)
         else:
             logger.error("Level not implemented yet ...")
 
