@@ -7,16 +7,15 @@ import logging
 import math
 import numbers
 import os
-import platform
 import sys
 import time
 # third party modules
+import cftime
 import dateutil
 import netCDF4
 import numpy
 import pytz
 import xlrd
-import xlwt
 # PFP modules
 import constants as c
 import meteorologicalfunctions as pfp_mf
@@ -1917,13 +1916,22 @@ def get_datetimefromnctime(ds,time,time_units):
     """
     ts = int(ds.globalattributes["time_step"])
     nRecs = int(ds.globalattributes["nc_nrecs"])
-    dt = netCDF4.num2date(time,time_units)
+    # handle the change of default return object introduced at cftime V1.1.0
+    try:
+        # try cftime.num2pydate() first
+        # should work for cftime V1.1.0 and above
+        dt = cftime.num2pydate(time, time_units)
+    except AttributeError:
+        # use cftime.num2date() if cftime.num2pydate() doesn't exist
+        # should work for cftime less than V1.1.0
+        dt = cftime.num2date(time, time_units)
     ds.series[unicode("DateTime")] = {}
     ds.series["DateTime"]["Data"] = dt
     ds.series["DateTime"]["Flag"] = numpy.zeros(nRecs)
     ds.series["DateTime"]["Attr"] = {}
     ds.series["DateTime"]["Attr"]["long_name"] = "Datetime in local timezone"
     ds.series["DateTime"]["Attr"]["units"] = "None"
+    return
 
 def get_datetimefromxldate(ds):
     ''' Creates a series of Python datetime objects from the Excel date read from the Excel file.
@@ -2752,7 +2760,7 @@ def SeriestoMA(Series):
     if Series.dtype == "float64":
         if not numpy.ma.isMA(Series):
             WasND = True
-            Series = numpy.ma.masked_where(abs(Series-numpy.float64(c.missing_value)) < c.eps, Series)
+            Series = numpy.ma.masked_where(abs(Series-numpy.float(c.missing_value)) < c.eps, Series)
     return Series, WasND
 
 def SetUnitsInds(ds, ThisOne, units):
