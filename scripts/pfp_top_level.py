@@ -295,17 +295,18 @@ def do_run_l2(cfg=None):
         nc_file = pfp_io.nc_open_write(out_filepath)
         pfp_io.nc_write_series(nc_file, ds2)
         logger.info("Finished L2 processing")
-        logger.info("Plotting L1 and L2 data")
-        for nFig in cfg['Plots'].keys():
-            plt_cf = cfg['Plots'][str(nFig)]
-            if 'Type' in plt_cf.keys():
-                if str(plt_cf['Type']).lower() =='xy':
-                    pfp_plot.plotxy(cfg, nFig, plt_cf, ds1, ds2)
+        if "Plots" in list(cfg.keys()):
+            logger.info("Plotting L1 and L2 data")
+            for nFig in cfg['Plots'].keys():
+                plt_cf = cfg['Plots'][str(nFig)]
+                if 'Type' in plt_cf.keys():
+                    if str(plt_cf['Type']).lower() =='xy':
+                        pfp_plot.plotxy(cfg, nFig, plt_cf, ds1, ds2)
+                    else:
+                        pfp_plot.plottimeseries(cfg, nFig, ds1, ds2)
                 else:
                     pfp_plot.plottimeseries(cfg, nFig, ds1, ds2)
-            else:
-                pfp_plot.plottimeseries(cfg, nFig, ds1, ds2)
-        logger.info("Finished plotting L1 and L2 data")
+            logger.info("Finished plotting L1 and L2 data")
     except Exception:
         msg = " Error running L2, see below for details ..."
         logger.error(msg)
@@ -348,17 +349,18 @@ def do_run_l3(cfg=None):
         nc_file = pfp_io.nc_open_write(out_filepath)
         pfp_io.nc_write_series(nc_file, ds3)
         logger.info("Finished L3 processing")
-        logger.info("Plotting L3 data")
-        for nFig in cfg['Plots'].keys():
-            plt_cf = cfg['Plots'][str(nFig)]
-            if 'Type' in plt_cf.keys():
-                if str(plt_cf['Type']).lower() =='xy':
-                    pfp_plot.plotxy(cfg, nFig, plt_cf, ds2, ds3)
+        if "Plots" in list(cfg.keys()):
+            logger.info("Plotting L3 data")
+            for nFig in cfg['Plots'].keys():
+                plt_cf = cfg['Plots'][str(nFig)]
+                if 'Type' in plt_cf.keys():
+                    if str(plt_cf['Type']).lower() =='xy':
+                        pfp_plot.plotxy(cfg, nFig, plt_cf, ds2, ds3)
+                    else:
+                        pfp_plot.plottimeseries(cfg, nFig, ds2, ds3)
                 else:
                     pfp_plot.plottimeseries(cfg, nFig, ds2, ds3)
-            else:
-                pfp_plot.plottimeseries(cfg, nFig, ds2, ds3)
-        logger.info("Finished plotting L3 data")
+            logger.info("Finished plotting L3 data")
     except Exception:
         msg = " Error running L3, see below for details ..."
         logger.error(msg)
