@@ -462,6 +462,8 @@ def convert_units_co2(ds, variable, new_units):
         ldt = GetVariable(ds, "DateTime")
         months = numpy.array([dt.month for dt in ldt["Data"]])
         # convert the data
+        ldt = GetVariable(ds, "DateTime")
+        Month = numpy.array([d.month for d in ldt["Data"]])
         Ta = GetVariable(ds, "Ta")
         ps = GetVariable(ds, "ps")
         Ta_def = numpy.full(12, numpy.ma.mean(Ta["Data"]))
@@ -480,7 +482,7 @@ def convert_units_co2(ds, variable, new_units):
                 for m, item in enumerate(limit_list):
                     month = m + 1
                     # get an index of the months
-                    idx = numpy.where(months == month)[0]
+                    idx = numpy.where(Month == month)[0]
                     # move on to next month if this one not in data
                     if len(idx) == 0:
                         continue
@@ -519,7 +521,7 @@ def convert_units_co2(ds, variable, new_units):
         variable["Attr"]["units"] = new_units
     elif old_units == "umol/mol" and new_units in ["mg/m3", "mgCO2/m3"]:
         ldt = GetVariable(ds, "DateTime")
-        months = numpy.array([dt.month for dt in ldt["Data"]])
+        Month = numpy.array([d.month for d in ldt["Data"]])
         Ta = GetVariable(ds, "Ta")
         ps = GetVariable(ds, "ps")
         Ta_def = numpy.full(12, numpy.ma.mean(Ta["Data"]))
@@ -538,7 +540,7 @@ def convert_units_co2(ds, variable, new_units):
                 for m, item in enumerate(limit_list):
                     month = m + 1
                     # get an index of the months
-                    idx = numpy.where(months == month)[0]
+                    idx = numpy.where(Month == month)[0]
                     # move on to next month if this one not in data
                     if len(idx) == 0:
                         continue
@@ -2043,7 +2045,7 @@ def get_datetime(cf, ds):
     Date: August 2018
     """
     if "xlDateTime" in ds.series.keys():
-        get_datetimefromxldate(ds)
+        get_datetime_from_xldate(ds)
     elif "DateTime" in cf["Variables"].keys():
         if "Function" in cf["Variables"]["DateTime"]:
             # call the function given in the control file to convert the date/time string to a datetime object
@@ -2055,7 +2057,7 @@ def get_datetime(cf, ds):
             result = getattr(pfp_func,function_name)(ds, "DateTime", *function_args)
     return
 
-def get_datetimefromnctime(ds,time,time_units):
+def get_datetime_from_nctime(ds):
     """
     Purpose:
      Create a series of datetime objects from the time read from a netCDF file.
@@ -2066,23 +2068,21 @@ def get_datetimefromnctime(ds,time,time_units):
     Author: PRI
     Date: September 2014
     """
-    ts = int(ds.globalattributes["time_step"])
     nRecs = int(ds.globalattributes["nc_nrecs"])
+    nc_time_data = ds.series["time"]["Data"]
+    nc_time_units = ds.series["time"]["Attr"]["units"]
     # handle the change of default return object introduced at cftime V1.1.0
     try:
         # try cftime.num2pydate() first
         # should work for cftime V1.1.0 and above
-        dt = cftime.num2pydate(time, time_units)
+        dt = cftime.num2pydate(nc_time_data, nc_time_units)
     except AttributeError:
         # use cftime.num2date() if cftime.num2pydate() doesn't exist
         # should work for cftime less than V1.1.0
-        dt = cftime.num2date(time, time_units)
-    ds.series[unicode("DateTime")] = {}
-    ds.series["DateTime"]["Data"] = dt
-    ds.series["DateTime"]["Flag"] = numpy.zeros(nRecs)
-    ds.series["DateTime"]["Attr"] = {}
-    ds.series["DateTime"]["Attr"]["long_name"] = "Datetime in local timezone"
-    ds.series["DateTime"]["Attr"]["units"] = "None"
+        dt = cftime.num2date(nc_time_data, nc_time_units)
+    pydt = {"Label": "DateTime", "Data": dt, "Flag": numpy.zeros(nRecs),
+            "Attr": {"long_name": "Datetime in local timezone", "units": "None"}}
+    CreateVariable(ds, pydt)
     return
 
 def get_datetime_from_excel_date(values, xl_datemode):
@@ -2092,7 +2092,7 @@ def get_datetime_from_excel_date(values, xl_datemode):
     dt = [base_date + datetime.timedelta(days=xl_date[i]) for i in range(len(values))]
     return dt
 
-def get_datetimefromxldate(ds):
+def get_datetime_from_xldate(ds):
     ''' Creates a series of Python datetime objects from the Excel date read from the Excel file.
         Thanks to John Machin for the quick and dirty code
          see http://stackoverflow.com/questions/1108428/how-do-i-read-a-date-in-excel-format-in-python'''
@@ -2111,30 +2111,6 @@ def get_datetimefromxldate(ds):
     ds.series['DateTime']['Attr'] = {}
     ds.series['DateTime']['Attr']['long_name'] = 'Datetime in local timezone'
     ds.series['DateTime']['Attr']['units'] = 'None'
-
-def get_datetimefromymdhms(ds):
-    ''' Creates a series of Python datetime objects from the year, month,
-    day, hour, minute and second series stored in the netCDF file.'''
-    SeriesList = ds.series.keys()
-    if ('Year' not in SeriesList or 'Month' not in SeriesList or 'Day' not in SeriesList or
-        'Hour' not in SeriesList or 'Minute' not in SeriesList or 'Second' not in SeriesList):
-        logger.info(' get_datetimefromymdhms: unable to find all datetime fields required')
-        return
-    logger.info(' Getting the date and time series')
-    year = ds.series["Year"]["Data"].astype('int')
-    month = ds.series["Month"]["Data"].astype('int')
-    day = ds.series["Day"]["Data"].astype('int')
-    hour = ds.series["Hour"]["Data"].astype('int')
-    minute = ds.series["Minute"]["Data"].astype('int')
-    second = ds.series["Second"]["Data"].astype('int')
-    dt = [datetime.datetime(yr,mn,dy,hr,mi,se) for yr,mn,dy,hr,mi,se in zip(year,month,day,hour,minute,second)]
-    ds.series["DateTime"] = {}
-    ds.series["DateTime"]["Data"] = numpy.array(dt)
-    ds.series["DateTime"]["Flag"] = numpy.zeros(len(dt))
-    ds.series["DateTime"]["Attr"] = {}
-    ds.series["DateTime"]["Attr"]["long_name"] = "Datetime in local timezone"
-    ds.series["DateTime"]["Attr"]["units"] = "None"
-    return
 
 def get_ddoy_from_datetime(dt):
     """ Return the decimal day of the year from a datetime."""

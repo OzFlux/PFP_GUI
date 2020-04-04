@@ -414,29 +414,39 @@ def do_dependencycheck(cf, ds, section, series, code=23, mode="quiet"):
     # our work here is done
     return
 
-def do_diurnalcheck(cf, ds, section, series,code=5):
+def do_diurnalcheck(cf, ds, section, series, code=5):
     """
     Purpose:
-     Do the diurnal QC check.
+     Do the diurnal QC check on the series for which it has been requested.
+     The diurnal QC check works as follows:
+      - get the diurnal statistics (average and standard deviation) for each month
+        - the diurnal statistics are calculated from the
+          data at each time step through out the day
+        - there are 48 (24) diurnal values each day for
+          a time step of 30 (60) minutes
+      - mask any points that lie outside the average +/- NumSd*standard deviation
+        where NumSd is specified by the user in the control file
     Usage:
+    Side effects:
     Author: PRI
-    Date: Back in the day
+    Date: Back in the day, tidied up in April 2020 during the COVID-19 lockdown
     """
-    if 'DiurnalCheck' not in cf[section][series].keys():
+    if "DiurnalCheck" not in cf[section][series].keys():
         return
-    if 'numsd' not in cf[section][series]["DiurnalCheck"].keys():
+    if "NumSd" not in cf[section][series]["DiurnalCheck"].keys():
         return
-    dt = ds.series["DateTime"]["Data"]
-    Hdh = numpy.array([d.hour+d.minute/float(60) for d in dt])
-    ts = float(ds.globalattributes["time_step"])
+    ts = float(ds.globalattributes['time_step'])
     n = int((60./ts) + 0.5)             #Number of timesteps per hour
     nInts = int((1440.0/ts)+0.5)        #Number of timesteps per day
-    Av = numpy.array([c.missing_value]*nInts,dtype=numpy.float64)
-    Sd = numpy.array([c.missing_value]*nInts,dtype=numpy.float64)
-    NSd = numpy.array(parse_rangecheck_limit(cf[section][series]["DiurnalCheck"]["numsd"]))
-    for m in range(1,13):
-        mindex = numpy.where(ds.series["Month"]["Data"]==m)[0]
-        if len(mindex)!=0:
+    Av = numpy.array([c.missing_value]*nInts, dtype=numpy.float64)
+    Sd = numpy.array([c.missing_value]*nInts, dtype=numpy.float64)
+    NSd = numpy.array(parse_rangecheck_limit(cf[section][series]['DiurnalCheck']['NumSd']))
+    ldt = pfp_utils.GetVariable(ds, "DateTime")
+    month = numpy.array([d.month for d in ldt["Data"]])
+    Hdh = numpy.array([(d.hour + d.minute/float(60)) for d in ldt["Data"]])
+    for m in range(1, 13):
+        mindex = numpy.where(month == m)[0]
+        if len(mindex) != 0:
             lHdh = Hdh[mindex]
             l2ds = ds.series[series]["Data"][mindex]
             for i in range(nInts):
@@ -452,9 +462,10 @@ def do_diurnalcheck(cf, ds, section, series,code=5):
             hindex = numpy.array(n*lHdh,int)
             index = numpy.where(((l2ds!=float(c.missing_value))&(l2ds<Lwr[hindex]))|
                                 ((l2ds!=float(c.missing_value))&(l2ds>Upr[hindex])))[0] + mindex[0]
-            ds.series[series]['Data'][index] = numpy.float64(c.missing_value)
-            ds.series[series]['Flag'][index] = numpy.int32(code)
-            ds.series[series]['Attr']['diurnalcheck_numsd'] = cf[section][series]['DiurnalCheck']['numsd']
+            ds.series[series]["Data"][index] = numpy.float64(c.missing_value)
+            ds.series[series]["Flag"][index] = numpy.int32(code)
+            ds.series[series]["Attr"]["diurnalcheck_numsd"] = cf[section][series]["DiurnalCheck"]["NumSd"]
+    return
 
 def do_EC155check(cf,ds):
     """
@@ -608,6 +619,8 @@ def do_excludehours(cf,ds,section,series,code=7):
     ldt = ds.series['DateTime']['Data']
     ExcludeList = cf[section][series]['ExcludeHours'].keys()
     NumExclude = len(ExcludeList)
+    Hour = numpy.array([d.hour for d in ldt])
+    Minute = numpy.array([d.minute for d in ldt])
     for i in range(NumExclude):
         exclude_hours_string = cf[section][series]['ExcludeHours'][str(i)]
         ExcludeHourList = exclude_hours_string.split(",")
@@ -624,10 +637,9 @@ def do_excludehours(cf,ds,section,series,code=7):
         for j in range(2,len(ExcludeHourList)):
             ExHr = datetime.datetime.strptime(ExcludeHourList[j],'%H:%M').hour
             ExMn = datetime.datetime.strptime(ExcludeHourList[j],'%H:%M').minute
-            index = numpy.where((ds.series['Hour']['Data'][si:ei]==ExHr)&
-                                (ds.series['Minute']['Data'][si:ei]==ExMn))[0] + si
-            ds.series[series]['Data'][index] = numpy.float64(c.missing_value)
-            ds.series[series]['Flag'][index] = numpy.int32(code)
+            idx = numpy.where((Hour[si:ei] == ExHr) & (Minute[si:ei] == ExMn))[0] + si
+            ds.series[series]['Data'][idx] = numpy.float64(c.missing_value)
+            ds.series[series]['Flag'][idx] = numpy.int32(code)
             ds.series[series]['Attr']['ExcludeHours_'+str(i)] = cf[section][series]['ExcludeHours'][str(i)]
 
 def do_IRGAcheck(cf,ds):
@@ -872,6 +884,9 @@ def do_rangecheck(cf, ds, section, series, code=2):
         msg = "RangeCheck: key not found in control file for "+series+", skipping ..."
         logger.warning(msg)
         return
+    # get the month from the datetime series
+    ldt = pfp_utils.GetVariable(ds, "DateTime")
+    month = numpy.array([d.month for d in ldt["Data"]])
     # get the upper and lower limits
     upper = cf[section][series]['RangeCheck']['upper']
     upr = numpy.array(parse_rangecheck_limit(upper))
@@ -879,16 +894,16 @@ def do_rangecheck(cf, ds, section, series, code=2):
         msg = " Need 12 'upper' values, got "+str(len(upr))+" for "+series
         logger.error(msg)
         return
-    valid_upper = numpy.min(upr)
-    upr = upr[ds.series['Month']['Data']-1]
-    lower = cf[section][series]['RangeCheck']['lower']
+    valid_upper = numpy.max(upr)
+    upr = upr[month - 1]
+    lower = cf[section][series]['RangeCheck']['Lower']
     lwr = numpy.array(parse_rangecheck_limit(lower))
     if len(lwr) != 12:
         msg = " Need 12 'lower' values, got "+str(len(lwr))+" for "+series
         logger.error(msg)
         return
     valid_lower = numpy.min(lwr)
-    lwr = lwr[ds.series['Month']['Data']-1]
+    lwr = lwr[month - 1]
     # get the data, flag and attributes
     data, flag, attr = pfp_utils.GetSeriesasMA(ds, series)
     # convert the data from a masked array to an ndarray so the range check works

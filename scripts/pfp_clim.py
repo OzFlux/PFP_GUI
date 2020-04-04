@@ -220,7 +220,7 @@ def climatology(cf):
     SiteName = ds.globalattributes['site_name']
     # get the datetime series
     dt = ds.series['DateTime']['Data']
-    Hdh = numpy.array([d.hour+d.minute/float(60) for d in dt])
+    Hdh = numpy.array([(d.hour + d.minute/float(60)) for d in dt])
     Month = numpy.array([d.month for d in dt])
     # get the initial start and end dates
     StartDate = str(dt[0])
