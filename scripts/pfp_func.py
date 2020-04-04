@@ -227,7 +227,7 @@ def DateTimeFromExcelDateAndTime(ds, dt_out, xlDate, xlTime):
     xldatetime["Attr"]["long_name"] = "Date/time in Excel format"
     xldatetime["Attr"]["units"] = "days since 1899-12-31 00:00:00"
     pfp_utils.CreateVariable(ds, xldatetime)
-    pfp_utils.get_datetimefromxldate(ds)
+    pfp_utils.get_datetime_from_xldate(ds)
     return 1
 
 def DateTimeFromDateAndTimeString(ds, dt_out, Date, Time):

@@ -1140,19 +1140,23 @@ def gfClimatology_interpolateddaily(ds, series, output, xlbook, flag_code):
     # put the gap filled data back into the data structure
     pfp_utils.CreateSeries(ds, output, data, flag, attr)
 
-def gfClimatology_monthly(ds,series,output,xlbook):
+def gfClimatology_monthly(ds, series, output, xlbook):
     """ Gap fill using monthly climatology."""
+    ldt = pfp_utils.GetVariable(ds, "DateTime")
+    Hdh = numpy.array([(d.hour + d.minute/float(60)) for d in ldt["Data"]])
+    Month = numpy.array([d.month for d in ldt["Data"]])
     thissheet = xlbook.sheet_by_name(series)
     val1d = numpy.zeros_like(ds.series[series]['Data'])
-    values = numpy.zeros([48,12])
-    for month in range(1,13):
-        xlCol = (month-1)*5 + 2
-        values[:,month-1] = thissheet.col_values(xlCol)[2:50]
+    values = numpy.zeros([48, 12])
+    for month in range(1, 13):
+        m = (month - 1)
+        xlCol = m*5 + 2
+        values[:, m] = thissheet.col_values(xlCol)[2:50]
     for i in range(len(ds.series[series]['Data'])):
-        h = numpy.int(2*ds.series['Hdh']['Data'][i])
-        m = numpy.int(ds.series['Month']['Data'][i])
-        val1d[i] = values[h,m-1]
-    index = numpy.where(abs(ds.series[output]['Data']-c.missing_value)<c.eps)[0]
+        h = numpy.int(2*Hdh[i])
+        m = numpy.int(Month[i])
+        val1d[i] = values[h, m-1]
+    index = numpy.where(abs(ds.series[output]['Data']-c.missing_value) < c.eps)[0]
     ds.series[output]['Data'][index] = val1d[index]
     ds.series[output]['Flag'][index] = numpy.int32(40)
 

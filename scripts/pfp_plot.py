@@ -523,7 +523,7 @@ def plottimeseries(cf, nFig, dsa, dsb):
             plot_onetimeseries_right(fig,n,ThisOne,L2XArray,L2YArray,p)
 
             #Plot the diurnal averages.
-            Hr2,Av2,Sd2,Mx2,Mn2=get_diurnalstats(dsb.series['Hdh']['Data'], dsb.series[ThisOne]['Data'], ts)
+            Hr2, Av2, Sd2, Mx2, Mn2 = get_diurnalstats(Hdh, dsb.series[ThisOne]['Data'], ts)
             Av2 = numpy.ma.masked_where(Av2==c.missing_value,Av2)
             Sd2 = numpy.ma.masked_where(Sd2==c.missing_value,Sd2)
             Mx2 = numpy.ma.masked_where(Mx2==c.missing_value,Mx2)
@@ -807,12 +807,16 @@ def plot_quickcheck(cf):
     EndDate = str(DateTime[-1])
     # get the 30 minute data from the data structure
     logger.info(" Getting data from data structure")
-    data_list = ["Month", "Hour", "Minute",
-                 "Fsd", "Fsu", "Fld", "Flu", "Fn",
+    data = {"Month":{"Attr":{}}, "Hour":{"Attr":{}}, "Minute":{"Attr":{}}}
+    # do the month, hour and minute separately
+    data["Month"]["Data"] = numpy.array([d.month for d in DateTime])
+    data["Hour"]["Data"] = numpy.array([d.hour for d in DateTime])
+    data["Minute"]["Data"] = numpy.array([d.minute for d in DateTime])
+    # now do the data we want to plot
+    data_list = ["Fsd", "Fsu", "Fld", "Flu", "Fn",
                  "Fg", "Fa", "Fe", "Fh", "Fc", "ustar",
                  "Ta", "H2O", "CO2", "Precip", "Ws",
                  "Sws", "Ts"]
-    data = {}
     for label in data_list:
         if label in series_list:
             data[label] = pfp_utils.GetVariable(ds, label, start=si, end=ei)
@@ -1177,7 +1181,7 @@ def xyplot(x,y,sub=[1,1,1],regr=0,thru0=0,title=None,xlabel=None,ylabel=None,fna
             logger.info("xyplot: nothing to plot!")
     if thru0!=0:
         x = x[:,numpy.newaxis]
-        a, _, _, _ = numpy.linalg.lstsq(x, y)
+        a, _, _, _ = numpy.linalg.lstsq(x, y, rcond=-1)
         eqnstr = 'y = %.3fx'%(a)
         plt.text(0.5,0.875,eqnstr,fontsize=8,horizontalalignment='center',transform=ax.transAxes)
     return

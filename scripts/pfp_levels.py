@@ -36,7 +36,7 @@ def l1qc(cf):
         if ds1.returncodes["value"] != 0:
             return ds1
         # get a series of Python datetime objects from the Excel datetime
-        #pfp_utils.get_datetimefromxldate(ds1)
+        #pfp_utils.get_datetime_from_xldate(ds1)
     # get the netCDF attributes from the control file
     #pfp_ts.do_attributes(cf,ds1)
     pfp_utils.get_datetime(cf, ds1)
@@ -47,9 +47,9 @@ def l1qc(cf):
     if pfp_utils.CheckTimeStep(ds1):
         pfp_utils.FixTimeStep(ds1, fixtimestepmethod=fixtimestepmethod)
     # recalculate the Excel datetime
-    pfp_utils.get_xldatefromdatetime(ds1)
+    #pfp_utils.get_xldatefromdatetime(ds1)
     # get the Year, Month, Day etc from the Python datetime
-    pfp_utils.get_ymdhmsfromdatetime(ds1)
+    #pfp_utils.get_ymdhmsfromdatetime(ds1)
     # write the processing level to a global attribute
     ds1.globalattributes['nc_level'] = str("L1")
     # get the start and end date from the datetime series unless they were
@@ -63,7 +63,7 @@ def l1qc(cf):
     # create new variables using user defined functions
     pfp_ts.DoFunctions(cf,ds1)
     # create a series of synthetic downwelling shortwave radiation
-    pfp_ts.get_synthetic_fsd(ds1)
+    #pfp_ts.get_synthetic_fsd(ds1)
     # check missing data and QC flags are consistent
     pfp_utils.CheckQCFlags(ds1)
 
