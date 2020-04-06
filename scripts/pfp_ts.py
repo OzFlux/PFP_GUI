@@ -25,51 +25,6 @@ import pysolar
 
 logger = logging.getLogger("pfp_log")
 
-def albedo(cf,ds):
-    """
-        Filter albedo measurements to:
-            high solar angle specified by periods between 10.00 and 14.00, inclusive
-            and
-            full sunlight in which Fsd > 290 W/m2
-
-        Usage pfp_ts.albedo(ds)
-        ds: data structure
-        """
-    logger.info(' Applying albedo constraints')
-    nRecs = int(ds.globalattributes["nc_nrecs"])
-    zeros = numpy.zeros(nRecs,dtype=numpy.int32)
-    ones = numpy.ones(nRecs,dtype=numpy.int32)
-    if 'albedo' not in ds.series.keys():
-        if 'Fsd' in ds.series.keys() and 'Fsu' in ds.series.keys():
-            Fsd,f,a = pfp_utils.GetSeriesasMA(ds,'Fsd')
-            Fsu,f,a = pfp_utils.GetSeriesasMA(ds,'Fsu')
-            albedo = Fsu / Fsd
-            attr = pfp_utils.MakeAttributeDictionary(long_name='solar albedo',units='none',standard_name='solar_albedo')
-            flag = numpy.where(numpy.ma.getmaskarray(albedo)==True,ones,zeros)
-            pfp_utils.CreateSeries(ds,'albedo',albedo,flag,attr)
-        else:
-            logger.warning('  Fsd or Fsu not in ds, albedo not calculated')
-            return
-    else:
-        albedo,f,a = pfp_utils.GetSeriesasMA(ds,'albedo')
-        if 'Fsd' in ds.series.keys():
-            Fsd,f,a = pfp_utils.GetSeriesasMA(ds,'Fsd')
-        else:
-            Fsd,f,a = pfp_utils.GetSeriesasMA(ds,'Fn')
-
-    if pfp_utils.cfkeycheck(cf,ThisOne='albedo',key='Threshold'):
-        Fsdbase = float(cf['Variables']['albedo']['Threshold']['Fsd'])
-        ds.series['albedo']['Attr']['FsdCutoff'] = Fsdbase
-    else:
-        Fsdbase = 290.
-    index = numpy.ma.where((Fsd < Fsdbase) | (ds.series['Hdh']['Data'] < 10) | (ds.series['Hdh']['Data'] > 14))[0]
-    index1 = numpy.ma.where(Fsd < Fsdbase)[0]
-    index2 = numpy.ma.where((ds.series['Hdh']['Data'] < 10) | (ds.series['Hdh']['Data'] > 14))[0]
-    albedo[index] = numpy.float64(c.missing_value)
-    ds.series['albedo']['Flag'][index1] = numpy.int32(51)     # bad Fsd flag only if bad time flag not set
-    ds.series['albedo']['Flag'][index2] = numpy.int32(52)     # bad time flag
-    ds.series['albedo']['Data']=numpy.ma.filled(albedo,float(c.missing_value))
-
 def ApplyLinear(cf,ds,ThisOne):
     """
         Applies a linear correction to variable passed from pfp_ls. Time period

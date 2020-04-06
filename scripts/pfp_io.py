@@ -12,20 +12,17 @@ import numpy
 import ntpath
 import os
 import platform
-import sys
 import time
 import xlrd
 import xlwt
 import xlsxwriter
-from PyQt5 import QtGui, QtWidgets
+from PyQt5 import QtWidgets
 # PFP modules
 import cfg
 import constants as c
 import meteorologicalfunctions as pfp_mf
 import pfp_cfg
 import pfp_ck
-import pfp_compliance
-import pfp_func
 import pfp_ts
 import pfp_utils
 
@@ -83,8 +80,6 @@ def copy_datastructure(cf,ds_in):
             ds_out = copy.deepcopy(ds_in)
             dt_out = ds_out.series['DateTime']['Data']
             ts = ds_out.globalattributes['time_step']
-            sd_out = str(dt_out[0])
-            ed_out = str(dt_out[-1])
             # get the start and end indices based on the start and end dates
             si = pfp_utils.GetDateIndex(dt_out,sd_file,ts=ts,default=0,match='exact')
             ei = pfp_utils.GetDateIndex(dt_out,ed_file,ts=ts,default=-1,match='exact')
@@ -695,7 +690,6 @@ def write_csv_ecostress(cf):
     zeros = numpy.zeros(nRecs,dtype=numpy.int32)
     ones = numpy.ones(nRecs,dtype=numpy.int32)
     ts = int(ds.globalattributes["time_step"])
-    ts_delta = datetime.timedelta(minutes=ts)
     # get the datetime series
     dt = ds.series["DateTime"]["Data"]
     # get the data
@@ -785,7 +779,7 @@ def xl2nc(cf,InLevel):
         ds = xl_read_series(cf)
         if ds==0: return 0
         # get a series of Python datetime objects from the Excel datetime
-        pfp_utils.get_datetimefromxldate(ds)
+        pfp_utils.get_datetime_from_xldate(ds)
     # get the netCDF attributes from the control file
     pfp_ts.do_attributes(cf,ds)
     # round the Python datetime to the nearest second
@@ -1068,8 +1062,6 @@ def fn_write_csv(cf):
         # get the datetime string
         dtstr = '%02d/%02d/%d %02d:%02d'%(Day[i],Month[i],Year[i],Hour[i],Minute[i])
         hrmn = '%02d%02d'%(Hour[i],Minute[i])
-        dttup = datetime.datetime(Year[i],Month[i],Day[i],Hour[i],Minute[i]).timetuple()
-        doy = float(dttup.tm_yday) + float(dttup.tm_hour)/24 + float(dttup.tm_min)/1440
         data_list = [dtstr,'%d'%(Year[i]),'%02d'%(Month[i]),'%02d'%(Day[i]),hrmn]
         for series in series_list:
             strfmt = data[series]["fmt"]
@@ -1248,8 +1240,6 @@ def load_controlfile(path='.', title='Choose a control file'):
     return cf
 
 def nc_concatenate(cf):
-    # initialise logicals
-    TimeGap = False
     # get an instance of the data structure
     ds = DataStructure()
     # get the input file list
@@ -1477,7 +1467,7 @@ def nc_concatenate(cf):
     Fc_list = [label for label in ds.series.keys() if label[0:2] == "Fc" and "Flag" not in label]
     pfp_utils.CheckUnits(ds, Fc_list, "umol/m2/s", convert_units=True)
     # re-calculate the synthetic Fsd
-    pfp_ts.get_synthetic_fsd(ds)
+    #pfp_ts.get_synthetic_fsd(ds)
     # re-apply the quality control checks (range, diurnal and rules)
     pfp_ck.do_qcchecks(cf,ds)
     # update the global attributes for this level
@@ -1631,26 +1621,18 @@ def nc_read_series(ncFullName,checktimestep=True,fixtimestepmethod="round"):
         ds.series[ThisOne]["Flag"] = flag
         ds.series[ThisOne]["Attr"] = attr
     ncFile.close()
-    # make sure all values of -9999 have non-zero QC flag
-    # NOTE: the following was a quick and dirty fix for something a long time ago
-    #       and needs to be retired
-    #pfp_utils.CheckQCFlags(ds)
     # get a series of Python datetime objects
-    if "time" in ds.series.keys():
-        time,f,a = pfp_utils.GetSeries(ds,"time")
-        pfp_utils.get_datetimefromnctime(ds,time,a["units"])
-    else:
-        pfp_utils.get_datetimefromymdhms(ds)
+    pfp_utils.get_datetime_from_nctime(ds)
     # round the Python datetime to the nearest second
-    pfp_utils.round_datetime(ds,mode="nearest_second")
+    pfp_utils.round_datetime(ds, mode="nearest_second")
     # check the time step and fix it required
     if checktimestep:
         if pfp_utils.CheckTimeStep(ds):
             pfp_utils.FixTimeStep(ds,fixtimestepmethod=fixtimestepmethod)
             # update the Excel datetime from the Python datetime
-            pfp_utils.get_xldatefromdatetime(ds)
+            #pfp_utils.get_xldatefromdatetime(ds)
             # update the Year, Month, Day etc from the Python datetime
-            pfp_utils.get_ymdhmsfromdatetime(ds)
+            #pfp_utils.get_ymdhmsfromdatetime(ds)
     # tell the user when the data starts and ends
     ldt = ds.series["DateTime"]["Data"]
     msg = " Got data from "+ldt[0].strftime("%Y-%m-%d %H:%M:%S")+" to "+ldt[-1].strftime("%Y-%m-%d %H:%M:%S")
@@ -2264,7 +2246,6 @@ def xl_write_data(xl_sheet, data, xlCol=0):
     series_list = data.keys()
     xl_sheet.write(1,xlCol,data["DateTime"]["attr"]["units"])
     nrows = len(data["DateTime"]["data"])
-    ncols = len(series_list)
     d_xf = xlwt.easyxf(num_format_str=data["DateTime"]["attr"]["format"])
     for j in range(nrows):
         xl_sheet.write(j+2,xlCol,data["DateTime"]["data"][j],d_xf)
