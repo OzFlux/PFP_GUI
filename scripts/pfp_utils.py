@@ -2135,6 +2135,7 @@ def get_diurnalstats(dt,data,info):
     diel_stats["Sd"] = numpy.ma.std(data_2d,axis=0)
     diel_stats["Mx"] = numpy.ma.max(data_2d,axis=0)
     diel_stats["Mn"] = numpy.ma.min(data_2d,axis=0)
+    diel_stats["Number"] = numpy.ma.count(data_2d,axis=0)
     return diel_stats
 
 def get_end_index(ldt, end, mode="quiet"):

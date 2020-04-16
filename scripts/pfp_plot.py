@@ -8,6 +8,7 @@ import time
 import matplotlib
 import matplotlib.dates as mdt
 import matplotlib.pyplot as plt
+from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 import numpy
 from scipy import stats
 import statsmodels.api as sm
@@ -860,6 +861,7 @@ def plot_quickcheck(cf):
     figure_name = os.path.join("plots", file_name)
     plot_quickcheck_seb(nFig, plot_title, figure_name, data, daily)
     # plot the daily ratios
+    cmap = plt.cm.get_cmap("RdYlBu")
     logger.info(" Doing the daily ratios plot")
     plt.ion()
     nFig = nFig + 1
@@ -869,8 +871,9 @@ def plot_quickcheck(cf):
     tsplot1_list = ["SEB", "EF", "BR", "WUE", "Sws", "Precip"]
     nplots = len(tsplot1_list)
     for nrow, label in enumerate(tsplot1_list):
-        tsplot(DT_daily, daily[label]["Avg"], sub=[nplots, 1, nrow+1], colours=daily[label]["Count"],
-               ylabel=daily[label]["label"])
+        percent = 100*daily[label]["Count"]/ntsInDay
+        tsplot(DT_daily, daily[label]["Avg"], sub=[nplots, 1, nrow+1], ylabel=label,
+               colours=percent, cmap=cmap, vmin=0, vmax=100)
     file_name = site_name.replace(" ", "") + "_" + level + "_QC_DailyRatios.png"
     figure_name = os.path.join("plots", file_name)
     fig.savefig(figure_name, format="png")
@@ -884,8 +887,9 @@ def plot_quickcheck(cf):
     nplots = len(tsplot2_list)
     for nrow, label in enumerate(tsplot2_list):
         daily[label]["Avg"], daily[label]["Count"] = plot_quickcheck_get_avg(daily, label)
-        tsplot(DT_daily, daily[label]["Avg"], sub=[nplots, 1, nrow+1], colours=daily[label]["Count"],
-               ylabel=daily[label]["label"])
+        percent = 100*daily[label]["Count"]/ntsInDay
+        tsplot(DT_daily, daily[label]["Avg"], sub=[nplots, 1, nrow+1], ylabel=label,
+               colours=percent, cmap=cmap, vmin=0, vmax=100)
     file_name = site_name.replace(" ", "") + "_" + level +"_QC_DailyRadn.png"
     figure_name = os.path.join("plots", file_name)
     fig.savefig(figure_name, format="png")
@@ -899,8 +903,9 @@ def plot_quickcheck(cf):
     nplots = len(tsplot3_list)
     for nrow, label in enumerate(tsplot3_list):
         daily[label]["Avg"], daily[label]["Count"] = plot_quickcheck_get_avg(daily, label, filter_type="day")
-        tsplot(DT_daily, daily[label]["Avg"], sub=[nplots, 1, nrow+1], colours=daily[label]["Count"],
-               ylabel=daily[label]["label"])
+        percent = 100*daily[label]["Count"]/ntsInDay
+        tsplot(DT_daily, daily[label]["Avg"], sub=[nplots, 1, nrow+1], ylabel=label,
+               colours=percent, cmap=cmap, vmin=0, vmax=100)
     file_name = site_name.replace(" ", "") + "_" + level + "_QC_DailyFluxes.png"
     figure_name = os.path.join("plots", file_name)
     fig.savefig(figure_name, format="png")
@@ -914,8 +919,9 @@ def plot_quickcheck(cf):
     nplots = len(tsplot4_list)
     for nrow, label in enumerate(tsplot4_list):
         daily[label]["Avg"], daily[label]["Count"] = plot_quickcheck_get_avg(daily, label)
-        tsplot(DT_daily, daily[label]["Avg"], sub=[nplots, 1, nrow+1], colours=daily[label]["Count"],
-               ylabel=daily[label]["label"])
+        percent = 100*daily[label]["Count"]/ntsInDay
+        tsplot(DT_daily, daily[label]["Avg"], sub=[nplots, 1, nrow+1], ylabel=label,
+               colours=percent, cmap=cmap, vmin=0, vmax=100)
     file_name = site_name.replace(" ", "") + "_" + level + "_QC_DailyMet.png"
     figure_name = os.path.join("plots", file_name)
     fig.savefig(figure_name, format="png")
@@ -929,49 +935,77 @@ def plot_quickcheck(cf):
     nplots = len(tsplot5_list)
     for nrow, label in enumerate(tsplot5_list):
         daily[label]["Avg"], daily[label]["Count"] = plot_quickcheck_get_avg(daily, label)
-        tsplot(DT_daily, daily[label]["Avg"], sub=[nplots, 1, nrow+1], colours=daily[label]["Count"],
-               ylabel=daily[label]["label"])
+        percent = 100*daily[label]["Count"]/ntsInDay
+        tsplot(DT_daily, daily[label]["Avg"], sub=[nplots, 1, nrow+1], ylabel=label,
+               colours=percent, cmap=cmap, vmin=0, vmax=100)
     file_name = site_name.replace(" ", "") + "_" + level + "_QC_DailySoil.png"
     figure_name = os.path.join("plots", file_name)
     fig.savefig(figure_name, format="png")
     plt.draw()
     # *** end of section for time series of daily averages
     # *** start of section for diurnal plots by month ***
-    month_list = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
-    diurnal_list = ["Fsd", "Fsu", "Fa", "Fn", "Fg", "Ta", "Ts", "Fh", "Fe", "Fc"]
-    # plot diurnals
-    for label in diurnal_list:
+    # month labels
+    months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+    # variable labels
+    labels = ["Fsd", "Fsu", "Fa", "Fn", "Fg", "Ta", "Ts", "Fh", "Fe", "Fc"]
+    # get the colour map, points will be coloured according to the percentage of good data
+    cm = plt.cm.get_cmap("RdYlBu")
+    # 12 plots per page, 1 for each month
+    nrows = 4
+    ncols = 3
+    # loop over the variables to be plotted
+    for label in labels:
+        # skip if the label is not in the data structure
         if label not in series_list:
             continue
+        # put up a log message
         msg = " Doing the monthly diurnal plots for " + label
         logger.info(msg)
+        # increment the figure number so we don't overwrite any plots
         nFig = nFig + 1
-        fig = plt.figure(nFig, figsize=(6, 9))
+        # create the sub plots, 4 rows of 3 columns each with shared X and Y axes
+        fig, axs = plt.subplots(num=nFig, nrows=nrows, ncols=ncols, sharex=True, sharey=True,
+                                figsize=(8, 10))
+        # do the window and plot titles
         window_title = "Diurnal " + label
         fig.canvas.set_window_title(window_title)
         plt.figtext(0.5, 0.95, plot_title, horizontalalignment="center", size=16)
-        j = 0
-        for i in [12, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]:
-            j = j + 1
+        # loop over each month
+        for j, i in enumerate([12] + range(1, 12)):
+            # indices of this month in the daily data
             idx = numpy.where(daily["Month"]["Data"] == i)[0]
+            # column and row number for this plot
+            ncol = numpy.mod(j, ncols)
+            nrow = j/ncols
+            # skip month and remove axes if there is no data for this month
             if len(idx) == 0:
+                axs[nrow, ncol].remove()
                 continue
+            # turn off the X axis and tick labels for all but the last row
+            if nrow > 0:
+                axs[nrow-1, ncol].tick_params(labelbottom=False)
+                axs[nrow-1, ncol].xaxis.label.set_visible(False)
+            # turn off the Y axis labels for all but the first column
+            if ncol > 0:
+                axs[nrow, ncol].yaxis.label.set_visible(False)
+            # get the decimal hour
             hr = daily["Hour"]["Data"][idx] + daily["Minute"]["Data"][idx]/float(60)
+            # get the average and number of good data points at each time of the day for this month
             avg = numpy.ma.average(daily[label]["Data"][idx], axis=0)
-            num = numpy.ma.count(daily[label]["Data"][idx], axis=0)
-            if j in [1, 2, 3, 4, 5, 6, 7, 8, 9]:
-                xlabel = None
-                show_xtick_labels = False
-            else:
-                xlabel = "Hour"
-                show_xtick_labels = True
-            if j in [2, 3, 5, 6, 8, 9, 11, 12]:
-                ylabel = None
-            else:
-                ylabel = label + " (" + daily[label]["Attr"]["units"] + ")"
-            hrplot(hr[0], avg, sub=[4, 3, j], colours=num,
-                   title=month_list[i-1], xlabel=xlabel, ylabel=ylabel,
-                   show_xtick_labels=show_xtick_labels)
+            num = 100*numpy.ma.count(daily[label]["Data"][idx], axis=0)/len(idx)
+            # plot the average for each time of the day, colour set by percentage of good data
+            ax = axs[nrow, ncol].scatter(hr[0], avg, c=num, cmap=cm, vmin=0, vmax=100)
+            # add the title, axis labels, tick marks etc
+            axs[nrow, ncol].set_title(months[i-1])
+            axs[nrow, ncol].set_xlim([0, 24])
+            axs[nrow, ncol].set_xticks([0, 6, 12, 18, 24])
+            axs[nrow, ncol].tick_params(labelbottom=True)
+            axs[nrow, ncol].set_xlabel("Hour")
+            axs[nrow, ncol].set_ylabel(label + " (" + daily[label]["Attr"]["units"] + ")")
+            # add colour bar as an inset
+            cbins = inset_axes(axs[nrow, ncol], width="50%", height="5%", loc="upper center")
+            ticks = [0, 50, 100]
+            fig.colorbar(ax, cax=cbins, orientation="horizontal", ticks=ticks)
         # save the plot to file
         level = ds.globalattributes["nc_level"]
         file_name = site_name.replace(" ", "") + "_" + level + "_QC_Diurnal" + label + "ByMonth.png"
@@ -1187,12 +1221,19 @@ def xyplot(x,y,sub=[1,1,1],regr=0,thru0=0,title=None,xlabel=None,ylabel=None,fna
         plt.text(0.5,0.875,eqnstr,fontsize=8,horizontalalignment='center',transform=ax.transAxes)
     return
 
-def hrplot(x,y,sub=[1,1,1],title=None,xlabel=None,ylabel=None,colours=None,show_xtick_labels=True):
+def hrplot(x, y, sub=[1,1,1], title=None, xlabel=None, ylabel=None, colours=None, cmap=None,
+           show_xtick_labels=True):
     plt.subplot(sub[0],sub[1],sub[2])
     if (y.all() is numpy.ma.masked):
         y = numpy.ma.zeros(len(y))
     if colours is not None:
-        plt.scatter(x,y,c=colours)
+        #cm = plt.cm.get_cmap("RdYlBu")
+        #sc = plt.scatter(x,y,c=colours,cmap=cm)
+        #plt.colorbar(sc)
+        if cmap is not None:
+            plt.scatter(x, y, c=colours, cmap=cmap)
+        else:
+            plt.scatter(x, y, c=colours)
     else:
         plt.scatter(x,y)
     plt.xlim(0,24)
@@ -1206,30 +1247,40 @@ def hrplot(x,y,sub=[1,1,1],title=None,xlabel=None,ylabel=None,colours=None,show_
     if not show_xtick_labels:
         ax = plt.gca()
         ax.tick_params(labelbottom=False)
+    return
 
-def tsplot(x,y,sub=[1,1,1],title=None,xlabel=None,ylabel=None,colours=None,lineat=None):
-    plt.subplot(sub[0],sub[1],sub[2])
-    MTFmt = mdt.DateFormatter('%d/%m')
+def tsplot(x, y, sub=[1,1,1], title=None, xlabel=None, ylabel=None, lineat=None,
+           colours=None, cmap=None, vmin=None, vmax=None):
+    """
+    Purpose:
+     Plot a time series of data with optional colouring of points and a colour bar.
+    Author: PRI
+    Date: Back in the day
+    """
+    axs = plt.subplot(sub[0],sub[1],sub[2])
     if (y.all() is numpy.ma.masked):
         y = numpy.ma.zeros(len(y))
-    if colours is not None:
-        plt.scatter(x,y,c=colours)
+    if ((colours is not None) and (cmap is not None) and
+        (vmin is not None) and (vmax is not None)):
+        ax = axs.scatter(x, y, c=colours, cmap=cmap, vmin=vmin, vmax=vmax)
+        cbins = inset_axes(axs, width="10%", height="10%", loc="upper right")
+        ticks = [0, 50, 100]
+        plt.colorbar(ax, cax=cbins, orientation="horizontal", ticks=ticks)
     else:
-        plt.scatter(x,y)
+        ax = axs.scatter(x, y)
     if lineat is not None:
-        plt.plot((x[0],x[-1]),(float(lineat),float(lineat)))
-    plt.xlim((x[0],x[-1]))
-    ax = plt.gca()
-    ax.xaxis.set_major_formatter(MTFmt)
+        ax = axs.plot((x[0], x[-1]), (float(lineat), float(lineat)))
+    axs.set_xlim([x[0], x[-1]])
     if title is not None:
         plt.title(title)
     if ylabel is not None:
-        ax.yaxis.set_label_text(ylabel)
+        axs.yaxis.set_label_text(ylabel)
     if xlabel is not None:
-        ax.xaxis.set_label_text(xlabel)
+        axs.xaxis.set_label_text(xlabel)
     if sub[2] != sub[0]:
-        ax.set_xlabel('',visible=False)
-        ax.tick_params(labelbottom=False)
+        axs.set_xlabel('',visible=False)
+        axs.tick_params(labelbottom=False)
+    return
 
 def mypause(interval):
     backend = plt.rcParams['backend']
