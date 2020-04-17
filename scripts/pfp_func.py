@@ -154,6 +154,21 @@ def ConvertRHtoPercent(ds, RH_out, RH_in):
     pfp_utils.CreateVariable(ds, var_out)
     return
 
+def ConvertPercent2m3pm3(ds, Sws_out, Sws_in):
+    """
+    Purpose:
+     Function to convert Sws in units of "percent" (1 to 100) to "frac" (0 to 1).
+    Usage:
+     pfp_func.ConvertPercent2m3pm3(ds, Sws_out, Sws_in)
+    Author: PRI
+    Date: April 2020
+    """
+    var_in = pfp_utils.GetVariable(ds, Sws_in)
+    var_out = pfp_utils.convert_units_func(ds, var_in, "m3/m3", mode="quiet")
+    var_out["Label"] = Sws_out
+    pfp_utils.CreateVariable(ds, var_out)
+    return
+
 def DateTimeFromDoY(ds, dt_out, Year_in, DoY_in, Hdh_in):
     year,f,a = pfp_utils.GetSeriesasMA(ds,Year_in)
     doy,f,a = pfp_utils.GetSeriesasMA(ds,DoY_in)
