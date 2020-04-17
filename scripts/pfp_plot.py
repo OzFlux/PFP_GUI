@@ -869,6 +869,7 @@ def plot_quickcheck(cf):
     fig = plt.figure(nFig, figsize=(9, 6))
     fig.canvas.set_window_title("Daily Average Ratios")
     plt.figtext(0.5, 0.95, plot_title, horizontalalignment="center", size=16)
+    plt.figtext(0.5, 0.90, "Day time data points only", horizontalalignment="center", size=14)
     tsplot1_list = ["SEB", "EF", "BR", "WUE", "Sws", "Precip"]
     nplots = len(tsplot1_list)
     for nrow, label in enumerate(tsplot1_list):
@@ -902,6 +903,7 @@ def plot_quickcheck(cf):
     fig = plt.figure(nFig, figsize=(9, 6))
     fig.canvas.set_window_title("Daily Average Fluxes")
     plt.figtext(0.5, 0.95, plot_title, horizontalalignment="center", size=16)
+    plt.figtext(0.5, 0.90, "Day time data points only", horizontalalignment="center", size=14)
     tsplot3_list = ["Fsd", "Fa", "Fe", "Fh", "Fc"]
     nplots = len(tsplot3_list)
     for nrow, label in enumerate(tsplot3_list):
@@ -912,8 +914,8 @@ def plot_quickcheck(cf):
     file_name = site_name.replace(" ", "") + "_" + level + "_QC_DailyFluxes.png"
     figure_name = os.path.join("plots", file_name)
     fig.savefig(figure_name, format="png")
-    mypause(0.5)
     plt.draw()
+    mypause(0.5)
     # plot the daily average meteorology
     nFig = nFig + 1
     fig = plt.figure(nFig, figsize=(9, 6))
@@ -929,8 +931,8 @@ def plot_quickcheck(cf):
     file_name = site_name.replace(" ", "") + "_" + level + "_QC_DailyMet.png"
     figure_name = os.path.join("plots", file_name)
     fig.savefig(figure_name, format="png")
-    mypause(0.5)
     plt.draw()
+    mypause(0.5)
     # plot the daily average soil data
     nFig = nFig + 1
     fig = plt.figure(nFig, figsize=(9, 6))
@@ -946,8 +948,8 @@ def plot_quickcheck(cf):
     file_name = site_name.replace(" ", "") + "_" + level + "_QC_DailySoil.png"
     figure_name = os.path.join("plots", file_name)
     fig.savefig(figure_name, format="png")
-    mypause(0.5)
     plt.draw()
+    mypause(0.5)
     # *** end of section for time series of daily averages
     # *** start of section for diurnal plots by month ***
     # month labels
