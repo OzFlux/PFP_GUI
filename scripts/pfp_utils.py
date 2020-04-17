@@ -317,46 +317,32 @@ def convert_units_func(ds, variable, new_units, mode="quiet"):
     h2o_list = ["g/m3", "mmol/mol", "%", "percent", "frac", "fraction", "kg/kg"]
     t_list = ["C", "K"]
     ps_list = ["Pa", "hPa", "kPa"]
-    ok_list = co2_list + h2o_list + t_list + ps_list
+    soil_list = ["%", "percent", "frac", "m3/m3"]
+    ok_list = co2_list + h2o_list + t_list + ps_list + soil_list
     # parse the original units
     if old_units not in ok_list:
         if "Label" in variable:
             label = variable["Label"]
         else:
             label = "quantity provided"
-        msg = " Unrecognised units ("+old_units+") in "+label
+        msg = " Unrecognised units (" + old_units + ") in " + label
         logger.error(msg)
     elif new_units not in ok_list:
-        msg = " Unrecognised units requested ("+new_units+")"
+        msg = " Unrecognised units requested (" + new_units + ")"
         logger.error(msg)
-    elif new_units in co2_list:
-        if old_units in co2_list:
-            variable = convert_units_co2(ds, variable, new_units)
-        else:
-            msg = " New units ("+new_units+") not compatible with old ("+old_units+")"
-            logger.error(msg)
-    elif new_units in h2o_list:
-        if old_units in h2o_list:
-            variable = convert_units_h2o(ds, variable, new_units)
-        else:
-            msg = " New units ("+new_units+") not compatible with old ("+old_units+")"
-            logger.error(msg)
-    elif new_units in t_list:
-        if old_units in t_list:
-            variable = convert_units_t(ds, variable, new_units)
-        else:
-            msg = " New units ("+new_units+") not compatible with old ("+old_units+")"
-            logger.error(msg)
-    elif new_units in ps_list:
-        if old_units in ps_list:
-            variable = convert_units_ps(ds, variable, new_units)
-        else:
-            msg = " New units ("+new_units+") not compatible with old ("+old_units+")"
-            logger.error(msg)
+    elif new_units in co2_list and old_units in co2_list:
+        variable = convert_units_co2(ds, variable, new_units)
+    elif new_units in h2o_list and old_units in h2o_list:
+        variable = convert_units_h2o(ds, variable, new_units)
+    elif new_units in t_list and old_units in t_list:
+        variable = convert_units_t(ds, variable, new_units)
+    elif new_units in ps_list and old_units in ps_list:
+        variable = convert_units_ps(ds, variable, new_units)
+    elif new_units in soil_list and old_units in soil_list:
+        variable = convert_units_soil(ds, variable, new_units)
     else:
-        msg = "Unrecognised units combination "+old_units+" and "+new_units
+        msg = "Unrecognised units combination " + old_units + " and " + new_units
         logger.error(msg)
-
     return variable
 
 def convert_units_co2(ds, variable, new_units):
@@ -772,6 +758,40 @@ def convert_units_h2o_upper_mmolpmol(attr_in, Ta, ps, month):
             attr_list.append(numpy.ma.max(upr[idx]))
         attr_out = ','.join(str(x) for x in attr_list)
     return attr_out
+
+def convert_units_soil(ds, var_in, new_units):
+    """
+    Purpose:
+     General purpose routine to convert soil moisture from one set of units
+     to another.
+     Conversions supported are:
+      frac (0 to 1) to percent (0 to 100)
+      percent (0 to 100) to frac (0 to 1)
+     Note: m3/m3 is treated as an alias for frac
+    Usage:
+     new_data = pfp_utils.convert_units_soil(ds, variable, new_units)
+      where ds is a data structure
+            variable is a variable dictionary (pfp_utils.GetVariable())
+            new_units (string) is the new units
+    Author: PRI
+    Date: April 2020 (during the COVID-19 lock down)
+    """
+    # make a copy of the input variable
+    var_out = copy.deepcopy(var_in)
+    # do the business
+    if ((var_in["Attr"]["units"] in ["%", "percent"]) and
+        (new_units in ["frac", "m3/m3"])):
+        var_out["Data"] = var_in["Data"]/float(100)
+        var_out["Attr"]["units"] = new_units
+    elif ((var_in["Attr"]["units"] in ["frac", "m3/m3"]) and
+        (new_units in ["%", "percent"])):
+        var_out["Data"] = var_in["Data"]*float(100)
+        var_out["Attr"]["units"] = new_units
+    else:
+        msg = " Unrecognised conversion from " + var_in["Attr"]["units"]
+        msg += " to " + new_units
+        logger.error(msg)
+    return var_out
 
 def convert_units_t(ds, var_in, new_units):
     """

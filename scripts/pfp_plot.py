@@ -859,6 +859,7 @@ def plot_quickcheck(cf):
     file_name = site_name.replace(" ", "") + "_" + level + "_QC_SEB_30minutes.png"
     figure_name = os.path.join("plots", file_name)
     plot_quickcheck_seb(nFig, plot_title, figure_name, data, daily)
+    mypause(0.5)
     # plot the daily ratios
     cmap = plt.cm.get_cmap("RdYlBu")
     logger.info(" Doing the daily ratios plot")
@@ -877,6 +878,7 @@ def plot_quickcheck(cf):
     figure_name = os.path.join("plots", file_name)
     fig.savefig(figure_name, format="png")
     plt.draw()
+    mypause(0.5)
     # plot the daily average radiation
     nFig = nFig + 1
     fig = plt.figure(nFig, figsize=(9, 6))
@@ -892,6 +894,7 @@ def plot_quickcheck(cf):
     file_name = site_name.replace(" ", "") + "_" + level +"_QC_DailyRadn.png"
     figure_name = os.path.join("plots", file_name)
     fig.savefig(figure_name, format="png")
+    mypause(0.5)
     plt.draw()
     # plot the daily average fluxes
     nFig = nFig + 1
@@ -908,6 +911,7 @@ def plot_quickcheck(cf):
     file_name = site_name.replace(" ", "") + "_" + level + "_QC_DailyFluxes.png"
     figure_name = os.path.join("plots", file_name)
     fig.savefig(figure_name, format="png")
+    mypause(0.5)
     plt.draw()
     # plot the daily average meteorology
     nFig = nFig + 1
@@ -924,6 +928,7 @@ def plot_quickcheck(cf):
     file_name = site_name.replace(" ", "") + "_" + level + "_QC_DailyMet.png"
     figure_name = os.path.join("plots", file_name)
     fig.savefig(figure_name, format="png")
+    mypause(0.5)
     plt.draw()
     # plot the daily average soil data
     nFig = nFig + 1
@@ -940,6 +945,7 @@ def plot_quickcheck(cf):
     file_name = site_name.replace(" ", "") + "_" + level + "_QC_DailySoil.png"
     figure_name = os.path.join("plots", file_name)
     fig.savefig(figure_name, format="png")
+    mypause(0.5)
     plt.draw()
     # *** end of section for time series of daily averages
     # *** start of section for diurnal plots by month ***
@@ -1012,6 +1018,7 @@ def plot_quickcheck(cf):
         fig.savefig(figure_name, format="png")
         # draw the plot on the screen
         plt.draw()
+        mypause(0.5)
     plt.ioff()
     return
 
