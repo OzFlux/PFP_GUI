@@ -196,8 +196,8 @@ def get_formatstring(cf,label,fmt_def=''):
     fmt_str = fmt_def
     for section in ['Variables']:
         if label in cf[section].keys():
-            if 'Format' in cf[section][label].keys():
-                fmt_str = str(cf[section][label]['Format'])
+            if 'format' in cf[section][label].keys():
+                fmt_str = str(cf[section][label]['format'])
     return fmt_str
 
 def climatology(cf):

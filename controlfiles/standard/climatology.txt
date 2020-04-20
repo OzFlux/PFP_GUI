@@ -1,37 +1,37 @@
 [Variables]
     [[Ta]]
-        Format = 0.00
+        format = 0.00
     [[Ah]]
-        Format = 0.00
+        format = 0.00
     [[RH]]
-        Format = 0
+        format = 0
     [[SH]]
-        Format = 0.0000
+        format = 0.0000
     [[CO2]]
-        Format = 0.0
+        format = 0.0
     [[H2O]]
-        Format = 0.00
+        format = 0.00
     [[Ws]]
-        Format = 0.00
+        format = 0.00
     [[Wd]]
-        Format = 0
+        format = 0
     [[ps]]
-        Format = 0.00
+        format = 0.00
     [[Fld]]
-        Format = 0
+        format = 0
     [[Flu]]
-        Format = 0
+        format = 0
     [[Fn]]
-        Format = 0
+        format = 0
     [[Fsd]]
-        Format = 0
+        format = 0
     [[Fsu]]
-        Format = 0
+        format = 0
     [[Ts]]
-        Format = 0.00
+        format = 0.00
     [[Sws]]
-        Format = 0.000
+        format = 0.000
     [[Fg]]
-        Format = 0
+        format = 0
     [[Fa]]
-        Format = 0
+        format = 0

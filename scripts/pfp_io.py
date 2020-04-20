@@ -401,10 +401,11 @@ def reddyproc_write_csv(cf):
     end_date = dt[-1]
     si = pfp_utils.GetDateIndex(dt,str(start_date),ts=ts,default=0,match='startnextday')
     ei = pfp_utils.GetDateIndex(dt,str(end_date),ts=ts,default=len(dt)-1,match='endpreviousday')
+    dt = dt[si:ei+1]
     # get the date and time data
-    Year, _, _ = pfp_utils.GetSeries(ds, 'Year', si=si, ei=ei)
-    Ddd, _, _ = pfp_utils.GetSeries(ds, 'Ddd', si=si, ei=ei)
-    Hhh, _, _ = pfp_utils.GetSeries(ds,'Hdh', si=si, ei=ei)
+    Year = numpy.array([d.year for d in dt])
+    Ddd = numpy.array([d.timetuple().tm_yday + d.hour/float(24) + d.minute/float(1440) for d in dt])
+    Hhh = numpy.array([d.hour + d.minute/float(60) for d in dt])
     # get the data
     data = OrderedDict()
     for label in cf["Variables"].keys():
@@ -479,7 +480,7 @@ def reddyproc_write_csv(cf):
         writer.writerow(data_list)
     # close the csv file
     csvfile.close()
-    return
+    return 1
 
 def smap_datetodatadictionary(ds,data_dict,nperday,ndays,si,ei):
     ldt = ds.series["DateTime"]["Data"][si:ei+1]
@@ -699,20 +700,30 @@ def write_csv_ecostress(cf):
     dt = ds.series["DateTime"]["Data"]
     # get the data
     data = {}
-    series_list = cf["Variables"].keys()
-    for series in series_list:
-        ncname = cf["Variables"][series]["in_name"]
-        data[series] = pfp_utils.GetVariable(ds, ncname)
-        fmt = cf["Variables"][series]["out_format"]
-        if "E" in fmt or "e" in fmt:
-            numdec = (fmt.index("E")) - (fmt.index(".")) - 1
-            strfmt = "{:."+str(numdec)+"e}"
-        elif "." in fmt:
-            numdec = len(fmt) - (fmt.index(".") + 1)
-            strfmt = "{0:."+str(numdec)+"f}"
+    labels = cf["Variables"].keys()
+    qc_labels = ["LHF", "SHF", "GHF", "GPP", "Ta", "T2", "VPD", "Rn"]
+    for label in list(labels):
+        ncname = cf["Variables"][label]["in_name"]
+        if ncname not in list(ds.series.keys()):
+            # skip variable if name not in the data structure
+            msg = " Variable for " + label + " (" + ncname
+            msg += ") not found in data structure, skipping ..."
+            logger.warning(msg)
+            labels.remove(label)
+            if label in qc_labels:
+                qc_labels.remove(label)
         else:
-            strfmt = "{0:d}"
-        data[series]["Attr"]["fmt"] = strfmt
+            data[label] = pfp_utils.GetVariable(ds, ncname)
+            fmt = cf["Variables"][label]["out_format"]
+            if "E" in fmt or "e" in fmt:
+                numdec = (fmt.index("E")) - (fmt.index(".")) - 1
+                strfmt = "{:."+str(numdec)+"e}"
+            elif "." in fmt:
+                numdec = len(fmt) - (fmt.index(".") + 1)
+                strfmt = "{0:."+str(numdec)+"f}"
+            else:
+                strfmt = "{0:d}"
+            data[label]["Attr"]["fmt"] = strfmt
     # adjust units as required
     # GPP
     data["GPP"]["Data"] = pfp_mf.Fc_gCpm2psfromumolpm2ps(data["GPP"]["Data"])
@@ -725,28 +736,30 @@ def write_csv_ecostress(cf):
     #  b) 1 for gap filled high quality
     #  c) 2 for gap filled medium quality
     #  d) 3 for gap filled low quality
-    for series in ["LHF", "SHF", "GHF", "GPP", "Ta", "T2", "VPD", "Rn"]:
-        qc_label = series + "_qc"
-        series_list.insert(series_list.index(series)+1, qc_label)
+    for label in qc_labels:
+        qc_label = label + "_qc"
+        labels.insert(labels.index(label)+1, qc_label)
         data[qc_label] = {}
-        data[qc_label]["Data"] = numpy.where(data[series]["Flag"] == 0, zeros, ones)
+        data[qc_label]["Data"] = numpy.where(data[label]["Flag"] == 0, zeros, ones)
         data[qc_label]["Attr"] = {}
         data[qc_label]["Attr"]["fmt"] = "{0:d}"
         data[qc_label]["Attr"]["units"] = "-"
     # write the metadata to the CSV file
+    msg = " Writing ECOSTRESS CSV file"
+    logger.info(msg)
     if "General" in cf:
         for item in cf["General"]:
             csv_writer.writerow([item,str(cf['General'][item])])
         csv_writer.writerow("")
     # write the units row
     row_list = ["YYYYMMDDhhmm", "YYYYMMDDhhmm"]
-    for item in series_list:
-        row_list.append(data[item]["Attr"]["units"])
+    for label in labels:
+        row_list.append(data[label]["Attr"]["units"])
     csv_writer.writerow(row_list)
     # write the variable names to the csv file
     row_list = ["TIME_START", "TIME_END"]
-    for item in series_list:
-        row_list.append(item)
+    for label in labels:
+        row_list.append(label)
     csv_writer.writerow(row_list)
     # now write the data
     for i in range(len(dt)):
@@ -754,18 +767,20 @@ def write_csv_ecostress(cf):
         timestamp_end = dt[i].strftime("%Y%m%d%H%M")
         timestamp_start = (dt[i] - datetime.timedelta(minutes=ts)).strftime("%Y%m%d%H%M")
         data_list = [timestamp_start, timestamp_end]
-        for series in series_list:
+        for label in labels:
             # convert from masked array to ndarray with -9999 for missing data
-            data[series]["Data"] = numpy.ma.filled(data[series]["Data"], fill_value=float(-9999))
-            strfmt = data[series]["Attr"]["fmt"]
+            data[label]["Data"] = numpy.ma.filled(data[label]["Data"], fill_value=float(-9999))
+            strfmt = data[label]["Attr"]["fmt"]
             if "d" in strfmt:
-                data_list.append(strfmt.format(int(round(data[series]["Data"][i]))))
+                data_list.append(strfmt.format(int(round(data[label]["Data"][i]))))
             else:
-                data_list.append(strfmt.format(data[series]["Data"][i]))
+                data_list.append(strfmt.format(data[label]["Data"][i]))
         csv_writer.writerow(data_list)
     # close the csv file
     csv_file.close()
-    return 0
+    msg = " Finished writing ECOSTRESS CSV file"
+    logger.info(msg)
+    return 1
 
 def xl2nc(cf,InLevel):
     # get the data series from the Excel file
@@ -972,7 +987,7 @@ def ExcelToDataStructures(xl_data, l1_info):
         pfp_utils.round_datetime(ds[xl_sheet], mode="nearest_second")
     return ds
 
-def fn_write_csv(cf):
+def fluxnet_write_csv(cf):
     # get the file names
     ncFileName = get_infilenamefromcf(cf)
     csvFileName = get_outfilenamefromcf(cf)
@@ -1023,7 +1038,7 @@ def fn_write_csv(cf):
             ds.series[thisone]["Flag"] = numpy.concatenate((flag_patched,ds.series[thisone]["Flag"]))
         ds.globalattributes["nc_nrecs"] = str(len(ds.series["DateTime"]["Data"]))
         # refresh the year, month, day etc arrays now that we have padded the datetime series
-        pfp_utils.get_ymdhmsfromdatetime(ds)
+        #pfp_utils.get_ymdhmsfromdatetime(ds)
     # now check the end datetime of the file
     end_datetime = dateutil.parser.parse(str(cf["General"]["end_datetime"]))
     if dt[-1]>end_datetime:
@@ -1053,7 +1068,7 @@ def fn_write_csv(cf):
             ds.series[thisone]["Flag"] = numpy.concatenate((ds.series[thisone]["Flag"],flag_patched))
         ds.globalattributes["nc_nrecs"] = str(len(ds.series["DateTime"]["Data"]))
         # refresh the year, month, day etc arrays now that we have padded the datetime series
-        pfp_utils.get_ymdhmsfromdatetime(ds)
+        #pfp_utils.get_ymdhmsfromdatetime(ds)
     if ts==30:
         nRecs_year = 17520
         nRecs_leapyear = 17568
@@ -1062,19 +1077,20 @@ def fn_write_csv(cf):
         nRecs_leapyear = 8784
     else:
         logger.error(" Unrecognised time step ("+str(ts)+")")
-        return
+        return 0
     if (int(ds.globalattributes["nc_nrecs"])!=nRecs_year) & (int(ds.globalattributes["nc_nrecs"])!=nRecs_leapyear):
         logger.error(" Number of records in file does not equal "+str(nRecs_year)+" or "+str(nRecs_leapyear))
         msg = str(len(ds.series["DateTime"]["Data"]))+" "+str(ds.series["DateTime"]["Data"][0])
         msg = msg+" "+str(ds.series["DateTime"]["Data"][-1])
         logger.error(msg)
-        return
+        return 0
     # get the date and time data
-    Day,flag,attr = pfp_utils.GetSeries(ds,'Day')
-    Month,flag,attr = pfp_utils.GetSeries(ds,'Month')
-    Year,flag,attr = pfp_utils.GetSeries(ds,'Year')
-    Hour,flag,attr = pfp_utils.GetSeries(ds,'Hour')
-    Minute,flag,attr = pfp_utils.GetSeries(ds,'Minute')
+    ldt = ds.series["DateTime"]["Data"]
+    Day = numpy.array([dt.day for dt in ldt])
+    Month = numpy.array([dt.month for dt in ldt])
+    Year = numpy.array([dt.year for dt in ldt])
+    Hour = numpy.array([dt.hour for dt in ldt])
+    Minute = numpy.array([dt.minute for dt in ldt])
     # get the data
     data = {}
     series_list = cf["Variables"].keys()
@@ -1140,7 +1156,7 @@ def fn_write_csv(cf):
         writer.writerow(data_list)
     # close the csv file
     csvfile.close()
-    return
+    return 1
 
 def get_controlfilecontents(ControlFileName, mode="verbose"):
     if mode != "quiet":
@@ -1287,6 +1303,27 @@ def NetCDFConcatenate(info):
     ds_out = netcdf_concatenate_create_ds_out(data, info)
     # truncate the start and the end of the output data structure
     ds_out = netcdf_concatenate_truncate(ds_out, info)
+    # get the maximum gap length (in hours) from the control file
+    pfp_ts.InterpolateOverMissing(ds_out, inc["labels"], max_length_hours=inc["MaxGapInterpolate"],
+                                  int_type="Akima")
+    # make sure we have all of the humidities
+    pfp_ts.CalculateHumidities(ds_out)
+    # and make sure we have all of the meteorological variables
+    pfp_ts.CalculateMeteorologicalVariables(ds_out, info)
+    # check units of Fc and convert if necessary
+    Fc_list = ["Fc", "Fc_single", "Fc_profile", "Fc_storage"]
+    pfp_utils.CheckUnits(ds_out, Fc_list, "umol/m2/s", convert_units=True)
+    # check missing data and QC flags are consistent
+    pfp_utils.CheckQCFlags(ds_out)
+    # update the coverage statistics
+    pfp_utils.get_coverage_individual(ds_out)
+    pfp_utils.get_coverage_groups(ds_out)
+    # remove intermediate series
+    pfp_ts.RemoveIntermediateSeries(ds_out, info)
+    logger.info(" Writing data to " + os.path.split(inc["out_file_name"])[1])
+    # write the concatenated data structure to file
+    nc_file = nc_open_write(inc["out_file_name"])
+    nc_write_series(nc_file, ds_out, ndims=inc["NumberOfDimensions"])
     return
 
 def nc_concatenate(cf):
