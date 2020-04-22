@@ -80,6 +80,9 @@ class pfp_main_ui(QtWidgets.QWidget):
         # Utilities menu
         self.menuUtilities = QtWidgets.QMenu(self.menubar)
         self.menuUtilities.setTitle("Utilities")
+        # Utilities/u* threshold submenu
+        self.menuUtilitiesUstar = QtWidgets.QMenu(self.menuFile)
+        self.menuUtilitiesUstar.setTitle("u* threshold")
         # Help menu
         self.menuHelp = QtWidgets.QMenu(self.menubar)
         self.menuHelp.setTitle("Help")
@@ -128,12 +131,12 @@ class pfp_main_ui(QtWidgets.QWidget):
         # Utilities menu
         self.actionUtilitiesClimatology = QtWidgets.QAction(self)
         self.actionUtilitiesClimatology.setText("Climatology")
-        self.actionUtilitiesUstarCPD = QtWidgets.QAction(self)
-        self.actionUtilitiesUstarCPD.setText("u* threshold (CPD)")
+        self.actionUtilitiesUstarCPD1 = QtWidgets.QAction(self)
+        self.actionUtilitiesUstarCPD1.setText("CPD (McHugh)")
         self.actionUtilitiesUstarCPD2 = QtWidgets.QAction(self)
-        self.actionUtilitiesUstarCPD2.setText("u* threshold (CPD2)")
+        self.actionUtilitiesUstarCPD2.setText("CPD (Barr)")
         self.actionUtilitiesUstarMPT = QtWidgets.QAction(self)
-        self.actionUtilitiesUstarMPT.setText("u* threshold (MPT)")
+        self.actionUtilitiesUstarMPT.setText("MPT")
         # add the actions to the menus
         # File/Convert submenu
         self.menuFileConvert.addAction(self.actionFileConvertnc2xls)
@@ -160,11 +163,13 @@ class pfp_main_ui(QtWidgets.QWidget):
         self.menuPlot.addAction(self.actionPlotTimeSeries)
         self.menuPlot.addSeparator()
         self.menuPlot.addAction(self.actionPlotClosePlots)
+        # Utilities/u* threshold submenu
+        self.menuUtilitiesUstar.addAction(self.actionUtilitiesUstarCPD1)
+        self.menuUtilitiesUstar.addAction(self.actionUtilitiesUstarCPD2)
+        self.menuUtilitiesUstar.addAction(self.actionUtilitiesUstarMPT)
         # Utilities menu
         self.menuUtilities.addAction(self.actionUtilitiesClimatology)
-        self.menuUtilities.addAction(self.actionUtilitiesUstarCPD)
-        self.menuUtilities.addAction(self.actionUtilitiesUstarCPD2)
-        self.menuUtilities.addAction(self.actionUtilitiesUstarMPT)
+        self.menuUtilities.addAction(self.menuUtilitiesUstar.menuAction())
         # add individual menus to menu bar
         self.menubar.addAction(self.menuFile.menuAction())
         self.menubar.addAction(self.menuEdit.menuAction())
@@ -223,7 +228,7 @@ class pfp_main_ui(QtWidgets.QWidget):
         self.actionPlotClosePlots.triggered.connect(pfp_top_level.do_plot_closeplots)
         # Utilities menu actions
         self.actionUtilitiesClimatology.triggered.connect(lambda:pfp_top_level.do_utilities_climatology(mode="standard"))
-        self.actionUtilitiesUstarCPD.triggered.connect(lambda:pfp_top_level.do_utilities_ustar_cpd(mode="standard"))
+        self.actionUtilitiesUstarCPD1.triggered.connect(lambda:pfp_top_level.do_utilities_ustar_cpd1(mode="standard"))
         self.actionUtilitiesUstarCPD2.triggered.connect(lambda:pfp_top_level.do_utilities_ustar_cpd2(mode="standard"))
         self.actionUtilitiesUstarMPT.triggered.connect(lambda:pfp_top_level.do_utilities_ustar_mpt(mode="standard"))
         # add the L4 GUI

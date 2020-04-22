@@ -1,19 +1,17 @@
 # standard modules
-import copy
 import datetime
 import logging
 import os
-import sys
 import time
 # 3rd party modules
 import numpy
-from numpy.lib.recfunctions import append_fields
 import scipy
 import scipy.stats
 import statsmodels.api as sm
 import xlwt
 # PFP modules
 import pfp_io
+import pfp_ts
 import pfp_utils
 
 # get the logger
@@ -56,8 +54,8 @@ def cpd2_main(cf):
     var_list = cf["Variables"].keys()
     names = {}
     for item in var_list:
-        if "AltVarName" in cf["Variables"][item].keys():
-            names[item] = cf["Variables"][item]["AltVarName"]
+        if "name" in cf["Variables"][item].keys():
+            names[item] = cf["Variables"][item]["name"]
         else:
             names[item] = item
     # read the netcdf file

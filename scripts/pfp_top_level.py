@@ -9,7 +9,7 @@ from PyQt5 import QtCore, QtWidgets, QtGui
 # PFP modules
 import pfp_clim
 import pfp_compliance
-import pfp_cpd
+import pfp_cpd1
 import pfp_cpd2
 import pfp_mpt
 import pfp_io
@@ -112,7 +112,7 @@ def do_file_convert_nc2biomet(cfg, mode="standard"):
         cfg["Options"]["call_mode"] = "interactive"
         cfg["Options"]["show_plots"] = "Yes"
         # do the business
-        result = pfp_io.ep_biomet_write_csv(cfg)
+        result = pfp_io.write_csv_ep_biomet(cfg)
         # check everything went well
         if result == 1:
             # looks good
@@ -190,7 +190,7 @@ def do_file_convert_nc2reddyproc(cfg, mode="standard"):
         cfg["Options"]["call_mode"] = "interactive"
         cfg["Options"]["show_plots"] = "Yes"
         # do the business
-        result = pfp_io.reddyproc_write_csv(cfg)
+        result = pfp_io.write_csv_reddyproc(cfg)
         # check everything went well
         if result == 1:
             # looks good
@@ -294,7 +294,7 @@ def do_file_convert_nc2fluxnet(cfg):
             cfg["Options"] = {}
         cfg["Options"]["call_mode"] = "interactive"
         cfg["Options"]["show_plots"] = "Yes"
-        result = pfp_io.fluxnet_write_csv(cfg)
+        result = pfp_io.write_csv_fluxnet(cfg)
         if result == 1:
             logger.info(" Finished converting netCDF file")
             logger.info("")
@@ -860,23 +860,29 @@ def do_utilities_climatology(mode="standard"):
         error_message = traceback.format_exc()
         logger.error(error_message)
     return
-def do_utilities_ustar_cpd(mode="standard"):
+def do_utilities_ustar_cpd1(mode="standard"):
+    """
+    Purpose:
+     Calculate the u* threshold using the Change Point Detection method described in
+     Barr et al. 2013, AFM 171-172, pp31-45.
+     This code is the original implementation by Ian McHugh.
+    """
     try:
-        logger.info(" Starting u* threshold detection (CPD)")
+        logger.info(" Starting CPD u* threshold detection (McHugh)")
         if mode == "standard":
-            stdname = "controlfiles/standard/cpd.txt"
+            stdname = "controlfiles/standard/cpd1.txt"
             if os.path.exists(stdname):
                 cf = pfp_io.get_controlfilecontents(stdname)
                 filename = pfp_io.get_filename_dialog(file_path="../Sites", title="Choose a netCDF file")
                 if not os.path.exists(filename):
-                    logger.info( " CPD: no input file chosen")
+                    logger.info( " CPD (McHugh): no input file chosen")
                     return
                 if "Files" not in cf:
                     cf["Files"] = {}
                 cf["Files"]["file_path"] = os.path.join(os.path.split(filename)[0],"")
                 in_filename = os.path.split(filename)[1]
                 cf["Files"]["in_filename"] = in_filename
-                cf["Files"]["out_filename"] = in_filename.replace(".nc", "_CPD.xls")
+                cf["Files"]["out_filename"] = in_filename.replace(".nc", "_CPD_McHugh.xls")
             else:
                 cf = pfp_io.load_controlfile(path="controlfiles")
                 if len(cf) == 0:
@@ -886,33 +892,40 @@ def do_utilities_ustar_cpd(mode="standard"):
             cf = pfp_io.load_controlfile(path='controlfiles')
             if len(cf) == 0:
                 return
-        logger.info("Doing u* threshold detection (CPD)")
-        pfp_cpd.cpd_main(cf)
-        logger.info(" Finished u* threshold detection (CPD)")
+        logger.info("Doing CPD u* threshold detection (McHugh)")
+        pfp_cpd1.cpd1_main(cf)
+        logger.info(" Finished CPD u* threshold detection (McHugh)")
         logger.info("")
     except Exception:
-        error_message = " An error occured while doing CPD u* threshold, see below for details ..."
+        error_message = " An error occured while doing CPD u* threshold (McHugh), see below for details ..."
         logger.error(error_message)
         error_message = traceback.format_exc()
         logger.error(error_message)
     return
 def do_utilities_ustar_cpd2(mode="standard"):
+    """
+    Purpose:
+     Calculate the u* threshold using the Change Point Detection method described in
+     Barr et al. 2013, AFM 171-172, pp31-45.
+     This code is a line-by-line translation of the original Barr MATLAB scripts
+     into Python.
+    """
     try:
-        logger.info(" Starting u* threshold detection (CPD2)")
+        logger.info(" Starting CPD u* threshold detection (Barr)")
         if mode == "standard":
             stdname = "controlfiles/standard/cpd2.txt"
             if os.path.exists(stdname):
                 cf = pfp_io.get_controlfilecontents(stdname)
                 filename = pfp_io.get_filename_dialog(file_path="../Sites", title="Choose a netCDF file")
                 if not os.path.exists(filename):
-                    logger.info( " CPD2: no input file chosen")
+                    logger.info( " CPD (Barr): no input file chosen")
                     return
                 if "Files" not in cf:
                     cf["Files"] = {}
                 cf["Files"]["file_path"] = os.path.join(os.path.split(filename)[0],"")
                 in_filename = os.path.split(filename)[1]
                 cf["Files"]["in_filename"] = in_filename
-                cf["Files"]["out_filename"] = in_filename.replace(".nc", "_CPD2.xls")
+                cf["Files"]["out_filename"] = in_filename.replace(".nc", "_CPD_Barr.xls")
             else:
                 cf = pfp_io.load_controlfile(path="controlfiles")
                 if len(cf) == 0:
@@ -922,20 +935,24 @@ def do_utilities_ustar_cpd2(mode="standard"):
             cf = pfp_io.load_controlfile(path='controlfiles')
             if len(cf) == 0:
                 return
-        logger.info("Doing u* threshold detection (CPD2)")
+        logger.info("Doing CPD u* threshold detection (Barr)")
         pfp_cpd2.cpd2_main(cf)
-        logger.info(" Finished u* threshold detection (CPD2)")
+        logger.info(" Finished CPD u* threshold detection (Barr)")
         logger.info("")
     except Exception:
-        error_message = " An error occured while doing CPD2 u* threshold, see below for details ..."
+        error_message = " An error occured while doing CPD2 u* threshold (Barr), see below for details ..."
         logger.error(error_message)
         error_message = traceback.format_exc()
         logger.error(error_message)
     return
 def do_utilities_ustar_mpt(mode="standard"):
     """
-    Calls pfp_mpt.mpt_main
-    Calculate the u* threshold using the Moving Point Threshold (MPT) method.
+    Purpose:
+     Calculate the u* threshold using the Moving Point Threshold (MPT) method.
+     This code calls the original FluxNet MPT C code.  The executable for this is
+     in PyFluxPro/mpt/bin.
+    Side effects:
+     Calls pfp_mpt.mpt_main
     """
     try:
         logger.info(" Starting u* threshold detection (MPT)")

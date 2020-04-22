@@ -188,8 +188,8 @@ def get_rangecheck_limit(cf,label,upr_def=1E10,lwr_def=-1E10):
     for section in ['Variables']:
         if label in cf[section].keys():
             if 'RangeCheck' in cf[section][label].keys():
-                upper = float(cf[section][label]['RangeCheck']['Upper'])
-                lower = float(cf[section][label]['RangeCheck']['Lower'])
+                upper = float(cf[section][label]['RangeCheck']['upper'])
+                lower = float(cf[section][label]['RangeCheck']['lower'])
     return upper,lower
 
 def get_formatstring(cf,label,fmt_def=''):

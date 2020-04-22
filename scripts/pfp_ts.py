@@ -4,20 +4,14 @@ import copy
 import datetime
 import inspect
 import logging
-import os
-import sys
-import time
 # 3d party
 import numpy
 from matplotlib.dates import date2num
-from matplotlib.mlab import griddata
-from scipy import interpolate, signal
-import xlrd
-import xlwt
+from scipy import interpolate
 # PFP
 import constants as c
 import meteorologicalfunctions as pfp_mf
-import pfp_ck
+import pfp_cfg
 import pfp_func
 import pfp_io
 import pfp_utils
@@ -62,98 +56,6 @@ def ApplyLinear(cf,ds,ThisOne):
             index = numpy.where(flag[si:ei]==0)[0]
             flag[si:ei][index] = numpy.int32(10)
             ds.series[ThisOne]['Data'] = numpy.ma.filled(data,float(c.missing_value)).astype(numpy.float64)
-            ds.series[ThisOne]['Flag'] = flag
-
-def ApplyLinearDrift(cf,ds,ThisOne):
-    """
-        Applies a linear correction to variable passed from pfp_ls. The slope is
-        interpolated for each 30-min period between the starting value at time 0
-        and the ending value at time 1.  Slope0, Slope1 and Offset are defined
-        in the control file.  This function applies to a dataset in which the
-        start and end times in the control file are matched by the time period
-        in the dataset.
-
-        Usage pfp_ts.ApplyLinearDrift(cf,ds,x)
-        cf: control file
-        ds: data structure
-        x: input/output variable in ds.  Example: 'Cc_7500_Av'
-        """
-    if ThisOne not in ds.series.keys(): return
-    if pfp_utils.incf(cf,ThisOne) and pfp_utils.haskey(cf,ThisOne,'Drift'):
-        logger.info('  Applying linear drift correction to '+ThisOne)
-        data = numpy.ma.masked_where(ds.series[ThisOne]['Data']==float(c.missing_value),ds.series[ThisOne]['Data'])
-        flag = ds.series[ThisOne]['Flag']
-        ldt = ds.series['DateTime']['Data']
-        DriftList = cf['Variables'][ThisOne]['Drift'].keys()
-        for i in range(len(DriftList)):
-            DriftItemList = ast.literal_eval(cf['Variables'][ThisOne]['Drift'][str(i)])
-            try:
-                dt = datetime.datetime.strptime(DriftItemList[0],'%Y-%m-%d %H:%M')
-                si = pfp_utils.find_nearest_value(ldt, dt)
-            except ValueError:
-                si = 0
-            try:
-                dt = datetime.datetime.strptime(DriftItemList[1],'%Y-%m-%d %H:%M') + 1
-                ei = pfp_utils.find_nearest_value(ldt, dt)
-            except ValueError:
-                ei = -1
-            Slope = numpy.zeros(len(data))
-            Slope0 = float(DriftItemList[2])
-            Slope1 = float(DriftItemList[3])
-            Offset = float(DriftItemList[4])
-            nRecs = len(Slope[si:ei])
-            for i in range(nRecs):
-                ssi = si + i
-                Slope[ssi] = ((((Slope1 - Slope0) / nRecs) * i) + Slope0)
-            data[si:ei] = Slope[si:ei] * data[si:ei] + Offset
-            flag[si:ei] = 10
-            ds.series[ThisOne]['Data'] = numpy.ma.filled(data,float(c.missing_value))
-            ds.series[ThisOne]['Flag'] = flag
-
-def ApplyLinearDriftLocal(cf,ds,ThisOne):
-    """
-        Applies a linear correction to variable passed from pfp_ls. The slope is
-        interpolated since the starting value at time 0 using a known 30-min
-        increment.  Slope0, SlopeIncrement and Offset are defined in the control
-        file.  This function applies to a dataset in which the start time in the
-        control file is matched by dataset start time, but in which the end time
-        in the control file extends beyond the dataset end.
-
-        Usage pfp_ts.ApplyLinearDriftLocal(cf,ds,x)
-        cf: control file
-        ds: data structure
-        x: input/output variable in ds.  Example: 'Cc_7500_Av'
-        """
-    if ThisOne not in ds.series.keys(): return
-    if pfp_utils.incf(cf,ThisOne) and pfp_utils.haskey(cf,ThisOne,'LocalDrift'):
-        logger.info('  Applying linear drift correction to '+ThisOne)
-        data = numpy.ma.masked_where(ds.series[ThisOne]['Data']==float(c.missing_value),ds.series[ThisOne]['Data'])
-        flag = ds.series[ThisOne]['Flag']
-        ldt = ds.series['DateTime']['Data']
-        DriftList = cf['Variables'][ThisOne]['LocalDrift'].keys()
-        for i in range(len(DriftList)):
-            DriftItemList = ast.literal_eval(cf['Variables'][ThisOne]['LocalDrift'][str(i)])
-            try:
-                dt = datetime.datetime.strptime(DriftItemList[0],'%Y-%m-%d %H:%M')
-                si = pfp_utils.find_nearest_value(ldt, dt)
-            except ValueError:
-                si = 0
-            try:
-                dt = datetime.datetime.strptime(DriftItemList[1],'%Y-%m-%d %H:%M') + 1
-                ei = pfp_utils.find_nearest_value(ldt, dt)
-            except ValueError:
-                ei = -1
-            Slope = numpy.zeros(len(data))
-            Slope0 = float(DriftItemList[2])
-            SlopeIncrement = float(DriftItemList[3])
-            Offset = float(DriftItemList[4])
-            nRecs = len(Slope[si:ei])
-            for i in range(nRecs):
-                ssi = si + i
-                Slope[ssi] = (SlopeIncrement * i) + Slope0
-            data[si:ei] = Slope[si:ei] * data[si:ei] + Offset
-            flag[si:ei] = numpy.int32(10)
-            ds.series[ThisOne]['Data'] = numpy.ma.filled(data,float(c.missing_value))
             ds.series[ThisOne]['Flag'] = flag
 
 def AverageSeriesByElements(cf,ds,Av_out):
@@ -1344,7 +1246,7 @@ def CorrectIndividualFgForStorage(cf,ds):
     if pfp_utils.cfkeycheck(cf,Base='FunctionArgs',ThisOne='CFgArgs'):
         List = cf['FunctionArgs']['CFgArgs'].keys()
         for i in range(len(List)):
-            CFgArgs = ast.literal_eval(cf['FunctionArgs']['CFgArgs'][str(i)])
+            CFgArgs = pfp_cfg.cfg_string_to_list(cf['FunctionArgs']['CFgArgs'][str(i)])
             CorrectFgForStorage(cf,ds,Fg_out=CFgArgs[0],Fg_in=CFgArgs[1],Ts_in=CFgArgs[2],Sws_in=CFgArgs[3])
         return
 
@@ -1493,14 +1395,14 @@ def CorrectSWC(cf,ds):
     nRecs = int(ds.globalattributes["nc_nrecs"])
     zeros = numpy.zeros(nRecs,dtype=numpy.int32)
     ones = numpy.ones(nRecs,dtype=numpy.int32)
-    SWCempList = ast.literal_eval(cf['Soil']['empSWCin'])
-    SWCoutList = ast.literal_eval(cf['Soil']['empSWCout'])
-    SWCattr = ast.literal_eval(cf['Soil']['SWCattr'])
+    SWCempList = pfp_cfg.cfg_string_to_list(cf['Soil']['empSWCin'])
+    SWCoutList = pfp_cfg.cfg_string_to_list(cf['Soil']['empSWCout'])
+    SWCattr = pfp_cfg.cfg_string_to_list(cf['Soil']['SWCattr'])
     if cf['Soil']['TDR']=='Yes':
-        TDRempList = ast.literal_eval(cf['Soil']['empTDRin'])
-        TDRoutList = ast.literal_eval(cf['Soil']['empTDRout'])
-        TDRlinList = ast.literal_eval(cf['Soil']['linTDRin'])
-        TDRattr = ast.literal_eval(cf['Soil']['TDRattr'])
+        TDRempList = pfp_cfg.cfg_string_to_list(cf['Soil']['empTDRin'])
+        TDRoutList = pfp_cfg.cfg_string_to_list(cf['Soil']['empTDRout'])
+        TDRlinList = pfp_cfg.cfg_string_to_list(cf['Soil']['linTDRin'])
+        TDRattr = pfp_cfg.cfg_string_to_list(cf['Soil']['TDRattr'])
         TDR_a0 = float(cf['Soil']['TDR_a0'])
         TDR_a1 = float(cf['Soil']['TDR_a1'])
         TDR_b0 = float(cf['Soil']['TDR_b0'])
@@ -2861,11 +2763,11 @@ def ReplaceOnDiff(cf,ds,series=''):
                         if 'Transform' in cf['Variables'][ThisOne]['ReplaceOnDiff'][Alt].keys():
                             AltDateTime = ds_alt[n].series['DateTime']['Data']
                             AltSeriesData = ds_alt[n].series[alt_varname]['Data']
-                            TList = ast.literal_eval(cf['Variables'][ThisOne]['ReplaceOnDiff'][Alt]['Transform'])
+                            TList = pfp_cfg.cfg_string_to_list(cf['Variables'][ThisOne]['ReplaceOnDiff'][Alt]['Transform'])
                             for TListEntry in TList:
                                 TransformAlternate(TListEntry,AltDateTime,AltSeriesData,ts=ts)
                         if 'Range' in cf['Variables'][ThisOne]['ReplaceOnDiff'][Alt].keys():
-                            RList = ast.literal_eval(cf['Variables'][ThisOne]['ReplaceOnDiff'][Alt]['Range'])
+                            RList = pfp_cfg.cfg_string_to_list(cf['Variables'][ThisOne]['ReplaceOnDiff'][Alt]['Range'])
                             for RListEntry in RList:
                                 ReplaceWhenDiffExceedsRange(ds.series['DateTime']['Data'],ds.series[ThisOne],
                                                             ds.series[ThisOne],ds_alt[n].series[alt_varname],
@@ -2873,7 +2775,7 @@ def ReplaceOnDiff(cf,ds,series=''):
                     elif 'AltVarName' in cf['Variables'][ThisOne]['ReplaceOnDiff'][Alt].keys():
                         alt_varname = ThisOne
                         if 'Range' in cf['Variables'][ThisOne]['ReplaceOnDiff'][Alt].keys():
-                            RList = ast.literal_eval(cf['Variables'][ThisOne]['ReplaceOnDiff'][Alt]['Range'])
+                            RList = pfp_cfg.cfg_string_to_list(cf['Variables'][ThisOne]['ReplaceOnDiff'][Alt]['Range'])
                             for RListEntry in RList:
                                 ReplaceWhenDiffExceedsRange(ds.series['DateTime']['Data'],ds.series[ThisOne],
                                                             ds.series[ThisOne],ds.series[alt_varname],

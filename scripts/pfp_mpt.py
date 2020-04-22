@@ -58,7 +58,7 @@ def get_bootstrap_results(contents):
         n = n + 2
     return bootstrap_results
 
-def make_data_array(ds, current_year):
+def make_data_array(cf, ds, current_year):
     ldt = pfp_utils.GetVariable(ds, "DateTime")
     nrecs = int(ds.globalattributes["nc_nrecs"])
     ts = int(ds.globalattributes["time_step"])
@@ -66,12 +66,14 @@ def make_data_array(ds, current_year):
     end = datetime.datetime(current_year+1, 1, 1, 0, 0, 0)
     cdt = numpy.array([dt for dt in pfp_utils.perdelta(start, end, datetime.timedelta(minutes=ts))])
     mt = numpy.ones(len(cdt))*float(-9999)
-    data = numpy.stack([cdt, mt, mt, mt, mt, mt, mt, mt], axis=-1)
+    mt_list = [cdt] + [mt for n in cf["Variables"].keys()]
+    data = numpy.stack(mt_list, axis=-1)
     si = pfp_utils.GetDateIndex(ldt["Data"], start, default=0)
     ei = pfp_utils.GetDateIndex(ldt["Data"], end, default=nrecs)
     dt = pfp_utils.GetVariable(ds, "DateTime", start=si, end=ei)
     idx1, idx2 = pfp_utils.FindMatchingIndices(cdt, dt["Data"])
-    for n, label in enumerate(["Fc", "VPD", "ustar", "Ta", "Fsd", "Fh", "Fe"]):
+    for n, cf_label in enumerate(cf["Variables"].keys()):
+        label = cf["Variables"][cf_label]["name"]
         var = pfp_utils.GetVariable(ds, label, start=si, end=ei)
         data[idx1,n+1] = var["Data"]
     # convert datetime to ISO dates
@@ -83,7 +85,7 @@ def mpt_main(cf):
     nc_file_name = cf["Files"]["in_filename"]
     nc_file_path = os.path.join(base_file_path, nc_file_name)
     ds = pfp_io.nc_read_series(nc_file_path)
-    out_file_paths = run_mpt_code(ds, nc_file_name)
+    out_file_paths = run_mpt_code(cf, ds, nc_file_name)
     if len(out_file_paths) == 0:
         return
     ustar_results = read_mpt_output(out_file_paths)
@@ -91,7 +93,7 @@ def mpt_main(cf):
     xl_write_mpt(mpt_file_path, ustar_results)
     return
 
-def run_mpt_code(ds, nc_file_name):
+def run_mpt_code(cf, ds, nc_file_name):
     """
     Purpose:
      Runs the MPT u* threshold detection code for each year in the data set.
@@ -105,6 +107,13 @@ def run_mpt_code(ds, nc_file_name):
     # set up file paths, headers and formats etc
     out_file_paths = {}
     header = "TIMESTAMP,NEE,VPD,USTAR,TA,SW_IN,H,LE"
+    # check that all variables listed in the header are defined in the control file
+    labels = cf["Variables"].keys()
+    for label in labels:
+        if label not in header:
+            msg = " MPT: variable " + label + " not defined in control file, skipping MPT ..."
+            logger.error(msg)
+            return out_file_paths
     fmt = "%12i,%f,%f,%f,%f,%f,%f,%f"
     log_file_path = os.path.join("mpt", "log", "mpt.log")
     mptlogfile = open(log_file_path, "wb")
@@ -129,7 +138,7 @@ def run_mpt_code(ds, nc_file_name):
         in_name = nc_file_name.replace(".nc","_"+str(year)+"_MPT.csv")
         in_full_path = os.path.join(in_base_path, in_name)
         out_full_path = in_full_path.replace("input", "output").replace(".csv", "_ut.txt")
-        data = make_data_array(ds, year)
+        data = make_data_array(cf, ds, year)
         numpy.savetxt(in_full_path, data, header=header, delimiter=",", comments="", fmt=fmt)
         ustar_mp_exe = os.path.join(".", "mpt", "bin", "ustar_mp")
         if ts == 30:

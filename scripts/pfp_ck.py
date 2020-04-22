@@ -827,14 +827,9 @@ def do_li7500acheck(cf,ds):
             pass
 
 def do_linear(cf,ds):
-    level = ds.globalattributes['nc_level']
     for ThisOne in cf['Variables'].keys():
         if pfp_utils.haskey(cf,ThisOne,'Linear'):
             pfp_ts.ApplyLinear(cf,ds,ThisOne)
-        if pfp_utils.haskey(cf,ThisOne,'Drift'):
-            pfp_ts.ApplyLinearDrift(cf,ds,ThisOne)
-        if pfp_utils.haskey(cf,ThisOne,'LocalDrift'):
-            pfp_ts.ApplyLinearDriftLocal(cf,ds,ThisOne)
 
 def parse_rangecheck_limit(s):
     """
@@ -896,7 +891,7 @@ def do_rangecheck(cf, ds, section, series, code=2):
         return
     valid_upper = numpy.max(upr)
     upr = upr[month - 1]
-    lower = cf[section][series]['RangeCheck']['Lower']
+    lower = cf[section][series]['RangeCheck']['lower']
     lwr = numpy.array(parse_rangecheck_limit(lower))
     if len(lwr) != 12:
         msg = " Need 12 'lower' values, got "+str(len(lwr))+" for "+series

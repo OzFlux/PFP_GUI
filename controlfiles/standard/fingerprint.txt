@@ -1,83 +1,83 @@
 level = fingerprint
 [Variables]
     [[Fsd]]
-        nc_varname = Fsd
+        name = Fsd
         lower = -10
         upper = 1200
     [[Ta]]
-        nc_varname = Ta
+        name = Ta
         lower = -10
         upper = 50
     [[Fa]]
-        nc_varname = Fa
+        name = Fa
         lower = -200
         upper = 1000
     [[Fe]]
-        nc_varname = Fe
+        name = Fe
         lower = -200
         upper = 600
     [[Fc]]
-        nc_varname = Fc
+        name = Fc
         lower = -40
         upper = 20
     [[Fsu]]
-        nc_varname = Fsu
+        name = Fsu
         lower = -10
         upper = 750
     [[Fld]]
-        nc_varname = Fld
+        name = Fld
         lower = 150
         upper = 600
     [[Flu]]
-        nc_varname = Flu
+        name = Flu
         lower = 200
         upper = 800
     [[Fn]]
-        nc_varname = Fn
+        name = Fn
         lower = -200
         upper = 1000
     [[H2O]]
-        nc_varname = Ah
+        name = Ah
         lower = 0
         upper = 40
     [[CO2]]
-        nc_varname = CO2
+        name = CO2
         lower = 300
         upper = 900
     [[Ws]]
-        nc_varname = Ws
+        name = Ws
         lower = 0
         upper = 15
     [[Wd]]
-        nc_varname = Wd
+        name = Wd
         lower = 0
         upper = 360
     [[ustar]]
-        nc_varname = ustar
+        name = ustar
         lower = 0
         upper = 2.0
     [[Fh]]
-        nc_varname = Fh
+        name = Fh
         lower = -150
         upper = 800
     [[Fg]]
-        nc_varname = Fg
+        name = Fg
         lower = -300
         upper = 450
     [[Ts]]
-        nc_varname = Ts
+        name = Ts
         lower = -10
         upper = 60
     [[Sws]]
-        nc_varname = Sws
+        name = Sws
         lower = 0
         upper = 0.6
     [[Precip]]
-        nc_varname = Precip
+        name = Precip
         lower = 0
         upper = 20
     [[ps]]
-        nc_varname = ps
+        name = ps
         lower = 80
         upper = 105
 [Plots]

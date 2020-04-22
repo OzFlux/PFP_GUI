@@ -3,7 +3,6 @@ level = nc2csv_fluxnet
     file_path = ../Sites/<site_name>/Data/Processed/<year>/
     in_filename = <site_name>_<year>_L3.nc
     out_filename = <site_name>_<year>_FluxNet.csv
-
 [General]
     CanopyHeight = 
     DataPolicy = OzFlux (http://data.ozflux.org.au/portal/site/licenceinfo.jspx)
@@ -25,68 +24,67 @@ level = nc2csv_fluxnet
     TS1Depth = <TS1_depth>
     start_datetime = <year>-<month>-<day> <hour>:<minute>
     end_datetime = <year>-<month>-<day> <hour>:<minute>
-
 [Variables]
     [[FC]]
-        ncname = Fc
+        name = Fc
         format = 0.00
     [[CO2]]
-        ncname = Cc
+        name = Cc
         format = 0.0
     [[ust]]
-        ncname = ustar
+        name = ustar
         format = 0.00
     [[RG_in]]
-        ncname = Fsd
+        name = Fsd
         format = 0
     [[TA]]
-        ncname = Ta
+        name = Ta
         format = 0.00
     [[H2O]]
-        ncname = Ah
+        name = Ah
         format = 0.00
     [[LE]]
-        ncname = Fe
+        name = Fe
         format = 0
     [[H]]
-        ncname = Fh
+        name = Fh
         format = 0
     [[G1]]
-        ncname = Fg
+        name = Fg
         format = 0
     [[PRECIP]]
-        ncname = Precip
+        name = Precip
         format = 0.00
     [[SWC1]]
-        ncname = Sws
+        name = Sws
         format = 0.000
     [[TS1]]
-        ncname = Ts
+        name = Ts
         format = 0.00
     [[RNET]]
-        ncname = Fn
+        name = Fn
         format = 0
     [[SWin]]
-        ncname = Fsd
+        name = Fsd
         format = 0
     [[SWout]]
-        ncname = Fsu
+        name = Fsu
         format = 0
     [[LWin]]
-        ncname = Fld
+        name = Fld
         format = 0
     [[LWout]]
-        ncname = Flu
+        name = Flu
         format = 0
     [[WD]]
-        ncname = Wd
+        name = Wd
         format = 0
     [[WS]]
-        ncname = Ws
+        name = Ws
         format = 0.00
     [[PA]]
-        ncname = ps
+        name = ps
         format = 0.00
     [[RH]]
-        ncname = RH
+        name = RH
         format = 0

@@ -4,10 +4,10 @@
 
 [Variables]
     [[Fc]]
-        AltVarName = Fc
+        name = Fc
     [[Ta]]
-        AltVarName = Ta
+        name = Ta
     [[ustar]]
-        AltVarName = ustar
+        name = ustar
     [[Fsd]]
-        AltVarName = Fsd
+        name = Fsd

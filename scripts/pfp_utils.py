@@ -1561,37 +1561,6 @@ def GetAverageSeriesKeys(cf, label, section="Variables"):
         logger.error()
     return src_list
 
-def GetAltName(cf,ds,ThisOne):
-    '''
-    Check to see if the specified variable name is in the data structure (ds).
-    If it is, return the variable name unchanged.
-    If it isn't, check the control file to see if an alternate name has been specified
-     and return the alternate name if one exists.
-    '''
-    if ThisOne not in ds.series.keys():
-        if ThisOne in cf['Variables'].keys():
-            ThisOne = cf['Variables'][ThisOne]['AltVarName']
-            if ThisOne not in ds.series.keys():
-                logger.error('GetAltName: alternate variable name not in ds')
-        else:
-            logger.error('GetAltName: cant find ',ThisOne,' in ds or control file')
-    return ThisOne
-
-def GetAltNameFromCF(cf,ThisOne):
-    '''
-    Get an alternate variable name from the control file.
-    '''
-    if ThisOne in cf['Variables'].keys():
-        if 'AltVarName' in cf['Variables'][ThisOne].keys():
-            ThisOne = str(cf['Variables'][ThisOne]['AltVarName'])
-        else:
-            msg = 'GetAltNameFromCF: AltVarName key not in control file for '+str(ThisOne)
-            logger.warning(msg)
-    else:
-        msg = 'GetAltNameFromCF: '+str(ThisOne)+' not in control file'
-        logger.warning(msg)
-    return ThisOne
-
 def GetAttributeDictionary(ds,ThisOne):
     attr = {}
     # if series ThisOne is in the data structure
@@ -1621,15 +1590,15 @@ def GetRangesFromCF(cf,ThisOne,mode="verbose"):
     Get lower and upper range limits from the control file.
     '''
     if ThisOne in cf['Variables'].keys():
-        if 'Lower' in cf['Variables'][ThisOne].keys():
-            lower = float(cf['Variables'][ThisOne]['Lower'])
+        if 'lower' in cf['Variables'][ThisOne].keys():
+            lower = float(cf['Variables'][ThisOne]['lower'])
         else:
             if mode.lower()!="quiet":
                 msg = "GetRangesFromCF: Lower key not in control file for "+str(ThisOne)
                 logger.info(msg)
             lower = None
-        if 'Upper' in cf['Variables'][ThisOne].keys():
-            upper = float(cf['Variables'][ThisOne]['Upper'])
+        if 'upper' in cf['Variables'][ThisOne].keys():
+            upper = float(cf['Variables'][ThisOne]['upper'])
         else:
             if mode.lower()!="quiet":
                 msg = "GetRangesFromCF: Upper key not in control file for "+str(ThisOne)
