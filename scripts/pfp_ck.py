@@ -363,7 +363,7 @@ def do_dependencycheck(cf, ds, section, series, code=23, mode="quiet"):
             return
     if "DependencyCheck" not in cf[section][series].keys():
         return
-    if "Source" not in cf[section][series]["DependencyCheck"]:
+    if "source" not in cf[section][series]["DependencyCheck"]:
         msg = " DependencyCheck: keyword Source not found for series " + series + ", skipping ..."
         logger.error(msg)
         return
