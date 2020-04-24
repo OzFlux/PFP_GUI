@@ -1129,7 +1129,7 @@ def CorrectFcForStorage(cf,ds,Fc_out='Fc',Fc_in='Fc',Fc_storage_in='Fc_single'):
     apply_storage = {}
     for label in cf["Variables"].keys():
         if "ApplyFcStorage" in cf["Variables"][label]:
-            source = str(cf["Variables"][label]["ApplyFcStorage"]["Source"])
+            source = str(cf["Variables"][label]["ApplyFcStorage"]["source"])
             apply_storage[label] = source
     # if no individual series have been specified, do the default
     if len(apply_storage.keys()) == 0:

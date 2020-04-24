@@ -1762,7 +1762,7 @@ def rpMergeSeries_createdict(cf, ds, l6_info, label, called_by):
     # output series name
     l6_info[called_by]["standard"][label]["output"] = label
     # source
-    opt = pfp_utils.get_keyvaluefromcf(cf, ["EcosystemRespiration", label, "MergeSeries"], "Source", default="ER,ER_SOLO_all")
+    opt = pfp_utils.get_keyvaluefromcf(cf, ["EcosystemRespiration", label, "MergeSeries"], "source", default="ER,ER_SOLO_all")
     sources = pfp_cfg.cfg_string_to_list(opt)
     l6_info[called_by]["standard"][label]["source"] = sources
     # create an empty series in ds if the output series doesn't exist yet
