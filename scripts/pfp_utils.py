@@ -1480,18 +1480,18 @@ def GetRangesFromCF(cf,ThisOne,mode="verbose"):
     Get lower and upper range limits from the control file.
     '''
     if ThisOne in cf['Variables'].keys():
-        if 'Lower' in cf['Variables'][ThisOne].keys():
-            lower = float(cf['Variables'][ThisOne]['Lower'])
+        if 'lower' in cf['Variables'][ThisOne].keys():
+            lower = float(cf['Variables'][ThisOne]['lower'])
         else:
             if mode.lower()!="quiet":
-                msg = "GetRangesFromCF: Lower key not in control file for "+str(ThisOne)
+                msg = "GetRangesFromCF: lower key not in control file for "+str(ThisOne)
                 logger.info(msg)
             lower = None
-        if 'Upper' in cf['Variables'][ThisOne].keys():
-            upper = float(cf['Variables'][ThisOne]['Upper'])
+        if 'upper' in cf['Variables'][ThisOne].keys():
+            upper = float(cf['Variables'][ThisOne]['upper'])
         else:
             if mode.lower()!="quiet":
-                msg = "GetRangesFromCF: Upper key not in control file for "+str(ThisOne)
+                msg = "GetRangesFromCF: upper key not in control file for "+str(ThisOne)
                 logger.info(msg)
             upper = None
     else:

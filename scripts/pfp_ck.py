@@ -18,7 +18,7 @@ logger = logging.getLogger("pfp_log")
 def ApplyQCChecks(variable):
     """
     Purpose:
-     Apply the QC checks speified in the control file object to a single variable
+     Apply the QC checks specified in the control file object to a single variable
     Usage:
      pfp_ck.ApplyQCChecks(variable)
      where variable is a variable dictionary as returned by pfp_utils.GetVariable()
@@ -399,15 +399,15 @@ def do_dependencycheck(cf, ds, section, series, code=23, mode="quiet"):
             return
     if "DependencyCheck" not in cf[section][series].keys():
         return
-    if "Source" not in cf[section][series]["DependencyCheck"]:
-        msg = " DependencyCheck: keyword Source not found for series "+series+", skipping ..."
+    if "source" not in cf[section][series]["DependencyCheck"]:
+        msg = " DependencyCheck: keyword source not found for series "+series+", skipping ..."
         logger.error(msg)
         return
     if mode=="verbose":
         msg = " Doing DependencyCheck for "+series
         logger.info(msg)
     # get the precursor source list from the control file
-    source_string = cf[section][series]["DependencyCheck"]["Source"]
+    source_string = cf[section][series]["DependencyCheck"]["source"]
     if "," in source_string:
         source_list = source_string.split(",")
     else:
@@ -574,7 +574,7 @@ def do_EPQCFlagCheck(cf,ds,section,series,code=9):
     if 'EPQCFlagCheck' not in cf[section][series].keys(): return
     nRecs = int(ds.globalattributes["nc_nrecs"])
     flag = numpy.zeros(nRecs, dtype=numpy.int32)
-    source_list = ast.literal_eval(cf[section][series]['EPQCFlagCheck']["Source"])
+    source_list = ast.literal_eval(cf[section][series]['EPQCFlagCheck']["source"])
     reject_list = ast.literal_eval(cf[section][series]['EPQCFlagCheck']["Reject"])
     variable = pfp_utils.GetVariable(ds, series)
     for source in source_list:
@@ -853,7 +853,7 @@ def do_linear(cf,ds):
 def parse_rangecheck_limit(s):
     """
     Purpose:
-     Parse the RangeCheck Upper or Lower value string.
+     Parse the RangeCheck upper or lower value string.
      Valid string formats are;
       '100'
       '[100]*12'
@@ -893,8 +893,8 @@ def do_rangecheck(cf, ds, section, series, code=2):
     if 'RangeCheck' not in cf[section][series].keys():
         return
     # check that the upper and lower limits have been given
-    if ("Lower" not in cf[section][series]["RangeCheck"].keys() or
-        "Upper" not in cf[section][series]["RangeCheck"].keys()):
+    if ("lower" not in cf[section][series]["RangeCheck"].keys() or
+        "upper" not in cf[section][series]["RangeCheck"].keys()):
         msg = "RangeCheck: key not found in control file for "+series+", skipping ..."
         logger.warning(msg)
         return
@@ -902,18 +902,18 @@ def do_rangecheck(cf, ds, section, series, code=2):
     ldt = pfp_utils.GetVariable(ds, "DateTime")
     month = numpy.array([d.month for d in ldt["Data"]])
     # get the upper and lower limits
-    upper = cf[section][series]['RangeCheck']['Upper']
+    upper = cf[section][series]['RangeCheck']['upper']
     upr = numpy.array(parse_rangecheck_limit(upper))
     if len(upr) != 12:
-        msg = " Need 12 'Upper' values, got "+str(len(upr))+" for "+series
+        msg = " Need 12 'upper' values, got "+str(len(upr))+" for "+series
         logger.error(msg)
         return
     valid_upper = numpy.max(upr)
     upr = upr[month - 1]
-    lower = cf[section][series]['RangeCheck']['Lower']
+    lower = cf[section][series]['RangeCheck']['lower']
     lwr = numpy.array(parse_rangecheck_limit(lower))
     if len(lwr) != 12:
-        msg = " Need 12 'Lower' values, got "+str(len(lwr))+" for "+series
+        msg = " Need 12 'lower' values, got "+str(len(lwr))+" for "+series
         logger.error(msg)
         return
     valid_lower = numpy.min(lwr)
@@ -928,8 +928,8 @@ def do_rangecheck(cf, ds, section, series, code=2):
     data[idx] = numpy.float64(c.missing_value)
     flag[idx] = numpy.int32(code)
     # update the variable attributes
-    attr["rangecheck_lower"] = cf[section][series]["RangeCheck"]["Lower"]
-    attr["rangecheck_upper"] = cf[section][series]["RangeCheck"]["Upper"]
+    attr["rangecheck_lower"] = cf[section][series]["RangeCheck"]["lower"]
+    attr["rangecheck_upper"] = cf[section][series]["RangeCheck"]["upper"]
     attr["valid_range"] = str(valid_lower)+","+str(valid_upper)
     # and now put the data back into the data structure
     pfp_utils.CreateSeries(ds, series, data, Flag=flag, Attr=attr)
@@ -1130,8 +1130,8 @@ def UpdateVariableAttributes_QC(cf, variable):
         return
     if "RangeCheck" not in cf[section][label]:
         return
-    if "Lower" in cf[section][label]["RangeCheck"]:
-        variable["Attr"]["rangecheck_lower"] = cf[section][label]["RangeCheck"]["Lower"]
-    if "Upper" in cf[section][label]["RangeCheck"]:
-        variable["Attr"]["rangecheck_upper"] = cf[section][label]["RangeCheck"]["Upper"]
+    if "lower" in cf[section][label]["RangeCheck"]:
+        variable["Attr"]["rangecheck_lower"] = cf[section][label]["RangeCheck"]["lower"]
+    if "upper" in cf[section][label]["RangeCheck"]:
+        variable["Attr"]["rangecheck_upper"] = cf[section][label]["RangeCheck"]["upper"]
     return

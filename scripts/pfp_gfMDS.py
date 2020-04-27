@@ -289,10 +289,14 @@ def gfMDS_plot(pd, ds, mds_label, l5_info, called_by):
     Author: PRI
     Date: Back in the day
     """
+    # get the timestep
     ts = int(ds.globalattributes["time_step"])
+    # get a local copy of the datetime series
+    xdt = ds.series["DateTime"]["Data"]
+    Hdh = numpy.array([d.hour+(d.minute+d.second/float(60))/float(60) for d in xdt])
+    # get the observed and modelled values
     drivers = l5_info[called_by]["outputs"][mds_label]["drivers"]
     target = l5_info[called_by]["outputs"][mds_label]["target"]
-    Hdh = pfp_utils.GetVariable(ds, "Hdh")
     obs = pfp_utils.GetVariable(ds, target)
     mds = pfp_utils.GetVariable(ds, mds_label)
     if pd["show_plots"]:
@@ -314,10 +318,10 @@ def gfMDS_plot(pd, ds, mds_label, l5_info, called_by):
     # get the diurnal stats of the observations
     mask = numpy.ma.mask_or(obs["Data"].mask, mds["Data"].mask)
     obs_mor = numpy.ma.array(obs["Data"], mask=mask)
-    _, Hr1, Av1, _, _, _ = gf_getdiurnalstats(Hdh["Data"], obs_mor, ts)
+    _, Hr1, Av1, _, _, _ = gf_getdiurnalstats(Hdh, obs_mor, ts)
     ax1.plot(Hr1, Av1, 'b-', label="Obs")
     # get the diurnal stats of all SOLO predictions
-    _, Hr2, Av2, _, _, _ = gf_getdiurnalstats(Hdh["Data"], mds["Data"], ts)
+    _, Hr2, Av2, _, _, _ = gf_getdiurnalstats(Hdh, mds["Data"], ts)
     ax1.plot(Hr2, Av2, 'r-', label="MDS")
     plt.xlim(0, 24)
     plt.xticks([0, 6, 12, 18, 24])
