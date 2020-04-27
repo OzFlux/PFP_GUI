@@ -2034,7 +2034,7 @@ def get_datetime(cf, ds):
     Date: August 2018
     """
     if "xlDateTime" in ds.series.keys():
-        get_datetime_from_xldate(ds)
+        get_datetime_from_xldatetime(ds)
     elif "DateTime" in cf["Variables"].keys():
         if "Function" in cf["Variables"]["DateTime"]:
             # call the function given in the control file to convert the date/time string to a datetime object
@@ -2081,7 +2081,7 @@ def get_datetime_from_excel_date(values, xl_datemode):
     dt = [base_date + datetime.timedelta(days=xl_date[i]) for i in range(len(values))]
     return dt
 
-def get_datetime_from_xldate(ds):
+def get_datetime_from_xldatetime(ds):
     ''' Creates a series of Python datetime objects from the Excel date read from the Excel file.
         Thanks to John Machin for the quick and dirty code
          see http://stackoverflow.com/questions/1108428/how-do-i-read-a-date-in-excel-format-in-python'''
@@ -2100,6 +2100,31 @@ def get_datetime_from_xldate(ds):
     ds.series['DateTime']['Attr'] = {}
     ds.series['DateTime']['Attr']['long_name'] = 'Datetime in local timezone'
     ds.series['DateTime']['Attr']['units'] = 'None'
+
+def get_datetime_from_ymdhms(ds):
+    ''' Creates a series of Python datetime objects from the year, month,
+    day, hour, minute and second series stored in the netCDF file.'''
+    SeriesList = ds.series.keys()
+    if ('Year' not in SeriesList or 'Month' not in SeriesList or 'Day' not in SeriesList or
+        'Hour' not in SeriesList or 'Minute' not in SeriesList or 'Second' not in SeriesList):
+        logger.info(' get_datetime_from_ymdhms: unable to find all datetime fields required')
+        return
+    logger.info(' Getting the date and time series')
+    #pdb.set_trace()
+    year = ds.series["Year"]["Data"].astype('int')
+    month = ds.series["Month"]["Data"].astype('int')
+    day = ds.series["Day"]["Data"].astype('int')
+    hour = ds.series["Hour"]["Data"].astype('int')
+    minute = ds.series["Minute"]["Data"].astype('int')
+    second = ds.series["Second"]["Data"].astype('int')
+    dt = [datetime.datetime(yr,mn,dy,hr,mi,se) for yr,mn,dy,hr,mi,se in zip(year,month,day,hour,minute,second)]
+    ds.series["DateTime"] = {}
+    ds.series["DateTime"]["Data"] = numpy.array(dt)
+    ds.series["DateTime"]["Flag"] = numpy.zeros(len(dt))
+    ds.series["DateTime"]["Attr"] = {}
+    ds.series["DateTime"]["Attr"]["long_name"] = "Datetime in local timezone"
+    ds.series["DateTime"]["Attr"]["units"] = "None"
+    return
 
 def get_ddoy_from_datetime(dt):
     """ Return the decimal day of the year from a datetime."""

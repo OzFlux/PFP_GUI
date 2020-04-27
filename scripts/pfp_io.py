@@ -801,7 +801,7 @@ def xl2nc(cf,InLevel):
         ds = xl_read_series(cf)
         if ds==0: return 0
         # get a series of Python datetime objects from the Excel datetime
-        pfp_utils.get_datetime_from_xldate(ds)
+        pfp_utils.get_datetime_from_xldatetime(ds)
     # get the netCDF attributes from the control file
     pfp_ts.do_attributes(cf,ds)
     # round the Python datetime to the nearest second
@@ -1615,7 +1615,18 @@ def nc_read_series(ncFullName,checktimestep=True,fixtimestepmethod="round"):
         ds.series[ThisOne]["Attr"] = attr
     ncFile.close()
     # get a series of Python datetime objects
-    pfp_utils.get_datetime_from_nctime(ds)
+    if "time" in ds.series.keys():
+        pfp_utils.get_datetime_from_nctime(ds)
+    elif "xlDateTime" in ds.series.keys():
+        pfp_utils.get_datetime_from_xldatetime(ds)
+    elif (("Year" in ds.series.keys()) and ("Month" in ds.series.keys()) and
+          ("Day" in ds.series.keys()) and ("Hour" in ds.series.keys()) and
+          ("Minute" in ds.series.keys()) and ("Second" in ds.series.keys())):
+        pfp_utils.get_datetime_from_ymdhms(ds)
+    else:
+        msg = " Unable to find datetime variable in netCDF file"
+        logger.error(msg)
+        raise Exception("No datetime in netCDF file")
     # round the Python datetime to the nearest second
     pfp_utils.round_datetime(ds, mode="nearest_second")
     # check the time step and fix it required
