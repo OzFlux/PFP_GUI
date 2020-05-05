@@ -12,6 +12,7 @@ import pfp_cfg
 import pfp_clim
 import pfp_compliance
 import pfp_cpd1
+import pfp_cpd2
 import pfp_io
 import pfp_levels
 import pfp_log
@@ -226,6 +227,29 @@ def do_cpd1_batch(cf_level):
             logger.error(error_message)
             continue
     return
+def do_cpd2_batch(cf_level):
+    logger = pfp_log.change_logger_filename("pfp_log", "cpd2")
+    for i in cf_level.keys():
+        cf_file_name = os.path.split(cf_level[i])
+        msg = "Starting CPD (Barr) with " + cf_file_name[1]
+        logger.info(msg)
+        try:
+            cf = pfp_io.get_controlfilecontents(cf_level[i])
+            if "Options" not in cf:
+                cf["Options"] = {}
+            cf["Options"]["call_mode"] = "batch"
+            cf["Options"]["show_plots"] = "No"
+            pfp_cpd2.cpd2_main(cf)
+            msg = "Finished CPD (Barr) with " + cf_file_name[1]
+            logger.info(msg)
+            logger.info("")
+        except Exception:
+            msg = "Error occurred during CPD (Barr) with " + cf_file_name[1]
+            logger.error(msg)
+            error_message = traceback.format_exc()
+            logger.error(error_message)
+            continue
+    return
 def do_mpt_batch(cf_level):
     logger = pfp_log.change_logger_filename("pfp_log", "mpt")
     for i in cf_level.keys():
@@ -407,7 +431,7 @@ def do_levels_batch(cf_batch):
     processing_levels = ["l1", "l2", "l3",
                          "ecostress", "fluxnet", "reddyproc",
                          "concatenate", "climatology",
-                         "cpd1", "mpt",
+                         "cpd1", "cpd2", "mpt",
                          "l4", "l5", "l6"]
     for level in levels:
         if level.lower() not in processing_levels:
@@ -441,6 +465,9 @@ def do_levels_batch(cf_batch):
         elif level.lower() == "cpd1":
             # ustar threshold from change point detection
             do_cpd1_batch(cf_batch["Levels"][level])
+        elif level.lower() == "cpd2":
+            # ustar threshold from change point detection
+            do_cpd2_batch(cf_batch["Levels"][level])
         elif level.lower() == "mpt":
             # ustar threshold from change point detection
             do_mpt_batch(cf_batch["Levels"][level])
