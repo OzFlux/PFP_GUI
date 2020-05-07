@@ -129,6 +129,34 @@ def gfSOLO_autocomplete(ds, l5_info, called_by):
             if l5s["info"]["call_mode"] == "interactive":
                 gfSOLO_plotcoveragelines(ds, l5_info, called_by)
 
+def gfSOLO_check_drivers(ds, drivers, si, ei):
+    """
+    Purpose:
+     Check drivers and remove any with variance equal to 0.
+    Usage:
+    Comments:
+     This is rather crude and should be replaced by a PCA.
+    Author: PRI
+    Date: May 2020 during the COVID-19 lockdown
+    """
+    drivers_accept = list(drivers)
+    # list to hold any rejected drivers
+    drivers_reject = []
+    # check the variance of the drivers and reject driver if var=0
+    for label in drivers_accept:
+        data = pfp_utils.GetVariable(ds, label, start=si, end=ei)
+        var = numpy.ma.var(data["Data"])
+        if var == 0:
+            drivers_accept.remove(label)
+            drivers_reject.append(label)
+    if len(drivers_reject) == 1:
+        msg = " Variance is 0 for driver " + ','.join(drivers_reject) + ", not used for this period"
+        logger.warning(msg)
+    elif len(drivers_reject) > 1:
+        msg = " Variance is 0 for drivers " + ','.join(drivers_reject) + ", not used for this period"
+        logger.warning(msg)
+    return drivers_accept
+
 def gfSOLO_done(solo_gui):
     ds = solo_gui.ds
     l5_info = solo_gui.l5_info
@@ -200,8 +228,8 @@ def gfSOLO_main(ds, l5_info, called_by, outputs=None):
         flag_code = l5s["outputs"][output]["flag_code"]
         # get the target series label
         target = l5s["outputs"][output]["target"]
-        # get the drivers
-        drivers = l5s["outputs"][output]["drivers"]
+        # get the drivers, we reject those with variance=0 for this period
+        drivers = gfSOLO_check_drivers(ds, l5s["outputs"][output]["drivers"], si, ei)
         # get the start and end datetimes
         l5s["outputs"][output]["results"]["startdate"].append(ldt[si])
         l5s["outputs"][output]["results"]["enddate"].append(ldt[ei])
