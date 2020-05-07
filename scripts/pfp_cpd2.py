@@ -40,8 +40,8 @@ def cpd2_main(cf):
     if "out_filename" in cf["Files"]:
         file_out = os.path.join(cf["Files"]["file_path"], cf["Files"]["out_filename"])
     else:
-        file_out = os.path.join(cf["Files"]["file_path"],
-                                cf["Files"]["in_filename"].replace(".nc", "_CPD2.xls"))
+        file_name = cf["Files"]["in_filename"].replace(".nc", "_CPD_Barr.xls")
+        file_out = os.path.join(cf["Files"]["file_path"], file_name)
     plot_path = "plots/"
     if "plot_path" in cf["Files"]:
         plot_path = os.path.join(cf["Files"]["plot_path"], "CPD/")

@@ -11,7 +11,8 @@ sys.path.append("scripts")
 import pfp_cfg
 import pfp_clim
 import pfp_compliance
-import pfp_cpd
+import pfp_cpd1
+import pfp_cpd2
 import pfp_io
 import pfp_levels
 import pfp_log
@@ -76,9 +77,8 @@ def do_L3_batch(cf_level):
             ds2 = pfp_io.nc_read_series(infilename)
             ds3 = pfp_levels.l3qc(cf, ds2)
             outfilename = pfp_io.get_outfilenamefromcf(cf)
-            outputlist = pfp_io.get_outputlistfromcf(cf, "nc")
             ncFile = pfp_io.nc_open_write(outfilename)
-            pfp_io.nc_write_series(ncFile, ds3, outputlist=outputlist)
+            pfp_io.nc_write_series(ncFile, ds3)
             msg = "Finished L3 processing with " + cf_file_name[1]
             logger.info(msg)
             logger.info("")
@@ -204,11 +204,11 @@ def do_climatology_batch(cf_level):
             logger.error(error_message)
             continue
     return
-def do_cpd_batch(cf_level):
-    logger = pfp_log.change_logger_filename("pfp_log", "cpd")
+def do_cpd1_batch(cf_level):
+    logger = pfp_log.change_logger_filename("pfp_log", "cpd1")
     for i in cf_level.keys():
         cf_file_name = os.path.split(cf_level[i])
-        msg = "Starting CPD with " + cf_file_name[1]
+        msg = "Starting CPD (McHugh) with " + cf_file_name[1]
         logger.info(msg)
         try:
             cf = pfp_io.get_controlfilecontents(cf_level[i])
@@ -216,12 +216,35 @@ def do_cpd_batch(cf_level):
                 cf["Options"] = {}
             cf["Options"]["call_mode"] = "batch"
             cf["Options"]["show_plots"] = "No"
-            pfp_cpd.cpd_main(cf)
-            msg = "Finished CPD with " + cf_file_name[1]
+            pfp_cpd1.cpd1_main(cf)
+            msg = "Finished CPD (McHugh) with " + cf_file_name[1]
             logger.info(msg)
             logger.info("")
         except Exception:
-            msg = "Error occurred during CPD with " + cf_file_name[1]
+            msg = "Error occurred during CPD (McHugh) with " + cf_file_name[1]
+            logger.error(msg)
+            error_message = traceback.format_exc()
+            logger.error(error_message)
+            continue
+    return
+def do_cpd2_batch(cf_level):
+    logger = pfp_log.change_logger_filename("pfp_log", "cpd2")
+    for i in cf_level.keys():
+        cf_file_name = os.path.split(cf_level[i])
+        msg = "Starting CPD (Barr) with " + cf_file_name[1]
+        logger.info(msg)
+        try:
+            cf = pfp_io.get_controlfilecontents(cf_level[i])
+            if "Options" not in cf:
+                cf["Options"] = {}
+            cf["Options"]["call_mode"] = "batch"
+            cf["Options"]["show_plots"] = "No"
+            pfp_cpd2.cpd2_main(cf)
+            msg = "Finished CPD (Barr) with " + cf_file_name[1]
+            logger.info(msg)
+            logger.info("")
+        except Exception:
+            msg = "Error occurred during CPD (Barr) with " + cf_file_name[1]
             logger.error(msg)
             error_message = traceback.format_exc()
             logger.error(error_message)
@@ -270,9 +293,8 @@ def do_L4_batch(cf_level):
             ds3 = pfp_io.nc_read_series(infilename)
             ds4 = pfp_levels.l4qc(None, cf_l4, ds3)
             outfilename = pfp_io.get_outfilenamefromcf(cf_l4)
-            outputlist = pfp_io.get_outputlistfromcf(cf_l4, "nc")
             ncFile = pfp_io.nc_open_write(outfilename)
-            pfp_io.nc_write_series(ncFile, ds4, outputlist=outputlist)
+            pfp_io.nc_write_series(ncFile, ds4)
             msg = "Finished L4 processing with " + cf_file_name[1]
             logger.info(msg)
             # now plot the fingerprints for the L4 files
@@ -323,9 +345,8 @@ def do_L5_batch(cf_level):
             ds4 = pfp_io.nc_read_series(infilename)
             ds5 = pfp_levels.l5qc(None, cf_l5, ds4)
             outfilename = pfp_io.get_outfilenamefromcf(cf_l5)
-            outputlist = pfp_io.get_outputlistfromcf(cf_l5, "nc")
             ncFile = pfp_io.nc_open_write(outfilename)
-            pfp_io.nc_write_series(ncFile, ds5, outputlist=outputlist)
+            pfp_io.nc_write_series(ncFile, ds5)
             msg = "Finished L5 processing with " + cf_file_name[1]
             logger.info(msg)
             # now plot the fingerprints for the L5 files
@@ -377,9 +398,8 @@ def do_L6_batch(cf_level):
             ds5 = pfp_io.nc_read_series(infilename)
             ds6 = pfp_levels.l6qc(None, cf, ds5)
             outfilename = pfp_io.get_outfilenamefromcf(cf)
-            outputlist = pfp_io.get_outputlistfromcf(cf, "nc")
             ncFile = pfp_io.nc_open_write(outfilename)
-            pfp_io.nc_write_series(ncFile, ds6, outputlist=outputlist)
+            pfp_io.nc_write_series(ncFile, ds6)
             msg = "Finished L6 processing with " + cf_file_name[1]
             logger.info(msg)
             logger.info("")
@@ -411,7 +431,7 @@ def do_levels_batch(cf_batch):
     processing_levels = ["l1", "l2", "l3",
                          "ecostress", "fluxnet", "reddyproc",
                          "concatenate", "climatology",
-                         "cpd", "mpt",
+                         "cpd1", "cpd2", "mpt",
                          "l4", "l5", "l6"]
     for level in levels:
         if level.lower() not in processing_levels:
@@ -442,9 +462,12 @@ def do_levels_batch(cf_batch):
         elif level.lower() == "climatology":
             # climatology
             do_climatology_batch(cf_batch["Levels"][level])
-        elif level.lower() == "cpd":
+        elif level.lower() == "cpd1":
             # ustar threshold from change point detection
-            do_cpd_batch(cf_batch["Levels"][level])
+            do_cpd1_batch(cf_batch["Levels"][level])
+        elif level.lower() == "cpd2":
+            # ustar threshold from change point detection
+            do_cpd2_batch(cf_batch["Levels"][level])
         elif level.lower() == "mpt":
             # ustar threshold from change point detection
             do_mpt_batch(cf_batch["Levels"][level])
