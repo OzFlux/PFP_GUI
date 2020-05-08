@@ -18,95 +18,95 @@ level = L3
     z0 = <roughness_length>
     north_separation = <north_separation>
     east_separation = <east_separation>
-[Variables]
+[variables]
     [[Fn]]
         [[[MergeSeries]]]
-            Source = Fn_4cmpt,Fn_NR
+            source = Fn_4cmpt,Fn_NR
         [[[RangeCheck]]]
-            Lower = -150
-            Upper = 1100
+            lower = -150
+            upper = 1100
     [[Fh]]
         [[[RangeCheck]]]
-            Lower = -100
-            Upper = 600
+            lower = -100
+            upper = 600
     [[Fe]]
         [[[RangeCheck]]]
-            Lower = -100
-            Upper = 600
+            lower = -100
+            upper = 600
     [[Fc]]
         [[[RangeCheck]]]
-            Lower = -50
-            Upper = 50
+            lower = -50
+            upper = 50
     [[Fm]]
         [[[RangeCheck]]]
-            Lower = -1
-            Upper = 1
+            lower = -1
+            upper = 1
     [[ustar]]
         [[[RangeCheck]]]
-            Lower = 0
-            Upper = 2
+            lower = 0
+            upper = 2
     [[Ta]]
         [[[MergeSeries]]]
-            Source = Ta_HMP_<height>m,Ta_SONIC_Av
+            source = Ta_HMP_<height>m,Ta_SONIC_Av
         [[[RangeCheck]]]
-            Lower = 0
-            Upper = 50
+            lower = 0
+            upper = 50
     [[Ah]]
         [[[MergeSeries]]]
-            Source = Ah_HMP_<height>m,Ah_IRGA_Av
+            source = Ah_HMP_<height>m,Ah_IRGA_Av
         [[[RangeCheck]]]
-            Lower = 0
-            Upper = 35
+            lower = 0
+            upper = 35
     [[CO2]]
         [[[MergeSeries]]]
-            Source = CO2_IRGA_Av
+            source = CO2_IRGA_Av
         [[[RangeCheck]]]
-            Lower = 250
-            Upper = 900
+            lower = 250
+            upper = 900
     [[Ws]]
         [[[MergeSeries]]]
-            Source = Ws_WS4_Av,Ws_SONIC_Av
+            source = Ws_WS4_Av,Ws_SONIC_Av
         [[[RangeCheck]]]
-            Lower = 0
-            Upper = 30
+            lower = 0
+            upper = 30
     [[Wd]]
         [[[MergeSeries]]]
-            Source = Wd_WS4_Av,Wd_SONIC_Av
+            source = Wd_WS4_Av,Wd_SONIC_Av
         [[[RangeCheck]]]
-            Lower = 0
-            Upper = 360
+            lower = 0
+            upper = 360
     [[Fg]]
         [[[AverageSeries]]]
-            Source = Fg_<depth><letter>,Fg_<depth><letter>,Fg_<depth><letter>
+            source = Fg_<depth><letter>,Fg_<depth><letter>,Fg_<depth><letter>
         [[[RangeCheck]]]
-            Lower = -300
-            Upper = 300
+            lower = -300
+            upper = 300
     [[Sws]]
         [[[AverageSeries]]]
-            Source = Sws_<depth><letter>,Sws_<depth><letter>,Sws_<depth><letter>
+            source = Sws_<depth><letter>,Sws_<depth><letter>,Sws_<depth><letter>
         [[[RangeCheck]]]
-            Lower = 0
-            Upper = 0.5
+            lower = 0
+            upper = 0.5
     [[Ts]]
         [[[AverageSeries]]]
-            Source = Ts_<depth><letter>,Ts_<depth><letter>,Ts_<depth><letter>
+            source = Ts_<depth><letter>,Ts_<depth><letter>,Ts_<depth><letter>
         [[[RangeCheck]]]
-            Lower = 0
-            Upper = 60
+            lower = 0
+            upper = 60
 [Plots]
     [[Radiative fluxes]]
-        Variables = Fsd,Fsu,Fld,Flu,Fn
+        variables = Fsd,Fsu,Fld,Flu,Fn
     [[Turbulent fluxes]]
-        Variables = Fh,Fe,Fc,ustar,Fm
+        variables = Fh,Fe,Fc,ustar,Fm
     [[Fh diagnostics]]
-        Variables = Fh,UzT,Diag_SONIC,Diag_IRGA,AGC_IRGA,Ah_IRGA_Sd,CO2_IRGA_Sd
+        variables = Fh,UzT,Diag_SONIC,Diag_IRGA,AGC_IRGA,Ah_IRGA_Sd,CO2_IRGA_Sd
     [[Fe diagnostics]]
-        Variables = Fe,UzA,Diag_SONIC,Diag_IRGA,AGC_IRGA,Ah_IRGA_Sd,CO2_IRGA_Sd
+        variables = Fe,UzA,Diag_SONIC,Diag_IRGA,AGC_IRGA,Ah_IRGA_Sd,CO2_IRGA_Sd
     [[Fc diagnostics]]
-        Variables = Fc,UzC,Diag_SONIC,Diag_IRGA,AGC_IRGA,Ah_IRGA_Sd,CO2_IRGA_Sd
+        variables = Fc,UzC,Diag_SONIC,Diag_IRGA,AGC_IRGA,Ah_IRGA_Sd,CO2_IRGA_Sd
     [[Air temperature, humidity and CO2]]
-        Variables = Ta,Ta_HMP_<height>m,Ah,Ah_HMP_<height>m,CO2_IRGA_Av
+        variables = Ta,Ta_HMP_<height>m,Ah,Ah_HMP_<height>m,CO2_IRGA_Av
     [[Soil temperature, water content and heat flux]]
-        Variables = Precip,Ts,Sws,Sws_<depth><letter>,Fg
+        variables = Precip,Ts,Sws,Sws_<depth><letter>,Fg
     [[Pressure, wind speed and direction]]
-        Variables = ps,Ws,Ux,Uy,Uz,Wd
+        variables = ps,Ws,Ux,Uy,Uz,Wd

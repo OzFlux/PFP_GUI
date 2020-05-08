@@ -10,227 +10,227 @@ level = L2
 [Variables]
     [[Fn_NR]]
         [[[RangeCheck]]]
-            Lower = -100
-            Upper = 1000
+            lower = -100
+            upper = 1000
     [[Fld]]
         [[[RangeCheck]]]
-            Lower = 250
-            Upper = 700
+            lower = 250
+            upper = 700
     [[Flu]]
         [[[RangeCheck]]]
-            Lower = 300
-            Upper = 700
+            lower = 300
+            upper = 700
     [[Fsu]]
         [[[RangeCheck]]]
-            Lower = -10
-            Upper = 500
+            lower = -10
+            upper = 500
     [[Fsd]]
         [[[RangeCheck]]]
-            Lower = -10
-            Upper = 1500
+            lower = -10
+            upper = 1500
     [[UzT]]
         [[[RangeCheck]]]
-            Lower = -0.2
-            Upper = 1
+            lower = -0.2
+            upper = 1
     [[UxT]]
         [[[RangeCheck]]]
-            Lower = -2
-            Upper = 2
+            lower = -2
+            upper = 2
     [[UyT]]
         [[[RangeCheck]]]
-            Lower = -2
-            Upper = 2
+            lower = -2
+            upper = 2
     [[UzA]]
         [[[RangeCheck]]]
-            Lower = -0.01
-            Upper = 0.5
+            lower = -0.01
+            upper = 0.5
     [[UxA]]
         [[[RangeCheck]]]
-            Lower = -1
-            Upper = 1
+            lower = -1
+            upper = 1
     [[UyA]]
         [[[RangeCheck]]]
-            Lower = -1
-            Upper = 1
+            lower = -1
+            upper = 1
     [[UzC]]
         [[[RangeCheck]]]
-            Lower = -2
-            Upper = 2
+            lower = -2
+            upper = 2
     [[UxC]]
         [[[RangeCheck]]]
-            Lower = -4
-            Upper = 4
+            lower = -4
+            upper = 4
     [[UyC]]
         [[[RangeCheck]]]
-            Lower = -4
-            Upper = 4
+            lower = -4
+            upper = 4
     [[UxUz]]
         [[[RangeCheck]]]
-            Lower = -10
-            Upper = 10
+            lower = -10
+            upper = 10
     [[UyUz]]
         [[[RangeCheck]]]
-            Lower = -10
-            Upper = 10
+            lower = -10
+            upper = 10
     [[UxUy]]
         [[[RangeCheck]]]
-            Lower = -1
-            Upper = 1
+            lower = -1
+            upper = 1
     [[UzUz]]
         [[[RangeCheck]]]
-            Lower = -2
-            Upper = 2
+            lower = -2
+            upper = 2
     [[UxUx]]
         [[[RangeCheck]]]
-            Lower = -10
-            Upper = 10
+            lower = -10
+            upper = 10
     [[UyUy]]
         [[[RangeCheck]]]
-            Lower = -10
-            Upper = 10
+            lower = -10
+            upper = 10
     [[Tv_SONIC_Av]]
         [[[RangeCheck]]]
-            Lower = -10
-            Upper = 50
+            lower = -10
+            upper = 50
     [[Tv_SONIC_Vr]]
         [[[RangeCheck]]]
-            Lower = 0
-            Upper = 5
+            lower = 0
+            upper = 5
     [[CO2_IRGA_Av]]
         [[[RangeCheck]]]
-            Lower = 500
-            Upper = 2000
+            lower = 500
+            upper = 2000
     [[CO2_IRGA_Sd]]
         [[[RangeCheck]]]
-            Lower = 0
-            Upper = 50
+            lower = 0
+            upper = 50
     [[CO2_IRGA_Vr]]
         [[[RangeCheck]]]
-            Lower = 0
-            Upper = 2500
+            lower = 0
+            upper = 2500
     [[Ah_IRGA_Av]]
         [[[RangeCheck]]]
-            Lower = 0
-            Upper = 35
+            lower = 0
+            upper = 35
     [[Ah_IRGA_Sd]]
         [[[RangeCheck]]]
-            Lower = 0
-            Upper = 10
+            lower = 0
+            upper = 10
     [[Ah_IRGA_Vr]]
         [[[RangeCheck]]]
-            Lower = 0
-            Upper = 100
+            lower = 0
+            upper = 100
     [[Ta_<inst>_<height>m]]
         [[[RangeCheck]]]
-            Lower = -10
-            Upper = 50
+            lower = -10
+            upper = 50
     [[RH_<inst>_<height>m]]
         [[[RangeCheck]]]
-            Lower = 0
-            Upper = 110
+            lower = 0
+            upper = 110
     [[Ah_<inst>_<height>m]]
         [[[RangeCheck]]]
-            Lower = 0
-            Upper = 30
+            lower = 0
+            upper = 30
     [[Ux]]
         [[[RangeCheck]]]
-            Lower = -20
-            Upper = 20
+            lower = -20
+            upper = 20
     [[Uy]]
         [[[RangeCheck]]]
-            Lower = -20
-            Upper = 20
+            lower = -20
+            upper = 20
     [[Uz]]
         [[[RangeCheck]]]
-            Lower = -1
-            Upper = 1
+            lower = -1
+            upper = 1
     [[Ws_SONIC_Av]]
         [[[RangeCheck]]]
-            Lower = 0
-            Upper = 20
+            lower = 0
+            upper = 20
     [[Wd_SONIC_Av]]
         [[[RangeCheck]]]
-            Lower = 0
-            Upper = 360
+            lower = 0
+            upper = 360
     [[Ws_<inst>_Av]]
         [[[RangeCheck]]]
-            Lower = 0
-            Upper = 20
+            lower = 0
+            upper = 20
     [[Wd_<inst>_Av]]
         [[[RangeCheck]]]
-            Lower = 0
-            Upper = 360
+            lower = 0
+            upper = 360
     [[Precip]]
         [[[RangeCheck]]]
-            Lower = 0
-            Upper = 50
+            lower = 0
+            upper = 50
     [[ps]]
         [[[RangeCheck]]]
-            Lower = 95
-            Upper = 105
+            lower = 95
+            upper = 105
     [[Fg_<depth>cma]]
         [[[RangeCheck]]]
-            Lower = -100
-            Upper = 150
+            lower = -100
+            upper = 150
     [[Fg_<depth>cmb]]
         [[[RangeCheck]]]
-            Lower = -100
-            Upper = 150
+            lower = -100
+            upper = 150
     [[Fg_<depth>cmc]]
         [[[RangeCheck]]]
-            Lower = -100
-            Upper = 150
+            lower = -100
+            upper = 150
     [[Sws_<depth>cma]]
         [[[RangeCheck]]]
-            Lower = 0
-            Upper = 0.5
+            lower = 0
+            upper = 0.5
     [[Sws_<depth>cmb]]
         [[[RangeCheck]]]
-            Lower = 0
-            Upper = 0.5
+            lower = 0
+            upper = 0.5
     [[Sws_<depth>cmc]]
         [[[RangeCheck]]]
-            Lower = 0
-            Upper = 0.5
+            lower = 0
+            upper = 0.5
     [[Ts_<depth>cma]]
         [[[RangeCheck]]]
-            Lower = 0
-            Upper = 60
+            lower = 0
+            upper = 60
     [[Ts_<depth>cmb]]
         [[[RangeCheck]]]
-            Lower = 0
-            Upper = 60
+            lower = 0
+            upper = 60
     [[Ts_<depth>cmc]]
         [[[RangeCheck]]]
-            Lower = 0
-            Upper = 60
+            lower = 0
+            upper = 60
     [[Diag_SONIC]]
         [[[RangeCheck]]]
-            Lower = -0.5
-            Upper = 20.5
+            lower = -0.5
+            upper = 20.5
     [[Diag_IRGA]]
         [[[RangeCheck]]]
-            Lower = -0.5
-            Upper = 10.5
+            lower = -0.5
+            upper = 10.5
         [[[70]]]
     [[AGC_IRGA]]
         [[[RangeCheck]]]
-            Lower = 0
-            Upper = 70
+            lower = 0
+            upper = 70
 [Plots]
     [[Radiative fluxes]]
-        Variables = Fsd,Fsu,Fld,Flu,Fn
+        variables = Fsd,Fsu,Fld,Flu,Fn
     [[Covariances (SONIC)]]
-        Variables = UzT,UxT,UyT,UxUz,UyUz,UxUx,UyUy
+        variables = UzT,UxT,UyT,UxUz,UyUz,UxUx,UyUy
     [[Covariances (SONIC&IRGA)]]
-        Variables = UzA,UxA,UyA,UzC,UxC,UyC
+        variables = UzA,UxA,UyA,UzC,UxC,UyC
     [[Air temperature, humidity and CO2]]
-        Variables = Ta_<inst>_<height>m,Tv_SONIC_Av,Ah_<inst>_<height>m,Ah_IRGA_Av,CO2_IRGA_Av
+        variables = Ta_<inst>_<height>m,Tv_SONIC_Av,Ah_<inst>_<height>m,Ah_IRGA_Av,CO2_IRGA_Av
     [[Soil temperature & rain]]
-        Variables = Ts_<depth>cma,Ts_<depth>cmb,Ts_<depth>cmc,Precip
+        variables = Ts_<depth>cma,Ts_<depth>cmb,Ts_<depth>cmc,Precip
     [[Soil moisture & rain]]
-        Variables = Sws_<depth>cma,Sws_<depth>cmb,Sws_<depth>cmc,Precip
+        variables = Sws_<depth>cma,Sws_<depth>cmb,Sws_<depth>cmc,Precip
     [[Soil heat flux & rain]]
-        Variables = Fg_<depth>cma,Fg_<depth>cmb,Fg_<depth>cmc,Precip
+        variables = Fg_<depth>cma,Fg_<depth>cmb,Fg_<depth>cmc,Precip
     [[Pressure, wind speed, wind direction & rainfall]]
-        Variables = ps,Ws_SONIC_Av,Ux,Uy,Uz,Wd_SONIC_Av,Precip
+        variables = ps,Ws_SONIC_Av,Ux,Uy,Uz,Wd_SONIC_Av,Precip

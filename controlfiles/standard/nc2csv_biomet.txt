@@ -1,0 +1,62 @@
+level = nc2csv_biomet
+[Variables]
+    [[RG_1_1_1]]
+        name = Fsd
+        format = 0
+        units = W+1m-2
+    [[TA_1_1_1]]
+        name = Ta
+        format = 0.00
+        units = C
+    [[RH_1_1_1]]
+        name = RH
+        format = 0
+        units = %
+    [[SHF_1_1_1]]
+        name = Fg
+        format = 0
+        units = W+1m-2
+    [[P_1_1_1]]
+        name = Precip
+        format = 0.00
+        units = mm
+    [[SWC_1_1_1]]
+        name = Sws
+        format = 0.000
+        units = m+3m-3
+    [[TS_1_1_1]]
+        name = Ts
+        format = 0.00
+        units = C
+    [[Rn_1_1_1]]
+        name = Fn
+        format = 0
+        units = W+1m-2
+    [[SWin_1_1_1]]
+        name = Fsd
+        format = 0
+        units = W+1m-2
+    [[SWout_1_1_1]]
+        name = Fsu
+        format = 0
+        units = W+1m-2
+    [[LWin_1_1_1]]
+        name = Fld
+        format = 0
+        units = W+1m-2
+    [[LWout_1_1_1]]
+        name = Flu
+        format = 0
+        units = W+1m-2
+    [[WD_1_1_1]]
+        name = Wd
+        format = 0
+        units = degrees
+    [[WS_1_1_1]]
+        name = Ws
+        format = 0.00
+        units = m+1s-1
+    [[Pa_1_1_1]]
+        name = ps
+        format = 0.00
+        units = kPa

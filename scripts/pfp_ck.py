@@ -1,5 +1,4 @@
 # standard modules
-import ast
 import copy
 import constants as c
 import datetime
@@ -9,6 +8,7 @@ import time
 import numpy
 import dateutil.parser
 # pfp modules
+import pfp_cfg
 import pfp_rp
 import pfp_ts
 import pfp_utils
@@ -72,22 +72,24 @@ def ApplyRangeCheckToVariable(variable):
         variable["Attr"]["valid_range"] = valid_range
     return
 
-def ApplyTurbulenceFilter(cf,ds,ustar_threshold=None):
+def ApplyTurbulenceFilter(cf, ds, l5_info, ustar_threshold=None):
     """
     Purpose:
     Usage:
     Author:
     Date:
     """
+    iris = l5_info["RemoveIntermediateSeries"]
     opt = ApplyTurbulenceFilter_checks(cf,ds)
-    if not opt["OK"]: return
+    if not opt["OK"]:
+        return
     # local point to datetime series
     ldt = ds.series["DateTime"]["Data"]
     # time step
     ts = int(ds.globalattributes["time_step"])
     # dictionary of utar thresold values
     if ustar_threshold==None:
-        ustar_dict = pfp_rp.get_ustar_thresholds(cf,ldt)
+        ustar_dict = pfp_rp.get_ustar_thresholds(cf, ds)
     else:
         ustar_dict = pfp_rp.get_ustar_thresholds_annual(ldt,ustar_threshold)
     # initialise a dictionary for the indicator series
@@ -135,8 +137,11 @@ def ApplyTurbulenceFilter(cf,ds,ustar_threshold=None):
     # regardless of ustar value
     if opt["accept_day_times"].lower()=="yes":
         # if yes, then we force the final indicator to be 1
-        # if ustar is below the threshold during the day.
-        idx = numpy.where(indicators["day"]["values"]==1)[0]
+        # when ustar is below the threshold during the day ...
+        c1 = (indicators["day"]["values"] == 1)
+        # ... but only if the ustar data is not masked
+        c2 = (numpy.ma.getmaskarray(ustar) == False)
+        idx = numpy.where(c1 & c2)[0]
         indicators["final"]["values"][idx] = numpy.int(1)
         indicators["final"]["attr"].update(indicators["day"]["attr"])
     # get the evening indicator series
@@ -154,19 +159,25 @@ def ApplyTurbulenceFilter(cf,ds,ustar_threshold=None):
     long_name = "Turbulence indicator, 1 for turbulent, 0 for non-turbulent"
     ind_attr = pfp_utils.MakeAttributeDictionary(long_name=long_name,units="None")
     pfp_utils.CreateSeries(ds,"turbulence_indicator",indicators["turbulence"]["values"],ind_flag,ind_attr)
+    iris["not_output"].append("turbulence_indicator")
     long_name = "Day indicator, 1 for day time, 0 for night time"
     ind_attr = pfp_utils.MakeAttributeDictionary(long_name=long_name,units="None")
     pfp_utils.CreateSeries(ds,"day_indicator",indicators["day"]["values"],ind_flag,ind_attr)
+    iris["not_output"].append("day_indicator")
     long_name = "Evening indicator, 1 for evening, 0 for not evening"
     ind_attr = pfp_utils.MakeAttributeDictionary(long_name=long_name,units="None")
     pfp_utils.CreateSeries(ds,"evening_indicator",indicators["evening"]["values"],ind_flag,ind_attr)
+    iris["not_output"].append("evening_indicator")
     long_name = "Day/evening indicator, 1 for day/evening, 0 for not day/evening"
     ind_attr = pfp_utils.MakeAttributeDictionary(long_name=long_name,units="None")
     pfp_utils.CreateSeries(ds,"dayevening_indicator",indicators["dayevening"]["values"],ind_flag,ind_attr)
+    iris["not_output"].append("dayevening_indicator")
     long_name = "Final indicator, 1 for use data, 0 for don't use data"
     ind_attr = pfp_utils.MakeAttributeDictionary(long_name=long_name,units="None")
     pfp_utils.CreateSeries(ds,"final_indicator",indicators["final"]["values"],ind_flag,ind_attr)
+    iris["not_output"].append("final_indicator")
     # loop over the series to be filtered
+    descr_level = "description_" + ds.globalattributes["nc_level"]
     for series in opt["filter_list"]:
         msg = " Applying "+opt["turbulence_filter"]+" filter to "+series
         logger.info(msg)
@@ -174,28 +185,39 @@ def ApplyTurbulenceFilter(cf,ds,ustar_threshold=None):
         data,flag,attr = pfp_utils.GetSeriesasMA(ds,series)
         # continue to next series if this series has been filtered before
         if "turbulence_filter" in attr:
-            msg = " Series "+series+" has already been filtered, skipping ..."
+            msg = " Series " + series + " has already been filtered, skipping ..."
             logger.warning(msg)
             continue
         # save the non-filtered data
-        pfp_utils.CreateSeries(ds,series+"_nofilter",data,flag,attr)
+        attr_nofilter = copy.deepcopy(attr)
+        pfp_utils.CreateSeries(ds, series + "_nofilter", data,flag, attr_nofilter)
+        iris["not_output"].append(series + "_nofilter")
         # now apply the filter
         data_filtered = numpy.ma.masked_where(indicators["final"]["values"]==0,data,copy=True)
         flag_filtered = numpy.copy(flag)
         idx = numpy.where(indicators["final"]["values"]==0)[0]
         flag_filtered[idx] = numpy.int32(61)
+        attr_filtered = copy.deepcopy(attr)
         # update the series attributes
         for item in indicators["final"]["attr"].keys():
-            attr[item] = indicators["final"]["attr"][item]
+            attr_filtered[item] = indicators["final"]["attr"][item]
+        # update the "description" attribute
+        attr_filtered[descr_level] = pfp_utils.append_string(attr_filtered[descr_level],
+                                                             "turbulence filter applied")
         # and write the filtered data to the data structure
-        pfp_utils.CreateSeries(ds,series,data_filtered,flag_filtered,attr)
+        # write the annual ustar thresholds to the variable attributes
+        for year in sorted(list(ustar_dict.keys())):
+            attr_filtered["ustar_threshold_"+str(year)] = str(ustar_dict[year]["ustar_mean"])
+        pfp_utils.CreateSeries(ds,series,data_filtered,flag_filtered,attr_filtered)
         # and write a copy of the filtered datas to the data structure so it
         # will still exist once the gap filling has been done
-        pfp_utils.CreateSeries(ds,series+"_filtered",data_filtered,flag_filtered,attr)
+        pfp_utils.CreateSeries(ds,series+"_filtered",data_filtered,flag_filtered,attr_filtered)
+        iris["not_output"].append(series+"_filtered")
         nnf = numpy.ma.count(data)
         nf = numpy.ma.count(data_filtered)
         pc = int(100*(float(nnf-nf)/float(nnf))+0.5)
-        msg = "  " + opt["turbulence_filter"] + " filter removed " + str(pc) + "% from " + series
+        msg = "  " + opt["turbulence_filter"] + " filter removed " + str(pc)
+        msg += "% of available data from " + series
         logger.info(msg)
     return
 
@@ -266,63 +288,6 @@ def cliptorange(data, lower, upper):
     data = rangecheckserieslower(data,lower)
     data = rangecheckseriesupper(data,upper)
     return data
-
-def CoordinateAh7500AndFcGaps(cf,ds,Fcvar='Fc'):
-    '''Cleans up Ah_7500_Av based upon Fc gaps to for QA check on Ah_7500_Av v Ah_HMP.'''
-    if not pfp_utils.get_optionskeyaslogical(cf, "CoordinateAh7500&FcGaps"):
-        return
-    logger.info(' Doing the Ah_7500 check')
-    if pfp_utils.cfkeycheck(cf,Base='FunctionArgs',ThisOne='AhcheckFc'):
-        Fclist = ast.literal_eval(cf['FunctionArgs']['AhcheckFc'])
-        Fcvar = Fclist[0]
-
-    # index1  Index of bad Ah_7500_Av observations
-    index1 = numpy.where((ds.series['Ah_7500_Av']['Flag']!=0) & (ds.series['Ah_7500_Av']['Flag']!=10))
-
-    # index2  Index of bad Fc observations
-    index2 = numpy.where((ds.series[Fcvar]['Flag']!=0) & (ds.series[Fcvar]['Flag']!=10))
-
-    ds.series['Ah_7500_Av']['Data'][index2] = numpy.float64(c.missing_value)
-    ds.series['Ah_7500_Av']['Flag'][index2] = ds.series[Fcvar]['Flag'][index2]
-    ds.series['Ah_7500_Av']['Flag'][index1] = ds.series['Ah_7500_Av']['Flag'][index1]
-
-def CoordinateFluxGaps(cf,ds,Fc_in='Fc',Fe_in='Fe',Fh_in='Fh'):
-    if not pfp_utils.get_optionskeyaslogical(cf, "CoordinateFluxGaps"):
-        return
-    if pfp_utils.cfkeycheck(cf,Base='FunctionArgs',ThisOne='gapsvars'):
-        vars = ast.literal_eval(cf['FunctionArgs']['gapsvars'])
-        Fc_in = vars[0]
-        Fe_in = vars[1]
-        Fh_in = vars[2]
-    Fc,f,a = pfp_utils.GetSeriesasMA(ds,Fc_in)
-    Fe,f,a = pfp_utils.GetSeriesasMA(ds,Fe_in)
-    Fh,f,a = pfp_utils.GetSeriesasMA(ds,Fh_in)
-    # April 2015 PRI - changed numpy.ma.where to numpy.where
-    index = numpy.where((numpy.ma.getmaskarray(Fc)==True)|
-                        (numpy.ma.getmaskarray(Fe)==True)|
-                        (numpy.ma.getmaskarray(Fh)==True))[0]
-    #index = numpy.ma.where((numpy.ma.getmaskarray(Fc)==True)|
-                           #(numpy.ma.getmaskarray(Fe)==True)|
-                           #(numpy.ma.getmaskarray(Fh)==True))[0]
-    # the following for ... in loop is not necessary
-    for i in range(len(index)):
-        j = index[i]
-        if Fc.mask[j]==False:
-            Fc.mask[j]=True
-            Fc[j] = numpy.float64(c.missing_value)
-            ds.series[Fc_in]['Flag'][j] = numpy.int32(19)
-        if Fe.mask[j]==False:
-            Fe.mask[j]=True
-            Fe[j] = numpy.float64(c.missing_value)
-            ds.series[Fe_in]['Flag'][j] = numpy.int32(19)
-        if Fh.mask[j]==False:
-            Fh.mask[j]=True
-            Fh[j] = numpy.float64(c.missing_value)
-            ds.series[Fh_in]['Flag'][j] = numpy.int32(19)
-    ds.series[Fc_in]['Data']=numpy.ma.filled(Fc,float(c.missing_value))
-    ds.series[Fe_in]['Data']=numpy.ma.filled(Fe,float(c.missing_value))
-    ds.series[Fh_in]['Data']=numpy.ma.filled(Fh,float(c.missing_value))
-    logger.info(' Finished gap co-ordination')
 
 def CreateNewSeries(cf,ds):
     '''Create a new series using the MergeSeries or AverageSeries instructions.'''
@@ -400,11 +365,11 @@ def do_dependencycheck(cf, ds, section, series, code=23, mode="quiet"):
     if "DependencyCheck" not in cf[section][series].keys():
         return
     if "source" not in cf[section][series]["DependencyCheck"]:
-        msg = " DependencyCheck: keyword source not found for series "+series+", skipping ..."
+        msg = " DependencyCheck: keyword Source not found for series " + series + ", skipping ..."
         logger.error(msg)
         return
-    if mode=="verbose":
-        msg = " Doing DependencyCheck for "+series
+    if mode == "verbose":
+        msg = " Doing DependencyCheck for " + series
         logger.info(msg)
     # get the precursor source list from the control file
     source_string = cf[section][series]["DependencyCheck"]["source"]
@@ -415,7 +380,7 @@ def do_dependencycheck(cf, ds, section, series, code=23, mode="quiet"):
     # check to see if the "ignore_missing" flag is set
     opt = pfp_utils.get_keyvaluefromcf(cf, [section,series,"DependencyCheck"], "ignore_missing", default="no")
     ignore_missing = False
-    if opt.lower() in ["yes","y","true","t"]:
+    if opt.lower() in ["yes", "y", "true", "t"]:
         ignore_missing = True
     # get the data
     dependent_data,dependent_flag,dependent_attr = pfp_utils.GetSeries(ds, series)
@@ -563,7 +528,7 @@ def do_EC155check(cf,ds):
         #else:
             #logger.warning(' do_EC155check: series '+str(ThisOne)+' in EC155 list not found in data structure')
 
-def do_EPQCFlagCheck(cf,ds,section,series,code=9):
+def do_EPQCFlagCheck(cf, ds, section, series, code=9):
     """
     Purpose:
      Mask data according to the value of an EddyPro QC flag.
@@ -571,11 +536,35 @@ def do_EPQCFlagCheck(cf,ds,section,series,code=9):
     Author: PRI
     Date: August 2017
     """
-    if 'EPQCFlagCheck' not in cf[section][series].keys(): return
+    # return if "EPQCFlagCheck" not used for this variable
+    if "EPQCFlagCheck" not in cf[section][series].keys():
+        return
+    # check the "source" key exists and is a string
+    if "source" not in cf[section][series]["EPQCFlagCheck"]:
+        msg = "  EPQCFlagCheck: 'source' key not found for (" + series + ")"
+        logger.error(msg)
+        return
+    if not isinstance(cf[section][series]["EPQCFlagCheck"]["source"], basestring):
+        msg = "  EPQCFlagCheck: 'source' value must be a string (" + series + ")"
+        logger.error(msg)
+        return
+    # comma separated string to list
+    source_list = cf[section][series]["EPQCFlagCheck"]["source"].split(",")
+    # check the "reject" key exists and is a string
+    if "reject" not in cf[section][series]["EPQCFlagCheck"]:
+        msg = "  EPQCFlagCheck: 'reject' key not found for (" + series + ")"
+        logger.error(msg)
+        return
+    if not isinstance(cf[section][series]["EPQCFlagCheck"]["reject"], basestring):
+        msg = "  EPQCFlagCheck: 'reject' value must be a string (" + series + ")"
+        logger.error(msg)
+        return
+    # comma separated string to list
+    reject_list = cf[section][series]["EPQCFlagCheck"]["reject"].split(",")
     nRecs = int(ds.globalattributes["nc_nrecs"])
     flag = numpy.zeros(nRecs, dtype=numpy.int32)
-    source_list = ast.literal_eval(cf[section][series]['EPQCFlagCheck']["source"])
-    reject_list = ast.literal_eval(cf[section][series]['EPQCFlagCheck']["Reject"])
+    source_list = pfp_cfg.cfg_string_to_list(cf[section][series]['EPQCFlagCheck']["source"])
+    reject_list = pfp_cfg.cfg_string_to_list(cf[section][series]['EPQCFlagCheck']["reject"])
     variable = pfp_utils.GetVariable(ds, series)
     for source in source_list:
         epflag = pfp_utils.GetVariable(ds, source)
@@ -841,14 +830,9 @@ def do_li7500acheck(cf,ds):
             pass
 
 def do_linear(cf,ds):
-    level = ds.globalattributes['nc_level']
     for ThisOne in cf['Variables'].keys():
         if pfp_utils.haskey(cf,ThisOne,'Linear'):
             pfp_ts.ApplyLinear(cf,ds,ThisOne)
-        if pfp_utils.haskey(cf,ThisOne,'Drift'):
-            pfp_ts.ApplyLinearDrift(cf,ds,ThisOne)
-        if pfp_utils.haskey(cf,ThisOne,'LocalDrift'):
-            pfp_ts.ApplyLinearDriftLocal(cf,ds,ThisOne)
 
 def parse_rangecheck_limit(s):
     """
@@ -930,7 +914,7 @@ def do_rangecheck(cf, ds, section, series, code=2):
     # update the variable attributes
     attr["rangecheck_lower"] = cf[section][series]["RangeCheck"]["lower"]
     attr["rangecheck_upper"] = cf[section][series]["RangeCheck"]["upper"]
-    attr["valid_range"] = str(valid_lower)+","+str(valid_upper)
+    attr["valid_range"] = repr(valid_lower) + "," + repr(valid_upper)
     # and now put the data back into the data structure
     pfp_utils.CreateSeries(ds, series, data, Flag=flag, Attr=attr)
     # now we can return

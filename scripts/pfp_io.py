@@ -1,18 +1,20 @@
 # Python modules
-from configobj import ConfigObj
 from collections import OrderedDict
 import ast
 import copy
 import csv
 import datetime
-import dateutil
 import logging
-import netCDF4
-import numpy
 import ntpath
 import os
 import platform
 import time
+# 3rd party modules
+from configobj import ConfigObj
+import dateutil
+import netCDF4
+import numpy
+import scipy.stats
 import xlrd
 import xlwt
 import xlsxwriter
@@ -34,6 +36,7 @@ class DataStructure(object):
         self.globalattributes = {}
         self.mergeserieslist = []
         self.averageserieslist = []
+        self.intermediate = []
         self.returncodes = {"value":0,"message":"OK"}
 
 def copy_datastructure(cf,ds_in):
@@ -230,7 +233,8 @@ def csv_read_series(cf):
         return ds
     # read the csv file using numpy's genfromtxt
     file_name = os.path.split(info["csv_filename"])
-    logger.info(" Reading "+file_name[1])
+    msg = " Reading " + file_name[1]
+    logger.info(msg)
     # read the CSV file
     data_array = numpy.genfromtxt(info["csv_filename"], delimiter=info["dialect"].delimiter,
                                   skip_header=info["skip_header"], names=info["header_line"],
@@ -315,7 +319,8 @@ def read_eddypro_full(csvname):
     Fc_flag_list = []
     for row in csvreader:
         if n==0:
-            header=row
+            #header=row
+            pass
         elif n==1:
             varlist=row
             us_data_col = varlist.index('u*')
@@ -327,7 +332,8 @@ def read_eddypro_full(csvname):
             Fc_data_col = varlist.index('co2_flux')
             Fc_flag_col = varlist.index('qc_co2_flux')
         elif n==2:
-            unitlist=row
+            #unitlist=row
+            pass
         else:
             adatetime.append(datetime.datetime.strptime(row[1]+' '+row[2],'%Y-%m-%d %H:%M'))
             us_data_list.append(float(row[us_data_col]))
@@ -369,7 +375,7 @@ def read_eddypro_full(csvname):
 
     return ds
 
-def reddyproc_write_csv(cf):
+def write_csv_reddyproc(cf):
     # this needs to be re-written!
     # get the file names
     file_path = cf["Files"]["file_path"]
@@ -397,23 +403,25 @@ def reddyproc_write_csv(cf):
     end_date = dt[-1]
     si = pfp_utils.GetDateIndex(dt,str(start_date),ts=ts,default=0,match='startnextday')
     ei = pfp_utils.GetDateIndex(dt,str(end_date),ts=ts,default=len(dt)-1,match='endpreviousday')
+    dt = dt[si:ei+1]
     # get the date and time data
-    Year,flag,attr = pfp_utils.GetSeries(ds,'Year',si=si,ei=ei)
-    Ddd,flag,attr = pfp_utils.GetSeries(ds,'Ddd',si=si,ei=ei)
-    Hhh,flag,attr = pfp_utils.GetSeries(ds,'Hdh',si=si,ei=ei)
+    Year = numpy.array([d.year for d in dt])
+    Ddd = numpy.array([d.timetuple().tm_yday + d.hour/float(24) + d.minute/float(1440) for d in dt])
+    Hhh = numpy.array([d.hour + d.minute/float(60) for d in dt])
     # get the data
     data = OrderedDict()
     for label in cf["Variables"].keys():
-        data[label] = {"ncname":cf["Variables"][label]["ncname"],
-                       "format":cf["Variables"][label]["format"]}
+        data[label] = {"name": cf["Variables"][label]["name"],
+                       "format": cf["Variables"][label]["format"]}
     series_list = data.keys()
     for series in series_list:
-        ncname = data[series]["ncname"]
+        ncname = data[series]["name"]
         if ncname not in ds.series.keys():
-            logger.error("Series "+ncname+" not in netCDF file, skipping ...")
+            msg = "Series " + ncname + " not in netCDF file, skipping ..."
+            logger.error(msg)
             series_list.remove(series)
             continue
-        d,f,a = pfp_utils.GetSeries(ds,ncname,si=si,ei=ei)
+        d, f, a = pfp_utils.GetSeries(ds, ncname, si=si, ei=ei)
         data[series]["Data"] = d
         data[series]["Flag"] = f
         data[series]["Attr"] = a
@@ -434,7 +442,7 @@ def reddyproc_write_csv(cf):
             elif data[series]["Attr"]["units"]=='umol/m2/s':
                 data[series]["Attr"]["units"] = "umolm-2s-1"
             else:
-                msg = " reddyproc_write_csv: unrecognised units for "+series+", returning ..."
+                msg = " REddyProc output: unrecognised units for "+series+", returning ..."
                 logger.error(msg)
                 return 0
         if series=="LE" or series=="H" or series=="Rg":
@@ -474,7 +482,7 @@ def reddyproc_write_csv(cf):
         writer.writerow(data_list)
     # close the csv file
     csvfile.close()
-    return
+    return 1
 
 def smap_datetodatadictionary(ds,data_dict,nperday,ndays,si,ei):
     ldt = ds.series["DateTime"]["Data"][si:ei+1]
@@ -495,7 +503,7 @@ def smap_datetodatadictionary(ds,data_dict,nperday,ndays,si,ei):
     data_dict["DOY"]["fmt"] = "0"
 
 def smap_docarbonfluxes(cf,ds,smap_label,si,ei):
-    ncname = cf["Variables"][smap_label]["ncname"]
+    ncname = cf["Variables"][smap_label]["name"]
     data,flag,attr = pfp_utils.GetSeriesasMA(ds,ncname,si=si,ei=ei)
     data = data*12.01*1800/1E6
     data = numpy.ma.filled(data,float(-9999))
@@ -618,7 +626,7 @@ def smap_write_csv(cf):
             elif smap_label in ["GPP","NEE","Reco"]:
                 data,flag = smap_docarbonfluxes(cf,ds,smap_label,si,ei)
             else:
-                data,flag,attr = pfp_utils.GetSeries(ds,cfvars[smap_label]["ncname"],si=si,ei=ei)
+                data,flag,attr = pfp_utils.GetSeries(ds,cfvars[smap_label]["name"],si=si,ei=ei)
             smap_updatedatadictionary(cfvars,data_dict,data,flag,smap_label,nperday,ndays)
         # now loop over the days and write the data out
         for i in range(ndays):
@@ -669,13 +677,13 @@ def write_csv_ecostress(cf):
     if not os.path.isdir(file_path):
         msg = " Specified file path "+file_path+" doesn't exist ..."
         logger.error(msg)
-        return 1
+        return 0
     in_filename = pfp_utils.get_keyvaluefromcf(cf, ["Files"], "in_filename", default="")
     nc_file_name = os.path.join(file_path, in_filename)
     if not os.path.exists(nc_file_name):
         msg = " Specified input file "+nc_file_name+" not found ..."
         logger.error(msg)
-        return 1
+        return 0
     out_filename = pfp_utils.get_keyvaluefromcf(cf, ["Files"], "out_filename", default="")
     if len(out_filename) == 0:
         csv_file_name = nc_file_name.replace(".nc", "_ECOSTRESS.csv")
@@ -694,20 +702,30 @@ def write_csv_ecostress(cf):
     dt = ds.series["DateTime"]["Data"]
     # get the data
     data = {}
-    series_list = cf["Variables"].keys()
-    for series in series_list:
-        ncname = cf["Variables"][series]["in_name"]
-        data[series] = pfp_utils.GetVariable(ds, ncname)
-        fmt = cf["Variables"][series]["out_format"]
-        if "E" in fmt or "e" in fmt:
-            numdec = (fmt.index("E")) - (fmt.index(".")) - 1
-            strfmt = "{:."+str(numdec)+"e}"
-        elif "." in fmt:
-            numdec = len(fmt) - (fmt.index(".") + 1)
-            strfmt = "{0:."+str(numdec)+"f}"
+    labels = cf["Variables"].keys()
+    qc_labels = ["LHF", "SHF", "GHF", "GPP", "Ta", "T2", "VPD", "Rn"]
+    for label in list(labels):
+        ncname = cf["Variables"][label]["name"]
+        if ncname not in list(ds.series.keys()):
+            # skip variable if name not in the data structure
+            msg = " Variable for " + label + " (" + ncname
+            msg += ") not found in data structure, skipping ..."
+            logger.warning(msg)
+            labels.remove(label)
+            if label in qc_labels:
+                qc_labels.remove(label)
         else:
-            strfmt = "{0:d}"
-        data[series]["Attr"]["fmt"] = strfmt
+            data[label] = pfp_utils.GetVariable(ds, ncname)
+            fmt = cf["Variables"][label]["format"]
+            if "E" in fmt or "e" in fmt:
+                numdec = (fmt.index("E")) - (fmt.index(".")) - 1
+                strfmt = "{:."+str(numdec)+"e}"
+            elif "." in fmt:
+                numdec = len(fmt) - (fmt.index(".") + 1)
+                strfmt = "{0:."+str(numdec)+"f}"
+            else:
+                strfmt = "{0:d}"
+            data[label]["Attr"]["fmt"] = strfmt
     # adjust units as required
     # GPP
     data["GPP"]["Data"] = pfp_mf.Fc_gCpm2psfromumolpm2ps(data["GPP"]["Data"])
@@ -720,28 +738,30 @@ def write_csv_ecostress(cf):
     #  b) 1 for gap filled high quality
     #  c) 2 for gap filled medium quality
     #  d) 3 for gap filled low quality
-    for series in ["LHF", "SHF", "GHF", "GPP", "Ta", "T2", "VPD", "Rn"]:
-        qc_label = series + "_qc"
-        series_list.insert(series_list.index(series)+1, qc_label)
+    for label in qc_labels:
+        qc_label = label + "_qc"
+        labels.insert(labels.index(label)+1, qc_label)
         data[qc_label] = {}
-        data[qc_label]["Data"] = numpy.where(data[series]["Flag"] == 0, zeros, ones)
+        data[qc_label]["Data"] = numpy.where(data[label]["Flag"] == 0, zeros, ones)
         data[qc_label]["Attr"] = {}
         data[qc_label]["Attr"]["fmt"] = "{0:d}"
         data[qc_label]["Attr"]["units"] = "-"
     # write the metadata to the CSV file
+    msg = " Writing ECOSTRESS CSV file"
+    logger.info(msg)
     if "General" in cf:
         for item in cf["General"]:
             csv_writer.writerow([item,str(cf['General'][item])])
         csv_writer.writerow("")
     # write the units row
     row_list = ["YYYYMMDDhhmm", "YYYYMMDDhhmm"]
-    for item in series_list:
-        row_list.append(data[item]["Attr"]["units"])
+    for label in labels:
+        row_list.append(data[label]["Attr"]["units"])
     csv_writer.writerow(row_list)
     # write the variable names to the csv file
     row_list = ["TIME_START", "TIME_END"]
-    for item in series_list:
-        row_list.append(item)
+    for label in labels:
+        row_list.append(label)
     csv_writer.writerow(row_list)
     # now write the data
     for i in range(len(dt)):
@@ -749,18 +769,20 @@ def write_csv_ecostress(cf):
         timestamp_end = dt[i].strftime("%Y%m%d%H%M")
         timestamp_start = (dt[i] - datetime.timedelta(minutes=ts)).strftime("%Y%m%d%H%M")
         data_list = [timestamp_start, timestamp_end]
-        for series in series_list:
+        for label in labels:
             # convert from masked array to ndarray with -9999 for missing data
-            data[series]["Data"] = numpy.ma.filled(data[series]["Data"], fill_value=float(-9999))
-            strfmt = data[series]["Attr"]["fmt"]
+            data[label]["Data"] = numpy.ma.filled(data[label]["Data"], fill_value=float(-9999))
+            strfmt = data[label]["Attr"]["fmt"]
             if "d" in strfmt:
-                data_list.append(strfmt.format(int(round(data[series]["Data"][i]))))
+                data_list.append(strfmt.format(int(round(data[label]["Data"][i]))))
             else:
-                data_list.append(strfmt.format(data[series]["Data"][i]))
+                data_list.append(strfmt.format(data[label]["Data"][i]))
         csv_writer.writerow(data_list)
     # close the csv file
     csv_file.close()
-    return 0
+    msg = " Finished writing ECOSTRESS CSV file"
+    logger.info(msg)
+    return 1
 
 def xl2nc(cf,InLevel):
     # get the data series from the Excel file
@@ -779,7 +801,7 @@ def xl2nc(cf,InLevel):
         ds = xl_read_series(cf)
         if ds==0: return 0
         # get a series of Python datetime objects from the Excel datetime
-        pfp_utils.get_datetime_from_xldate(ds)
+        pfp_utils.get_datetime_from_xldatetime(ds)
     # get the netCDF attributes from the control file
     pfp_ts.do_attributes(cf,ds)
     # round the Python datetime to the nearest second
@@ -811,12 +833,12 @@ def xl2nc(cf,InLevel):
     nc_write_series(ncFile,ds)
     return 1
 
-def ep_biomet_write_csv(cf):
+def write_csv_ep_biomet(cf):
     """
     Purpose:
      Write a bionmet file for use with EddyPro.
     Usage:
-     pfp_io.ep_biomet_write_csv(cf)
+     pfp_io.write_csv_ep_biomet(cf)
      where:
       cf - a control file object that specifies the input and output file
            names and the variable mapping to use.
@@ -825,37 +847,40 @@ def ep_biomet_write_csv(cf):
     """
     # get the file names
     ncFileName = get_infilenamefromcf(cf)
-    if not pfp_utils.file_exists(ncFileName,mode="verbose"): return 0
+    if not pfp_utils.file_exists(ncFileName, mode="verbose"):
+        return 0
     csvFileName = get_outfilenamefromcf(cf)
-    if not pfp_utils.path_exists(os.path.dirname(csvFileName),mode="verbose"): return 0
+    if not pfp_utils.path_exists(os.path.dirname(csvFileName), mode="verbose"):
+        return 0
     # open the csv file
-    csvfile = open(csvFileName,'wb')
+    csvfile = open(csvFileName, "wb")
     writer = csv.writer(csvfile)
     # read the netCDF file
     ds = nc_read_series(ncFileName)
     nrecs = int(ds.globalattributes["nc_nrecs"])
     # get the date and time data
-    Day,flag,attr = pfp_utils.GetSeries(ds,'Day')
-    Month,flag,attr = pfp_utils.GetSeries(ds,'Month')
-    Year,flag,attr = pfp_utils.GetSeries(ds,'Year')
-    Hour,flag,attr = pfp_utils.GetSeries(ds,'Hour')
-    Minute,flag,attr = pfp_utils.GetSeries(ds,'Minute')
+    ldt = pfp_utils.GetVariable(ds, "DateTime")
+    Minute = numpy.array([dt.minute for dt in ldt["Data"]])
+    Hour = numpy.array([dt.hour for dt in ldt["Data"]])
+    Day = numpy.array([dt.day for dt in ldt["Data"]])
+    Month = numpy.array([dt.month for dt in ldt["Data"]])
+    Year = numpy.array([dt.year for dt in ldt["Data"]])
     # get the data
-    data = ep_biomet_get_data(cf,ds)
+    data = ep_biomet_get_data(cf, ds)
     # check and adjust units if required
     # get a list of the EddyPro series to be output
     ep_series_list = data.keys()
     ep_series_list.sort()
     for ep_series in ep_series_list:
         # loop over the netCDF series names and check they exist in constants.units_synonyms dictionary
-        ncname = data[ep_series]["ncname"]
-        if ncname not in c.units_synonyms.keys():
-            msg = "No entry for "+ncname+" in cfg.units_synonyms, skipping ..."
+        in_name = data[ep_series]["name"]
+        if in_name not in c.units_synonyms.keys():
+            msg = "No entry for " + in_name + " in cfg.units_synonyms, skipping ..."
             logger.warning(msg)
             continue
-        if (data[ep_series]["Attr"]["units"] not in c.units_synonyms[ncname] and
-            ds.series[ncname]["Attr"]["units"] not in c.units_synonyms[ncname]):
-            msg = "Inconsistent units found for series "+ep_series+" and "+ncname
+        if (data[ep_series]["Attr"]["units"] not in c.units_synonyms[in_name] and
+            ds.series[in_name]["Attr"]["units"] not in c.units_synonyms[in_name]):
+            msg = "Inconsistent units found for series " + ep_series + " and " + in_name
             logger.warning(msg)
     # write the variable names to the csv file
     row_list = ['TIMESTAMP_1']
@@ -873,7 +898,7 @@ def ep_biomet_write_csv(cf):
         dtstr = '%d-%02d-%02d %02d%02d'%(Year[i],Month[i],Day[i],Hour[i],Minute[i])
         data_list = [dtstr]
         for ep_series in ep_series_list:
-            strfmt = data[ep_series]["fmt"]
+            strfmt = data[ep_series]["format"]
             if "d" in strfmt:
                 data_list.append(strfmt.format(int(round(data[ep_series]["Data"][i]))))
             else:
@@ -883,28 +908,88 @@ def ep_biomet_write_csv(cf):
     csvfile.close()
     return 1
 
-def ep_biomet_get_data(cf,ds):
+def ep_biomet_get_data(cfg, ds):
     data = {}
-    ep_series_list = cf["Variables"].keys()
+    ep_series_list = cfg["Variables"].keys()
     for ep_series in ep_series_list:
-        ncname = cf["Variables"][ep_series]["ncname"]
-        if ncname not in ds.series.keys():
-            logger.error("Series "+ncname+" not in netCDF file, skipping ...")
+        in_name = cfg["Variables"][ep_series]["name"]
+        if in_name not in ds.series.keys():
+            logger.error("Series " + in_name + " not in netCDF file, skipping ...")
             ep_series_list.remove(ep_series)
             continue
-        data[ep_series] = copy.deepcopy(ds.series[ncname])
-        data[ep_series]["ncname"] = ncname
-        data[ep_series]["units"] = cf["Variables"][ep_series]["units"]
-        fmt = cf["Variables"][ep_series]["format"]
+        data[ep_series] = copy.deepcopy(ds.series[in_name])
+        data[ep_series]["name"] = in_name
+        data[ep_series]["units"] = cfg["Variables"][ep_series]["units"]
+        fmt = cfg["Variables"][ep_series]["format"]
         if "." in fmt:
             numdec = len(fmt) - (fmt.index(".") + 1)
-            strfmt = "{0:."+str(numdec)+"f}"
+            strfmt = "{0:." + str(numdec) + "f}"
         else:
             strfmt = "{0:d}"
-        data[ep_series]["fmt"] = strfmt
+        data[ep_series]["format"] = strfmt
     return data
 
-def fn_write_csv(cf):
+def ExcelToDataStructures(xl_data, l1_info):
+    """
+    Purpose:
+     Read an Excel workbook and return a dictionary of work sheets.
+    Usage:
+    Side effects:
+    Author: PRI
+    Date: February 2020
+    """
+    l1ire = l1_info["read_excel"]
+    # first data row
+    fdr = int(l1ire["Files"]["in_firstdatarow"])
+    # header row
+    hdr = int(l1ire["Files"]["in_headerrow"])
+    xl_datemode = l1ire["Global"]["xl_datemode"]
+    xl_sheets = list(xl_data.keys())
+    # read each sheet to a data structure
+    ds = {}
+    for xl_sheet in xl_sheets:
+        ds[xl_sheet] = DataStructure()
+        ds[xl_sheet].globalattributes = copy.deepcopy(l1ire["Global"])
+        active_sheet = xl_data[xl_sheet]
+        headers = active_sheet.row_values(hdr)
+        ldr = int(active_sheet.nrows)
+        ds[xl_sheet].globalattributes["nc_nrecs"] = nrecs = ldr - fdr
+        xl_labels = list(l1ire["xl_sheets"][xl_sheet].keys())
+        for xl_label in xl_labels:
+            nc_label = l1ire["xl_sheets"][xl_sheet][xl_label]
+            col = headers.index(xl_label)
+            #print nc_label, xl_label, xl_sheet, col
+            values = numpy.array(active_sheet.col_values(col)[fdr:ldr])
+            types = numpy.array(active_sheet.col_types(col)[fdr:ldr])
+            mode = scipy.stats.mode(types)
+            #print xl_label, mode[0][0], mode[1][0]
+            if mode[0][0] == 3 and 100*mode[1][0]/nrecs > 75:
+                # time stamp (Excel cell type = 3)
+                msg = " Got time stamp " + xl_label + " from sheet " + xl_sheet
+                logger.info(msg)
+                dt = pfp_utils.get_datetime_from_excel_date(values, xl_datemode)
+                var = pfp_utils.CreateEmptyVariable(nc_label, nrecs)
+                var["Label"] = "DateTime"
+                var["Data"] = numpy.ma.masked_where(types != 3, dt)
+                var["Flag"] = numpy.where(types != 3, numpy.ones(nrecs), numpy.zeros(nrecs))
+                var["Attr"] = {"long_name": "Datetime in local timezone",
+                               "cf_role": "timeseries_id",
+                               "units": "days since 1899-12-31 00:00:00"}
+                pfp_utils.CreateVariable(ds[xl_sheet], var)
+            elif mode[0][0] == 2:
+                msg = " Got data for " + nc_label + " from sheet " + xl_sheet
+                logger.info(msg)
+                var = pfp_utils.CreateEmptyVariable(nc_label, nrecs)
+                var["Label"] = nc_label
+                var["Data"] = numpy.ma.masked_where(types != 2, values)
+                var["Flag"] = numpy.where(types != 2, numpy.ones(nrecs), numpy.zeros(nrecs))
+                var["Attr"] = l1ire["Variables"][nc_label]["Attr"]
+                pfp_utils.CreateVariable(ds[xl_sheet], var)
+        # round the Python datetime to the nearest second
+        pfp_utils.round_datetime(ds[xl_sheet], mode="nearest_second")
+    return ds
+
+def write_csv_fluxnet(cf):
     # get the file names
     ncFileName = get_infilenamefromcf(cf)
     csvFileName = get_outfilenamefromcf(cf)
@@ -955,7 +1040,7 @@ def fn_write_csv(cf):
             ds.series[thisone]["Flag"] = numpy.concatenate((flag_patched,ds.series[thisone]["Flag"]))
         ds.globalattributes["nc_nrecs"] = str(len(ds.series["DateTime"]["Data"]))
         # refresh the year, month, day etc arrays now that we have padded the datetime series
-        pfp_utils.get_ymdhmsfromdatetime(ds)
+        #pfp_utils.get_ymdhmsfromdatetime(ds)
     # now check the end datetime of the file
     end_datetime = dateutil.parser.parse(str(cf["General"]["end_datetime"]))
     if dt[-1]>end_datetime:
@@ -985,7 +1070,7 @@ def fn_write_csv(cf):
             ds.series[thisone]["Flag"] = numpy.concatenate((ds.series[thisone]["Flag"],flag_patched))
         ds.globalattributes["nc_nrecs"] = str(len(ds.series["DateTime"]["Data"]))
         # refresh the year, month, day etc arrays now that we have padded the datetime series
-        pfp_utils.get_ymdhmsfromdatetime(ds)
+        #pfp_utils.get_ymdhmsfromdatetime(ds)
     if ts==30:
         nRecs_year = 17520
         nRecs_leapyear = 17568
@@ -994,24 +1079,25 @@ def fn_write_csv(cf):
         nRecs_leapyear = 8784
     else:
         logger.error(" Unrecognised time step ("+str(ts)+")")
-        return
+        return 0
     if (int(ds.globalattributes["nc_nrecs"])!=nRecs_year) & (int(ds.globalattributes["nc_nrecs"])!=nRecs_leapyear):
         logger.error(" Number of records in file does not equal "+str(nRecs_year)+" or "+str(nRecs_leapyear))
         msg = str(len(ds.series["DateTime"]["Data"]))+" "+str(ds.series["DateTime"]["Data"][0])
         msg = msg+" "+str(ds.series["DateTime"]["Data"][-1])
         logger.error(msg)
-        return
+        return 0
     # get the date and time data
-    Day,flag,attr = pfp_utils.GetSeries(ds,'Day')
-    Month,flag,attr = pfp_utils.GetSeries(ds,'Month')
-    Year,flag,attr = pfp_utils.GetSeries(ds,'Year')
-    Hour,flag,attr = pfp_utils.GetSeries(ds,'Hour')
-    Minute,flag,attr = pfp_utils.GetSeries(ds,'Minute')
+    ldt = ds.series["DateTime"]["Data"]
+    Day = numpy.array([dt.day for dt in ldt])
+    Month = numpy.array([dt.month for dt in ldt])
+    Year = numpy.array([dt.year for dt in ldt])
+    Hour = numpy.array([dt.hour for dt in ldt])
+    Minute = numpy.array([dt.minute for dt in ldt])
     # get the data
     data = {}
     series_list = cf["Variables"].keys()
     for series in series_list:
-        ncname = cf["Variables"][series]["ncname"]
+        ncname = cf["Variables"][series]["name"]
         if ncname not in ds.series.keys():
             logger.error("Series "+ncname+" not in netCDF file, skipping ...")
             series_list.remove(series)
@@ -1072,7 +1158,7 @@ def fn_write_csv(cf):
         writer.writerow(data_list)
     # close the csv file
     csvfile.close()
-    return
+    return 1
 
 def get_controlfilecontents(ControlFileName, mode="verbose"):
     if mode != "quiet":
@@ -1123,14 +1209,6 @@ def get_outfilenamefromcf(cf):
     name = pfp_utils.get_keyvaluefromcf(cf,["Files"],"out_filename",default="")
     return str(path)+str(name)
 
-def get_outputlistfromcf(cf,filetype):
-    try:
-        outputlist = ast.literal_eval(cf['Output'][filetype])
-    except:
-        #log.info('get_outputlistfromcf: Unable to get output list from Output section in control file')
-        outputlist = None
-    return outputlist
-
 def get_seriesstats(cf,ds):
     # open an Excel file for the flag statistics
     level = ds.globalattributes['nc_level']
@@ -1141,66 +1219,6 @@ def get_seriesstats(cf,ds):
     xlFile = xlwt.Workbook()
     xlFlagSheet = xlFile.add_sheet('Flag')
     # get the flag statistics
-    #xlRow = 0
-    #xlCol = 0
-    #xlFlagSheet.write(xlRow,xlCol,'0:')
-    #xlFlagSheet.write(xlRow,xlCol+1,ds.globalattributes['Flag00'])
-    #xlFlagSheet.write(xlRow,xlCol+2,'1:')
-    #xlFlagSheet.write(xlRow,xlCol+3,ds.globalattributes['Flag01'])
-    #xlFlagSheet.write(xlRow,xlCol+4,'2:')
-    #xlFlagSheet.write(xlRow,xlCol+5,ds.globalattributes['Flag02'])
-    #xlFlagSheet.write(xlRow,xlCol+6,'3:')
-    #xlFlagSheet.write(xlRow,xlCol+7,ds.globalattributes['Flag03'])
-    #xlFlagSheet.write(xlRow,xlCol+8,'4:')
-    #xlFlagSheet.write(xlRow,xlCol+9,ds.globalattributes['Flag04'])
-    #xlFlagSheet.write(xlRow,xlCol+10,'5:')
-    #xlFlagSheet.write(xlRow,xlCol+11,ds.globalattributes['Flag05'])
-    #xlFlagSheet.write(xlRow,xlCol+12,'6:')
-    #xlFlagSheet.write(xlRow,xlCol+13,ds.globalattributes['Flag06'])
-    #xlFlagSheet.write(xlRow,xlCol+14,'7:')
-    #xlFlagSheet.write(xlRow,xlCol+15,ds.globalattributes['Flag07'])
-    #xlRow = xlRow + 1
-    #xlFlagSheet.write(xlRow,xlCol,'10:')
-    #xlFlagSheet.write(xlRow,xlCol+1,ds.globalattributes['Flag10'])
-    #xlFlagSheet.write(xlRow,xlCol+2,'11:')
-    #xlFlagSheet.write(xlRow,xlCol+3,ds.globalattributes['Flag11'])
-    #xlFlagSheet.write(xlRow,xlCol+4,'12:')
-    #xlFlagSheet.write(xlRow,xlCol+5,ds.globalattributes['Flag12'])
-    #xlFlagSheet.write(xlRow,xlCol+6,'13:')
-    #xlFlagSheet.write(xlRow,xlCol+7,ds.globalattributes['Flag13'])
-    #xlFlagSheet.write(xlRow,xlCol+8,'14:')
-    #xlFlagSheet.write(xlRow,xlCol+9,ds.globalattributes['Flag14'])
-    #xlFlagSheet.write(xlRow,xlCol+10,'15:')
-    #xlFlagSheet.write(xlRow,xlCol+11,ds.globalattributes['Flag15'])
-    #xlFlagSheet.write(xlRow,xlCol+12,'16:')
-    #xlFlagSheet.write(xlRow,xlCol+13,ds.globalattributes['Flag16'])
-    #xlFlagSheet.write(xlRow,xlCol+14,'17:')
-    #xlFlagSheet.write(xlRow,xlCol+15,ds.globalattributes['Flag17'])
-    #xlFlagSheet.write(xlRow,xlCol+16,'18:')
-    #xlFlagSheet.write(xlRow,xlCol+17,ds.globalattributes['Flag18'])
-    #xlFlagSheet.write(xlRow,xlCol+18,'19:')
-    #xlFlagSheet.write(xlRow,xlCol+19,ds.globalattributes['Flag19'])
-    #xlRow = xlRow + 1
-    #xlFlagSheet.write(xlRow,xlCol,'30:')
-    #xlFlagSheet.write(xlRow,xlCol+1,ds.globalattributes['Flag30'])
-    #xlFlagSheet.write(xlRow,xlCol+2,'31:')
-    #xlFlagSheet.write(xlRow,xlCol+3,ds.globalattributes['Flag31'])
-    #xlFlagSheet.write(xlRow,xlCol+4,'32:')
-    #xlFlagSheet.write(xlRow,xlCol+5,ds.globalattributes['Flag32'])
-    #xlFlagSheet.write(xlRow,xlCol+6,'33:')
-    #xlFlagSheet.write(xlRow,xlCol+7,ds.globalattributes['Flag33'])
-    #xlFlagSheet.write(xlRow,xlCol+8,'34:')
-    #xlFlagSheet.write(xlRow,xlCol+9,ds.globalattributes['Flag34'])
-    #xlFlagSheet.write(xlRow,xlCol+10,'35:')
-    #xlFlagSheet.write(xlRow,xlCol+11,ds.globalattributes['Flag35'])
-    #xlFlagSheet.write(xlRow,xlCol+12,'36:')
-    #xlFlagSheet.write(xlRow,xlCol+13,ds.globalattributes['Flag36'])
-    #xlFlagSheet.write(xlRow,xlCol+14,'37:')
-    #xlFlagSheet.write(xlRow,xlCol+15,ds.globalattributes['Flag37'])
-    #xlFlagSheet.write(xlRow,xlCol+16,'38:')
-    #xlFlagSheet.write(xlRow,xlCol+17,ds.globalattributes['Flag38'])
-    #xlFlagSheet.write(xlRow,xlCol+18,'39:')
-    #xlFlagSheet.write(xlRow,xlCol+19,ds.globalattributes['Flag39'])
     bins = numpy.arange(-0.5,23.5)
     xlRow = 5
     xlCol = 1
@@ -1209,8 +1227,7 @@ def get_seriesstats(cf,ds):
         xlCol = xlCol + 1
     xlRow = xlRow + 1
     xlCol = 0
-    dsVarNames = ds.series.keys()
-    dsVarNames.sort(key=unicode.lower)
+    dsVarNames = sorted(ds.series.keys())
     for ThisOne in dsVarNames:
         data,flag,attr = pfp_utils.GetSeries(ds, ThisOne)
         hist, bin_edges = numpy.histogram(flag, bins=bins)
@@ -1239,268 +1256,243 @@ def load_controlfile(path='.', title='Choose a control file'):
     cf = get_controlfilecontents(name)
     return cf
 
-def nc_concatenate(cf):
-    # get an instance of the data structure
-    ds = DataStructure()
-    # get the input file list
-    InFile_list = cf['Files']['In'].keys()
-    # read in the first file
-    baseFileName = cf['Files']['In'][InFile_list[0]]
-    logger.info(' Reading data from '+os.path.split(baseFileName)[1])
-    fixtimestepmethod = pfp_utils.get_keyvaluefromcf(cf,["Options"],"FixTimeStepMethod",default="round")
-    ds_n = nc_read_series(baseFileName,fixtimestepmethod=fixtimestepmethod)
-    if len(ds_n.series.keys())==0:
-        logger.error(' An error occurred reading netCDF file: '+baseFileName)
-        return
-    # fill the global attributes
-    for ThisOne in ds_n.globalattributes.keys():
-        ds.globalattributes[ThisOne] = ds_n.globalattributes[ThisOne]
-    # find the first datetime in the file where more than 50% of the variables are present.
-    dt = ds_n.series["DateTime"]["Data"]
-    cond_idx = numpy.zeros(len(dt))
-    series_list = ds_n.series.keys()
-    # remove non-data series
-    for item in ["DateTime","DateTime_UTC","xlDateTime",
-                 "Year","Month","Day","Hour","Minute","Second",
-                 "Hdh","Ddd","time"]:
-        if item in series_list: series_list.remove(item)
-
-    # loop over the data series and calculate fraction of data present
-    opt = pfp_utils.get_keyvaluefromcf(cf,["Options"],"Truncate",default="Yes")
-    if opt.lower() == "yes":
-        default_string = "Ah,CO2,Fa,Fg,Fld,Flu,Fn,Fsd,Fsu,ps,Sws,Ta,Ts,Ws,Wd,Precip"
-        series_string = pfp_utils.get_keyvaluefromcf(cf,["Options"],"SeriesToCheck",default=default_string)
-        series_list = pfp_cfg.cfg_string_to_list(series_string)
-        for item in series_list:
-            data,flag,attr = pfp_utils.GetSeriesasMA(ds_n,item)
-            idx = numpy.ma.where(data.mask==False)
-            cond_idx[idx] = cond_idx[idx] + 1
-        cond_idx = cond_idx/len(series_list)
-        # find the first element where more than 50% data is present
-        opt = pfp_utils.get_keyvaluefromcf(cf,["Options"],"TruncateThreshold",default="50")
-        threshold = float(opt)/float(100)
-        idx = numpy.where(cond_idx>=threshold)[0]
-        # skip if enough data is present from the start of the file
-        if len(idx)!=0 and idx[0]!=0:
-            si = idx[0]
-            msg = " Start date truncated from "+str(dt[0])
-            msg = msg+" to "+str(dt[si])
-            logger.warning(msg)
-            # update the relevent global attributes
-            ds_n.globalattributes["start_date"] = dt[si]
-            ds_n.globalattributes["nc_nrecs"] = len(dt[si:])
-            # now loop over the data series and truncate
-            series_list = ds_n.series.keys()
-            for item in series_list:
-                ds_n.series[item]["Data"] = ds_n.series[item]["Data"][si:]
-                ds_n.series[item]["Flag"] = ds_n.series[item]["Flag"][si:]
-
-    # check that we have 'Ws' and 'Wd' series
-    if "Ws" not in ds_n.series.keys():
-        if "Ws_CSAT" in ds_n.series.keys():
-            msg = " Ws not found, copying series Ws_CSAT to Ws"
-            logger.info(msg)
-            ds_n.series["Ws"] = ds_n.series["Ws_CSAT"].copy()
-        else:
-            msg = "Both Ws and Ws_CSAT missing from file"
-            logger.warning(msg)
-    if "Wd" not in ds_n.series.keys():
-        if "Wd_CSAT" in ds_n.series.keys():
-            msg = " Wd not found, copying series Wd_CSAT to Wd"
-            logger.info(msg)
-            ds_n.series["Wd"] = ds_n.series["Wd_CSAT"].copy()
-        else:
-            msg = "Both Wd and Wd_CSAT missing from file"
-            logger.warning(msg)
-    # fill the variables
-    for ThisOne in ds_n.series.keys():
-        ds.series[ThisOne] = {}
-        ds.series[ThisOne]['Data'] = ds_n.series[ThisOne]['Data']
-        ds.series[ThisOne]['Flag'] = ds_n.series[ThisOne]['Flag']
-        ds.series[ThisOne]['Attr'] = {}
-        for attr in ds_n.series[ThisOne]['Attr'].keys():
-            ds.series[ThisOne]['Attr'][attr] = ds_n.series[ThisOne]['Attr'][attr]
-    ts = int(ds.globalattributes['time_step'])
-    # loop over the remaining files given in the control file
-    for n in InFile_list[1:]:
-        ncFileName = cf['Files']['In'][InFile_list[int(n)]]
-        nc_file_name = os.path.split(ncFileName)
-        logger.info(' Reading data from '+nc_file_name[1])
-        ds_n = nc_read_series(ncFileName,fixtimestepmethod=fixtimestepmethod)
-        if len(ds.series.keys())==0:
-            logger.error(' An error occurred reading the netCDF file: '+nc_file_name[1])
-            return
-        dt_n = ds_n.series['DateTime']['Data']
-        dt = ds.series['DateTime']['Data']
-        nRecs_n = len(ds_n.series["DateTime"]["Data"])
-        nRecs = len(ds.series["DateTime"]["Data"])
-        # check that we have 'Ws' and 'Wd' series
-        if "Ws" not in ds_n.series.keys():
-            if "Ws_CSAT" in ds_n.series.keys():
-                msg = " Ws not found, copying series Ws_CSAT to Ws"
-                logger.info(msg)
-                ds_n.series["Ws"] = ds_n.series["Ws_CSAT"].copy()
-            else:
-                msg = " Both Ws and Ws_CSAT missing from file"
-                logger.warning(msg)
-        if "Wd" not in ds_n.series.keys():
-            if "Wd_CSAT" in ds_n.series.keys():
-                msg = " Wd not found, copying series Wd_CSAT to Wd"
-                logger.info(msg)
-                ds_n.series["Wd"] = ds_n.series["Wd_CSAT"].copy()
-            else:
-                msg = " Both Wd and Wd_CSAT missing from file"
-                logger.warning(msg)
-        if dt_n[0]<dt[-1]+datetime.timedelta(minutes=ts):
-            logger.info(' Overlapping times detected in consecutive files')
-            si = pfp_utils.GetDateIndex(dt_n,str(dt[-1]),ts=ts)+1
-            ei = -1
-        if dt_n[0]==dt[-1]+datetime.timedelta(minutes=ts):
-            logger.info(' Start and end times OK in consecutive files')
-            si = 0; ei = -1
-        if dt_n[0]>dt[-1]+datetime.timedelta(minutes=ts):
-            logger.info(' Gap between start and end times in consecutive files')
-            si = 0; ei = -1
-            #TimeGap = True
-        # loop over the data series in the concatenated file
-        for ThisOne in ds.series.keys():
-            # does this series exist in the file being added to the concatenated file
-            if ThisOne in ds_n.series.keys():
-                # if so, then append this series to the concatenated series
-                if type(ds.series[ThisOne]["Data"]) is list:
-                    ds.series[ThisOne]['Data'] = ds.series[ThisOne]['Data']+ds_n.series[ThisOne]['Data'][si:]
-                else:
-                    ds.series[ThisOne]['Data'] = numpy.append(ds.series[ThisOne]['Data'],ds_n.series[ThisOne]['Data'][si:])
-                ds.series[ThisOne]['Flag'] = numpy.append(ds.series[ThisOne]['Flag'],ds_n.series[ThisOne]['Flag'][si:])
-            else:
-                # if not, then create a dummy series and concatenate that
-                ds_n.series[ThisOne] = {}
-                ds_n.series[ThisOne]['Data'] = numpy.array([c.missing_value]*nRecs_n,dtype=numpy.float64)
-                ds_n.series[ThisOne]['Flag'] = numpy.array([1]*nRecs_n,dtype=numpy.int32)
-                ds.series[ThisOne]['Data'] = numpy.append(ds.series[ThisOne]['Data'],ds_n.series[ThisOne]['Data'][si:])
-                ds.series[ThisOne]['Flag'] = numpy.append(ds.series[ThisOne]['Flag'],ds_n.series[ThisOne]['Flag'][si:])
-        # and now loop over the series in the file being concatenated
-        for ThisOne in ds_n.series.keys():
-            # does this series exist in the concatenated data
-            if ThisOne not in ds.series.keys():
-                # if not then add it
-                ds.series[ThisOne] = {}
-                ds.series[ThisOne]['Data'] = numpy.array([c.missing_value]*nRecs,dtype=numpy.float64)
-                ds.series[ThisOne]['Flag'] = numpy.array([1]*nRecs,dtype=numpy.int32)
-                ds.series[ThisOne]['Data'] = numpy.append(ds.series[ThisOne]['Data'],ds_n.series[ThisOne]['Data'][si:])
-                ds.series[ThisOne]['Flag'] = numpy.append(ds.series[ThisOne]['Flag'],ds_n.series[ThisOne]['Flag'][si:])
-                ds.series[ThisOne]['Attr'] = {}
-                for attr in ds_n.series[ThisOne]['Attr'].keys():
-                    ds.series[ThisOne]['Attr'][attr] = ds_n.series[ThisOne]['Attr'][attr]
-    # find the last datetime in the file where more than 50% of the variables are present.
-    ds.globalattributes["nc_nrecs"] = len(ds.series["DateTime"]["Data"])
-    dt = ds.series["DateTime"]["Data"]
-    cond_idx = numpy.zeros(len(dt))
-    #series_list = ds.series.keys()
-    ## remove non-data series
-    #for item in ["DateTime","DateTime_UTC","xlDateTime",
-                 #"Year","Month","Day","Hour","Minute","Second",
-                 #"Hdh","Ddd","time"]:
-        #if item in series_list: series_list.remove(item)
-
-    # loop over the data series and calculate fraction of data present
-    opt = pfp_utils.get_keyvaluefromcf(cf,["Options"],"Truncate",default="Yes")
-    if opt.lower() == "yes":
-        default_string = "Ah,CO2,Fa,Fg,Fld,Flu,Fn,Fsd,Fsu,ps,Sws,Ta,Ts,Ws,Wd,Precip"
-        series_string = pfp_utils.get_keyvaluefromcf(cf,["Options"],"SeriesToCheck",default=default_string)
-        series_list = pfp_cfg.cfg_string_to_list(series_string)
-        if isinstance(series_list, basestring):
-            series_list = ast.literal_eval(series_list)
-        for item in series_list:
-            data,flag,attr = pfp_utils.GetSeriesasMA(ds,item)
-            idx = numpy.where(numpy.ma.getmaskarray(data)==False)
-            cond_idx[idx] = cond_idx[idx] + 1
-        cond_idx = cond_idx/len(series_list)
-        # find the last element where more than 50% data is present
-        opt = pfp_utils.get_keyvaluefromcf(cf,["Options"],"TruncateThreshold",default="50")
-        threshold = float(opt)/float(100)
-        idx = numpy.where(cond_idx>=threshold)[0]
-        # skip if data is present to the end of the file
-        if len(idx)!=0 and idx[-1]!=len(dt)-1:
-            ei = idx[-1]
-            msg = " End date truncated from "+str(dt[-1])
-            msg = msg+" to "+str(dt[ei])
-            logger.warning(msg)
-            # update the relevent global attributes
-            ds.globalattributes["end_date"] = dt[ei]
-            # now loop over the data series and truncate
-            series_list = ds.series.keys()
-            for item in series_list:
-                ds.series[item]["Data"] = ds.series[item]["Data"][:ei+1]
-                ds.series[item]["Flag"] = ds.series[item]["Flag"][:ei+1]
-        # update the number of records
-        ds.globalattributes["nc_nrecs"] = len(ds.series["DateTime"]["Data"])
-
-    # now sort out any time gaps
-    if pfp_utils.CheckTimeStep(ds):
-        fixtimestepmethod = pfp_utils.get_keyvaluefromcf(cf,["Options"],"FixTimeStepMethod",default="round")
-        pfp_utils.FixTimeStep(ds,fixtimestepmethod=fixtimestepmethod)
-        # update the Excel datetime from the Python datetime
-        pfp_utils.get_xldatefromdatetime(ds)
-        # update the Year, Month, Day etc from the Python datetime
-        pfp_utils.get_ymdhmsfromdatetime(ds)
-    # if requested, fill any small gaps by interpolation
-    # get a list of series in ds excluding the QC flags
-    series_list = [item for item in ds.series.keys() if "_QCFlag" not in item]
-    # remove the datetime variables, these will have no gaps
-    datetime_list = ["xlDateTime","DateTime","Year","Month","Day","Hour","Minute","Second","Hdh","Ddd"]
-    for item in datetime_list:
-        if item in series_list: series_list.remove(item)
-    # loop over the non-datetime data series in ds and interpolate
+def NetCDFConcatenate(info):
+    """
+    Purpose:
+     Concatenate multiple single year files in a single, multiple year file.
+    Usage:
+     pfp_io.NetCDFConcatenate(info)
+    Called by:
+     pfp_top_level.do_file_concatenate()
+    Calls:
+     pfp_io.netcdf_concatenate_read_input_files(info)
+     pfp_utils.GetVariable()
+     pfp_io.netcdf_concatenate_create_ds_out(data, dt_out, chrono_files, labels)
+    Side effects:
+    Author: PRI
+    Date: November 2019
+    """
+    inc = info["NetCDFConcatenate"]
+    # read the input files (data is an OrderedDict)
+    data = netcdf_concatenate_read_input_files(info)
+    # get the file names in data
+    file_names = list(data.keys())
+    # get the earliest start time, the latest end time and a list of unique variable names
+    for file_name in file_names:
+        # get the start and end times
+        dt = pfp_utils.GetVariable(data[file_name], "DateTime")
+        inc["start_date"].append(dt["Data"][0])
+        inc["end_date"].append(dt["Data"][-1])
+        inc["labels"] = inc["labels"] + data[file_name].series.keys()
+    # get a list of files with start times in chronological order
+    inc["chrono_files"] = [f for d, f in sorted(zip(inc["start_date"], inc["in_file_names"]))]
+    # get a list of unique variable names and remove unwanted labels
+    inc["labels"] = list(set(inc["labels"]))
+    items = ["xlDateTime", "DateTime", "Year", "Month", "Day",
+             "Hour", "Minute", "Second", "Hdh", "Ddd", "time"]
+    for item in items:
+        if item in inc["labels"]:
+            inc["labels"].remove(item)
+    # create the output data structure from the input files
+    ds_out = netcdf_concatenate_create_ds_out(data, info)
+    # truncate the start and the end of the output data structure
+    ds_out = netcdf_concatenate_truncate(ds_out, info)
     # get the maximum gap length (in hours) from the control file
-    maxlen = int(pfp_utils.get_keyvaluefromcf(cf,["Options"],"MaxGapInterpolate",default=2))
-    if maxlen!=0:
-        # now loop over the series and do the interpolation
-        logger.info(" Interpolating over fixed time gaps ("+str(maxlen)+" hour max)")
-        for item in series_list:
-            pfp_ts.InterpolateOverMissing(ds,series=item,maxlen=maxlen)
+    pfp_ts.InterpolateOverMissing(ds_out, inc["labels"], max_length_hours=inc["MaxGapInterpolate"],
+                                  int_type="Akima")
     # make sure we have all of the humidities
-    pfp_ts.CalculateHumidities(ds)
+    pfp_ts.CalculateHumidities(ds_out)
     # and make sure we have all of the meteorological variables
-    pfp_ts.CalculateMeteorologicalVariables(ds)
+    pfp_ts.CalculateMeteorologicalVariables(ds_out, info)
     # check units of Fc and convert if necessary
-    Fc_list = [label for label in ds.series.keys() if label[0:2] == "Fc" and "Flag" not in label]
-    pfp_utils.CheckUnits(ds, Fc_list, "umol/m2/s", convert_units=True)
-    # re-calculate the synthetic Fsd
-    #pfp_ts.get_synthetic_fsd(ds)
-    # re-apply the quality control checks (range, diurnal and rules)
-    pfp_ck.do_qcchecks(cf,ds)
-    # update the global attributes for this level
-    if "nc_level" in ds.globalattributes.keys():
-        level = ds.globalattributes["nc_level"]
-    else:
-        level = "unknown"
-    pfp_utils.UpdateGlobalAttributes(cf,ds,level)
+    Fc_list = ["Fc", "Fc_single", "Fc_profile", "Fc_storage"]
+    pfp_utils.CheckUnits(ds_out, Fc_list, "umol/m2/s", convert_units=True)
     # check missing data and QC flags are consistent
-    pfp_utils.CheckQCFlags(ds)
+    pfp_utils.CheckQCFlags(ds_out)
     # update the coverage statistics
-    pfp_utils.get_coverage_individual(ds)
-    pfp_utils.get_coverage_groups(ds)
-    # write the netCDF file
-    outFileName = pfp_utils.get_keyvaluefromcf(cf,["Files","Out"],"ncFileName",default="out.nc")
-    logger.info(' Writing data to '+os.path.split(outFileName)[1])
-    # check to see if the base and concatenated file names are the same
-    # IE the user wants to overwrite the base file
-    if outFileName==baseFileName:
-        # ... but we will save them from themselves!
-        t = time.localtime()
-        rundatetime = datetime.datetime(t[0],t[1],t[2],t[3],t[4],t[5]).strftime("%Y%m%d%H%M")
-        new_ext = "_"+rundatetime+".nc"
-        # add the current local datetime the base file name
-        newFileName = baseFileName.replace(".nc",new_ext)
-        msg = " Renaming "+baseFileName+" to "+newFileName
+    pfp_utils.get_coverage_individual(ds_out)
+    pfp_utils.get_coverage_groups(ds_out)
+    # remove intermediate series
+    pfp_ts.RemoveIntermediateSeries(ds_out, info)
+    logger.info(" Writing data to " + os.path.split(inc["out_file_name"])[1])
+    # write the concatenated data structure to file
+    nc_file = nc_open_write(inc["out_file_name"])
+    nc_write_series(nc_file, ds_out, ndims=inc["NumberOfDimensions"])
+    return
+
+def netcdf_concatenate_create_ds_out(data, info):
+    """
+    Purpose:
+     Create the concatenated data structure from individual year data structures.
+    Usage:
+     ds_out = netcdf_concatenate_create_ds_out(data, info)
+     where;
+      data is a dictionary of data structures with the netCDF file names as the keys.
+      info is the settings dictionary from pfp_compliance.ParseConcatenateControlFile()
+    Side effects:
+    Author: PRI
+    Date: November 2019
+    """
+    logger.info(" Creating the output data structure")
+    inc = info["NetCDFConcatenate"]
+    # get the time step
+    # get the file names in data
+    file_names = list(data.keys())
+    ts = int(data[file_names[0]].globalattributes["time_step"])
+    tsd = datetime.timedelta(minutes=ts)
+    # get a continuous time variable
+    nsd = min(inc["start_date"])
+    xed = max(inc["end_date"])
+    dt_out = numpy.array([r for r in pfp_utils.perdelta(nsd, xed, tsd)])
+    nrecs = len(dt_out)
+    zeros = numpy.zeros(nrecs, dtype=numpy.int32)
+    # get the output data structure
+    ds_out = DataStructure()
+    # create the DateTime variable
+    dt = {"Data": dt_out, "Flag": zeros,
+          "Attr": {"long_name": "Datetime in local timezone", "units": "None"},
+          "Label": "DateTime"}
+    pfp_utils.CreateVariable(ds_out, dt)
+    # create the netCDF time variable
+    time_in = pfp_utils.GetVariable(data[inc["chrono_files"][0]], "time")
+    units = time_in["Attr"]["units"]
+    calendar = time_in["Attr"]["calendar"]
+    time_out = {"Data": netCDF4.date2num(dt_out, units, calendar=calendar),
+                "Flag": zeros, "Attr": copy.deepcopy(time_in["Attr"]),
+                "Label": "time"}
+    pfp_utils.CreateVariable(ds_out, time_out)
+    # make the empty variables
+    for label in inc["labels"]:
+        ds_out.series[label] = pfp_utils.CreateEmptyVariable(label, nrecs, out_type="ndarray")
+    # now loop over the files in chronological order
+    for n, file_name in enumerate(inc["chrono_files"]):
+        # copy the global attributes
+        for gattr in data[file_name].globalattributes:
+            ds_out.globalattributes[gattr] = data[file_name].globalattributes[gattr]
+        # get the time from the input file
+        time_in = pfp_utils.GetVariable(data[file_name], "time")
+        # find the indices of matching times
+        indsa, indsb = pfp_utils.FindMatchingIndices(time_out["Data"], time_in["Data"])
+        # loop over the variables
+        for label in inc["labels"]:
+            dout = ds_out.series[label]
+            if label in data[file_name].series.keys():
+                din = data[file_name].series[label]
+                # copy input data to output variable
+                # NOTE: using direct read from and write to the data structures here,
+                #       not recommended but 10x faster than pfp_utils.GetVariable().
+                dout["Data"][indsa] = din["Data"][indsb]
+                dout["Flag"][indsa] = din["Flag"][indsb]
+                # copy the variable attributes but only if they don't already exist
+                netcdf_concatenate_variable_attributes(dout["Attr"], din["Attr"], info)
+    # update the global attributes
+    ds_out.globalattributes["nc_nrecs"] = nrecs
+    return ds_out
+
+def netcdf_concatenate_variable_attributes(attr_out, attr_in, info):
+    """
+    Purpose:
+     Update the variable attributes of the concatenated data structure.
+    Usage:
+     data = netcdf_concatenate_read_input_files(info)
+     where;
+      info is the settings dictionary returned by
+              pfp_compliance.ParseConcatenateControlFile(cf)
+      data is a dictionary of data structures with the netCDF file
+              names as the keys.
+    Side effects:
+    Author: PRI
+    Date: November 2019
+    """
+    inc = info["NetCDFConcatenate"]
+    for attr in attr_in:
+        if attr in inc["attributes"]:
+            attr_out[attr] = attr_in[attr]
+    return
+
+def netcdf_concatenate_read_input_files(info):
+    """
+    Purpose:
+     Read the list of input files given in info and return a dictionary
+     of data structures.
+     The files do not need to be in chronological order.
+    Usage:
+     data = netcdf_concatenate_read_input_files(info)
+     where;
+      info is the settings dictionary returned by
+              pfp_compliance.ParseConcatenateControlFile(cf)
+      data is a dictionary of data structures with the netCDF file
+              names as the keys.
+    Side effects:
+    Author: PRI
+    Date: November 2019
+    """
+    data = OrderedDict()
+    file_name = info["NetCDFConcatenate"]["in_file_names"][0]
+    data[file_name] = nc_read_series(file_name)
+    ts0 = int(data[file_name].globalattributes["time_step"])
+    for file_name in info["NetCDFConcatenate"]["in_file_names"][1:]:
+        ds = nc_read_series(file_name)
+        tsn = int(ds.globalattributes["time_step"])
+        if tsn == ts0:
+            data[file_name] = ds
+        else:
+            path, name = os.path.split(file_name)
+            msg = " Time stamp wrong for " + name + ", skipping ..."
+            logger.warning(msg)
+            msg = "  Expected " + str(ts0) + ", got " + str(tsn)
+            logger.warning(msg)
+    return data
+
+def netcdf_concatenate_truncate(ds_in, info):
+    """
+    Purpose:
+     Truncate the start and end of the data structure by removiong times when
+     there is less than a specified threshold of selected data available.
+    Usage:
+     ds_out = pfp_io.netcdf_concatenate_truncate(ds, info)
+     where ds is the input data structure
+           info is the settings dictionary from pfp_compliance.ParseConcatenateControlFile()
+           ds_out is the truncated data structure
+    Author: PRI
+    Date: November 2019
+    """
+    inc = info["NetCDFConcatenate"]
+    if inc["Truncate"] != "Yes":
+        return
+    # copy the input data structure
+    ds_out = copy.deepcopy(ds_in)
+    # get the datetime
+    ldt = pfp_utils.GetVariable(ds_out, "DateTime")
+    nrecs = int(ds_out.globalattributes["nc_nrecs"])
+    cidx = numpy.zeros(nrecs)
+    for item in inc["SeriesToCheck"]:
+        if item not in list(ds_out.series.keys()):
+            continue
+        var = pfp_utils.GetVariable(ds_out, item)
+        idx = numpy.where(numpy.ma.getmaskarray(var["Data"]) == False)[0]
+        cidx[idx] = cidx[idx] + 1
+    cidx = cidx/float(len(inc["SeriesToCheck"]))
+    # find the first and last element where more than 50% data is present
+    threshold = float(inc["TruncateThreshold"])/float(100)
+    idx = numpy.where(cidx >= threshold)[0]
+    si = idx[0]
+    if si != 0:
+        msg = " Start date truncated from " + str(ldt["Data"][0]) + " to " + str(ldt["Data"][si])
         logger.info(msg)
-        # ... and rename the base file to preserve it
-        os.rename(baseFileName,newFileName)
-        # now the base file will not be overwritten
-    ncFile = nc_open_write(outFileName)
-    ndims = int(pfp_utils.get_keyvaluefromcf(cf,["Options"],"NumberOfDimensions", default=3))
-    nc_write_series(ncFile,ds,ndims=ndims)
+    ei = idx[-1]
+    if ei != nrecs-1:
+        msg = " End date truncated from " + str(ldt["Data"][-1]) + " to " + str(ldt["Data"][ei])
+        logger.info(msg)
+    # now loop over the data series and truncate
+    for item in list(ds_out.series.keys()):
+        ds_out.series[item]["Data"] = ds_out.series[item]["Data"][si:ei+1]
+        ds_out.series[item]["Flag"] = ds_out.series[item]["Flag"][si:ei+1]
+    # update the relevent global attributes
+    ds_out.globalattributes["start_date"] = ldt["Data"][si]
+    ds_out.globalattributes["end_date"] = ldt["Data"][ei]
+    ds_out.globalattributes["nc_nrecs"] = len(ds_out.series["DateTime"]["Data"])
+    return ds_out
 
 def ncsplit_run(split_gui):
     infilename = split_gui.info["input_file_path"]
@@ -1590,23 +1582,24 @@ def nc_read_series(ncFullName,checktimestep=True,fixtimestepmethod="round"):
     Author: PRI
     Date: Back in the day
     """
-    logger.info(" Reading netCDF file "+ntpath.split(ncFullName)[1])
+    logger.info(" Reading netCDF file " + ntpath.split(ncFullName)[1])
     netCDF4.default_encoding = 'latin-1'
     ds = DataStructure()
     # check to see if the requested file exists, return empty ds if it doesn't
-    if ncFullName[0:4]!="http":
-        if not pfp_utils.file_exists(ncFullName,mode="quiet"):
-            logger.error(' netCDF file '+ncFullName+' not found')
+    if ncFullName[0:4] != "http":
+        if not pfp_utils.file_exists(ncFullName, mode="quiet"):
+            msg = " netCDF file " + ncFullName + " not found"
+            logger.error(msg)
             raise Exception("nc_read_series: file not found")
     # file probably exists, so let's read it
-    ncFile = netCDF4.Dataset(ncFullName,'r')
+    ncFile = netCDF4.Dataset(ncFullName, "r")
     # disable automatic masking of data when valid_range specified
     ncFile.set_auto_mask(False)
     # now deal with the global attributes
     gattrlist = ncFile.ncattrs()
-    if len(gattrlist)!=0:
+    if len(gattrlist) != 0:
         for gattr in gattrlist:
-            ds.globalattributes[gattr] = getattr(ncFile,gattr)
+            ds.globalattributes[gattr] = getattr(ncFile, gattr)
     # get a list of the variables in the netCDF file (not their QC flags)
     varlist = [x for x in ncFile.variables.keys() if "_QCFlag" not in x]
     for ThisOne in varlist:
@@ -1616,26 +1609,34 @@ def nc_read_series(ncFullName,checktimestep=True,fixtimestepmethod="round"):
         # create the series in the data structure
         ds.series[unicode(ThisOne)] = {}
         # get the data and the QC flag
-        data,flag,attr = nc_read_var(ncFile,ThisOne)
+        data, flag, attr = nc_read_var(ncFile, ThisOne)
         ds.series[ThisOne]["Data"] = data
         ds.series[ThisOne]["Flag"] = flag
         ds.series[ThisOne]["Attr"] = attr
     ncFile.close()
     # get a series of Python datetime objects
-    pfp_utils.get_datetime_from_nctime(ds)
+    if "time" in ds.series.keys():
+        pfp_utils.get_datetime_from_nctime(ds)
+    elif "xlDateTime" in ds.series.keys():
+        pfp_utils.get_datetime_from_xldatetime(ds)
+    elif (("Year" in ds.series.keys()) and ("Month" in ds.series.keys()) and
+          ("Day" in ds.series.keys()) and ("Hour" in ds.series.keys()) and
+          ("Minute" in ds.series.keys()) and ("Second" in ds.series.keys())):
+        pfp_utils.get_datetime_from_ymdhms(ds)
+    else:
+        msg = " Unable to find datetime variable in netCDF file"
+        logger.error(msg)
+        raise Exception("No datetime in netCDF file")
     # round the Python datetime to the nearest second
     pfp_utils.round_datetime(ds, mode="nearest_second")
     # check the time step and fix it required
     if checktimestep:
         if pfp_utils.CheckTimeStep(ds):
-            pfp_utils.FixTimeStep(ds,fixtimestepmethod=fixtimestepmethod)
-            # update the Excel datetime from the Python datetime
-            #pfp_utils.get_xldatefromdatetime(ds)
-            # update the Year, Month, Day etc from the Python datetime
-            #pfp_utils.get_ymdhmsfromdatetime(ds)
+            pfp_utils.FixTimeStep(ds, fixtimestepmethod=fixtimestepmethod)
     # tell the user when the data starts and ends
     ldt = ds.series["DateTime"]["Data"]
-    msg = " Got data from "+ldt[0].strftime("%Y-%m-%d %H:%M:%S")+" to "+ldt[-1].strftime("%Y-%m-%d %H:%M:%S")
+    msg = " Got data from " + ldt[0].strftime("%Y-%m-%d %H:%M:%S")
+    msg += " to " + ldt[-1].strftime("%Y-%m-%d %H:%M:%S")
     logger.info(msg)
     return ds
 
@@ -1772,7 +1773,6 @@ def nc_write_data(nc_obj, data_dict):
         for attr_key in data_dict["variables"][label]["attr"]:
             attr_value = data_dict["variables"][label]["attr"][attr_key]
             nc_var.setncattr(attr_key, attr_value)
-
     return
 
 def nc_write_globalattributes(nc_file, ds, flag_defs=True):
@@ -1885,8 +1885,8 @@ def nc_write_series(ncFile, ds, outputlist=None, ndims=3):
     datetimelist = ['xlDateTime','Year','Month','Day','Hour','Minute','Second','Hdh','Ddd']
     # and write them to the netCDF file
     for ThisOne in sorted(datetimelist):
-        if ThisOne in ds.series.keys(): nc_write_var(ncFile,ds,ThisOne,dims)
-        if ThisOne in outputlist: outputlist.remove(ThisOne)
+        if ThisOne in outputlist:
+            outputlist.remove(ThisOne)
     # write everything else to the netCDF file
     for ThisOne in sorted(outputlist):
         nc_write_var(ncFile,ds,ThisOne,dims)
@@ -1935,13 +1935,16 @@ def nc_write_var(ncFile, ds, ThisOne, dim):
         msg = "Unrecognised dimension request for netCDF variable: "+ThisOne
         raise RuntimeError(msg)
     # write the attributes
-    for item in ds.series[ThisOne]["Attr"]:
+    vattrs = sorted(list(ds.series[ThisOne]["Attr"].keys()))
+    for item in vattrs:
         if item != "_FillValue":
             attr = str(ds.series[ThisOne]["Attr"][item])
             ncVar.setncattr(item, attr)
     # make sure the missing_value attribute is written
-    if "missing_value" not in ds.series[ThisOne]["Attr"]:
-        ncVar.setncattr("missing_value", c.missing_value)
+    if dt == "d":
+        ncVar.setncattr("missing_value", repr(float(c.missing_value)))
+    else:
+        ncVar.setncattr("missing_value", repr(int(c.missing_value)))
     # get the data type of the QC flag
     dt = get_ncdtype(ds.series[ThisOne]["Flag"])
     # create the variable

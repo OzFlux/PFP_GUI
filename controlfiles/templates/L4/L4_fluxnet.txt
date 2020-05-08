@@ -4,57 +4,55 @@ level = L4
     in_filename = Right click to browse
     out_filename = Right click to browse
     plot_path = Right click to browse
-    erai = Right click to browse
-
+    era5 = Right click to browse
 [Options]
     MaxGapInterpolate = 3
-
 [Drivers]
     [[Fld]]
         [[[GapFillFromAlternate]]]
-            [[[[Fld_erai]]]]
-                source = erai
+            [[[[Fld_era5]]]]
+                source = era5
         [[[MergeSeries]]]
-            Source = Fld,Fld_erai
+            Source = Fld,Fld_era5
     [[Fsd]]
         [[[GapFillFromAlternate]]]
-            [[[[Fsd_erai]]]]
-                source = erai
+            [[[[Fsd_era5]]]]
+                source = era5
                 fit = ols_thru0
                 lag = no
         [[[MergeSeries]]]
-            Source = Fsd,Fsd_erai
+            Source = Fsd,Fsd_era5
     [[ps]]
         [[[GapFillFromAlternate]]]
-            [[[[ps_erai]]]]
-                source = erai
+            [[[[ps_era5]]]]
+                source = era5
         [[[MergeSeries]]]
-            Source = ps,ps_erai
+            Source = ps,ps_era5
     [[RH]]
         [[[GapFillFromAlternate]]]
-            [[[[RH_erai]]]]
-                source = erai
+            [[[[RH_era5]]]]
+                source = era5
         [[[MergeSeries]]]
-            Source = RH,RH_erai
+            Source = RH,RH_era5
     [[Ta]]
         [[[GapFillFromAlternate]]]
-            [[[[Ta_erai]]]]
-                source = erai
+            [[[[Ta_era5]]]]
+                source = era5
         [[[MergeSeries]]]
-            Source = Ta,Ta_erai
+            Source = Ta,Ta_era5
     [[Ws]]
         [[[GapFillFromAlternate]]]
-            [[[[Ws_erai]]]]
-                source = erai
+            [[[[Ws_era5]]]]
+                source = era5
                 fit = ols_thru0
                 lag = no
         [[[MergeSeries]]]
-            Source = Ws,Ws_erai
+            Source = Ws,Ws_era5
     [[Precip]]
         [[[GapFillFromAlternate]]]
-            [[[[Precip_erai]]]]
-                source = erai
+            [[[[Precip_era5]]]]
+                source = era5
                 fit = replace
                 lag = no
         [[[MergeSeries]]]
-            Source = Precip,Precip_erai
+            Source = Precip,Precip_era5

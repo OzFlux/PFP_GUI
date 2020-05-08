@@ -1,0 +1,13 @@
+[Options]
+    Fsd_threshold  = 5
+    Num_bootstraps = 100
+
+[Variables]
+    [[Fc]]
+        name = Fc
+    [[Ta]]
+        name = Ta
+    [[ustar]]
+        name = ustar
+    [[Fsd]]
+        name = Fsd

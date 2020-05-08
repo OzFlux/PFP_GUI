@@ -1,41 +1,41 @@
 [Variables]
     [[Fsd]]
-        AltVarName = "Fsd"
+        name = Fsd
     [[Fsu]]
-        AltVarName = "Fsu"
+        name = Fsu
     [[Fld]]
-        AltVarName = "Fld"
+        name = Fld
     [[Flu]]
-        AltVarName = "Flu"
+        name = Flu
     [[Fn]]
-        AltVarName = "Fn"
+        name = Fn
     [[Fa]]
-        AltVarName = "Fa"
+        name = Fa
     [[ps]]
-        AltVarName = "ps"
+        name = ps
     [[Ta]]
-        AltVarName = "Ta"
+        name = Ta
     [[Ah]]
-        AltVarName = "Ah"
+        name = Ah
     [[RH]]
-        AltVarName = "RH"
+        name = RH
     [[CO2]]
-        AltVarName = "CO2"
+        name = CO2
     [[Ts]]
-        AltVarName = "Ts"
+        name = Ts
     [[Fg]]
-        AltVarName = "Fg"
+        name = Fg
     [[Sws]]
-        AltVarName = "Sws"
+        name = Sws
     [[Ws]]
-        AltVarName = "Ws"
+        name = Ws
     [[Wd]]
-        AltVarName = "Wd"
+        name = Wd
     [[Fh]]
-        AltVarName = "Fh"
+        name = Fh
     [[Fe]]
-        AltVarName = "Fe"
+        name = Fe
     [[Fc]]
-        AltVarName = "Fc"
+        name = Fc
     [[ustar]]
-        AltVarName = "ustar"
+        name = ustar

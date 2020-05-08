@@ -5,7 +5,6 @@ level = L5
     out_filename = Right click to browse
     plot_path = Right click to browse
     cpd_filename = Right click to browse
-
 [Options]
     MaxGapInterpolate = 3
     MaxShortGapLength = 14
@@ -14,32 +13,30 @@ level = L5
     DayNightFilter = Fsd
     AcceptDayTimes = Yes
     TruncateToImports = Yes
-    
 [ustar_threshold]
     0 = YYYY-MM-DD hh:mm,YYYY-MM-DD hh:mm,<ustar_threshold>
-
 [Fluxes]
     [[ustar]]
         [[[GapFillUsingSOLO]]]
             [[[[ustar_SOLO]]]]
                 drivers = Ws,Fn,Ta,q
         [[[MergeSeries]]]
-            Source = ustar,ustar_SOLO
+            source = ustar,ustar_SOLO
     [[Fe]]
         [[[GapFillUsingSOLO]]]
             [[[[Fe_SOLO]]]]
                 drivers = Fa,SHD,Ta,Ws
         [[[MergeSeries]]]
-            Source = Fe,Fe_SOLO
+            source = Fe,Fe_SOLO
     [[Fh]]
         [[[GapFillUsingSOLO]]]
             [[[[Fh_SOLO]]]]
                 drivers = Fa,Ta,Ws
         [[[MergeSeries]]]
-            Source = Fh,Fh_SOLO
+            source = Fh,Fh_SOLO
     [[Fc]]
         [[[GapFillUsingSOLO]]]
             [[[[Fc_SOLO]]]]
                 drivers = Fn,Fg,q,VPD,Ta,Ts
         [[[MergeSeries]]]
-            Source = Fc,Fc_SOLO
+            source = Fc,Fc_SOLO

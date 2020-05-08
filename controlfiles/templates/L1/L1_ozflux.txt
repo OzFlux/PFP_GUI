@@ -11,15 +11,15 @@ level = L1
 would like to acknowledge the financial support of the Australian Federal Government via
 the National Collaborative Research Infrastructure Scheme and the Education Investment
 Fund.'''
-    contact = ""
+    contact = 
     canopy_height = <canopy_height>m
     comment = CF metadata, OzFlux standard variable names
     conventions = CF-1.6
     conventions_names = CF convention standard names table version 27, 28 Nov 2013, audited 4 Jan 2015
     data_url = http://data.ozflux.org.au/
-    doi = ""
-    history = ""
-    institution = ""
+    doi = 
+    history = 
+    institution = 
     latitude = <latitude>
     license_type = CC BY 4.0
     license_url = https://creativecommons.org/licenses/by/4.0/
@@ -28,14 +28,14 @@ Fund.'''
     ozflux_url = http://ozflux.org.au/
     references = None
     site_name = <site_name>
-    site_pi = ""
-    soil = ""
-    source = ""
+    site_pi = 
+    soil = 
+    source = 
     title = Flux tower data set from the <site_name> site for the calendar year <year>
     time_step = 30
     time_zone = <country>/<time_zone>
-    tower_height = ""
-    vegetation = ""
+    tower_height = 
+    vegetation = 
     altitude = <altitude>m
 
 [Variables]
@@ -56,7 +56,7 @@ Fund.'''
             height = <height>m
             instrument = NR Lite
             long_name = Net radiation (NRLite)
-            serial_number = ""
+            serial_number = 
             standard_name = surface_net_downwawrd_radiative_flux
             units = W/m2
     [[Fld]]
@@ -67,7 +67,7 @@ Fund.'''
             height = <height>m
             instrument = Kipp and Zonen CNR4
             long_name = Down-welling long wave
-            serial_number = ""
+            serial_number = 
             standard_name = surface_downwelling_longwave_flux_in_air
             units = W/m2
     [[Flu]]
@@ -78,7 +78,7 @@ Fund.'''
             height = <height>m
             instrument = Kipp and Zonen CNR4
             long_name = Up-welling long wave
-            serial_number = ""
+            serial_number = 
             standard_name = surface_upwelling_longwave_flux_in_air
             units = W/m2
     [[Fsu]]
@@ -89,7 +89,7 @@ Fund.'''
             height = <height>m
             instrument = Kipp and Zonen CNR4
             long_name = Up-welling short wave
-            serial_number = ""
+            serial_number = 
             standard_name = surface_upwelling_shortwave_flux_in_air
             units = W/m2
     [[Fsd]]
@@ -100,7 +100,7 @@ Fund.'''
             height = <height>m
             instrument = Kipp and Zonen CNR4
             long_name = Down-welling short wave
-            serial_number = ""
+            serial_number = 
             standard_name = surface_downwelling_shortwave_flux_in_air
             units = W/m2
     [[UzT]]
@@ -111,7 +111,7 @@ Fund.'''
             height = <height>m
             instrument = CSAT3
             long_name = Covariance of Uz and T
-            serial_number = ""
+            serial_number = 
             standard_name = not defined
             units = mC/s
     [[UxT]]
@@ -122,7 +122,7 @@ Fund.'''
             height = <height>m
             instrument = CSAT3
             long_name = Covariance of Ux and T
-            serial_number = ""
+            serial_number = 
             standard_name = not defined
             units = mC/s
     [[UyT]]
@@ -133,7 +133,7 @@ Fund.'''
             height = <height>m
             instrument = CSAT3
             long_name = Covariance of Uy and T
-            serial_number = ""
+            serial_number = 
             standard_name = not defined
             units = mC/s
     [[UzA]]
@@ -144,7 +144,7 @@ Fund.'''
             height = <height>m
             instrument = CSAT3, Li-7500
             long_name = Covariance of Uz and H2O
-            serial_number = ""
+            serial_number = 
             standard_name = not defined
             units = g/m2/s
     [[UxA]]
@@ -155,7 +155,7 @@ Fund.'''
             height = <height>m
             instrument = CSAT3, Li-7500
             long_name = Covariance of Ux and H2O
-            serial_number = ""
+            serial_number = 
             standard_name = not defined
             units = g/m2/s
     [[UyA]]
@@ -166,7 +166,7 @@ Fund.'''
             height = <height>m
             instrument = CSAT3, Li-7500
             long_name = Covariance of Uy and H2O
-            serial_number = ""
+            serial_number = 
             standard_name = not defined
             units = g/m2/s
     [[UzC]]
@@ -177,7 +177,7 @@ Fund.'''
             height = <height>m
             instrument = CSAT3, Li-7500
             long_name = Covariance of Uz and CO2
-            serial_number = ""
+            serial_number = 
             standard_name = not defined
             units = mg/m2/s
     [[UxC]]
@@ -188,7 +188,7 @@ Fund.'''
             height = <height>m
             instrument = CSAT3, Li-7500
             long_name = Covariance of Ux and CO2
-            serial_number = ""
+            serial_number = 
             standard_name = not defined
             units = mg/m2/s
     [[UyC]]
@@ -199,7 +199,7 @@ Fund.'''
             height = <height>m
             instrument = CSAT3, Li-7500
             long_name = Covariance of Uy and CO2
-            serial_number = ""
+            serial_number = 
             standard_name = not defined
             units = mg/m2/s
     [[UxUz]]
@@ -210,7 +210,7 @@ Fund.'''
             height = <height>m
             instrument = CSAT3
             long_name = Covariance of Ux and Uz
-            serial_number = ""
+            serial_number = 
             standard_name = not defined
             units = m2/s2
     [[UyUz]]
@@ -221,7 +221,7 @@ Fund.'''
             height = <height>m
             instrument = CSAT3
             long_name = Covariance of Uy and Uz
-            serial_number = ""
+            serial_number = 
             standard_name = not defined
             units = m2/s2
     [[UxUy]]
@@ -232,7 +232,7 @@ Fund.'''
             height = <height>m
             instrument = CSAT
             long_name = Covariance of Ux and Uy
-            serial_number = ""
+            serial_number = 
             standard_name = not defined
             units = m2/s2
     [[UzUz]]
@@ -243,7 +243,7 @@ Fund.'''
             height = <height>m
             instrument = CSAT
             long_name = Vertical wind speed (CSAT coordinates), variance
-            serial_number = ""
+            serial_number = 
             standard_name = not defined
             units = m2/s2
     [[UxUx]]
@@ -254,7 +254,7 @@ Fund.'''
             height = <height>m
             instrument = CSAT
             long_name = Longitudinal wind speed (CSAT coordinates), variance
-            serial_number = ""
+            serial_number = 
             standard_name = not defined
             units = m2/s2
     [[UyUy]]
@@ -265,7 +265,7 @@ Fund.'''
             height = <height>m
             instrument = CSAT
             long_name = Lateral wind speed component (CSAT coordinates), variance
-            serial_number = ""
+            serial_number = 
             standard_name = not defined
             units = m2/s2
     [[Tv_SONIC_Av]]
@@ -276,7 +276,7 @@ Fund.'''
             height = <height>m
             instrument = CSAT
             long_name = Virtual air temperature
-            serial_number = ""
+            serial_number = 
             standard_name = virtual_temperature
             units = C
     [[Tv_SONIC_Vr]]
@@ -287,8 +287,8 @@ Fund.'''
             height = <height>m
             instrument = SONIC
             long_name = Variance of virtual temperature from SONIC
-            serial_number = ""
-            standard_name = ""
+            serial_number = 
+            standard_name = 
             units = C2
     [[CO2_IRGA_Av]]
         [[[xl]]]
@@ -298,7 +298,7 @@ Fund.'''
             height = <height>m
             instrument = Li-7500
             long_name = CO2 concentration, average
-            serial_number = ""
+            serial_number = 
             standard_name = mass_concentration_of_carbon_dioxide_in_air
             units = mg/m3
     [[CO2_IRGA_Vr]]
@@ -309,7 +309,7 @@ Fund.'''
             height = <height>m
             instrument = Li-7500
             long_name = CO2 concentration, variance
-            serial_number = ""
+            serial_number = 
             standard_name = not defined
             units = (mg/m3)2
     [[Ah_IRGA_Av]]
@@ -320,7 +320,7 @@ Fund.'''
             height = <height>m
             instrument = Li-7500
             long_name = Absolute humidity, average
-            serial_number = ""
+            serial_number = 
             standard_name = mass_concentration_of_water_vapor_in_air
             units = g/m3
     [[Ah_IRGA_Vr]]
@@ -331,7 +331,7 @@ Fund.'''
             height = <height>m
             instrument = Li-7500
             long_name = Absolute humidity, variance
-            serial_number = ""
+            serial_number = 
             standard_name = not defined
             units = (g/m3)2
     [[Ta_<inst>_<height>m]]
@@ -342,7 +342,7 @@ Fund.'''
             height = <height>m
             instrument = <inst>
             long_name = Air temperature, average
-            serial_number = ""
+            serial_number = 
             standard_name = air_temperature
             units = C
     [[RH_<inst>_<height>m]]
@@ -353,8 +353,8 @@ Fund.'''
             height = <height>m
             instrument = <inst>
             long_name = Relative humidity, average
-            serial_number = ""
-            standard_name = ""
+            serial_number = 
+            standard_name = 
             units = %
     [[Ah_<inst>_<height>m]]
         [[[xl]]]
@@ -364,7 +364,7 @@ Fund.'''
             height = <height>m
             instrument = <inst>
             long_name = Absolute humidity, average
-            serial_number = ""
+            serial_number = 
             standard_name = mass_concentration_of_water_vapor_in_air
             units = g/m3
     [[Ux]]
@@ -375,7 +375,7 @@ Fund.'''
             height = <height>m
             instrument = CSAT
             long_name = Wind speed, longitudinal component
-            serial_number = ""
+            serial_number = 
             standard_name = not defined
             units = m/s
     [[Uy]]
@@ -386,7 +386,7 @@ Fund.'''
             height = <height>m
             instrument = CSAT
             long_name = Wind speed, lateral component
-            serial_number = ""
+            serial_number = 
             standard_name = not defined
             units = m/s
     [[Uz]]
@@ -397,7 +397,7 @@ Fund.'''
             height = <height>m
             instrument = CSAT
             long_name = Wind speed, vertical component
-            serial_number = ""
+            serial_number = 
             standard_name = not defined
             units = m/s
     [[Ws_SONIC_Av]]
@@ -408,7 +408,7 @@ Fund.'''
             height = <height>m
             instrument = CSAT
             long_name = Wind speed
-            serial_number = ""
+            serial_number = 
             standard_name = wind_speed
             units = m/s
     [[Wd_SONIC_Av]]
@@ -419,7 +419,7 @@ Fund.'''
             height = <height>m
             instrument = CSAT
             long_name = Wind direction
-            serial_number = ""
+            serial_number = 
             standard_name = wind_from_direction
             units = deg
     [[Ws_<inst>_Av]]
@@ -430,7 +430,7 @@ Fund.'''
             height = <height>m
             instrument = <inst>
             long_name = Wind speed
-            serial_number = ""
+            serial_number = 
             standard_name = wind_speed
             units = m/s
     [[Wd_<inst>_Av]]
@@ -441,7 +441,7 @@ Fund.'''
             height = <height>m
             instrument = <inst>
             long_name = Wind direction
-            serial_number = ""
+            serial_number = 
             standard_name = wind_from_direction
             units = deg
     [[Precip]]
@@ -452,7 +452,7 @@ Fund.'''
             height = <height>m
             instrument = <inst>
             long_name = Rainfall, 30 minute total
-            serial_number = ""
+            serial_number = 
             standard_name = rainfall_amount
             units = mm
     [[ps]]
@@ -463,7 +463,7 @@ Fund.'''
             height = <height>m
             instrument = Li-7500
             long_name = Air pressure, average
-            serial_number = ""
+            serial_number = 
             standard_name = surface_air_pressure
             units = kPa
     [[Fg_<depth>cma]]
@@ -472,9 +472,9 @@ Fund.'''
             name = Fg_01_Avg
         [[[Attr]]]
             height = <depth>m
-            instrument = ""
+            instrument = 
             long_name = Ground heat flux, sensor 1a
-            serial_number = ""
+            serial_number = 
             standard_name = downward_heat_flux_in_soil
             units = W/m2
     [[Fg_<depth>cmb]]
@@ -483,9 +483,9 @@ Fund.'''
             name = Fg_02_Avg
         [[[Attr]]]
             height = <depth>m
-            instrument = ""
+            instrument = 
             long_name = Ground heat flux, sensor 1b
-            serial_number = ""
+            serial_number = 
             standard_name = downward_heat_flux_in_soil
             units = W/m2
     [[Fg_<depth>cmc]]
@@ -494,9 +494,9 @@ Fund.'''
             name = Fg_03_Avg
         [[[Attr]]]
             height = <depth>m
-            instrument = ""
+            instrument = 
             long_name = Ground heat flux, sensor 1c
-            serial_number = ""
+            serial_number = 
             standard_name = downward_heat_flux_in_soil
             units = W/m2
     [[Sws_<depth>cma]]
@@ -507,7 +507,7 @@ Fund.'''
             height = <depth>m
             instrument = <inst>
             long_name = Soil water fraction, sensor 1a
-            serial_number = ""
+            serial_number = 
             standard_name = soil_moisture_content
             units = m3/m3
     [[Sws_<depth>cmb]]
@@ -518,7 +518,7 @@ Fund.'''
             height = <depth>m
             instrument = <inst>
             long_name = Soil water fraction, sensor 1b
-            serial_number = ""
+            serial_number = 
             standard_name = soil_moisture_content
             units = m3/m3
     [[Sws_<depth>cmc]]
@@ -529,7 +529,7 @@ Fund.'''
             height = <depth>m
             instrument = <inst>
             long_name = Soil water fraction, sensor 1c
-            serial_number = ""
+            serial_number = 
             standard_name = soil_moisture_content
             units = m3/m3
     [[Ts_<depth>cma]]
@@ -540,7 +540,7 @@ Fund.'''
             height = <depth>m
             instrument = <inst>
             long_name = Soil temperature, sensor 1a
-            serial_number = ""
+            serial_number = 
             standard_name = soil_temperature
             units = C
     [[Ts_<depth>cmb]]
@@ -551,7 +551,7 @@ Fund.'''
             height = <depth>m
             instrument = <inst>
             long_name = Soil temperature, sensor 1b
-            serial_number = ""
+            serial_number = 
             standard_name = soil_temperature
             units = C
     [[Ts_<depth>cmc]]
@@ -562,7 +562,7 @@ Fund.'''
             height = <depth>m
             instrument = <inst>
             long_name = Soil temperature, sensor 1c
-            serial_number = ""
+            serial_number = 
             standard_name = soil_temperature
             units = C
     [[Diag_SONIC]]
@@ -573,7 +573,7 @@ Fund.'''
             height = <height>m
             instrument = CSAT
             long_name = CSAT diagnostic value
-            serial_number = ""
+            serial_number = 
             standard_name = not defined
             units = none
     [[Diag_IRGA]]
@@ -584,7 +584,7 @@ Fund.'''
             height = <height>m
             instrument = Li-7500
             long_name = Li-7500 diagnostic value
-            serial_number = ""
+            serial_number = 
             standard_name = not defined
             units = none
     [[AGC_IRGA]]
@@ -595,7 +595,7 @@ Fund.'''
             height = <height>m
             instrument = Li-7500
             long_name = Li-7500 automatic gain control
-            serial_number = ""
+            serial_number = 
             standard_name = not defined
             units = none
     [[Vbat]]
@@ -605,7 +605,7 @@ Fund.'''
         [[[Attr]]]
             instrument = Campbell Scientific CR3000 logger
             long_name = Battery voltage at logger
-            serial_number = ""
+            serial_number = 
             standard_name = not defined
             units = V
     [[Tpanel]]
@@ -615,6 +615,6 @@ Fund.'''
         [[[Attr]]]
             instrument = Campbell Scientific CR3000 logger
             long_name = Panel temperature at logger
-            serial_number = ""
+            serial_number = 
             standard_name = not defined
             units = C

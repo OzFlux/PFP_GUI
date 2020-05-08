@@ -6,12 +6,10 @@ level = L4
     plot_path = Right click to browse
     aws = Right click to browse
     access = Right click to browse
-    erai = Right click to browse
+    era5 = Right click to browse
     climatology = Right click to browse
-
 [Options]
     MaxGapInterpolate = 3
-
 [Drivers]
     [[Ah]]
         [[[GapFillFromAlternate]]]
@@ -19,146 +17,146 @@ level = L4
                 source = aws
             [[[[Ah_access]]]]
                 source = access
-            [[[[Ah_erai]]]]
-                source = erai
+            [[[[Ah_era5]]]]
+                source = era5
         [[[GapFillFromClimatology]]]
             [[[[Ah_cli]]]]
                 method = interpolated daily
         [[[MergeSeries]]]
-            Source = Ah,Ah_aws,Ah_access,Ah_erai,Ah_cli
+            source = Ah,Ah_aws,Ah_access,Ah_era5,Ah_cli
     [[CO2]]
         [[[GapFillFromClimatology]]]
             [[[[CO2_cli]]]]
                 method = interpolated daily
         [[[MergeSeries]]]
-            Source = CO2,CO2_cli
+            source = CO2,CO2_cli
     [[Fa]]
         [[[GapFillFromAlternate]]]
             [[[[Fa_access]]]]
                 source = access
-            [[[[Fa_erai]]]]
-                source = erai
+            [[[[Fa_era5]]]]
+                source = era5
         [[[GapFillFromClimatology]]]
             [[[[Fa_cli]]]]
                 method = interpolated daily
         [[[MergeSeries]]]
-            Source = Fa,Fa_access,Fa_erai,Fa_cli
+            source = Fa,Fa_access,Fa_era5,Fa_cli
     [[Fg]]
         [[[GapFillFromAlternate]]]
             [[[[Fg_access]]]]
                 source = access
-            [[[[Fg_erai]]]]
-                source = erai
+            [[[[Fg_era5]]]]
+                source = era5
         [[[GapFillFromClimatology]]]
             [[[[Fg_cli]]]]
                 method = interpolated daily
         [[[MergeSeries]]]
-            Source = Fg,Fg_access,Fg_erai,Fg_cli
+            source = Fg,Fg_access,Fg_era5,Fg_cli
     [[Fld]]
         [[[GapFillFromAlternate]]]
             [[[[Fld_access]]]]
                 source = access
-            [[[[Fld_erai]]]]
-                source = erai
+            [[[[Fld_era5]]]]
+                source = era5
         [[[GapFillFromClimatology]]]
             [[[[Fld_cli]]]]
                 method = interpolated daily
         [[[MergeSeries]]]
-            Source = Fld,Fld_access,Fld_erai,Fld_cli
+            source = Fld,Fld_access,Fld_era5,Fld_cli
     [[Flu]]
         [[[GapFillFromAlternate]]]
             [[[[Flu_access]]]]
                 source = access
-            [[[[Flu_erai]]]]
-                source = erai
+            [[[[Flu_era5]]]]
+                source = era5
         [[[GapFillFromClimatology]]]
             [[[[Flu_cli]]]]
                 method = interpolated daily
         [[[MergeSeries]]]
-            Source = Flu,Flu_access,Flu_erai,Flu_cli
+            source = Flu,Flu_access,Flu_era5,Flu_cli
     [[Fn]]
         [[[GapFillFromAlternate]]]
             [[[[Fn_access]]]]
                 source = access
-            [[[[Fn_erai]]]]
-                source = erai
+            [[[[Fn_era5]]]]
+                source = era5
         [[[GapFillFromClimatology]]]
             [[[[Fn_cli]]]]
                 method = interpolated daily
         [[[MergeSeries]]]
-            Source = Fn,Fn_access,Fn_erai,Fn_cli
+            source = Fn,Fn_access,Fn_era5,Fn_cli
     [[Fsd]]
         [[[GapFillFromAlternate]]]
             [[[[Fsd_access]]]]
                 source = access
-            [[[[Fsd_erai]]]]
-                source = erai
+            [[[[Fsd_era5]]]]
+                source = era5
         [[[GapFillFromClimatology]]]
             [[[[Fsd_cli]]]]
                 method = interpolated daily
         [[[MergeSeries]]]
-            Source = Fsd,Fsd_access,Fsd_erai,Fsd_cli
+            source = Fsd,Fsd_access,Fsd_era5,Fsd_cli
     [[Fsu]]
         [[[GapFillFromAlternate]]]
             [[[[Fsu_access]]]]
                 source = access
-            [[[[Fsu_erai]]]]
-                source = erai
+            [[[[Fsu_era5]]]]
+                source = era5
         [[[GapFillFromClimatology]]]
             [[[[Fsu_cli]]]]
                 method = interpolated daily
         [[[MergeSeries]]]
-            Source = Fsu,Fsu_access,Fsu_erai,Fsu_cli
+            source = Fsu,Fsu_access,Fsu_era5,Fsu_cli
     [[ps]]
         [[[GapFillFromAlternate]]]
             [[[[ps_aws]]]]
                 source = aws
             [[[[ps_access]]]]
                 source = access
-            [[[[ps_erai]]]]
-                source = erai
+            [[[[ps_era5]]]]
+                source = era5
         [[[GapFillFromClimatology]]]
             [[[[ps_cli]]]]
                 method = interpolated daily
         [[[MergeSeries]]]
-            Source = ps,ps_aws,ps_access,ps_erai,ps_cli
+            source = ps,ps_aws,ps_access,ps_era5,ps_cli
     [[Sws]]
         [[[GapFillFromAlternate]]]
             [[[[Sws_access]]]]
                 source = access
                 lag = no
-            [[[[Sws_erai]]]]
-                source = erai
+            [[[[Sws_era5]]]]
+                source = era5
                 lag = no
         [[[GapFillFromClimatology]]]
             [[[[Sws_cli]]]]
                 method = interpolated daily
         [[[MergeSeries]]]
-            Source = Sws,Sws_access,Sws_erai,Sws_cli
+            source = Sws,Sws_access,Sws_era5,Sws_cli
     [[Ta]]
         [[[GapFillFromAlternate]]]
             [[[[Ta_aws]]]]
                 source = aws
             [[[[Ta_access]]]]
                 source = access
-            [[[[Ta_erai]]]]
-                source = erai
+            [[[[Ta_era5]]]]
+                source = era5
         [[[GapFillFromClimatology]]]
             [[[[Ta_cli]]]]
                 method = interpolated daily
         [[[MergeSeries]]]
-            Source = Ta,Ta_aws,Ta_access,Ta_erai,Ta_cli
+            source = Ta,Ta_aws,Ta_access,Ta_era5,Ta_cli
     [[Ts]]
         [[[GapFillFromAlternate]]]
             [[[[Ts_access]]]]
                 source = access
-            [[[[Ts_erai]]]]
-                source = erai
+            [[[[Ts_era5]]]]
+                source = era5
         [[[GapFillFromClimatology]]]
             [[[[Ts_cli]]]]
                 method = interpolated daily
         [[[MergeSeries]]]
-            Source = Ts,Ts_access,Ts_erai,Ts_cli
+            source = Ts,Ts_access,Ts_era5,Ts_cli
     [[Ws]]
         [[[GapFillFromAlternate]]]
             [[[[Ws_aws]]]]
@@ -169,15 +167,15 @@ level = L4
                 source = access
                 fit = ols_thru0
                 lag = no
-            [[[[Ws_erai]]]]
-                source = erai
+            [[[[Ws_era5]]]]
+                source = era5
                 fit = ols_thru0
                 lag = no
         [[[GapFillFromClimatology]]]
             [[[[Ws_cli]]]]
                 method = interpolated daily
         [[[MergeSeries]]]
-            Source = Ws,Ws_aws,Ws_access,Ws_erai,Ws_cli
+            source = Ws,Ws_aws,Ws_access,Ws_era5,Ws_cli
     [[Wd]]
         [[[GapFillFromAlternate]]]
             [[[[Wd_aws]]]]
@@ -188,15 +186,15 @@ level = L4
                 source = access
                 fit = replace
                 lag = no
-            [[[[Wd_erai]]]]
-                source = erai
+            [[[[Wd_era5]]]]
+                source = era5
                 fit = replace
                 lag = no
         [[[GapFillFromClimatology]]]
             [[[[Wd_cli]]]]
                 method = interpolated daily
         [[[MergeSeries]]]
-            Source = Wd,Wd_aws,Wd_access,Wd_erai,Wd_cli
+            source = Wd,Wd_aws,Wd_access,Wd_era5,Wd_cli
     [[Precip]]
         [[[GapFillFromAlternate]]]
             [[[[Precip_aws]]]]
@@ -207,9 +205,9 @@ level = L4
                 source = access
                 fit = replace
                 lag = no
-            [[[[Precip_erai]]]]
-                source = erai
+            [[[[Precip_era5]]]]
+                source = era5
                 fit = replace
                 lag = no
         [[[MergeSeries]]]
-            Source = Precip,Precip_aws,Precip_access,Precip_erai
+            source = Precip,Precip_aws,Precip_access,Precip_era5

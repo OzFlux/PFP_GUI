@@ -5,10 +5,10 @@ level = L6
     out_filename = Right click to browse
     plot_path = Right click to browse
 [Global]
-    acknowledgement = """This work used eddy covariance data collected by the TERN-OzFlux facility. OzFlux
+    acknowledgement = '''This work used eddy covariance data collected by the TERN-OzFlux facility. OzFlux
 would like to acknowledge the financial support of the Australian Federal Government via
 the National Collaborative Research Infrastructure Scheme and the Education Investment
-Fund."""
+Fund.'''
 [EcosystemRespiration]
     [[ER_SOLO]]
         [[[ERUsingSOLO]]]
@@ -16,7 +16,7 @@ Fund."""
                 target = ER
                 drivers = Ts,Ta,Sws
         [[[MergeSeries]]]
-            Source = ER,ER_SOLO_all
+            source = ER,ER_SOLO_all
     [[ER_LT]]
         [[[ERUsingLloydTaylor]]]
             [[[[ER_LT_all]]]]
@@ -29,7 +29,7 @@ Fund."""
                 minimum_percent_noct_window = 5
                 output_plots = False
         [[[MergeSeries]]]
-            Source = ER,ER_LT_all
+            source = ER,ER_LT_all
     [[ER_LL]]
         [[[ERUsingLasslop]]]
             [[[[ER_LL_all]]]]
@@ -39,7 +39,7 @@ Fund."""
                 window_size_days = 15
                 output_plots = False
         [[[MergeSeries]]]
-            Source = ER,ER_LL_all
+            source = ER,ER_LL_all
 [NetEcosystemExchange]
     [[NEE_SOLO]]
         Fc = Fc
