@@ -17,7 +17,7 @@ level = L3
     SwsDefault = <soil_water_content_default>
     SwsSeries = Sws
 
-[Variables]
+[variables]
     [[Fn]]
         [[[MergeSeries]]]
             source = Fn_4cmpt,Fn

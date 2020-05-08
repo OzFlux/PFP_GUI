@@ -5,35 +5,32 @@ level = L5
     out_filename = Right click to browse
     plot_path = Right click to browse
     cpd_filename = Right click to browse
-
 [Options]
     MaxGapInterpolate = 3
     FilterList = Fc
     TurbulenceFilter = ustar
     DayNightFilter = Fsd
     AcceptDayTimes = Yes
-
 [ustar_threshold]
     0 = YYYY-MM-DD hh:mm,YYYY-MM-DD hh:mm,<ustar_threshold>
-
 [Fluxes]
     [[Fe]]
         [[[MergeSeries]]]
-            Source = Fe,Fe_MDS
+            source = Fe,Fe_MDS
         [[[GapFillUsingMDS]]]
             [[[[Fe_MDS]]]]
                 drivers = ['Fsd','Ta','VPD']
                 tolerances = [(20, 50), 2.5, 0.5]
     [[Fh]]
         [[[MergeSeries]]]
-            Source = Fh,Fh_MDS
+            source = Fh,Fh_MDS
         [[[GapFillUsingMDS]]]
             [[[[Fh_MDS]]]]
                 drivers = ['Fsd','Ta','VPD']
                 tolerances = [(20, 50), 2.5, 0.5]
     [[Fc]]
         [[[MergeSeries]]]
-            Source = Fc,Fc_MDS
+            source = Fc,Fc_MDS
         [[[GapFillUsingMDS]]]
             [[[[Fc_MDS]]]]
                 drivers = ['Fsd','Ta','VPD']
