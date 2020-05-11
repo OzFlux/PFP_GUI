@@ -774,38 +774,140 @@ def l1_update_controlfile(cfg):
     # initialise the return logical
     ok = True
     try:
-        strip_list = ['"', "'", "[", "]"]
-        for key1 in cfg:
-            if key1 in ["level"]:
-                cfg[key1] = parse_cfg_values(key1, cfg[key1], strip_list)
-            elif key1 in ["Files", "Global"]:
-                for key2 in cfg[key1]:
-                    cfg[key1][key2] = parse_cfg_values(key2, cfg[key1][key2], strip_list)
-            elif key1 in ["Variables"]:
-                for key2 in cfg[key1]:
-                    for key3 in cfg[key1][key2]:
-                        if key3 in ["xl", "csv", "Attr"]:
-                            cfg3 = cfg[key1][key2][key3]
-                            for key4 in cfg3:
-                                # for keywords to lower case
-                                if key4.lower() != key4:
-                                    cfg3[key4.lower()] = cfg3.pop(key4)
-                                cfg3[key4.lower()] = parse_cfg_variables_value(key3, cfg3[key4.lower()])
-            else:
-                del cfg[key1]
+        cfg = l1_update_cfg_syntax(cfg)
+    except Exception:
+        ok = False
+        msg = " An error occurred updating the L1 control file syntax"
+    # check to see if we can load the nc_cleanup.txt standard control file
+    try:
+        stdname = "controlfiles/standard/nc_cleanup.txt"
+        cfg_std = pfp_io.get_controlfilecontents(stdname)
+    except Exception:
+        ok = False
+        msg = " Unable to load standard control file " + stdname
+    # clean up the variable names
+    try:
+        cfg = l1_update_cfg_variable_names(cfg, cfg_std)
+        cfg = l1_update_cfg_global_attributes(cfg, cfg_std)
+        cfg = l1_update_cfg_variable_attributes(cfg, cfg_std)
+    except Exception:
+        ok = False
+        msg = " An error occurred updating the L1 control file contents"
+    if ok:
         # check to see if the control file object has been changed
         if cfg != cfg_original:
             # and save it if it has changed
             file_name = os.path.basename(cfg.filename)
             logger.info(" Updated and saved control file " + file_name)
             cfg.write()
-    except Exception:
-        ok = False
-        msg = " An error occurred while updating the L1 control file syntax"
+    else:
         logger.error(msg)
         error_message = traceback.format_exc()
         logger.error(error_message)
     return ok
+
+def l1_update_cfg_global_attributes(cfg, cfg_std):
+    """
+    Purpose:
+     Update the global attributes according to the rules in the standard control file.
+    Usage:
+    Author: PRI
+    Date: May 2020
+    """
+    # check for the essential global attributes
+    essentials = ["latitude", "longitude", "site_name", "time_step", "time_zone"]
+    for gattr in essentials:
+        if gattr not in cfg["Global"]:
+            cfg["Global"][gattr] = ""
+    # remove deprecated global attributes
+    deprecated = ["end_datetime", "start_datetime", "Functions", "doi"]
+    for gattr in deprecated:
+        if gattr in cfg["Global"]:
+            cfg["Global"].pop(gattr)
+    # rename global attributes
+    renames = {"EPDversion":"PythonVersion", "elevation":"altitude"}
+    for rename in list(renames.keys()):
+        if rename in cfg["Global"]:
+            cfg["Global"][renames[rename]] = cfg["Global"].pop(rename)
+    # add or change global attributes as required
+    gattrs = sorted(list(cfg_std["Global"].keys()))
+    for gattr in gattrs:
+        cfg["Global"][gattr] = cfg_std["Global"][gattr]
+    return cfg
+
+def l1_update_cfg_syntax(cfg):
+    """
+    Purpose:
+     Update an L1 control file from the old-style (pre PFP V1.0) syntax to the
+     new-style syntax (post PFP V1.0).
+    Usage:
+    Side effects:
+     Returns a modified control file object.
+    Author: PRI
+    Date: 9th May 2020, the day after my 64th birthday!
+    """
+    strip_list = ['"', "'", "[", "]"]
+    for key1 in cfg:
+        if key1 in ["level"]:
+            cfg[key1] = parse_cfg_values(key1, cfg[key1], strip_list)
+        elif key1 in ["Files", "Global"]:
+            for key2 in cfg[key1]:
+                cfg[key1][key2] = parse_cfg_values(key2, cfg[key1][key2], strip_list)
+        elif key1 in ["Variables"]:
+            for key2 in cfg[key1]:
+                for key3 in cfg[key1][key2]:
+                    if key3 in ["xl", "csv", "Attr"]:
+                        cfg3 = cfg[key1][key2][key3]
+                        for key4 in cfg3:
+                            # for keywords to lower case
+                            if key4.lower() != key4:
+                                cfg3[key4.lower()] = cfg3.pop(key4)
+                            cfg3[key4.lower()] = parse_cfg_variables_value(key3, cfg3[key4.lower()])
+        else:
+            del cfg[key1]
+    return cfg
+
+def l1_update_cfg_variable_attributes(cfg, cfg_std):
+    """
+    Purpose:
+     Update the variable attributes.
+    Usage:
+    Author: PRI
+    Date: May 2020
+    """
+    # list of essential variable attributes
+    vattrs_essential= ["group_name", "height", "instrument", "long_name", "standard_name", "units"]
+    # list of standard attribute values
+    labels_standard = list(cfg_std["variable_attributes"].keys())
+    labels_cfg = list(cfg["Variables"].keys())
+    # add any essential variable attributes that are missing
+    for label in labels_cfg:
+        vattrs_cfg = list(cfg["Variables"][label]["Attr"].keys())
+        for vattr in vattrs_essential:
+            if vattr not in vattrs_cfg:
+                cfg["Variables"][label]["Attr"][vattr] = ""
+    # force some variable attributes to particular values
+    for label in labels_cfg:
+
+        labels = [l for l in labels_cfg if label in l[:len(label)]]
+    return
+
+def l1_update_cfg_variable_names(cfg, cfg_std):
+    """
+    Purpose:
+     Update the variable names according to the rules in the standard control file.
+    Usage:
+    Author: PRI
+    Date: May 2020
+    """
+    renames = list(cfg_std["rename"].keys())
+    # loop over the variables in the control file
+    labels = list(cfg["Variables"].keys())
+    for label in labels:
+        if label in renames:
+            new_name = cfg["rename"][label]["rename"]
+            cfg[new_name] = cfg.pop(label)
+    return cfg
 
 def l2_update_controlfile(cfg):
     """
