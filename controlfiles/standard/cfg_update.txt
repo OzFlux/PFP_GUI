@@ -1,11 +1,10 @@
-[Files]
-    site_information = /mnt/OzFlux/Sites/site_information.xls
-    
 [Global]
     license_type = CC BY 4.0
     license_url = https://creativecommons.org/licenses/by/4.0/
     history = "Cleaned by cleanup_netcdf_files.py"
-
+# deprecated section
+[deprecated]
+    [[xlDateTime]]
 # rename section
 [rename]
     [[AGC_7500]]
@@ -177,24 +176,44 @@
     [[W_]]
     [[Wd]]
     [[Ws]]
+# units mapping section
+[units_map]
+    frac = m3/m3
+    m2/m2 = (m/s)2
 # variable attributes section
 [variable_attributes]
-    deprecated = ancillary_variables
+    [[AGC_IRGA]]
+        long_name = IRGA automatic gain control value
+        group_name = diagnostics
+        units = none
     [[Ah]]
         long_name = Absolute humidity
         group_name = meteorology
+        units = g/m3
     [[CO2]]
         long_name = CO2 concentration
         group_name = meteorology
+        units = mg/m3, umol/mol
+    [[Diag_IRGA]]
+        long_name = IRGA diagnostic value
+        group_name = diagnostics
+        units = none
+    [[Diag_SONIC]]
+        long_name = Sonic diagnostic value
+        group_name = diagnostics
+        units = none
     [[EC_]]
         long_name = Electrical conductivity
         group_name = soil
+        units = dS/m
     [[Fa]]
         long_name = Available energy
         group_name = flux
+        units = W/m2
     [[Fc]]
         long_name = CO2 flux
         group_name = flux
+        units = mg/m2/s,mgCO2/m2/s,umol/m2/s
 #    [[Fc_single]]
 #        long_name = CO2 flux (storage term)
 #        group_name = flux
@@ -207,121 +226,189 @@
     [[Fe]]
         long_name = Latent heat flux
         group_name = flux
+        units = W/m2
     [[Fg]]
         long_name = Ground heat flux
         group_name = soil
+        units = W/m2
     [[Fh]]
         long_name = Sensible heat flux
         group_name = flux
+        units = W/m2
     [[Fld]]
-        long_name = Down-welling longwave
+        long_name = Down-welling longwave radiation
         group_name = radiation
+        units = W/m2
     [[Flu]]
-        long_name = Up-welling longwave
+        long_name = Up-welling longwave radiation
         group_name = radiation
+        units = W/m2
     [[Fm]]
         long_name = Momentum flux
         group_name = flux
+        units = kg/m/s2
     [[Fn]]
         long_name = Net radiation
         group_name = radiation
+        units = W/m2
     [[Fsd]]
-        long_name = Down-welling shortwave
+        long_name = Down-welling shortwave radiation
         group_name = radiation
+        units = W/m2
     [[Fsu]]
-        long_name = Up-welling shortwave
+        long_name = Up-welling shortwave radiation
         group_name = radiation
+        units = W/m2
     [[H2O]]
         long_name = H2O concentration
         group_name = meteorology
+        units = g/m3,mmol/mol
     [[L]]
         long_name = Monin-Obukhov length
         group_name = meteorology
+        units = m
     [[PAR]]
         long_name = Photosynthetically active radiation
         group_name = radiation
+        units = umol/m2/s
     [[Precip]]
         long_name = Rainfall
         group_name = meteorology
+        statistic_type = sum
+        units = mm
     [[ps]]
         long_name = Surface air pressure
         group_name = meteorology
+        units = kPa,hPa
     [[RH]]
         long_name = Relative humidity
         group_name = meteorology
+        units = %,percent,frac
     [[SH]]
         long_name = Specific humidity
         group_name = meteorlogy
+        units = kg/kg
     [[SHD]]
         long_name = Specific humidity deficit
         group_name = meteorology
+        units = kg/kg
     [[Sws]]
         long_name = Soil water content
         group_name = soil
-        units = m3/m3
+        units = m3/m3,frac
     [[Ta]]
         long_name = Air temperature
         group_name = meteorology
+        units = C,K
     [[Ts]]
         long_name = Soil temperature
         group_name = soil
+        units = C,K
+    [[Tv]]
+        long_name = Virtual temperature
+        group_name = meteorology
+        units = C,K
     [[ustar]]
         long_name = Friction velocity
         group_name = flux
+        units = m/s
     [[U_]]
         long_name = Along wind velocity component
         group_name = meteorology
+        units = m/s
+    [[Ux_]]
+        long_name = Longitudinal wind velocity component, sonic coordinates
+        group_name = meteorology
+        units = m/s
     [[UxA]]
         long_name = Covariance of Ux and H2O
         group_name = covariances
+        units = g/m2/s,mmol/m2/s
     [[UxC]]
         long_name = Covariance of Ux and CO2
         group_name = covariances
+        units = mg/m2/s,umol/m2/s
     [[UxT]]
         long_name = Covariance of Ux and T
         group_name = covariances
+        units = mC/s,mK/s
     [[UxUx]]
         long_name = Variance of Ux
-        group_name = variances
+        group_name = covariances
+        units = m2/s2
     [[UxUy]]
         long_name = Covariance of Ux and Uy
         group_name = covariances
+        units = m2/s2
     [[UxUz]]
         long_name = Covariance of Ux and Uz
         group_name = covariances
+        units = m2/s2
+    [[Uy_]]
+        long_name = Lateral wind velocity component, sonic coordinates
+        group_name = meteorology
+        units = m/s
     [[UyA]]
         long_name = Covariance of Uy and H2O
         group_name = covariances
+        units = g/m2/s,mmol/m2/s
     [[UyC]]
         long_name = Covariance of Uy and CO2
         group_name = covariances
+        units = mg/m2/s,umol/m2/s
     [[UyT]]
         long_name = Covariance of Uy and T
         group_name = covariances
+        units = mC/s,mK/s
+    [[UyUy]]
+        long_name = Variance of Uy
+        group_name = covariances
+        units = m2/s2
+    [[UyUz]]
+        long_name = Covariance of Uy and Uz
+        group_name = covariances
+        units = m2/s2
+    [[Uz_]]
+        long_name = Vertical wind velocity component, sonic coordinates
+        group_name = meteorology
+        units = m/s
     [[UzA]]
         long_name = Covariance of Uz and H2O
         group_name = covariances
+        units = g/m2/s,mmol/m2/s
     [[UzC]]
         long_name = Covariance of Uz and CO2
         group_name = covariances
+        units = mg/m2/s,umol/m2/s
     [[UzT]]
         long_name = Covariance of Uz and T
         group_name = covariances
+        units = mC/s,mK/s
+    [[UzUz]]
+        long_name = Variance of Uz
+        group_name = covariances
+        units = m2/s2
     [[V_]]
         long_name = Across wind velocity component
         group_name = meteorology
+        units = m/s
     [[VP]]
         long_name = Vapour pressure
         group_name = meteorology
+        units = kPa,hPa
     [[VPD]]
         long_name = Vapour pressure deficit
         group_name = meteorology
+        units = kPa,hPa
     [[W_]]
         long_name = Vertical wind velocity component
         group_name = meteorology
+        units = m/s
     [[Wd]]
         long_name = Wind direction
         group_name = meteorology
+        units = degrees,deg
     [[Ws]]
         long_name = Wind speed
         group_name = meteorology
+        units = m/s

@@ -780,13 +780,14 @@ def l1_update_controlfile(cfg):
         msg = " An error occurred updating the L1 control file syntax"
     # check to see if we can load the nc_cleanup.txt standard control file
     try:
-        stdname = "controlfiles/standard/nc_cleanup.txt"
+        stdname = "controlfiles/standard/cfg_update.txt"
         cfg_std = pfp_io.get_controlfilecontents(stdname)
     except Exception:
         ok = False
         msg = " Unable to load standard control file " + stdname
     # clean up the variable names
     try:
+        cfg = l1_update_cfg_variable_deprecate(cfg, cfg_std)
         cfg = l1_update_cfg_variable_names(cfg, cfg_std)
         cfg = l1_update_cfg_global_attributes(cfg, cfg_std)
         cfg = l1_update_cfg_variable_attributes(cfg, cfg_std)
@@ -847,6 +848,8 @@ def l1_update_cfg_syntax(cfg):
     Date: 9th May 2020, the day after my 64th birthday!
     """
     strip_list = ['"', "'", "[", "]"]
+    if "level" not in list(cfg.keys()):
+        cfg["level"] = "L1"
     for key1 in cfg:
         if key1 in ["level"]:
             cfg[key1] = parse_cfg_values(key1, cfg[key1], strip_list)
@@ -867,32 +870,87 @@ def l1_update_cfg_syntax(cfg):
             del cfg[key1]
     return cfg
 
-def l1_update_cfg_variable_attributes(cfg, cfg_std):
+def l1_update_cfg_variable_attributes(cfg, std):
     """
     Purpose:
      Update the variable attributes.
     Usage:
+    Comments: There must be a better way to do this that avoids the double
+              "for" loop.
     Author: PRI
     Date: May 2020
     """
     # list of essential variable attributes
-    vattrs_essential= ["group_name", "height", "instrument", "long_name", "standard_name", "units"]
+    vattrs_essential = ["group_name", "height", "instrument", "long_name", "standard_name", "units"]
+    vattrs_deprecated = ["ancillary_variables"]
     # list of standard attribute values
-    labels_standard = list(cfg_std["variable_attributes"].keys())
+    labels_std = list(std["variable_attributes"].keys())
     labels_cfg = list(cfg["Variables"].keys())
-    # add any essential variable attributes that are missing
+    # add any essential variable attributes that are missing, deprecate those no longer used
     for label in labels_cfg:
         vattrs_cfg = list(cfg["Variables"][label]["Attr"].keys())
         for vattr in vattrs_essential:
             if vattr not in vattrs_cfg:
                 cfg["Variables"][label]["Attr"][vattr] = ""
+        for vattr in vattrs_deprecated:
+            if vattr in vattrs_cfg:
+                del cfg["Variables"][label]["Attr"][vattr]
     # force some variable attributes to particular values
-    for label in labels_cfg:
+    for label_std in labels_std:
+        # length of the label stub in the standard control file
+        llen = len(label_std)
+        # pointer to attributes in standard control file
+        attr_std = std["variable_attributes"][label_std]
+        # list of permitted units for variables that match this stub
+        units_std = pfp_cfg.cfg_string_to_list(attr_std["units"])
+        # loop over variables in the L1 control file
+        labels_cfg = [l for l in list(cfg["Variables"].keys()) if l[:len(label_std)] == label_std]
+        for label_cfg in labels_cfg:
+            # pointer to attributes in user control file
+            attr_cfg = cfg["Variables"][label_cfg]["Attr"]
+            # units string given in the L1 control file
+            units_cfg = attr_cfg["units"]
+            if ((label_cfg[:llen] == label_std) and (units_cfg in units_std)):
+                # the first letters and units match so update the long_name
+                attr_cfg["long_name"] = attr_std["long_name"]
+                attr_cfg["group_name"] = attr_std["group_name"]
+                if "statistic_type" in list(attr_std.keys()):
+                    attr_cfg["statistic_type"] = attr_std["statistic_type"]
+                else:
+                    attr_cfg["statistic_type"] = "average"
+            elif (label_cfg[:llen] == label_std) and (label_cfg[-3:] == "_Sd"):
+                attr_cfg["long_name"] = attr_std["long_name"]
+                attr_cfg["group_name"] = attr_std["group_name"]
+                if "statistic_type" in list(attr_std.keys()):
+                    attr_cfg["statistic_type"] = attr_std["statistic_type"]
+                else:
+                    attr_cfg["statistic_type"] = "standard deviation"
+            elif (label_cfg[:llen] == label_std) and (label_cfg[-3:] == "_Vr"):
+                attr_cfg["long_name"] = attr_std["long_name"]
+                attr_cfg["group_name"] = attr_std["group_name"]
+                if "statistic_type" in list(attr_std.keys()):
+                    attr_cfg["statistic_type"] = attr_std["statistic_type"]
+                else:
+                    attr_cfg["statistic_type"] = "variance"
+            else:
+                continue
+    return cfg
 
-        labels = [l for l in labels_cfg if label in l[:len(label)]]
-    return
+def l1_update_cfg_variable_deprecate(cfg, cfg_std):
+    """
+    Purpose:
+     Remove deprecated variables from L1 control file.
+    Usage:
+    Author: PRI
+    Date: May 2020
+    """
+    labels_deprecated = list(cfg_std["deprecated"].keys())
+    for label_deprecated in labels_deprecated:
+        if label_deprecated in list(cfg["Variables"].keys()):
+            cfg["Variables"].pop(label_deprecated)
+    return cfg
 
-def l1_update_cfg_variable_names(cfg, cfg_std):
+def l1_update_cfg_variable_names(cfg, std):
     """
     Purpose:
      Update the variable names according to the rules in the standard control file.
@@ -900,13 +958,13 @@ def l1_update_cfg_variable_names(cfg, cfg_std):
     Author: PRI
     Date: May 2020
     """
-    renames = list(cfg_std["rename"].keys())
+    renames = list(std["rename"].keys())
     # loop over the variables in the control file
     labels = list(cfg["Variables"].keys())
     for label in labels:
         if label in renames:
-            new_name = cfg["rename"][label]["rename"]
-            cfg[new_name] = cfg.pop(label)
+            new_name = std["rename"][label]["rename"]
+            cfg["Variables"][new_name] = cfg["Variables"].pop(label)
     return cfg
 
 def l2_update_controlfile(cfg):
