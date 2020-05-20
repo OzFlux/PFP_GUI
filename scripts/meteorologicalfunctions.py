@@ -11,7 +11,7 @@ def absolutehumidityfromRH(Ta,RH):
     vp = RH * VPsat / float(100)
     ah = float(1000000) * vp / ((Ta + 273.15) * c.Rv)
     # convert back to ndarray if input is not a masked array
-    if WasND: ah, WasMA = MAtoSeries(ah)
+    if WasND: ah, _ = MAtoSeries(ah)
     return ah
 
 def co2_ppmfrommgCO2pm3(c_mgpm3,T,p):
@@ -34,7 +34,7 @@ def co2_ppmfrommgCO2pm3(c_mgpm3,T,p):
     # do the job
     c_ppm = (c_mgpm3/c.Mco2)*c.R*T/p
     # convert back to ndarray if input is not a masked array
-    if WasND: c_ppm, WasMA = MAtoSeries(c_ppm)
+    if WasND: c_ppm, _ = MAtoSeries(c_ppm)
     return c_ppm
 
 def co2_mgCO2pm3fromppm(c_ppm,T,p):
@@ -57,8 +57,31 @@ def co2_mgCO2pm3fromppm(c_ppm,T,p):
     # do the job
     c_mgpm3 = c_ppm*c.Mco2*p/(c.R*T)
     # convert back to ndarray if input is not a masked array
-    if WasND: c_mgpm3, WasMA = MAtoSeries(c_mgpm3)
+    if WasND: c_mgpm3, _ = MAtoSeries(c_mgpm3)
     return c_mgpm3
+
+def co2_umolpm3fromppm(c_ppm, T, p):
+    """
+     Convert CO2 concentration units of umol/mol (ppm) to umol/m3
+        Usage:
+         CO2_umolpm3 = co2_umolpm3fromppm(CO2_ppm, T, p)
+         where
+         CO2_ppm (input) - CO2 concentration, umol/mol
+         T (input) - air temperature, C
+         p (input) - air pressure, kPa
+        Returns the CO2 concentration in umol/m3.
+    """
+    # convert to masked array if required
+    c_ppm, WasND = SeriestoMA(c_ppm)
+    T, dummy = SeriestoMA(T)
+    T = T + 273.15             # temperature in K
+    p, dummy = SeriestoMA(p)
+    p = p * float(1000)        # pressure in Pa
+    # do the job
+    c_umolpm3 = c_ppm*p/(c.R*T)
+    # convert back to ndarray if input is not a masked array
+    if WasND: c_umolpm3, _ = MAtoSeries(c_umolpm3)
+    return c_umolpm3
 
 def densitydryair(Ta,ps,vp):
     # Calculate density of dry air from temperature, pressure and vapour pressure
@@ -95,25 +118,7 @@ def es(T):
     # Saturation vapour pressure.
     #  T is the air temperature, C
     #  es is the saturation vapour pressure in kPa
-    es = 0.6106 * numpy.exp(17.27 * T / (T + 237.3))
-    return es
-
-def Fc_umolpm2psfrommgCO2pm2ps(Fc_mgpm2ps):
-    """
-    Convert Fc in units of mg/m2/s to units of umol/m2/s
-    Usage:
-     Fc_umolpm2ps = Fc_umolpm2psfrommgCO2pm2ps(Fc_mgpm2ps)
-     where:
-      Fc_mgpm2ps (input) - CO2 flux in units of mg/m2/s
-    Returns the CO2 flux in units of umol/m2/s
-    """
-    # convert to masked array
-    Fc_mgpm2ps, WasND = SeriestoMA(Fc_mgpm2ps)
-    # do the job
-    Fc_umolpm2ps = Fc_mgpm2ps / c.Mco2
-    # convert back to ndarray if input is not a masked array
-    if WasND: Fc_umolpm2ps, WasMA = MAtoSeries(Fc_umolpm2ps)
-    return Fc_umolpm2ps
+    return 0.6106 * numpy.exp(17.27 * T / (T + 237.3))
 
 def Fc_gCpm2psfromumolpm2ps(Fc_umolpm2ps):
     """
@@ -129,7 +134,7 @@ def Fc_gCpm2psfromumolpm2ps(Fc_umolpm2ps):
     # do the job
     Fc_gCpm2ps = Fc_umolpm2ps * c.Mc/1E3
     # convert back to ndarray if input is not a masked array
-    if WasND: Fc_Cgpm2ps, WasMA = MAtoSeries(Fc_gCpm2ps)
+    if WasND: Fc_gCpm2ps, _ = MAtoSeries(Fc_gCpm2ps)
     return Fc_gCpm2ps
 
 def Fc_mgCO2pm2psfromumolpm2ps(Fc_umolpm2ps):
@@ -146,8 +151,25 @@ def Fc_mgCO2pm2psfromumolpm2ps(Fc_umolpm2ps):
     # do the job
     Fc_mgCO2pm2ps = Fc_umolpm2ps * c.Mco2
     # convert back to ndarray if input is not a masked array
-    if WasND: Fc_mgCO2pm2ps, WasMA = MAtoSeries(Fc_mgCO2pm2ps)
+    if WasND: Fc_mgCO2pm2ps, _ = MAtoSeries(Fc_mgCO2pm2ps)
     return Fc_mgCO2pm2ps
+
+def Fc_umolpm2psfrommgCO2pm2ps(Fc_mgpm2ps):
+    """
+    Convert Fc in units of mg/m2/s to units of umol/m2/s
+    Usage:
+     Fc_umolpm2ps = Fc_umolpm2psfrommgCO2pm2ps(Fc_mgpm2ps)
+     where:
+      Fc_mgpm2ps (input) - CO2 flux in units of mg/m2/s
+    Returns the CO2 flux in units of umol/m2/s
+    """
+    # convert to masked array
+    Fc_mgpm2ps, WasND = SeriestoMA(Fc_mgpm2ps)
+    # do the job
+    Fc_umolpm2ps = Fc_mgpm2ps / c.Mco2
+    # convert back to ndarray if input is not a masked array
+    if WasND: Fc_umolpm2ps, _ = MAtoSeries(Fc_umolpm2ps)
+    return Fc_umolpm2ps
 
 def h2o_mmolpmolfromgpm3(h_gpm3,T,p):
     """
@@ -167,7 +189,7 @@ def h2o_mmolpmolfromgpm3(h_gpm3,T,p):
     # do the job
     h_mmpm = (h_gpm3/c.Mv)*c.R*(T+273.15)/(p*1000)
     # convert to ndarray if input is not a masked array
-    if WasND: h_mmpm, WasMA = MAtoSeries(h_mmpm)
+    if WasND: h_mmpm, _ = MAtoSeries(h_mmpm)
     return h_mmpm
 
 def h2o_gpm3frommmolpmol(h_mmpm,T,p):
@@ -188,7 +210,7 @@ def h2o_gpm3frommmolpmol(h_mmpm,T,p):
     # do the job
     h_gpm3 = (c.Mv*h_mmpm*p*1000)/(c.R*(T+273.15))
     # convert to ndarray if input is not a masked array
-    if WasND: h_gpm3, WasMA = MAtoSeries(h_gpm3)
+    if WasND: h_gpm3, _ = MAtoSeries(h_gpm3)
     return h_gpm3
 
 def Lv(Ta):
@@ -196,8 +218,7 @@ def Lv(Ta):
     #  Ta - air temperature, C
     # Returns
     #  Lv - latent heat of vapourisation, J/kg
-    Lv = 2500800 - (2366.8 * Ta)
-    return Lv
+    return 2500800 - (2366.8 * Ta)
 
 def mixingratio(ps,vp):
     # Calculate mixing ratio from vapour pressure and pressure
@@ -205,8 +226,7 @@ def mixingratio(ps,vp):
     #  vp - vapour pressure, kPa
     # Returns
     #  mr - mixing ratio, kg/kg
-    mr = 0.622*vp/(ps- vp)
-    return mr
+    return 0.622*vp/(ps- vp)
 
 def molen(T,Ah,p,ustar,heatflux,fluxtype='sensible'):
     # Calculate the Monin-Obukhov length
@@ -232,8 +252,7 @@ def qfromrh(RH, T, p):
     return qRH
 
 def qsat(esat,ps):
-    qsat = 0.622 * (esat / ps)
-    return qsat
+    return 0.622 * (esat / ps)
 
 def RHfromabsolutehumidity(Ah,Ta):
     # Relative humidity from absolute humidity
@@ -249,7 +268,7 @@ def RHfromabsolutehumidity(Ah,Ta):
     vp = vapourpressure(Ah,Ta)
     RH = float(100)*vp/VPsat
     # convert back to ndarray if input is not a masked array
-    if WasND: RH, WasMA = MAtoSeries(RH)
+    if WasND: RH, _ = MAtoSeries(RH)
     return RH
 
 def RHfromdewpoint(Td,Ta):
@@ -263,7 +282,7 @@ def RHfromdewpoint(Td,Ta):
     # do the job
     RH = 100*10**(7.591386*(Td/(Td+240.7263)-Ta/(Ta+240.7263)))
     # convert back to ndarray if input is not a masked array
-    if WasND: RH, WasMA = MAtoSeries(RH)
+    if WasND: RH, _ = MAtoSeries(RH)
     return RH
 
 def RHfromspecifichumidity(q,Ta,ps):
@@ -279,7 +298,7 @@ def RHfromspecifichumidity(q,Ta,ps):
     VPsat = es(Ta)
     RH = float(100)*q*(c.Md/c.Mv)*ps/VPsat
     # convert back to ndarray if input is not a masked array
-    if WasND: RH, WasMA = MAtoSeries(RH)
+    if WasND: RH, _ = MAtoSeries(RH)
     return RH
 
 def densitytimesspecificheat(rhow,Cpw,rhoa,Cpa):
@@ -375,11 +394,11 @@ def vapourpressure(Ah,Ta):
     vp = 0.000001*Ah*(Ta+273.15)*c.R/c.Mv
     return vp
 
-def virtualtheta(theta,mr):
+def virtualtheta(theta_in, mr):
     # Calculate virtual potential temperature
     #  theta - potential temperature, K
     #  mr - mixing ratio, kg/kg
     # Returns
     #  Tvp - virtual potential temperature, K
-    Tvp = theta * (1 + (0.61 * mr))
+    Tvp = theta_in * (1 + (0.61 * mr))
     return Tvp

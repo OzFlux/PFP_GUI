@@ -23,109 +23,109 @@ level = L3
 [Variables]
     [[Fsd]]
         [[[MergeSeries]]]
-            Source = Fsd,Fsd_Li
+            source = Fsd,Fsd_Li
         [[[RangeCheck]]]
-            Lower = -10
-            Upper = 1500
+            lower = -10
+            upper = 1500
     [[Fn]]
         [[[MergeSeries]]]
-            Source = Fn_4cmpt
+            source = Fn_4cmpt
         [[[RangeCheck]]]
-            Lower = -150
-            Upper = 1100
+            lower = -150
+            upper = 1100
     [[Fh]]
         [[[RangeCheck]]]
-            Lower = -100
-            Upper = 600
+            lower = -100
+            upper = 600
     [[Fe]]
         [[[RangeCheck]]]
-            Lower = -100
-            Upper = 600
+            lower = -100
+            upper = 600
     [[Fc]]
         [[[RangeCheck]]]
-            Lower = -50
-            Upper = 50
+            lower = -50
+            upper = 50
     [[Fm]]
         [[[RangeCheck]]]
-            Lower = -1
-            Upper = 1
+            lower = -1
+            upper = 1
     [[ustar]]
         [[[RangeCheck]]]
-            Lower = 0
-            Upper = 2
+            lower = 0
+            upper = 2
     [[Ta]]
         [[[MergeSeries]]]
-            Source = Ta_HMP_2m,Ta_CSAT
+            source = Ta_HMP_2m,Ta_CSAT
         [[[RangeCheck]]]
-            Lower = -5
-            Upper = 50
+            lower = -5
+            upper = 50
     [[Ah]]
         [[[MergeSeries]]]
-            Source = Ah_HMP_2m,Ah_7500_Av
+            source = Ah_HMP_2m,Ah_7500_Av
         [[[RangeCheck]]]
-            Lower = 0
-            Upper = 25
+            lower = 0
+            upper = 25
     [[Cc]]
         [[[MergeSeries]]]
-            Source = Cc_7500_Av
+            source = Cc_7500_Av
             standard_name = notdefined
         [[[RangeCheck]]]
-            Lower = 250
-            Upper = 900
+            lower = 250
+            upper = 900
     [[Ws]]
         [[[MergeSeries]]]
-            Source = Ws_RMY_10m,Ws_CSAT,Ws_RMY_2m
+            source = Ws_RMY_10m,Ws_CSAT,Ws_RMY_2m
             standard_name = notdefined
         [[[RangeCheck]]]
-            Lower = 0
-            Upper = 30
+            lower = 0
+            upper = 30
     [[Wd]]
         [[[MergeSeries]]]
-            Source = Wd_RMY_10m,Wd_CSAT,Wd_RMY_2m
+            source = Wd_RMY_10m,Wd_CSAT,Wd_RMY_2m
             standard_name = notdefined
         [[[RangeCheck]]]
-            Lower = 0
-            Upper = 360
+            lower = 0
+            upper = 360
     [[Fg]]
         [[[AverageSeries]]]
-            Source = Fg_8cma,Fg_8cmb,Fg_8cmc
+            source = Fg_8cma,Fg_8cmb,Fg_8cmc
         [[[RangeCheck]]]
-            Lower = -300
-            Upper = 300
+            lower = -300
+            upper = 300
     [[Ts]]
         [[[AverageSeries]]]
-            Source = Ts_8cma,Ts_8cmb,Ts_8cmc
+            source = Ts_8cma,Ts_8cmb,Ts_8cmc
     [[Sws]]
         [[[AverageSeries]]]
-            Source = Sws_10cma,Sws_10cmb,Sws_10cmc
+            source = Sws_10cma,Sws_10cmb,Sws_10cmc
     [[Sws_25cm]]
         [[[AverageSeries]]]
-            Source = Sws_25cma,Sws_25cmb,Sws_25cmc
+            source = Sws_25cma,Sws_25cmb,Sws_25cmc
     [[Sws_50cm]]
         [[[AverageSeries]]]
-            Source = Sws_50cma,Sws_50cmb,Sws_50cmc
+            source = Sws_50cma,Sws_50cmb,Sws_50cmc
     [[Sws_100cm]]
         [[[AverageSeries]]]
-            Source = Sws_100cma,Sws_100cmb,Sws_100cmc
+            source = Sws_100cma,Sws_100cmb,Sws_100cmc
     [[Sws_180cm]]
         [[[AverageSeries]]]
-            Source = Sws_180cma,Sws_180cmb,Sws_180cmc
+            source = Sws_180cma,Sws_180cmb,Sws_180cmc
 [Plots]
     [[Radiative fluxes]]
-        Variables = Fsd,Fsu,Fld,Flu,Fn
+        variables = Fsd,Fsu,Fld,Flu,Fn
     [[Turbulent fluxes]]
-        Variables = Fh,Fe,Fc,ustar,Fm
+        variables = Fh,Fe,Fc,ustar,Fm
     [[Air temperature, humidity and CO2]]
-        Variables = Ta,Ah,Cc,Precip
+        variables = Ta,Ah,Cc,Precip
     [[Soil temperature, water content and heat flux]]
-        Variables = Ts,Sws,Fg,Precip
+        variables = Ts,Sws,Fg,Precip
     [[Pressure, wind speed and direction]]
-        Variables = ps,Ws_CSAT,Ux,Uy,Uz,Wd
+        variables = ps,Ws_CSAT,Ux,Uy,Uz,Wd
     [[Fc, precip and ppm]]
-        Variables = Fc,Precip,Cc
+        variables = Fc,Precip,Cc
     [[Fh diagnostics]]
-        Variables = Fh,UzT,Diag_CSAT,Diag_7500,AGC_7500,Ah_7500_Sd,Cc_7500_Sd
+        variables = Fh,UzT,Diag_CSAT,Diag_7500,AGC_7500,Ah_7500_Sd,Cc_7500_Sd
     [[Fe diagnostics]]
-        Variables = Fe,UzA,Diag_CSAT,Diag_7500,AGC_7500,Ah_7500_Sd,Cc_7500_Sd
+        variables = Fe,UzA,Diag_CSAT,Diag_7500,AGC_7500,Ah_7500_Sd,Cc_7500_Sd
     [[Fc diagnostics]]
-        Variables = Fc,UzC,Diag_CSAT,Diag_7500,AGC_7500,Ah_7500_Sd,Cc_7500_Sd
+        variables = Fc,UzC,Diag_CSAT,Diag_7500,AGC_7500,Ah_7500_Sd,Cc_7500_Sd

@@ -1,0 +1,291 @@
+[Files]
+    site_information = /mnt/OzFlux/Sites/site_information.xls
+    
+[Global]
+    license_type = CC BY 4.0
+    license_url = https://creativecommons.org/licenses/by/4.0/
+    history = "Cleaned by cleanup_netcdf_files.py"
+
+# rename section
+[rename]
+    [[AGC_7500]]
+        rename = AGC_IRGA
+    [[Ah_7500_Av]]
+        rename = Ah_IRGA_Av
+    [[Ah_7500_Sd]]
+        rename = Ah_IRGA_Sd
+    [[Ah_7500_Vr]]
+        rename = Ah_IRGA_Vr
+    [[AhAh]]
+        rename = Ah_IRGA_Vr
+    [[Cc]]
+        rename = CO2
+    [[Cc_7500_Av]]
+        rename = CO2_IRGA_Av
+    [[Cc_7500_Sd]]
+        rename = CO2_IRGA_Sd
+    [[Cc_7500_Vr]]
+        rename = CO2_IRGA_Vr
+    [[CcCc]]
+        rename = CO2_IRGA_Vr
+    [[e]]
+        rename = VP
+    [[esat]]
+        rename = VPsat
+    [[Diag_7500]]
+        rename = Diag_IRGA
+    [[Diag_CSAT]]
+        rename = Diag_SONIC
+    [[Fn_KZ]]
+        rename = Fn_4cmpt
+    [[q]]
+        rename = SH
+    [[svwc]]
+        rename = Sws
+    [[Ta_CSAT]]
+        rename = Ta_SONIC_Av
+    [[Ta_CSAT_Av]]
+        rename = Ta_SONIC_Av
+    [[Ta_CSAT_Sd]]
+        rename = Ta_SONIC_Sd
+    [[Ta_CSAT_Vr]]
+        rename = Ta_SONIC_Vr
+    [[Tv_CSAT]]
+        rename = Tv_SONIC_Av
+    [[Tv_CSAT_Av]]
+        rename = Tv_SONIC_Av
+    [[Tv_CSAT_Sd]]
+        rename = Tv_SONIC_Sd
+    [[Tv_CSAT_Vr]]
+        rename = Tv_SONIC_Vr
+    [[u]]
+        rename = U_SONIC_Av
+    [[uu]]
+        rename = U_SONIC_Vr
+    [[Ux]]
+        rename = Ux_SONIC_Av
+    [[Ux_Sd]]
+        rename = Ux_SONIC_Sd
+    [[UxUx]]
+        rename = Ux_SONIC_Vr
+    [[Uy]]
+        rename = Uy_SONIC_Av
+    [[Uy_Sd]]
+        rename = Uy_SONIC_Sd
+    [[UyUy]]
+        rename = Uy_SONIC_Vr
+    [[Uz]]
+        rename = Uz_SONIC_Av
+    [[Uz_Sd]]
+        rename = Uz_SONIC_Sd
+    [[UzUz]]
+        rename = Uz_SONIC_Vr
+    [[v]]
+        rename = V_SONIC_Av
+    [[vv]]
+        rename = V_SONIC_Vr
+    [[w]]
+        rename = W_SONIC_Av
+    [[ww]]
+        rename = W_SONIC_Vr
+    [[Wd_CSAT]]
+        rename = Wd_SONIC_Av
+    [[Wd_CSAT_Sd]]
+        rename = Wd_SONIC_Sd
+    [[Wd_CSAT_Vr]]
+        rename = Wd_SONIC_Vr
+    [[Ws_CSAT]]
+        rename = Ws_SONIC_Av
+    [[Ws_CSAT_Sd]]
+        rename = Ws_SONIC_Sd
+    [[Ws_CSAT_Vr]]
+        rename = Ws_SONIC_Vr
+# exclude variables that start with these strings
+[exclude]
+    [[eta]]
+    [[theta]]
+    [[Cpd]]
+    [[Cpm]]
+    [[Cpw]]
+    [[ET_PFP]]
+    [[Fc_PFP]]
+    [[Fc_raw]]
+    [[Fe_PFP]]
+    [[Fe_raw]]
+    [[Fg_Av]]
+    [[Fhv]]
+    [[Fh_PFP]]
+    [[Fm_PFP]]
+    [[Fn_4cmpt]]
+    [[Fn_NR]]
+    [[Fsd_Li]]
+    [[Fsd_syn]]
+    [[solar_altitude]]
+    [[Lv]]
+    [[RhoCp]]
+    [[rhod]]
+    [[rhom]]
+    [[rhow]]
+    [[ustar_PFP]]
+    [[Ddd]]
+    [[Day]]
+    [[Hdh]]
+    [[Hour]]
+    [[Minute]]
+    [[Month]]
+    [[Second]]
+    [[VPsat]]
+    [[xlDateTime]]
+    [[Year]]
+# include variables that start with these strings
+[include]
+    [[Ah]]
+    [[crs]]
+    [[CO2]]
+    [[DateTime]]
+    [[EC_]]
+    [[Fa]]
+    [[Fc]]
+    [[Fe]]
+    [[Fg]]
+    [[Fh]]
+    [[Fld]]
+    [[Flu]]
+    [[Fm]]
+    [[Fn]]
+    [[Fsd]]
+    [[Fsu]]
+    [[H2O]]
+    [[latitude]]
+    [[longitude]]
+    [[L]]
+    [[PAR]]
+    [[Precip]]
+    [[ps]]
+    [[RH]]
+    [[SH]]
+    [[SHD]]
+    [[Sws]]
+    [[time]]
+    [[Ta]]
+    [[Ts]]
+    [[ustar]]
+    [[U_]]
+    [[V_]]
+    [[VP]]
+    [[VPD]]
+    [[W_]]
+    [[Wd]]
+    [[Ws]]
+# variable attributes section
+[variable_attributes]
+    deprecated = ancillary_variables
+    [[Ah]]
+        long_name = Absolute humidity
+        group_name = meteorology
+    [[CO2]]
+        long_name = CO2 concentration
+        group_name = meteorology
+    [[EC_]]
+        long_name = Electrical conductivity
+        group_name = soil
+    [[Fa]]
+        long_name = Available energy
+        group_name = flux
+    [[Fc]]
+        long_name = CO2 flux
+        group_name = flux
+    [[Fc_single]]
+        long_name = CO2 flux (storage term)
+        group_name = flux
+    [[Fc_profile]]
+        long_name = CO2 flux (storage term)
+        group_name = flux
+    [[Fc_storage]]
+        long_name = CO2 flux (storage term)
+        group_name = flux
+    [[Fe]]
+        long_name = Latent heat flux
+        group_name = flux
+    [[Fg]]
+        long_name = Ground heat flux
+        group_name = soil
+    [[Fh]]
+        long_name = Sensible heat flux
+        group_name = flux
+    [[Fld]]
+        long_name = Down-welling longwave
+        group_name = radiation
+    [[Flu]]
+        long_name = Up-welling longwave
+        group_name = radiation
+    [[Fm]]
+        long_name = Momentum flux
+        group_name = flux
+    [[Fn]]
+        long_name = Net radiation
+        group_name = radiation
+    [[Fsd]]
+        long_name = Down-welling shortwave
+        group_name = radiation
+    [[Fsu]]
+        long_name = Up-welling shortwave
+        group_name = radiation
+    [[H2O]]
+        long_name = H2O concentration
+        group_name = meteorology
+    [[L]]
+        long_name = Monin-Obukhov length
+        group_name = meteorology
+    [[PAR]]
+        long_name = Photosynthetically active radiation
+        group_name = radiation
+    [[Precip]]
+        long_name = Rainfall
+        group_name = meteorology
+    [[ps]]
+        long_name = Surface air pressure
+        group_name = meteorology
+    [[RH]]
+        long_name = Relative humidity
+        group_name = meteorology
+    [[SH]]
+        long_name = Specific humidity
+        group_name = meteorlogy
+    [[SHD]]
+        long_name = Specific humidity deficit
+        group_name = meteorology
+    [[Sws]]
+        long_name = Soil water content
+        group_name = soil
+        units = m3/m3
+    [[Ta]]
+        long_name = Air temperature
+        group_name = meteorology
+    [[Ts]]
+        long_name = Soil temperature
+        group_name = soil
+    [[ustar]]
+        long_name = Friction velocity
+        group_name = flux
+    [[U_]]
+        long_name = Along wind velocity component
+        group_name = meteorology
+    [[V_]]
+        long_name = Across wind velocity component
+        group_name = meteorology
+    [[VP]]
+        long_name = Vapour pressure
+        group_name = meteorology
+    [[VPD]]
+        long_name = Vapour pressure deficit
+        group_name = meteorology
+    [[W_]]
+        long_name = Vertical wind velocity component
+        group_name = meteorology
+    [[Wd]]
+        long_name = Wind direction
+        group_name = meteorology
+    [[Ws]]
+        long_name = Wind speed
+        group_name = meteorology

@@ -9,7 +9,8 @@ from PyQt5 import QtCore, QtWidgets, QtGui
 # PFP modules
 import pfp_clim
 import pfp_compliance
-import pfp_cpd
+import pfp_cpd1
+import pfp_cpd2
 import pfp_mpt
 import pfp_io
 import pfp_levels
@@ -19,7 +20,7 @@ import split_dialog
 
 logger = logging.getLogger("pfp_log")
 # top level routines for the File menu
-def do_file_concatenate(cfg=None):
+def do_file_concatenate(cfg):
     """
     Purpose:
      Top level routine for concatenating multiple, single-year files into
@@ -36,19 +37,178 @@ def do_file_concatenate(cfg=None):
      June 2018: rewrite for use with new GUI.
     """
     logger.info(" Starting concatenation of netCDF files")
-    if not cfg:
-        cfg = pfp_io.load_controlfile(path="controlfiles")
-        if len(cfg) == 0:
-            logger.info("Quitting concatenation (no control file)")
+    try:
+        info = pfp_compliance.ParseConcatenateControlFile(cfg)
+        if not info["NetCDFConcatenate"]["OK"]:
+            msg = " An error occurred when parsing the control file"
+            logger.error(msg)
             return
-    pfp_io.nc_concatenate(cfg)
-    logger.info(" Finished concatenating files")
-    logger.info("")
+        pfp_io.NetCDFConcatenate(info)
+        logger.info(" Finished concatenating files")
+        logger.info("")
+    except Exception:
+        error_message = " Error concatenating netCDF files, see below for details ... "
+        logger.error(error_message)
+        error_message = traceback.format_exc()
+        logger.error(error_message)
     return
-def do_file_convert_biomet():
-    logger.warning("File/Convert/nc to biomet not implemented yet")
+def do_file_convert_nc2biomet(cfg, mode="standard"):
+    """
+    Purpose:
+     Convert a PFP-style netCDF file to an EddyPro biomet CSV file.
+    Usage:
+    Side effects:
+     Creates a CSV file in the same directory as the netCDF file.
+    Author: PRI
+    Date: Back in the day
+    Mods:
+     March 2020: rewrite for use with new GUI
+     April 2020: routine can be invoked from File/Convert menu or
+                 by loading control file and using Run/Current.
+                 The latter method allows the user to modify the
+                 control file before running it.
+    """
+    logger.info(" Starting conversion to EddyPro biomet file")
+    try:
+        # check to see if the user chose a standard or a custom run
+        if cfg is None and mode == "standard":
+            # standard run so we use the control file in PyFluxPro/controlfiles/standard
+            stdname = "controlfiles/standard/nc2csv_biomet.txt"
+            # check to see if the standard control file exists
+            if os.path.exists(stdname):
+                # standard control file exists so read it
+                cfg = pfp_io.get_controlfilecontents(stdname)
+                # then ask the user to choose a netCDF file
+                filename = pfp_io.get_filename_dialog(file_path=".", title='Choose a netCDF file')
+                # check that the netCDF file exists
+                if not os.path.exists(filename):
+                    # return if no file chosen
+                    logger.info( " Write biomet CSV file: no input file chosen")
+                    return
+                # add a [Files] section to the control file ...
+                if "Files" not in cfg:
+                    cfg["Files"] = {}
+                # ... and put the file path, input file name and output file name in [Files]
+                cfg["Files"]["file_path"] = os.path.join(os.path.split(filename)[0], "")
+                in_filename = os.path.split(filename)[1]
+                cfg["Files"]["in_filename"] = in_filename
+                cfg["Files"]["out_filename"] = in_filename.replace(".nc", "_biomet.csv")
+            else:
+                # issue an error mesage and return if the standard control file does not exist
+                msg = " Write biomet CSV file: standard control file 'nc2csv_biomet.txt' does not exist"
+                logger.error(msg)
+                return
+        elif cfg is not None and mode == "custom":
+            # custom run so we proceed with the user's control file
+            pass
+        else:
+            # tell the user we got the wrong input options and return
+            msg = " Write biomet CSV file: wrong input options"
+            logger.error(msg)
+            return
+        # add the [Options] section and populate it
+        if "Options" not in cfg:
+            cfg["Options"] = {}
+        cfg["Options"]["call_mode"] = "interactive"
+        cfg["Options"]["show_plots"] = "Yes"
+        # do the business
+        result = pfp_io.write_csv_ep_biomet(cfg)
+        # check everything went well
+        if result == 1:
+            # looks good
+            logger.info(" Finished converting netCDF file")
+            logger.info("")
+        else:
+            # or not
+            logger.error("")
+            logger.error(" An error occurred, check the log messages")
+            logger.error("")
+    except Exception:
+        # tell the user if something goes wrong and put the exception in the log window
+        error_message = " Error converting to BIOMET format, see below for details ... "
+        logger.error(error_message)
+        error_message = traceback.format_exc()
+        logger.error(error_message)
     return
-def do_file_convert_nc2ecostress(cfg=None):
+def do_file_convert_nc2reddyproc(cfg, mode="standard"):
+    """
+    Purpose:
+     Convert a PFP-style netCDF file to an REddyProc CSV file.
+    Usage:
+    Side effects:
+     Creates a CSV file in the same directory as the netCDF file.
+    Author: PRI
+    Date: Back in the day
+    Mods:
+     March 2020: rewrite for use with new GUI
+     April 2020: routine can be invoked from File/Convert menu or
+                 by loading control file and using Run/Current.
+                 The latter method allows the user to modify the
+                 control file before running it.
+    """
+    logger.info(" Starting output of REddyProc file")
+    try:
+        # check to see if the user chose a standard or a custom run
+        if cfg is None and mode == "standard":
+            # standard run so we use the control file in PyFluxPro/controlfiles/standard
+            stdname = "controlfiles/standard/nc2csv_reddyproc.txt"
+            # check to see if the standard control file exists
+            if os.path.exists(stdname):
+                # standard control file exists so read it
+                cfg = pfp_io.get_controlfilecontents(stdname)
+                # then ask the user to choose a netCDF file
+                filename = pfp_io.get_filename_dialog(file_path=".", title='Choose a netCDF file')
+                # check that the netCDF file exists
+                if not os.path.exists(filename):
+                    # return if no file chosen
+                    logger.info( " Write REddyProc CSV file: no input file chosen")
+                    return
+                # add a [Files] section to the control file ...
+                if "Files" not in cfg:
+                    cfg["Files"] = {}
+                # ... and put the file path, input file name and output file name in [Files]
+                cfg["Files"]["file_path"] = os.path.join(os.path.split(filename)[0], "")
+                in_filename = os.path.split(filename)[1]
+                cfg["Files"]["in_filename"] = in_filename
+                cfg["Files"]["out_filename"] = in_filename.replace(".nc", "_REddyProc.csv")
+            else:
+                # issue an error mesage and return if the standard control file does not exist
+                msg = " Write REddyProc CSV file: standard control file 'nc2csv_reddyproc.txt' does not exist"
+                logger.error(msg)
+                return
+        elif cfg is not None and mode == "custom":
+            # custom run so we proceed with the user's control file
+            pass
+        else:
+            # tell the user we got the wrong input options and return
+            msg = " Write REddyProc CSV file: wrong input options"
+            logger.error(msg)
+            return
+        # add the [Options] section and populate it
+        if "Options" not in cfg:
+            cfg["Options"] = {}
+        cfg["Options"]["call_mode"] = "interactive"
+        cfg["Options"]["show_plots"] = "Yes"
+        # do the business
+        result = pfp_io.write_csv_reddyproc(cfg)
+        # check everything went well
+        if result == 1:
+            # looks good
+            logger.info(" Finished converting netCDF file")
+            logger.info("")
+        else:
+            # or not
+            logger.error("")
+            logger.error(" An error occurred, check the log messages")
+            logger.error("")
+    except Exception:
+        # tell the user if something goes wrong and put the exception in the log window
+        error_message = " Error converting to BIOMET format, see below for details ... "
+        logger.error(error_message)
+        error_message = traceback.format_exc()
+        logger.error(error_message)
+    return
+def do_file_convert_nc2ecostress(cfg):
     """
     Purpose:
      Convert a PFP-style netCDF file to an ECOSTRESS CSV file.
@@ -59,35 +219,19 @@ def do_file_convert_nc2ecostress(cfg=None):
     Date: Back in the day
     Mods:
      September 2018: rewrite for use with new GUI
+     April 2020: routine can be invoked from File/Convert menu or
+                 by loading control file and using Run/Current.
+                 The latter method allows the user to modify the
+                 control file before running it.
     """
     logger.info(" Starting conversion to ECOSTRESS file")
     try:
-        if not cfg:
-            # check to see if there is an nc2ecostress.txt control file in controlfiles/standard
-            #  if there is
-            #   open controlfiles/standard/nc2csv_ecostress.txt
-            #   ask for netCDF file name
-            #   add [Files] section to control file
-            stdname = "controlfiles/standard/nc2csv_ecostress.txt"
-            if os.path.exists(stdname):
-                cfg = pfp_io.get_controlfilecontents(stdname)
-                filename = pfp_io.get_filename_dialog(file_path="../Sites", title="Choose a netCDF file")
-                if len(filename) == 0:
-                    return
-                if "Files" not in dir(cfg):
-                    cfg["Files"] = {}
-                cfg["Files"]["file_path"] = os.path.join(os.path.split(filename)[0], "")
-                cfg["Files"]["in_filename"] = os.path.split(filename)[1]
-            else:
-                cfg = pfp_io.load_controlfile(path="controlfiles")
-                if len(cfg) == 0:
-                    return
         if "Options" not in cfg:
             cfg["Options"]={}
         cfg["Options"]["call_mode"] = "interactive"
-        cf["Options"]["show_plots"] = "Yes"
+        cfg["Options"]["show_plots"] = "Yes"
         result = pfp_io.write_csv_ecostress(cfg)
-        if result == 0:
+        if result == 1:
             logger.info(" Finished converting netCDF file")
             logger.info("")
         else:
@@ -128,53 +272,81 @@ def do_file_convert_nc2xls():
         error_message = traceback.format_exc()
         logger.error(error_message)
     return
-def do_file_convert_nc2fluxnet():
-    logger.warning("File/Convert/nc to Fluxnet not implemented yet")
-    return
-def do_file_convert_nc2reddyproc():
-    logger.warning("File/Convert/nc to REddyProc not implemented yet")
-    return
-def do_file_convert_ncupdate(cfg=None):
+def do_file_convert_nc2fluxnet(cfg):
     """
     Purpose:
-     Convert from original netCDF files to V1 (October 2018).
+     Convert a PFP-style netCDF file to a FluxNet CSV file.
+    Usage:
+    Side effects:
+     Creates a CSV file in the same directory as the netCDF file.
+    Author: PRI
+    Date: Back in the day
+    Mods:
+     September 2018: rewrite for use with new GUI
+     April 2020: routine can be invoked from File/Convert menu or
+                 by loading control file and using Run/Current.
+                 The latter method allows the user to modify the
+                 control file before running it.
+    """
+    logger.info(" Starting output of FluxNet CSV file")
+    try:
+        if "Options" not in cfg:
+            cfg["Options"] = {}
+        cfg["Options"]["call_mode"] = "interactive"
+        cfg["Options"]["show_plots"] = "Yes"
+        result = pfp_io.write_csv_fluxnet(cfg)
+        if result == 1:
+            logger.info(" Finished converting netCDF file")
+            logger.info("")
+        else:
+            logger.error("")
+            logger.error(" An error occurred, check the log messages")
+            logger.error("")
+    except Exception:
+        error_message = " Error converting to ECOSTRESS format, see below for details ... "
+        logger.error(error_message)
+        error_message = traceback.format_exc()
+        logger.error(error_message)
+    return
+def do_file_convert_ncupdate():
+    """
+    Purpose:
+     Convert from OFQC netCDF files to PFP V1 (October 2018).
     Usage:
     Author: PRI
     Date: October 2018
     """
     logger.info(" Starting conversion of netCDF")
-    if not cfg:
-        # check to see if there is an nc2ecostress.txt control file in controlfiles/standard
-        #  if there is
-        #   open controlfiles/standard/nc2csv_ecostress.txt
-        #   ask for netCDF file name
-        #   add [Files] section to control file
-        stdname = os.path.join("controlfiles", "standard", "map_old_to_new.txt")
-        if os.path.exists(stdname):
-            cfg = pfp_io.get_controlfilecontents(stdname)
-            filename = pfp_io.get_filename_dialog(file_path="../OzFlux/Sites", title="Choose a netCDF file")
-            if len(filename) == 0:
-                return
-            if "Files" not in dir(cfg):
-                cfg["Files"] = {}
-            cfg["Files"]["file_path"] = os.path.join(os.path.split(filename)[0], "")
-            cfg["Files"]["in_filename"] = os.path.split(filename)[1]
-        else:
-            cfg = pfp_io.load_controlfile(path="controlfiles")
-            if len(cfg) == 0:
-                return
-    if "Options" not in cfg:
-        cfg["Options"]={}
-    cfg["Options"]["call_mode"] = "interactive"
-    cf["Options"]["show_plots"] = "Yes"
-    result = pfp_compliance.nc_update(cfg)
-    if result == 0:
-        logger.info(" Finished converting netCDF file")
-        logger.info("")
-    else:
-        logger.error("")
-        logger.error(" An error occured, check the log messages")
-        logger.error("")
+    try:
+        # get a list of netCDF files to update
+        file_names = QtWidgets.QFileDialog.getOpenFileNames(caption="Choose netCDF files", filter="*.nc")[0]
+        if len(file_names) == 0: return
+        # get the control file
+        stdname = os.path.join("controlfiles", "standard", "nc_cleanup.txt")
+        cfg = pfp_io.get_controlfilecontents(stdname)
+        if len(cfg) == 0: return
+        # loop over the selected files
+        for file_name in file_names:
+            # make the [Files] section
+            cfg["Files"] = {"file_path": os.path.join(os.path.split(file_name)[0], ""),
+                            "in_filename": os.path.split(file_name)[1]}
+            # make the [Options] section
+            cfg["Options"] = {"call_mode": "interactive", "show_plots": "Yes"}
+
+            result = pfp_compliance.nc_update(cfg)
+
+            if result == 0:
+                logger.info(" Finished converting netCDF file")
+                logger.info("")
+            else:
+                logger.error("")
+                logger.error(" An error occured, check the log messages")
+                logger.error("")
+    except Exception:
+        msg = " Error running netCDF update, see below for details ..."
+        logger.error(msg)
+        error_message = traceback.format_exc()
+        logger.error(error_message)
     return
 def do_file_split():
     Dialog = QtWidgets.QDialog()
@@ -224,7 +396,7 @@ def do_file_split_run(ui):
         error_message = traceback.format_exc()
         logger.error(error_message)
 # top level routines for the Run menu
-def do_run_l1(cfg=None):
+def do_run_l1(cfg):
     """
     Purpose:
      Top level routine for running the L1 data import.
@@ -239,11 +411,6 @@ def do_run_l1(cfg=None):
     """
     try:
         logger.info("Starting L1 processing")
-        if not cfg:
-            cfg = pfp_io.load_controlfile()
-            if len(cfg)==0:
-                logger.info("Quiting L1 processing (no control file)")
-                return
         ds1 = pfp_levels.l1qc(cfg)
         if ds1.returncodes["value"] == 0:
             outfilename = pfp_io.get_outfilenamefromcf(cfg)
@@ -260,7 +427,7 @@ def do_run_l1(cfg=None):
         error_message = traceback.format_exc()
         logger.error(error_message)
     return
-def do_run_l2(cfg=None):
+def do_run_l2(cfg):
     """
     Purpose:
      Top level routine for running the L2 quality control.
@@ -275,11 +442,6 @@ def do_run_l2(cfg=None):
     """
     try:
         logger.info("Starting L2 processing")
-        if not cfg:
-            cfg = pfp_io.load_controlfile()
-            if len(cfg)==0:
-                logger.info("Quiting L2 processing (no control file)")
-                return
         in_filepath = pfp_io.get_infilenamefromcf(cfg)
         if not pfp_utils.file_exists(in_filepath):
             in_filename = os.path.split(in_filepath)
@@ -314,7 +476,7 @@ def do_run_l2(cfg=None):
         logger.error(error_message)
     logger.info("")
     return
-def do_run_l3(cfg=None):
+def do_run_l3(cfg):
     """
     Purpose:
      Top level routine for running the L23 post-processing.
@@ -329,11 +491,6 @@ def do_run_l3(cfg=None):
     """
     try:
         logger.info("Starting L3 processing")
-        if not cfg:
-            cfg = pfp_io.load_controlfile()
-            if len(cfg) == 0:
-                logger.info("Quiting L3 processing (no control file)")
-                return
         in_filepath = pfp_io.get_infilenamefromcf(cfg)
         if not pfp_utils.file_exists(in_filepath):
             in_filename = os.path.split(in_filepath)
@@ -368,7 +525,7 @@ def do_run_l3(cfg=None):
         logger.error(error_message)
     logger.info("")
     return
-def do_run_l4(main_gui, cfg=None):
+def do_run_l4(main_gui, cfg):
     """
     Purpose:
      Top level routine for running the L4 gap filling.
@@ -383,11 +540,6 @@ def do_run_l4(main_gui, cfg=None):
     """
     try:
         logger.info("Starting L4 processing")
-        if not cfg:
-            cfg = pfp_io.load_controlfile(path='controlfiles')
-            if len(cfg) == 0:
-                logger.info("Quiting L4 processing (no control file)")
-                return
         in_filepath = pfp_io.get_infilenamefromcf(cfg)
         if not pfp_utils.file_exists(in_filepath):
             in_filename = os.path.split(in_filepath)
@@ -415,7 +567,7 @@ def do_run_l4(main_gui, cfg=None):
         error_message = traceback.format_exc()
         logger.error(error_message)
     return
-def do_run_l5(main_gui, cfg=None):
+def do_run_l5(main_gui, cfg):
     """
     Purpose:
      Top level routine for running the L5 gap filling.
@@ -430,11 +582,6 @@ def do_run_l5(main_gui, cfg=None):
     """
     try:
         logger.info("Starting L5 processing")
-        if not cfg:
-            cfg = pfp_io.load_controlfile(path='controlfiles')
-            if len(cfg) == 0:
-                logger.info("Quiting L5 processing (no control file)")
-                return
         in_filepath = pfp_io.get_infilenamefromcf(cfg)
         if not pfp_utils.file_exists(in_filepath):
             in_filename = os.path.split(in_filepath)
@@ -462,7 +609,7 @@ def do_run_l5(main_gui, cfg=None):
         error_message = traceback.format_exc()
         logger.error(error_message)
     return
-def do_run_l6(main_gui, cfg=None):
+def do_run_l6(main_gui, cfg):
     """
     Purpose:
      Top level routine for running the L6 gap filling.
@@ -477,11 +624,6 @@ def do_run_l6(main_gui, cfg=None):
     """
     try:
         logger.info("Starting L6 processing")
-        if not cfg:
-            cfg = pfp_io.load_controlfile(path='controlfiles')
-            if len(cfg) == 0:
-                logger.info("Quiting L6 processing (no control file)")
-                return
         in_filepath = pfp_io.get_infilenamefromcf(cfg)
         if not pfp_utils.file_exists(in_filepath):
             in_filename = os.path.split(in_filepath)
@@ -718,23 +860,29 @@ def do_utilities_climatology(mode="standard"):
         error_message = traceback.format_exc()
         logger.error(error_message)
     return
-def do_utilities_ustar_cpd(mode="standard"):
+def do_utilities_ustar_cpd1(mode="standard"):
+    """
+    Purpose:
+     Calculate the u* threshold using the Change Point Detection method described in
+     Barr et al. 2013, AFM 171-172, pp31-45.
+     This code is the original implementation by Ian McHugh.
+    """
     try:
-        logger.info(" Starting u* threshold detection (CPD)")
+        logger.info(" Starting CPD u* threshold detection (McHugh)")
         if mode == "standard":
-            stdname = "controlfiles/standard/cpd.txt"
+            stdname = "controlfiles/standard/cpd1.txt"
             if os.path.exists(stdname):
                 cf = pfp_io.get_controlfilecontents(stdname)
                 filename = pfp_io.get_filename_dialog(file_path="../Sites", title="Choose a netCDF file")
                 if not os.path.exists(filename):
-                    logger.info( " CPD: no input file chosen")
+                    logger.info( " CPD (McHugh): no input file chosen")
                     return
                 if "Files" not in cf:
                     cf["Files"] = {}
                 cf["Files"]["file_path"] = os.path.join(os.path.split(filename)[0],"")
                 in_filename = os.path.split(filename)[1]
                 cf["Files"]["in_filename"] = in_filename
-                cf["Files"]["out_filename"] = in_filename.replace(".nc", "_CPD.xls")
+                cf["Files"]["out_filename"] = in_filename.replace(".nc", "_CPD_McHugh.xls")
             else:
                 cf = pfp_io.load_controlfile(path="controlfiles")
                 if len(cf) == 0:
@@ -744,20 +892,67 @@ def do_utilities_ustar_cpd(mode="standard"):
             cf = pfp_io.load_controlfile(path='controlfiles')
             if len(cf) == 0:
                 return
-        logger.info("Doing u* threshold detection (CPD)")
-        pfp_cpd.cpd_main(cf)
-        logger.info(" Finished u* threshold detection (CPD)")
+        logger.info("Doing CPD u* threshold detection (McHugh)")
+        pfp_cpd1.cpd1_main(cf)
+        logger.info(" Finished CPD u* threshold detection (McHugh)")
         logger.info("")
     except Exception:
-        error_message = " An error occured while doing CPD u* threshold, see below for details ..."
+        error_message = " An error occured while doing CPD u* threshold (McHugh), see below for details ..."
+        logger.error(error_message)
+        error_message = traceback.format_exc()
+        logger.error(error_message)
+    return
+def do_utilities_ustar_cpd2(mode="standard"):
+    """
+    Purpose:
+     Calculate the u* threshold using the Change Point Detection method described in
+     Barr et al. 2013, AFM 171-172, pp31-45.
+     This code is a line-by-line translation of the original Barr MATLAB scripts
+     into Python.
+    """
+    try:
+        logger.info(" Starting CPD u* threshold detection (Barr)")
+        if mode == "standard":
+            stdname = "controlfiles/standard/cpd2.txt"
+            if os.path.exists(stdname):
+                cf = pfp_io.get_controlfilecontents(stdname)
+                filename = pfp_io.get_filename_dialog(file_path="../Sites", title="Choose a netCDF file")
+                if not os.path.exists(filename):
+                    logger.info( " CPD (Barr): no input file chosen")
+                    return
+                if "Files" not in cf:
+                    cf["Files"] = {}
+                cf["Files"]["file_path"] = os.path.join(os.path.split(filename)[0],"")
+                in_filename = os.path.split(filename)[1]
+                cf["Files"]["in_filename"] = in_filename
+                cf["Files"]["out_filename"] = in_filename.replace(".nc", "_CPD_Barr.xls")
+            else:
+                cf = pfp_io.load_controlfile(path="controlfiles")
+                if len(cf) == 0:
+                    return
+        else:
+            logger.info("Loading control file ...")
+            cf = pfp_io.load_controlfile(path='controlfiles')
+            if len(cf) == 0:
+                return
+        logger.info("Doing CPD u* threshold detection (Barr)")
+        pfp_cpd2.cpd2_main(cf)
+        logger.info(" Finished CPD u* threshold detection (Barr)")
+        logger.info("")
+    except Exception:
+        error_message = " An error occured while doing CPD2 u* threshold (Barr), see below for details ..."
         logger.error(error_message)
         error_message = traceback.format_exc()
         logger.error(error_message)
     return
 def do_utilities_ustar_mpt(mode="standard"):
     """
-    Calls pfp_mpt.mpt_main
-    Calculate the u* threshold using the Moving Point Threshold (MPT) method.
+    Purpose:
+     Calculate the u* threshold using the Moving Point Threshold (MPT) method.
+     This code calls the original FluxNet MPT C code.  The executable for this is
+     in PyFluxPro/mpt/bin.
+    Side effects:
+     Calls pfp_mpt.mpt_main
     """
     try:
         logger.info(" Starting u* threshold detection (MPT)")

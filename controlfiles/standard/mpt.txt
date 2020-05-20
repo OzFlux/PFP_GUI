@@ -1,5 +1,6 @@
-# the contents of this file are not currently used
+level = mpt
 [Options]
+# this section is not used at present
     hourly = No
     percentile = 90
     percentile_check = No
@@ -23,14 +24,18 @@
     groupby = 12,1,2;3,4,5;6,7,8;9,10,11
     seasons_group_allow_duplicates = No
     threshold_check = 1
-
 [Variables]
-    [[Fc]]
-        AltVarName = "Fc"
-    [[Ta]]
-        AltVarName = "Ta"
-    [[ustar]]
-        AltVarName = "ustar"
-    [[Fsd]]
-        AltVarName = "Fsd"
-    
+    [[NEE]]
+        name = Fc
+    [[VPD]]
+        name = Ta
+    [[USTAR]]
+        name = ustar
+    [[TA]]
+        name = Ta
+    [[SW_IN]]
+        name = Fsd
+    [[H]]
+        name = Fh
+    [[LE]]
+        name = Fe

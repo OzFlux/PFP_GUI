@@ -304,6 +304,8 @@ def rpLT_createdict(cf, ds, l6_info, output, called_by, flag_code):
     Date October 2015
     """
     nrecs = int(ds.globalattributes["nc_nrecs"])
+    # make the L6 "description" attrubute for the target variable
+    descr_level = "description_" + ds.globalattributes["nc_level"]
     # create the LT settings directory
     if called_by not in l6_info.keys():
         l6_info[called_by] = {"outputs": {}, "info": {"source": "Fc", "target": "ER"}, "gui": {}}
@@ -318,11 +320,12 @@ def rpLT_createdict(cf, ds, l6_info, output, called_by, flag_code):
     model_outputs = cf["EcosystemRespiration"][output][called_by].keys()
     for model_output in model_outputs:
         if model_output not in ds.series.keys():
+            l6_info["RemoveIntermediateSeries"]["not_output"].append(model_output)
             # create an empty variable
             variable = pfp_utils.CreateEmptyVariable(model_output, nrecs)
             variable["Attr"]["long_name"] = "Ecosystem respiration"
             variable["Attr"]["drivers"] = l6_info[called_by]["outputs"][model_output]["drivers"]
-            variable["Attr"]["description_l6"] = "Modeled by Lloyd-Taylor"
+            variable["Attr"][descr_level] = "Modeled by Lloyd-Taylor"
             variable["Attr"]["target"] = l6_info[called_by]["info"]["target"]
             variable["Attr"]["source"] = l6_info[called_by]["info"]["source"]
             variable["Attr"]["units"] = Fc["Attr"]["units"]
@@ -492,7 +495,7 @@ def rpLT_plot(pd, ds, output, drivers, target, iel, si=0, ei=-1):
     ax2.set_xlabel(target + '_LT')
     # plot the best fit line
     coefs = numpy.ma.polyfit(numpy.ma.copy(mod), numpy.ma.copy(obs), 1)
-    xfit = numpy.ma.array([numpy.ma.minimum.reduce(mod), numpy.ma.maximum.reduce(mod)])
+    xfit = numpy.ma.array([numpy.ma.min(mod), numpy.ma.max(mod)])
     yfit = numpy.polyval(coefs, xfit)
     r = numpy.ma.corrcoef(mod, obs)
     ax2.plot(xfit, yfit, 'r--', linewidth=3)
@@ -511,16 +514,16 @@ def rpLT_plot(pd, ds, output, drivers, target, iel, si=0, ei=-1):
     plt.figtext(0.725, 0.200, 'No. filled')
     plt.figtext(0.825, 0.200, str(numfilled))
     plt.figtext(0.725, 0.175, 'Slope')
-    plt.figtext(0.825, 0.175, str(pfp_utils.round2sig(coefs[0], sig=4)))
+    plt.figtext(0.825, 0.175, str(pfp_utils.round2significant(coefs[0], 4)))
     ielo[output]["results"]["m_ols"].append(coefs[0])
     plt.figtext(0.725, 0.150, 'Offset')
-    plt.figtext(0.825, 0.150, str(pfp_utils.round2sig(coefs[1], sig=4)))
+    plt.figtext(0.825, 0.150, str(pfp_utils.round2significant(coefs[1], 4)))
     ielo[output]["results"]["b_ols"].append(coefs[1])
     plt.figtext(0.725, 0.125, 'r')
-    plt.figtext(0.825, 0.125, str(pfp_utils.round2sig(r[0][1], sig=4)))
+    plt.figtext(0.825, 0.125, str(pfp_utils.round2significant(r[0][1], 4)))
     ielo[output]["results"]["r"].append(r[0][1])
     plt.figtext(0.725, 0.100, 'RMSE')
-    plt.figtext(0.825, 0.100, str(pfp_utils.round2sig(rmse, sig=4)))
+    plt.figtext(0.825, 0.100, str(pfp_utils.round2significant(rmse, 4)))
     ielo[output]["results"]["RMSE"].append(rmse)
     var_obs = numpy.ma.var(obs)
     ielo[output]["results"]["Var (obs)"].append(var_obs)

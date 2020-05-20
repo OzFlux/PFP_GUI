@@ -1,20 +1,19 @@
 level = L3
 [Files]
     file_path = Right click to browse
-    in_filename = Right click to browse
-    out_filename = Right click to browse
-
+    in_filename = Right click to browse (*.nc)
+    out_filename = Right click to browse (*.nc)
+    plot_path = Right click to browse
 [Options]
     UseL2Fluxes = Yes
-    zms = <height>
+    zms =
     CO2Units = umol/mol
     FcUnits = umol/m2/s
-
 [Soil]
-    FgDepth = <depth>
-    BulkDensity = <soil_bulk_density>
-    OrganicContent = <soil_organic_content>
-    SwsDefault = <soil_water_content_default>
+    FgDepth =
+    BulkDensity =
+    OrganicContent =
+    SwsDefault =
     SwsSeries = Sws
 
 [variables]
@@ -24,6 +23,30 @@ level = L3
         [[[RangeCheck]]]
             lower = -150
             upper = 1100
+    [[Fc]]
+        [[[MergeSeries]]]
+            source = Fc_EF
+        [[[RangeCheck]]]
+            lower = -50
+            upper = 50
+    [[Fe]]
+        [[[MergeSeries]]]
+            source = Fe_EF
+        [[[RangeCheck]]]
+            lower = -100
+            upper = 600
+    [[Fh]]
+        [[[MergeSeries]]]
+            source = Fh_EF
+        [[[RangeCheck]]]
+            lower = -100
+            upper = 600
+    [[Fm]]
+        [[[MergeSeries]]]
+            source = Fm_EF
+        [[[RangeCheck]]]
+            lower = -1
+            upper = 1
     [[Ta]]
         [[[MergeSeries]]]
             source = Ta_<inst>_<height>m,Ta_SONIC_Av
@@ -78,18 +101,17 @@ level = L3
         [[[RangeCheck]]]
             lower = 0
             upper = 60
-
 [Plots]
     [[Radiative fluxes]]
         variables = Fsd,Fsu,Fld,Flu,Fn
     [[Turbulent fluxes]]
         variables = Fh,Fe,Fc,ustar,Fm
     [[Fh diagnostics]]
-        variables = Fh,Fh_EPFlag,W_SONIC_Vr,Tv_SONIC_Vr
+        variables = Fh,Fh_EF,Fh_EF_QC,W_SONIC_Sd,Tv_SONIC_Sd
     [[Fe diagnostics]]
-        variables = Fe,Fe_EPFlag,W_SONIC_Vr,H2O_IRGA_Vr,CO2_IRGA_Vr
+        variables = Fe,Fe_EF,Fe_EF_QC,W_SONIC_Sd,H2O_IRGA_Sd,CO2_IRGA_Sd
     [[Fc diagnostics]]
-        variables = Fc,Fc_EPFlag,W_SONIC_Vr,H2O_IRGA_Vr,CO2_IRGA_Vr
+        variables = Fc,Fc_EF,Fc_EF_QC,W_SONIC_Sd,H2O_IRGA_Sd,CO2_IRGA_Sd
     [[Air temperature, humidity and CO2]]
         variables = Ta,Ta_<inst>_<height>m,RH,RH_<inst>_<height>m,CO2_IRGA_Av
     [[Soil temperature]]

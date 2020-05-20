@@ -2,8 +2,6 @@ import datetime
 import logging
 import math
 import os
-import sys
-import time
 # 3rd party
 import matplotlib
 import matplotlib.dates as mdt
@@ -88,23 +86,35 @@ def get_yarray(ds,ThisOne):
         yarray = numpy.ma.zeros(numpy.size(yarray))
     return yarray,nRecs,nNotM,nMskd
 
-def get_yaxislimitsfromcf(cf,nFig,maxkey,minkey,nSer,YArray):
-    if maxkey in cf['Plots'][str(nFig)].keys():                               # Y axis minima specified
-        maxlist = ast.literal_eval(cf['Plots'][str(nFig)][maxkey])     # Evaluate the minima list
-        if str(maxlist[nSer])=='Auto':             # This entry is 'Auto' ...
-            YAxMax = numpy.ma.maximum.reduce(YArray)                        # ... so take the array minimum value
+def get_yaxislimitsfromcf(cf, nFig, maxkey, minkey, nSer, YArray):
+    # Y axis maxima specified
+    if maxkey in cf['Plots'][str(nFig)].keys():
+        # Evaluate the minima list
+        maxlist = pfp_cfg.cfg_string_to_list(cf['Plots'][str(nFig)][maxkey])
+        # This entry is 'Auto' ...
+        if str(maxlist[nSer])=='Auto':
+            # ... so take the array minimum value
+            YAxMax = numpy.ma.max(YArray)
         else:
-            YAxMax = float(maxlist[nSer])         # Evaluate the entry for this series
+            # Evaluate the entry for this series
+            YAxMax = float(maxlist[nSer])
     else:
-        YAxMax = numpy.ma.maximum.reduce(YArray)                            # Y axis minima not given, use auto
-    if minkey in cf['Plots'][str(nFig)].keys():                               # Y axis minima specified
-        minlist = ast.literal_eval(cf['Plots'][str(nFig)][minkey])     # Evaluate the minima list
-        if str(minlist[nSer])=='Auto':             # This entry is 'Auto' ...
-            YAxMin = numpy.ma.minimum.reduce(YArray)                        # ... so take the array minimum value
+        # Y axis minima not given, use auto
+        YAxMax = numpy.ma.max(YArray)
+    # Y axis minima specified
+    if minkey in cf['Plots'][str(nFig)].keys():
+        # Evaluate the minima list
+        minlist = pfp_cfg.cfg_string_to_list(cf['Plots'][str(nFig)][minkey])
+        # This entry is 'Auto' ...
+        if str(minlist[nSer])=='Auto':
+             # ... so take the array minimum value
+            YAxMin = numpy.ma.min(YArray)
         else:
-            YAxMin = float(minlist[nSer])         # Evaluate the entry for this series
+            # Evaluate the entry for this series
+            YAxMin = float(minlist[nSer])
     else:
-        YAxMin = numpy.ma.minimum.reduce(YArray)                            # Y axis minima not given, use auto
+        # Y axis minima not given, use auto
+        YAxMin = numpy.ma.min(YArray)
     if (abs(YAxMax-YAxMin) < c.eps):
         YAxDelta = 0.001*YAxMax
         if YAxDelta == 0:
@@ -253,10 +263,10 @@ def pltfingerprint_createdict(cf,ds):
         else:
             fp_info["variables"][var]["in_filename"] = pfp_io.get_infilenamefromcf(cf)
         # get the variable name
-        if "nc_varname" in cf["Variables"][var]:
-            fp_info["variables"][var]["nc_varname"] = str(cf["Variables"][var]["nc_varname"])
+        if "name" in cf["Variables"][var]:
+            fp_info["variables"][var]["name"] = str(cf["Variables"][var]["name"])
         else:
-            fp_info["variables"][var]["nc_varname"] = str(var)
+            fp_info["variables"][var]["name"] = str(var)
         # get the upper and lower range limits
         if "lower" in cf["Variables"][var]:
             fp_info["variables"][var]["lower"] = float(cf["Variables"][var]["lower"])
@@ -336,11 +346,11 @@ def plot_fingerprint(cf):
         fig.clf()
         fig.canvas.set_window_title(title)
         plt.figtext(0.5, 0.95, title_str, horizontalalignment="center")
-        fig_var_list = pfp_cfg.cfg_string_to_list(cf["Plots"][title]["Variables"])
+        fig_var_list = pfp_cfg.cfg_string_to_list(cf["Plots"][title]["variables"])
         logger.info(" Plotting fingerprint: " + str(fig_var_list))
         nPlots = len(fig_var_list)
         for n,var in enumerate(fig_var_list):
-            nc_varname = fp_info["variables"][var]["nc_varname"]
+            nc_varname = fp_info["variables"][var]["name"]
             infilename = fp_info["variables"][var]["in_filename"]
             ldt = ds[infilename].series["DateTime"]["Data"]
             ts = fp_info["variables"][var]["time_step"]
@@ -368,7 +378,7 @@ def plot_fingerprint(cf):
                     logger.warning(msg)
                     continue
             data,flag,attr = pfp_utils.GetSeriesasMA(ds[infilename],nc_varname,si=si,ei=ei)
-            data = pfp_ck.cliptorange(data,fp_info["variables"][var]["lower"],fp_info["variables"][var]["upper"])
+            data = pfp_ck.cliptorange(data,fp_info["variables"][var]["lower"], fp_info["variables"][var]["upper"])
             data_daily = data.reshape(nDays,nPerDay)
             units = str(ds[infilename].series[nc_varname]['Attr']['units'])
             label = var + ' (' + units + ')'
@@ -378,25 +388,26 @@ def plot_fingerprint(cf):
                 ax = plt.subplot(1,nPlots,n+1,sharey=ax)
             sd = mdt.date2num(ldt[0])
             ed = mdt.date2num(ldt[-1])
-            plt.imshow(data_daily,extent=[0,24,sd,ed],aspect='auto',origin='lower')
-            ax.yaxis_date()
-            # only plot the colourbar if there is data to plot
-            if numpy.ma.count(data)!=0:
+            # only plot the fingerprint if there is data to plot
+            if numpy.ma.count(data) != 0:
+                plt.imshow(data_daily,extent=[0,24,sd,ed],aspect='auto',origin='lower')
+                ax.yaxis_date()
                 cb = plt.colorbar(orientation='horizontal',fraction=0.02,pad=0.075)
-                if numpy.min(data)==numpy.max(data):
+                if numpy.ma.min(data) == numpy.ma.max(data):
                     if numpy.min(data)!=0:
-                        data_min = numpy.min(data)-0.01*numpy.min(data)
-                        data_max = numpy.max(data)+0.01*numpy.max(data)
+                        data_min = numpy.ma.min(data)-0.01*numpy.ma.min(data)
+                        data_max = numpy.ma.max(data)+0.01*numpy.ma.max(data)
                     else:
                         data_min = -1.0
                         data_max = 1.0
                 else:
-                    data_min = numpy.min(data)
-                    data_max = numpy.max(data)
+                    data_min = numpy.ma.min(data)
+                    data_max = numpy.ma.max(data)
                 cb.set_ticks(numpy.linspace(data_min,data_max,4))
             plt.xticks([0,6,12,18,24])
             plt.xlabel(label)
-            if n!= 0: plt.setp(ax.get_yticklabels(), visible=False)
+            if n!= 0:
+                plt.setp(ax.get_yticklabels(), visible=False)
         if "Files" in cf:
             if "plot_path" in cf["Files"]:
                 plot_path = cf["Files"]["plot_path"]+"fingerprints/"
@@ -423,42 +434,35 @@ def plot_fluxnet(cf):
     infilename = pfp_io.get_infilenamefromcf(cf)
 
     ds = pfp_io.nc_read_series(infilename)
-    nRecs = int(ds.globalattributes["nc_nrecs"])
-    zeros = numpy.zeros(nRecs,dtype=numpy.int32)
-    ones = numpy.ones(nRecs,dtype=numpy.int32)
     site_name = ds.globalattributes["site_name"]
-
     ldt=ds.series["DateTime"]["Data"]
     sdt = ldt[0]
     edt = ldt[-1]
-    # Tumbarumba doesn't have RH in the netCDF files
-    if "RH" not in ds.series.keys():
-        Ah,f,a = pfp_utils.GetSeriesasMA(ds,'Ah')
-        Ta,f,a = pfp_utils.GetSeriesasMA(ds,'Ta')
-        RH = pfp_mf.RHfromabsolutehumidity(Ah, Ta)
-        attr = pfp_utils.MakeAttributeDictionary(long_name='Relative humidity',units='%',standard_name='relative_humidity')
-        flag = numpy.where(numpy.ma.getmaskarray(RH)==True,ones,zeros)
-        pfp_utils.CreateSeries(ds,"RH",RH,flag,attr)
-
     nFig = 0
     plt.ion()
     for series in series_list:
-        if series not in ds.series.keys():
-            logger.error("Series "+series+" not found in input file, skipping ...")
+        if "name" in cf["Variables"][series]:
+            label = cf["Variables"][series]["name"]
+        else:
+            label = series
+        if label not in ds.series.keys():
+            logger.error("Series " + label + " not found in input file, skipping ...")
             continue
-        logger.info(" Doing plot for "+series)
-        data,flag,attr = pfp_utils.GetSeriesasMA(ds,pfp_utils.GetAltName(cf,ds,series))
+        logger.info(" Doing plot for " + label)
+        data, flag, attr = pfp_utils.GetSeriesasMA(ds, label)
         nFig = nFig + 1
-        fig = plt.figure(nFig,figsize=(10.9,7.5))
-        fig.canvas.set_window_title(series)
-        plt.plot(ldt,data,"b.")
-        plt.xlim(sdt,edt)
+        fig = plt.figure(nFig,figsize=(10.9, 7.5))
+        fig.canvas.set_window_title(label)
+        plt.plot(ldt, data, "b.")
+        plt.xlim(sdt, edt)
         plt.xlabel("Date")
-        plt.ylabel(series+" ("+attr["units"]+")")
-        title_str = site_name+": "+sdt.strftime("%Y-%m-%d")+" to "+edt.strftime("%Y-%m-%d")+"; "+series
+        plt.ylabel(label + " (" + attr["units"] + ")")
+        title_str = site_name + ": " + sdt.strftime("%Y-%m-%d") + " to "
+        title_str += edt.strftime("%Y-%m-%d") + "; " + series
         plt.title(title_str)
-        figname='plots/'+ds.globalattributes['site_name'].replace(' ','')+'_'+ds.globalattributes['nc_level']+'_FC_'+series+'.png'
-        fig.savefig(figname,format='png')
+        figname = 'plots/' + ds.globalattributes['site_name'].replace(' ','')
+        figname += '_' + ds.globalattributes['nc_level'] + '_FC_' + label + '.png'
+        fig.savefig(figname, format='png')
         plt.draw()
     plt.ioff()
 
@@ -535,7 +539,7 @@ def plottimeseries(cf, nFig, dsa, dsb):
             section = pfp_utils.get_cfsection(cf, ThisOne, mode='quiet')
             if section != None:
                 if 'DiurnalCheck' in cf[section][ThisOne].keys():
-                    NSdarr = numpy.array(pfp_ck.parse_rangecheck_limit(cf[section][ThisOne]['DiurnalCheck']['NumSd']))
+                    NSdarr = numpy.array(pfp_ck.parse_rangecheck_limit(cf[section][ThisOne]['DiurnalCheck']['numsd']))
                     nSd = NSdarr[Month-1]
                     hr2_ax.plot(Hr2,Av2+nSd*Sd2,'r.',Hr2,Av2-nSd*Sd2,'b.')
             plt.xlim(0,24)
@@ -1150,14 +1154,14 @@ def plotxy(cf, title, plt_cf, dsa, dsb):
     fig.clf()
     fig.canvas.set_window_title(PlotDescription)
     plt.figtext(0.5,0.95,SiteName+': '+PlotDescription,ha='center',size=16)
-    if "," in plt_cf['XSeries']:
-        XSeries = plt_cf['XSeries'].split(",")
+    if "," in plt_cf['xseries']:
+        XSeries = plt_cf['xseries'].split(",")
     else:
-        XSeries = [plt_cf['XSeries']]
-    if "," in plt_cf['YSeries']:
-        YSeries = plt_cf['YSeries'].split(",")
+        XSeries = [plt_cf['xseries']]
+    if "," in plt_cf['yseries']:
+        YSeries = plt_cf['yseries'].split(",")
     else:
-        YSeries = [plt_cf['YSeries']]
+        YSeries = [plt_cf['yseries']]
     logger.info(' Plotting xy: '+str(XSeries)+' v '+str(YSeries))
     if dsa == dsb:
         for xname,yname in zip(XSeries,YSeries):
@@ -1195,7 +1199,7 @@ def xyplot(x,y,sub=[1,1,1],regr=0,thru0=0,title=None,xlabel=None,ylabel=None,fna
         return
     if regr==1:
         coefs = numpy.ma.polyfit(numpy.ma.copy(x),numpy.ma.copy(y),1)
-        xfit = numpy.ma.array([numpy.ma.minimum.reduce(x),numpy.ma.maximum.reduce(x)])
+        xfit = numpy.ma.array([numpy.ma.min(x),numpy.ma.max(x)])
         yfit = numpy.polyval(coefs,xfit)
         r = numpy.ma.corrcoef(x,y)
         eqnstr = 'y = %.3fx + %.3f (OLS)'%(coefs[0],coefs[1])

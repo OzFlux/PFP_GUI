@@ -4,6 +4,7 @@ import logging
 import os
 # PFP modules
 import pfp_ck
+import pfp_compliance
 import pfp_gf
 import pfp_gfALT
 import pfp_gfMDS
@@ -16,58 +17,38 @@ import pfp_utils
 logger = logging.getLogger("pfp_log")
 
 def l1qc(cf):
-    # get the data series from the Excel file
-    in_filename = pfp_io.get_infilenamefromcf(cf)
-    if not pfp_utils.file_exists(in_filename,mode="quiet"):
-        msg = " Input file "+in_filename+" not found ..."
-        logger.error(msg)
-        ds1 = pfp_io.DataStructure()
-        ds1.returncodes = {"value":1,"message":msg}
-        return ds1
-    file_name,file_extension = os.path.splitext(in_filename)
-    if "csv" in file_extension.lower():
-        ds1 = pfp_io.csv_read_series(cf)
-        if ds1.returncodes["value"] != 0:
-            return ds1
-        # get a series of Excel datetime from the Python datetime objects
-        #pfp_utils.get_xldatefromdatetime(ds1)
-    else:
-        ds1 = pfp_io.xl_read_series(cf)
-        if ds1.returncodes["value"] != 0:
-            return ds1
-        # get a series of Python datetime objects from the Excel datetime
-        #pfp_utils.get_datetime_from_xldate(ds1)
-    # get the netCDF attributes from the control file
-    #pfp_ts.do_attributes(cf,ds1)
-    pfp_utils.get_datetime(cf, ds1)
-    # round the Python datetime to the nearest second
-    pfp_utils.round_datetime(ds1, mode="nearest_second")
-    #check for gaps in the Python datetime series and fix if present
-    fixtimestepmethod = pfp_utils.get_keyvaluefromcf(cf, ["options"], "FixTimeStepMethod", default="round")
-    if pfp_utils.CheckTimeStep(ds1):
-        pfp_utils.FixTimeStep(ds1, fixtimestepmethod=fixtimestepmethod)
-    # recalculate the Excel datetime
-    #pfp_utils.get_xldatefromdatetime(ds1)
-    # get the Year, Month, Day etc from the Python datetime
-    #pfp_utils.get_ymdhmsfromdatetime(ds1)
+    """
+    Purpose:
+     Reads input files, either an Excel workbook or a collection of CSV files,
+     and returns the data as a data structure.
+    Usage:
+    Side effects:
+     Returns a data structure containing the data specified in the L1
+     control file.
+    Author: PRI
+    Date: February 2020
+    """
+    # get a new data structure
+    ds = pfp_io.DataStructure()
+    # parse the L1 control file
+    l1_info = pfp_compliance.ParseL1ControlFile(cf)
+    # return if parsing throws an error
+    if not pfp_compliance.check_status_ok(ds, l1_info): return ds
+    # check the Excel workbook
+    xl_data = pfp_compliance.CheckExcelWorkbook(l1_info)
+    # copy data from the worksheets to individual data structures
+    ds_dict = pfp_io.ExcelToDataStructures(xl_data, l1_info)
+    # merge the individual data structures to a single data structure
+    ds = pfp_ts.MergeDataStructures(ds_dict, l1_info)
     # write the processing level to a global attribute
-    ds1.globalattributes['nc_level'] = str("L1")
-    # get the start and end date from the datetime series unless they were
-    # given in the control file
-    if 'start_date' not in ds1.globalattributes.keys():
-        ds1.globalattributes['start_date'] = str(ds1.series['DateTime']['Data'][0])
-    if 'end_date' not in ds1.globalattributes.keys():
-        ds1.globalattributes['end_date'] = str(ds1.series['DateTime']['Data'][-1])
+    ds.globalattributes["nc_level"] = "L1"
     # calculate variances from standard deviations and vice versa
-    pfp_ts.CalculateStandardDeviations(cf,ds1)
+    pfp_ts.CalculateStandardDeviations(ds)
     # create new variables using user defined functions
-    pfp_ts.DoFunctions(cf,ds1)
-    # create a series of synthetic downwelling shortwave radiation
-    #pfp_ts.get_synthetic_fsd(ds1)
+    pfp_ts.DoFunctions(ds, l1_info["read_excel"])
     # check missing data and QC flags are consistent
-    pfp_utils.CheckQCFlags(ds1)
-
-    return ds1
+    pfp_utils.CheckQCFlags(ds)
+    return ds
 
 def l2qc(cf,ds1):
     """
@@ -113,7 +94,13 @@ def l3qc(cf, ds2):
     # set some attributes for this level
     pfp_utils.UpdateGlobalAttributes(cf, ds3, "L3")
     # check to see if we have any imports
-    pfp_gf.ImportSeries(cf, ds3)
+    pfp_gf.ImportSeries(cf,ds3)
+    # apply linear corrections to the data
+    pfp_ck.do_linear(cf,ds3)
+    # parse the control file for information on how the user wants to do the gap filling
+    l3_info = pfp_compliance.ParseL3ControlFile(cf, ds3)
+    if ds3.returncodes["value"] != 0:
+        return ds3
     # ************************
     # *** Merge humidities ***
     # ************************
@@ -153,7 +140,7 @@ def l3qc(cf, ds2):
     # *** Calculate meteorological variables ***
     # ******************************************
     # Update meteorological variables
-    pfp_ts.CalculateMeteorologicalVariables(ds3)
+    pfp_ts.CalculateMeteorologicalVariables(ds3, l3_info)
     # *************************************************
     # *** Calculate fluxes from covariances section ***
     # *************************************************
@@ -182,7 +169,9 @@ def l3qc(cf, ds2):
     # calculate Fc storage term - single height only at present
     pfp_ts.CalculateFcStorageSinglePoint(cf, ds3, Fc_out='Fc_single', CO2_in=CO2)
     # convert Fc and Fc_storage units if required
-    pfp_utils.ConvertFcUnits(cf, ds3)
+    #pfp_utils.ConvertFcUnits(cf, ds3)
+    Fc_list = ["Fc", "Fc_single", "Fc_profile", "Fc_storage"]
+    pfp_utils.CheckUnits(ds3, Fc_list, "umol/m2/s", convert_units=True)
     # merge Fc and Fc_storage series if required
     cfv = cf["Variables"]
     merge_list = [l for l in cfv.keys() if l[0:2] == "Fc" and "MergeSeries" in cfv[l].keys()]
@@ -227,11 +216,7 @@ def l3qc(cf, ds2):
     # Calculate Monin-Obukhov length
     pfp_ts.CalculateMoninObukhovLength(ds3)
     # re-apply the quality control checks (range, diurnal and rules)
-    pfp_ck.do_qcchecks(cf, ds3)
-    # coordinate gaps in the three main fluxes
-    pfp_ck.CoordinateFluxGaps(cf, ds3)
-    # coordinate gaps in Ah_7500_Av with Fc
-    pfp_ck.CoordinateAh7500AndFcGaps(cf, ds3)
+    pfp_ck.do_qcchecks(cf,ds3)
     # check missing data and QC flags are consistent
     pfp_utils.CheckQCFlags(ds3)
     # get the statistics for the QC flags and write these to an Excel spreadsheet
@@ -240,7 +225,8 @@ def l3qc(cf, ds2):
     pfp_utils.get_coverage_individual(ds3)
     # write the percentage of good data for groups
     pfp_utils.get_coverage_groups(ds3)
-
+    # remove intermediate series from the data structure
+    pfp_ts.RemoveIntermediateSeries(ds3, l3_info)
     return ds3
 
 def l4qc(main_gui, cf, ds3):
@@ -288,15 +274,15 @@ def l4qc(main_gui, cf, ds3):
     # re-calculate the water vapour concentrations
     pfp_ts.CalculateHumiditiesAfterGapFill(ds4, l4_info)
     # re-calculate the meteorological variables
-    pfp_ts.CalculateMeteorologicalVariables(ds4)
-    # the Tumba rhumba
-    pfp_ts.CalculateComponentsFromWsWd(ds4)
+    pfp_ts.CalculateMeteorologicalVariables(ds4, l4_info)
     # check for any missing data
     pfp_utils.get_missingingapfilledseries(ds4, l4_info)
     # write the percentage of good data as a variable attribute
     pfp_utils.get_coverage_individual(ds4)
     # write the percentage of good data for groups
     pfp_utils.get_coverage_groups(ds4)
+    # remove intermediate series from the data structure
+    pfp_ts.RemoveIntermediateSeries(ds4, l4_info)
 
     return ds4
 
@@ -322,7 +308,7 @@ def l5qc(main_gui, cf, ds4):
     if ds5.returncodes["value"] != 0:
         return ds5
     # apply the turbulence filter (if requested)
-    pfp_ck.ApplyTurbulenceFilter(cf, ds5)
+    pfp_ck.ApplyTurbulenceFilter(cf, ds5, l5_info)
     # fill short gaps using interpolation
     pfp_gf.GapFillUsingInterpolation(cf, ds5)
     # gap fill using marginal distribution sampling
@@ -346,6 +332,8 @@ def l5qc(main_gui, cf, ds4):
     pfp_utils.get_coverage_individual(ds5)
     # write the percentage of good data for groups
     pfp_utils.get_coverage_groups(ds5)
+    # remove intermediate series from the data structure
+    pfp_ts.RemoveIntermediateSeries(ds5, l5_info)
 
     return ds5
 
@@ -394,6 +382,8 @@ def l6qc(main_gui, cf, ds5):
     pfp_utils.get_coverage_individual(ds6)
     # write the percentage of good data for groups
     pfp_utils.get_coverage_groups(ds6)
+    # remove intermediate series from the data structure
+    pfp_ts.RemoveIntermediateSeries(ds6, l6_info)
     # do the L6 summary
     pfp_rp.L6_summary(cf, ds6)
 

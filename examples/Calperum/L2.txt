@@ -6,140 +6,140 @@ level = L2
 [Variables]
     [[Flu]]
         [[[RangeCheck]]]
-            Lower = 250
-            Upper = 625
+            lower = 250
+            upper = 625
     [[Fld]]
         [[[RangeCheck]]]
-            Lower = 250
-            Upper = 500
+            lower = 250
+            upper = 500
     [[Fsu]]
         [[[RangeCheck]]]
-            Lower = -10
-            Upper = 500
+            lower = -10
+            upper = 500
     [[Fsd]]
         [[[RangeCheck]]]
-            Lower = -10
-            Upper = 1500
+            lower = -10
+            upper = 1500
     [[Fsd_Li]]
         [[[RangeCheck]]]
-            Lower = -10
-            Upper = 1500
+            lower = -10
+            upper = 1500
     [[UzT]]
         [[[RangeCheck]]]
-            Lower = -0.2
-            Upper = 1
+            lower = -0.2
+            upper = 1
     [[UxT]]
         [[[RangeCheck]]]
-            Lower = -2
-            Upper = 2
+            lower = -2
+            upper = 2
     [[UyT]]
         [[[RangeCheck]]]
-            Lower = -2
-            Upper = 2
+            lower = -2
+            upper = 2
     [[UzA]]
         [[[RangeCheck]]]
-            Lower = -0.01
-            Upper = 0.1
+            lower = -0.01
+            upper = 0.1
     [[UxA]]
         [[[RangeCheck]]]
-            Lower = -1
-            Upper = 1
+            lower = -1
+            upper = 1
     [[UyA]]
         [[[RangeCheck]]]
-            Lower = -1
-            Upper = 1
+            lower = -1
+            upper = 1
     [[UzC]]
         [[[RangeCheck]]]
-            Lower = -2
-            Upper = 2
+            lower = -2
+            upper = 2
     [[UxC]]
         [[[RangeCheck]]]
-            Lower = -4
-            Upper = 4
+            lower = -4
+            upper = 4
     [[UyC]]
         [[[RangeCheck]]]
-            Lower = -4
-            Upper = 4
+            lower = -4
+            upper = 4
     [[UxUz]]
         [[[RangeCheck]]]
-            Lower = -10
-            Upper = 10
+            lower = -10
+            upper = 10
     [[UyUz]]
         [[[RangeCheck]]]
-            Lower = -10
-            Upper = 10
+            lower = -10
+            upper = 10
     [[UxUy]]
         [[[RangeCheck]]]
-            Lower = -10
-            Upper = 10
+            lower = -10
+            upper = 10
     [[UxUx]]
         [[[RangeCheck]]]
-            Lower = -10
-            Upper = 10
+            lower = -10
+            upper = 10
     [[UyUy]]
         [[[RangeCheck]]]
-            Lower = -10
-            Upper = 10
+            lower = -10
+            upper = 10
     [[Tv_CSAT]]
         [[[RangeCheck]]]
-            Lower = 0
-            Upper = 50
+            lower = 0
+            upper = 50
     [[Wd_CSAT]]
         [[[RangeCheck]]]
-            Lower = 0
-            Upper = 360
+            lower = 0
+            upper = 360
     [[Ws_CSAT]]
         [[[RangeCheck]]]
-            Lower = 0
-            Upper = 20
+            lower = 0
+            upper = 20
     [[Ux]]
         [[[RangeCheck]]]
-            Lower = -20
-            Upper = 20
+            lower = -20
+            upper = 20
     [[Uy]]
         [[[RangeCheck]]]
-            Lower = -20
-            Upper = 20
+            lower = -20
+            upper = 20
     [[Uz]]
         [[[RangeCheck]]]
-            Lower = -1
-            Upper = 1
+            lower = -1
+            upper = 1
     [[Diag_CSAT]]
         [[[RangeCheck]]]
-            Lower = -0.5
-            Upper = 10.5
+            lower = -0.5
+            upper = 10.5
     [[Ah_7500_Av]]
         [[[RangeCheck]]]
-            Lower = 0
-            Upper = 35
+            lower = 0
+            upper = 35
     [[Cc_7500_Av]]
         [[[RangeCheck]]]
-            Lower = 500
-            Upper = 1200
+            lower = 500
+            upper = 1200
     [[Ah_7500_Sd]]
         [[[RangeCheck]]]
-            Lower = 0
-            Upper = 3
+            lower = 0
+            upper = 3
     [[Cc_7500_Sd]]
         [[[RangeCheck]]]
-            Lower = 0
-            Upper = 20
+            lower = 0
+            upper = 20
     [[ps]]
         [[[RangeCheck]]]
-            Lower = 95
-            Upper = 105
+            lower = 95
+            upper = 105
     [[Diag_7500]]
         [[[RangeCheck]]]
-            Lower = -0.5
-            Upper = 10.5
+            lower = -0.5
+            upper = 10.5
     [[AGC_7500]]
         [[[RangeCheck]]]
-            Lower = 0
-            Upper = 65
+            lower = 0
+            upper = 65
     [[Ah_HMP_2m]]
         [[[RangeCheck]]]
-            Lower = 0
-            Upper = 25
+            lower = 0
+            upper = 25
         [[[ExcludeDates]]]
             0 = 2016-8-03 07:00,2016-8-03 10:00
             1 = 2016-8-05 06:00,2016-8-05 08:00
@@ -157,8 +157,8 @@ level = L2
             13 = 2016-8-31 05:00,2016-8-31 08:00
     [[Ta_HMP_2m]]
         [[[RangeCheck]]]
-            Lower = -5
-            Upper = 50
+            lower = -5
+            upper = 50
         [[[ExcludeDates]]]
             0 = 2016-8-03 07:00,2016-8-03 10:00
             1 = 2016-8-05 06:00,2016-8-05 08:00
@@ -176,250 +176,250 @@ level = L2
             13 = 2016-8-31 05:00,2016-8-31 08:00
     [[Ws_RMY_2m]]
         [[[RangeCheck]]]
-            Lower = 0
-            Upper = 20
+            lower = 0
+            upper = 20
     [[Wd_RMY_2m]]
         [[[RangeCheck]]]
-            Lower = 0
-            Upper = 360
+            lower = 0
+            upper = 360
     [[Ws_RMY_10m]]
         [[[RangeCheck]]]
-            Lower = 0
-            Upper = 20
+            lower = 0
+            upper = 20
     [[Wd_RMY_10m]]
         [[[RangeCheck]]]
-            Lower = 0
-            Upper = 360
+            lower = 0
+            upper = 360
     [[Precip]]
         [[[RangeCheck]]]
-            Lower = 0
-            Upper = 20
+            lower = 0
+            upper = 20
     [[Fg_8cma]]
         [[[RangeCheck]]]
-            Lower = -100
-            Upper = 100
+            lower = -100
+            upper = 100
     [[Fg_8cmb]]
         [[[RangeCheck]]]
-            Lower = -100
-            Upper = 100
+            lower = -100
+            upper = 100
     [[Fg_8cmc]]
         [[[RangeCheck]]]
-            Lower = -100
-            Upper = 100
+            lower = -100
+            upper = 100
     [[Sws_10cma]]
         [[[RangeCheck]]]
-            Lower = 0
-            Upper = 0.5
+            lower = 0
+            upper = 0.5
         [[[ExcludeDates]]]
             0 = 2016-7-07 10:00,2016-7-07 11:00
     [[Sws_10cmb]]
         [[[RangeCheck]]]
-            Lower = 0
-            Upper = 0.5
+            lower = 0
+            upper = 0.5
         [[[ExcludeDates]]]
             0 = 2016-7-07 10:00,2016-7-07 11:00
     [[Sws_10cmc]]
         [[[RangeCheck]]]
-            Lower = 0
-            Upper = 0.5
+            lower = 0
+            upper = 0.5
         [[[ExcludeDates]]]
             0 = 2016-7-07 10:00,2016-7-07 11:00
     [[Sws_25cma]]
         [[[RangeCheck]]]
-            Lower = 0
-            Upper = 0.5
+            lower = 0
+            upper = 0.5
         [[[ExcludeDates]]]
             0 = 2016-7-07 10:00,2016-7-07 11:00
     [[Sws_25cmb]]
         [[[RangeCheck]]]
-            Lower = 0
-            Upper = 0.5
+            lower = 0
+            upper = 0.5
         [[[ExcludeDates]]]
             0 = 2016-7-07 10:00,2016-7-07 11:00
     [[Sws_25cmc]]
         [[[RangeCheck]]]
-            Lower = 0
-            Upper = 0.5
+            lower = 0
+            upper = 0.5
         [[[ExcludeDates]]]
             0 = 2016-7-07 10:00,2016-7-07 11:00
     [[Sws_50cma]]
         [[[RangeCheck]]]
-            Lower = 0
-            Upper = 0.5
+            lower = 0
+            upper = 0.5
         [[[ExcludeDates]]]
             0 = 2016-7-07 10:00,2016-7-07 11:00
     [[Sws_50cmb]]
         [[[RangeCheck]]]
-            Lower = 0
-            Upper = 0.5
+            lower = 0
+            upper = 0.5
         [[[ExcludeDates]]]
             0 = 2016-7-07 10:00,2016-7-07 11:00
     [[Sws_50cmc]]
         [[[RangeCheck]]]
-            Lower = 0
-            Upper = 0.5
+            lower = 0
+            upper = 0.5
         [[[ExcludeDates]]]
             0 = 2016-7-07 10:00,2016-7-07 11:00
     [[Sws_100cma]]
         [[[RangeCheck]]]
-            Lower = 0
-            Upper = 0.5
+            lower = 0
+            upper = 0.5
         [[[ExcludeDates]]]
             0 = 2016-7-07 10:00,2016-7-07 11:00
     [[Sws_100cmb]]
         [[[RangeCheck]]]
-            Lower = 0
-            Upper = 0.5
+            lower = 0
+            upper = 0.5
         [[[ExcludeDates]]]
             0 = 2016-7-07 10:00,2016-7-07 11:00
     [[Sws_100cmc]]
         [[[RangeCheck]]]
-            Lower = 0
-            Upper = 0.5
+            lower = 0
+            upper = 0.5
         [[[ExcludeDates]]]
             0 = 2016-7-07 10:00,2016-7-07 11:00
     [[Sws_180cma]]
         [[[RangeCheck]]]
-            Lower = 0
-            Upper = 0.5
+            lower = 0
+            upper = 0.5
         [[[ExcludeDates]]]
             0 = 2016-7-07 10:00,2016-7-07 11:00
     [[Sws_180cmb]]
         [[[RangeCheck]]]
-            Lower = 0
-            Upper = 0.5
+            lower = 0
+            upper = 0.5
         [[[ExcludeDates]]]
             0 = 2016-7-07 10:00,2016-7-07 11:00
     [[Sws_180cmc]]
         [[[RangeCheck]]]
-            Lower = 0
-            Upper = 0.5
+            lower = 0
+            upper = 0.5
         [[[ExcludeDates]]]
             0 = 2016-7-07 10:00,2016-7-07 11:00
     [[Ts_8cma]]
         [[[RangeCheck]]]
-            Lower = 2
-            Upper = 60
+            lower = 2
+            upper = 60
         [[[ExcludeDates]]]
             0 = 2016-7-07 10:00,2016-7-07 11:00
     [[Ts_8cmb]]
         [[[RangeCheck]]]
-            Lower = 2
-            Upper = 60
+            lower = 2
+            upper = 60
         [[[ExcludeDates]]]
             0 = 2016-7-07 10:00,2016-7-07 11:00
     [[Ts_8cmc]]
         [[[RangeCheck]]]
-            Lower = 2
-            Upper = 60
+            lower = 2
+            upper = 60
         [[[ExcludeDates]]]
             0 = 2016-7-07 10:00,2016-7-07 11:00
     [[Ts_10cma]]
         [[[RangeCheck]]]
-            Lower = 2
-            Upper = 60
+            lower = 2
+            upper = 60
         [[[ExcludeDates]]]
             0 = 2016-7-07 10:00,2016-7-07 11:00
     [[Ts_10cmb]]
         [[[RangeCheck]]]
-            Lower = 2
-            Upper = 60
+            lower = 2
+            upper = 60
         [[[ExcludeDates]]]
             0 = 2016-7-07 10:00,2016-7-07 11:00
     [[Ts_10cmc]]
         [[[RangeCheck]]]
-            Lower = 2
-            Upper = 60
+            lower = 2
+            upper = 60
         [[[ExcludeDates]]]
             0 = 2016-7-07 10:00,2016-7-07 11:00
     [[Ts_25cma]]
         [[[RangeCheck]]]
-            Lower = 2
-            Upper = 60
+            lower = 2
+            upper = 60
         [[[ExcludeDates]]]
             0 = 2016-7-07 10:00,2016-7-07 11:00
     [[Ts_25cmb]]
         [[[RangeCheck]]]
-            Lower = 2
-            Upper = 60
+            lower = 2
+            upper = 60
         [[[ExcludeDates]]]
             0 = 2016-7-07 10:00,2016-7-07 11:00
     [[Ts_25cmc]]
         [[[RangeCheck]]]
-            Lower = 2
-            Upper = 60
+            lower = 2
+            upper = 60
         [[[ExcludeDates]]]
             0 = 2016-7-07 10:00,2016-7-07 11:00
     [[Ts_50cma]]
         [[[RangeCheck]]]
-            Lower = 2
-            Upper = 60
+            lower = 2
+            upper = 60
         [[[ExcludeDates]]]
             0 = 2016-7-07 10:00,2016-7-07 11:00
     [[Ts_50cmb]]
         [[[RangeCheck]]]
-            Lower = 2
-            Upper = 60
+            lower = 2
+            upper = 60
         [[[ExcludeDates]]]
             0 = 2016-7-07 10:00,2016-7-07 11:00
     [[Ts_50cmc]]
         [[[RangeCheck]]]
-            Lower = 2
-            Upper = 60
+            lower = 2
+            upper = 60
         [[[ExcludeDates]]]
             0 = 2016-7-07 10:00,2016-7-07 11:00
     [[Ts_100cma]]
         [[[RangeCheck]]]
-            Lower = 2
-            Upper = 60
+            lower = 2
+            upper = 60
         [[[ExcludeDates]]]
             0 = 2016-7-07 10:00,2016-7-07 11:00
     [[Ts_100cmb]]
         [[[RangeCheck]]]
-            Lower = 2
-            Upper = 60
+            lower = 2
+            upper = 60
         [[[ExcludeDates]]]
             0 = 2016-7-07 10:00,2016-7-07 11:00
     [[Ts_100cmc]]
         [[[RangeCheck]]]
-            Lower = 2
-            Upper = 60
+            lower = 2
+            upper = 60
         [[[ExcludeDates]]]
             0 = 2016-7-07 10:00,2016-7-07 11:00
     [[Ts_180cma]]
         [[[RangeCheck]]]
-            Lower = 2
-            Upper = 60
+            lower = 2
+            upper = 60
         [[[ExcludeDates]]]
             0 = 2016-7-07 10:00,2016-7-07 11:00
     [[Ts_180cmb]]
         [[[RangeCheck]]]
-            Lower = 2
-            Upper = 60
+            lower = 2
+            upper = 60
         [[[ExcludeDates]]]
             0 = 2016-7-07 10:00,2016-7-07 11:00
     [[Ts_180cmc]]
         [[[RangeCheck]]]
-            Lower = 2
-            Upper = 60
+            lower = 2
+            upper = 60
         [[[ExcludeDates]]]
             0 = 2016-7-07 10:00,2016-7-07 11:00
 [Plots]
     [[Radiative fluxes]]
-        Variables = Fsd_Li,Fsd,Fsu,Fld,Flu
+        variables = Fsd_Li,Fsd,Fsu,Fld,Flu
     [[Covariances (CSAT)]]
-        Variables = UzT,UxT,UyT,UxUz,UyUz,UxUy,UxUx,UyUy
+        variables = UzT,UxT,UyT,UxUz,UyUz,UxUy,UxUx,UyUy
     [[Covariances (CSAT&7500)]]
-        Variables = UzA,UxA,UyA,UzC,UxC,UyC
+        variables = UzA,UxA,UyA,UzC,UxC,UyC
     [[Air temperature, humidity and CO2]]
-        Variables = Ta_HMP_2m,Tv_CSAT,Ah_HMP_2m,Ah_7500_Av,Cc_7500_Av
+        variables = Ta_HMP_2m,Tv_CSAT,Ah_HMP_2m,Ah_7500_Av,Cc_7500_Av
     [[Rainfall and diagnostics]]
-        Variables = Precip,Ah_7500_Sd,Cc_7500_Sd,AGC_7500,Diag_7500,Diag_CSAT
+        variables = Precip,Ah_7500_Sd,Cc_7500_Sd,AGC_7500,Diag_7500,Diag_CSAT
     [[Soil temperature and heat flux]]
-        Variables = Ts_8cma,Ts_8cmb,Ts_8cmc,Fg_8cma,Fg_8cmb,Fg_8cmc
+        variables = Ts_8cma,Ts_8cmb,Ts_8cmc,Fg_8cma,Fg_8cmb,Fg_8cmc
     [[Soil temperature and water content at 10cm]]
-        Variables = Ts_10cma,Ts_10cmb,Ts_10cmc,Sws_10cma,Sws_10cmb,Sws_10cmc
+        variables = Ts_10cma,Ts_10cmb,Ts_10cmc,Sws_10cma,Sws_10cmb,Sws_10cmc
     [[Pressure, wind components and rainfall]]
-        Variables = ps,Ux,Uy,Uz,Precip,Vbat,Tpanel
+        variables = ps,Ux,Uy,Uz,Precip,Vbat,Tpanel
     [[Wind speed and direction]]
-        Variables = Ws_CSAT,Ws_RMY_2m,Ws_RMY_10m,Wd_CSAT,Wd_RMY_2m,Wd_RMY_10m
+        variables = Ws_CSAT,Ws_RMY_2m,Ws_RMY_10m,Wd_CSAT,Wd_RMY_2m,Wd_RMY_10m

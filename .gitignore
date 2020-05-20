@@ -41,6 +41,9 @@ plots/
 # stashed files
 stash/
 
+# examples
+examples/
+
 # mac files
 .DS_store
 

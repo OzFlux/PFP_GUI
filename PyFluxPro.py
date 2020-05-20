@@ -5,6 +5,7 @@ import os
 import platform
 import sys
 import traceback
+import warnings
 # 3rd party modules
 from configobj import ConfigObj
 import matplotlib
@@ -18,10 +19,14 @@ else:
 from PyQt5 import QtWidgets
 # PFP modules
 sys.path.append('scripts')
+import cfg
 import pfp_compliance
 import pfp_gui
 import pfp_log
 import pfp_top_level
+
+warnings.filterwarnings("ignore", category=Warning)
+
 # now check the logfiles and plots directories are present
 dir_list = ["./logfiles/", "./plots/"]
 for item in dir_list:
@@ -45,10 +50,11 @@ for item in dir_list:
 
 now = datetime.datetime.now()
 log_file_name = "pfp_" + now.strftime("%Y%m%d%H%M") + ".log"
+log_file_name = os.path.join("./logfiles", log_file_name)
 logger = pfp_log.init_logger("pfp_log", log_file_name, to_file=True, to_screen=False)
 
 class pfp_main_ui(QtWidgets.QWidget):
-    def __init__(self):
+    def __init__(self, pfp_version):
         super(pfp_main_ui, self).__init__()
 
         logTextBox = pfp_log.QPlainTextEditLogger(self)
@@ -74,6 +80,9 @@ class pfp_main_ui(QtWidgets.QWidget):
         # Utilities menu
         self.menuUtilities = QtWidgets.QMenu(self.menubar)
         self.menuUtilities.setTitle("Utilities")
+        # Utilities/u* threshold submenu
+        self.menuUtilitiesUstar = QtWidgets.QMenu(self.menuFile)
+        self.menuUtilitiesUstar.setTitle("u* threshold")
         # Help menu
         self.menuHelp = QtWidgets.QMenu(self.menubar)
         self.menuHelp.setTitle("Help")
@@ -95,12 +104,8 @@ class pfp_main_ui(QtWidgets.QWidget):
         # File/Convert submenu
         self.actionFileConvertnc2biomet = QtWidgets.QAction(self)
         self.actionFileConvertnc2biomet.setText("nc to Biomet")
-        self.actionFileConvertnc2ecostress = QtWidgets.QAction(self)
-        self.actionFileConvertnc2ecostress.setText("nc to ECOSTRESS")
         self.actionFileConvertnc2xls = QtWidgets.QAction(self)
         self.actionFileConvertnc2xls.setText("nc to Excel")
-        self.actionFileConvertnc2fluxnet = QtWidgets.QAction(self)
-        self.actionFileConvertnc2fluxnet.setText("nc to FluxNet")
         self.actionFileConvertnc2reddyproc = QtWidgets.QAction(self)
         self.actionFileConvertnc2reddyproc.setText("nc to REddyProc")
         self.actionFileConvertncupdate = QtWidgets.QAction(self)
@@ -126,16 +131,16 @@ class pfp_main_ui(QtWidgets.QWidget):
         # Utilities menu
         self.actionUtilitiesClimatology = QtWidgets.QAction(self)
         self.actionUtilitiesClimatology.setText("Climatology")
-        self.actionUtilitiesUstarCPD = QtWidgets.QAction(self)
-        self.actionUtilitiesUstarCPD.setText("u* threshold (CPD)")
+        self.actionUtilitiesUstarCPD1 = QtWidgets.QAction(self)
+        self.actionUtilitiesUstarCPD1.setText("CPD (McHugh)")
+        self.actionUtilitiesUstarCPD2 = QtWidgets.QAction(self)
+        self.actionUtilitiesUstarCPD2.setText("CPD (Barr)")
         self.actionUtilitiesUstarMPT = QtWidgets.QAction(self)
-        self.actionUtilitiesUstarMPT.setText("u* threshold (MPT)")
+        self.actionUtilitiesUstarMPT.setText("MPT")
         # add the actions to the menus
         # File/Convert submenu
         self.menuFileConvert.addAction(self.actionFileConvertnc2xls)
         self.menuFileConvert.addAction(self.actionFileConvertnc2biomet)
-        self.menuFileConvert.addAction(self.actionFileConvertnc2ecostress)
-        self.menuFileConvert.addAction(self.actionFileConvertnc2fluxnet)
         self.menuFileConvert.addAction(self.actionFileConvertnc2reddyproc)
         self.menuFileConvert.addAction(self.actionFileConvertncupdate)
         # File menu
@@ -158,10 +163,13 @@ class pfp_main_ui(QtWidgets.QWidget):
         self.menuPlot.addAction(self.actionPlotTimeSeries)
         self.menuPlot.addSeparator()
         self.menuPlot.addAction(self.actionPlotClosePlots)
+        # Utilities/u* threshold submenu
+        self.menuUtilitiesUstar.addAction(self.actionUtilitiesUstarCPD1)
+        self.menuUtilitiesUstar.addAction(self.actionUtilitiesUstarCPD2)
+        self.menuUtilitiesUstar.addAction(self.actionUtilitiesUstarMPT)
         # Utilities menu
         self.menuUtilities.addAction(self.actionUtilitiesClimatology)
-        self.menuUtilities.addAction(self.actionUtilitiesUstarCPD)
-        self.menuUtilities.addAction(self.actionUtilitiesUstarMPT)
+        self.menuUtilities.addAction(self.menuUtilitiesUstar.menuAction())
         # add individual menus to menu bar
         self.menubar.addAction(self.menuFile.menuAction())
         self.menubar.addAction(self.menuEdit.menuAction())
@@ -195,14 +203,13 @@ class pfp_main_ui(QtWidgets.QWidget):
         layout.addWidget(self.tabs)
         self.setLayout(layout)
         self.setGeometry(50,50,800, 600)
+        self.setWindowTitle(pfp_version)
 
         # Connect signals to slots
         # File menu actions
-        self.actionFileConvertnc2biomet.triggered.connect(pfp_top_level.do_file_convert_biomet)
-        self.actionFileConvertnc2ecostress.triggered.connect(pfp_top_level.do_file_convert_nc2ecostress)
+        self.actionFileConvertnc2biomet.triggered.connect(lambda:pfp_top_level.do_file_convert_nc2biomet(None, mode="standard"))
         self.actionFileConvertnc2xls.triggered.connect(pfp_top_level.do_file_convert_nc2xls)
-        self.actionFileConvertnc2fluxnet.triggered.connect(pfp_top_level.do_file_convert_nc2fluxnet)
-        self.actionFileConvertnc2reddyproc.triggered.connect(pfp_top_level.do_file_convert_nc2reddyproc)
+        self.actionFileConvertnc2reddyproc.triggered.connect(lambda:pfp_top_level.do_file_convert_nc2reddyproc(None, mode="standard"))
         self.actionFileConvertncupdate.triggered.connect(pfp_top_level.do_file_convert_ncupdate)
         self.actionFileOpen.triggered.connect(self.open_controlfile)
         self.actionFileSave.triggered.connect(self.save_controlfile)
@@ -221,7 +228,8 @@ class pfp_main_ui(QtWidgets.QWidget):
         self.actionPlotClosePlots.triggered.connect(pfp_top_level.do_plot_closeplots)
         # Utilities menu actions
         self.actionUtilitiesClimatology.triggered.connect(lambda:pfp_top_level.do_utilities_climatology(mode="standard"))
-        self.actionUtilitiesUstarCPD.triggered.connect(lambda:pfp_top_level.do_utilities_ustar_cpd(mode="standard"))
+        self.actionUtilitiesUstarCPD1.triggered.connect(lambda:pfp_top_level.do_utilities_ustar_cpd1(mode="standard"))
+        self.actionUtilitiesUstarCPD2.triggered.connect(lambda:pfp_top_level.do_utilities_ustar_cpd2(mode="standard"))
         self.actionUtilitiesUstarMPT.triggered.connect(lambda:pfp_top_level.do_utilities_ustar_mpt(mode="standard"))
         # add the L4 GUI
         self.l4_ui = pfp_gui.pfp_l4_ui(self)
@@ -238,49 +246,77 @@ class pfp_main_ui(QtWidgets.QWidget):
         # read the contents of the control file
         logger.info(" Opening " + cfgpath)
         try:
-            self.cfg = ConfigObj(cfgpath, indent_type="    ", list_values=False)
+            self.cfg = ConfigObj(cfgpath, indent_type="    ", list_values=False,
+                                 write_empty_values=True)
         except Exception:
             msg = "Syntax error in control file, see below for line number"
             logger.error(msg)
             error_message = traceback.format_exc()
             logger.error(error_message)
             return
-        self.cfg["level"] = self.get_cf_level()
+        # check to see if the processing level is defined in the control file
+        if "level" not in self.cfg:
+            # if not, then sniff the control file to see what it is
+            self.cfg["level"] = self.get_cf_level()
+            # and save the control file
+            self.cfg.write()
         # create a QtTreeView to edit the control file
         if self.cfg["level"] in ["L1"]:
+            # update control file to new syntax
+            if not pfp_compliance.l1_update_controlfile(self.cfg): return
+            # put the GUI for editing the L1 control file in a new tab
             self.tabs.tab_dict[self.tabs.tab_index_all] = pfp_gui.edit_cfg_L1(self)
+            # !!!
+            # !!! compliance check of L1 control file goes here
+            # !!!
+            # get the control file data from the L1 edit GUI
             self.tabs.cfg_dict[self.tabs.tab_index_all] = self.tabs.tab_dict[self.tabs.tab_index_all].get_data_from_model()
+            # put the control file path into the cfg dictionary
             self.tabs.cfg_dict[self.tabs.tab_index_all]["controlfile_name"] = cfgpath
         elif self.cfg["level"] in ["L2"]:
+            if not pfp_compliance.l2_update_controlfile(self.cfg): return
             self.tabs.tab_dict[self.tabs.tab_index_all] = pfp_gui.edit_cfg_L2(self)
             self.tabs.cfg_dict[self.tabs.tab_index_all] = self.tabs.tab_dict[self.tabs.tab_index_all].get_data_from_model()
             self.tabs.cfg_dict[self.tabs.tab_index_all]["controlfile_name"] = cfgpath
         elif self.cfg["level"] in ["L3"]:
+            if not pfp_compliance.l3_update_controlfile(self.cfg): return
             self.tabs.tab_dict[self.tabs.tab_index_all] = pfp_gui.edit_cfg_L3(self)
             self.tabs.cfg_dict[self.tabs.tab_index_all] = self.tabs.tab_dict[self.tabs.tab_index_all].get_data_from_model()
             self.tabs.cfg_dict[self.tabs.tab_index_all]["controlfile_name"] = cfgpath
         elif self.cfg["level"] in ["concatenate"]:
+            if not pfp_compliance.concatenate_update_controlfile(self.cfg): return
             self.tabs.tab_dict[self.tabs.tab_index_all] = pfp_gui.edit_cfg_concatenate(self)
             self.tabs.cfg_dict[self.tabs.tab_index_all] = self.tabs.tab_dict[self.tabs.tab_index_all].get_data_from_model()
             self.tabs.cfg_dict[self.tabs.tab_index_all]["controlfile_name"] = cfgpath
         elif self.cfg["level"] in ["L4"]:
+            if not pfp_compliance.l4_update_controlfile(self.cfg): return
             self.tabs.tab_dict[self.tabs.tab_index_all] = pfp_gui.edit_cfg_L4(self)
             self.tabs.cfg_dict[self.tabs.tab_index_all] = self.tabs.tab_dict[self.tabs.tab_index_all].get_data_from_model()
             self.tabs.cfg_dict[self.tabs.tab_index_all]["controlfile_name"] = cfgpath
         elif self.cfg["level"] in ["L5"]:
+            if not pfp_compliance.l5_update_controlfile(self.cfg): return
             self.tabs.tab_dict[self.tabs.tab_index_all] = pfp_gui.edit_cfg_L5(self)
             self.tabs.cfg_dict[self.tabs.tab_index_all] = self.tabs.tab_dict[self.tabs.tab_index_all].get_data_from_model()
             self.tabs.cfg_dict[self.tabs.tab_index_all]["controlfile_name"] = cfgpath
         elif self.cfg["level"] in ["L6"]:
-            if not pfp_compliance.check_l6_controlfile(self.cfg):
-                msg = " The L6 control file syntax is wrong."
-                logger.error(msg)
-                return
+            if not pfp_compliance.l6_update_controlfile(self.cfg): return
             self.tabs.tab_dict[self.tabs.tab_index_all] = pfp_gui.edit_cfg_L6(self)
+            self.tabs.cfg_dict[self.tabs.tab_index_all] = self.tabs.tab_dict[self.tabs.tab_index_all].get_data_from_model()
+            self.tabs.cfg_dict[self.tabs.tab_index_all]["controlfile_name"] = cfgpath
+        elif self.cfg["level"] in ["nc2csv_biomet"]:
+            self.tabs.tab_dict[self.tabs.tab_index_all] = pfp_gui.edit_cfg_nc2csv_biomet(self)
             self.tabs.cfg_dict[self.tabs.tab_index_all] = self.tabs.tab_dict[self.tabs.tab_index_all].get_data_from_model()
             self.tabs.cfg_dict[self.tabs.tab_index_all]["controlfile_name"] = cfgpath
         elif self.cfg["level"] in ["nc2csv_ecostress"]:
             self.tabs.tab_dict[self.tabs.tab_index_all] = pfp_gui.edit_cfg_nc2csv_ecostress(self)
+            self.tabs.cfg_dict[self.tabs.tab_index_all] = self.tabs.tab_dict[self.tabs.tab_index_all].get_data_from_model()
+            self.tabs.cfg_dict[self.tabs.tab_index_all]["controlfile_name"] = cfgpath
+        elif self.cfg["level"] in ["nc2csv_fluxnet"]:
+            self.tabs.tab_dict[self.tabs.tab_index_all] = pfp_gui.edit_cfg_nc2csv_fluxnet(self)
+            self.tabs.cfg_dict[self.tabs.tab_index_all] = self.tabs.tab_dict[self.tabs.tab_index_all].get_data_from_model()
+            self.tabs.cfg_dict[self.tabs.tab_index_all]["controlfile_name"] = cfgpath
+        elif self.cfg["level"] in ["nc2csv_reddyproc"]:
+            self.tabs.tab_dict[self.tabs.tab_index_all] = pfp_gui.edit_cfg_nc2csv_reddyproc(self)
             self.tabs.cfg_dict[self.tabs.tab_index_all] = self.tabs.tab_dict[self.tabs.tab_index_all].get_data_from_model()
             self.tabs.cfg_dict[self.tabs.tab_index_all]["controlfile_name"] = cfgpath
         elif self.cfg["level"] in ["batch"]:
@@ -300,8 +336,6 @@ class pfp_main_ui(QtWidgets.QWidget):
 
     def get_cf_level(self):
         """ Sniff the control file to find out it's type."""
-        if "level" in self.cfg:
-            return self.cfg["level"]
         self.cfg["level"] = ""
         # check for L1
         if self.check_cfg_L1():
@@ -543,21 +577,27 @@ class pfp_main_ui(QtWidgets.QWidget):
         # call the appropriate processing routine depending on the level
         self.tabs.tab_index_running = tab_index_current
         if self.tabs.cfg_dict[tab_index_current]["level"] == "L1":
-            pfp_top_level.do_run_l1(cfg=cfg)
+            pfp_top_level.do_run_l1(cfg)
         elif self.tabs.cfg_dict[tab_index_current]["level"] == "L2":
-            pfp_top_level.do_run_l2(cfg=cfg)
+            pfp_top_level.do_run_l2(cfg)
         elif self.tabs.cfg_dict[tab_index_current]["level"] == "L3":
-            pfp_top_level.do_run_l3(cfg=cfg)
+            pfp_top_level.do_run_l3(cfg)
         elif self.tabs.cfg_dict[tab_index_current]["level"] == "concatenate":
-            pfp_top_level.do_file_concatenate(cfg=cfg)
+            pfp_top_level.do_file_concatenate(cfg)
         elif self.tabs.cfg_dict[tab_index_current]["level"] == "L4":
-            pfp_top_level.do_run_l4(self, cfg=cfg)
+            pfp_top_level.do_run_l4(self, cfg)
         elif self.tabs.cfg_dict[tab_index_current]["level"] == "L5":
-            pfp_top_level.do_run_l5(self, cfg=cfg)
+            pfp_top_level.do_run_l5(self, cfg)
         elif self.tabs.cfg_dict[tab_index_current]["level"] == "L6":
-            pfp_top_level.do_run_l6(self, cfg=cfg)
+            pfp_top_level.do_run_l6(self, cfg)
+        elif self.tabs.cfg_dict[tab_index_current]["level"] == "nc2csv_biomet":
+            pfp_top_level.do_file_convert_nc2biomet(cfg, mode="custom")
         elif self.tabs.cfg_dict[tab_index_current]["level"] == "nc2csv_ecostress":
-            pfp_top_level.do_file_convert_nc2ecostress(cfg=cfg)
+            pfp_top_level.do_file_convert_nc2ecostress(cfg)
+        elif self.tabs.cfg_dict[tab_index_current]["level"] == "nc2csv_fluxnet":
+            pfp_top_level.do_file_convert_nc2fluxnet(cfg)
+        elif self.tabs.cfg_dict[tab_index_current]["level"] == "nc2csv_reddyproc":
+            pfp_top_level.do_file_convert_nc2reddyproc(cfg, mode="custom")
         else:
             logger.error("Level not implemented yet ...")
 
@@ -600,8 +640,10 @@ class pfp_main_ui(QtWidgets.QWidget):
             self.tabs.setTabText(self.tabs.tab_index_current, tab_text+"*")
 
 if (__name__ == '__main__'):
+    # get the application name and version
+    pfp_version = cfg.version_name + " " + cfg.version_number
     app = QtWidgets.QApplication(["PyFluxPro"])
-    ui = pfp_main_ui()
+    ui = pfp_main_ui(pfp_version)
     ui.show()
     pfp_compliance.check_executables()
     app.exec_()

@@ -23,6 +23,24 @@ import pfp_func
 
 logger = logging.getLogger("pfp_log")
 
+def append_string(attr, string_to_add, caps=True):
+    """
+    Purpose:
+     Format the input attribute string and add it to the attribute.
+    Usage:
+    Side effects:
+    Author: PRI
+    Date: November 2018
+    """
+    if len(attr) == 0:
+        if caps:
+            attr = string_to_add[:1].upper() + string_to_add[1:]
+        else:
+            attr = string_to_add
+    else:
+        attr += ", " + string_to_add
+    return attr
+
 def bp(fx,tao):
     """
     Function to calculate the b and p coeficients of the Massman frequency correction.
@@ -166,8 +184,6 @@ def CheckUnits(ds, label, units, convert_units=False):
         return
     for label in label_list:
         if label not in ds.series.keys():
-            msg = "CheckUnits: requested series "+label+" not found"
-            logger.error(msg)
             continue
         variable = GetVariable(ds, label)
         if variable["Attr"]["units"] != units and convert_units:
@@ -368,12 +384,15 @@ def convert_units_co2(ds, variable, new_units):
     """
     # get the current units and the timestep
     old_units = variable["Attr"]["units"]
-    ts = variable["time_step"]
+    if old_units == new_units:
+        # nothing to do here, folks
+        return
+    ts = int(ds.globalattributes["time_step"])
     # default values for the valid_range minimum and maximum
     valid_range_minimum = -1E35
     valid_range_maximum = 1E35
     # now check the units and see what we have to convert
-    if old_units=="umol/m2/s" and new_units=="gC/m2":
+    if old_units == "umol/m2/s" and new_units == "gC/m2":
         # convert the data
         variable["Data"] = variable["Data"]*12.01*ts*60/1E6
         # update the range check limits in the variable attribute
@@ -389,16 +408,17 @@ def convert_units_co2(ds, variable, new_units):
                     valid_range_maximum = numpy.amax(attr_limit)
                 else:
                     # we shouldn't get here
-                    msg = "convert_units_co2: unexpected option for attr ("+attr+")"
+                    msg = "convert_units_co2: unexpected option for attr (" + attr + ")"
                     logger.error(msg)
                     continue
         # is the valid_range attribute defined for this variable?
         if "valid_range" in variable["Attr"]:
             # if so, then update it
-            variable["Attr"]["valid_range"] = str(valid_range_minimum)+","+str(valid_range_maximum)
+            variable["Attr"]["valid_range"] = repr(valid_range_minimum)
+            variable["Attr"]["valid_range"] += "," + repr(valid_range_maximum)
         # update the variable attributes to the new units
         variable["Attr"]["units"] = new_units
-    elif old_units=="gC/m2" and new_units=="umol/m2/s":
+    elif old_units == "gC/m2" and new_units == "umol/m2/s":
         # convert the data
         variable["Data"] = variable["Data"]*1E6/(12.01*ts*60)
         # update the range check limits in the variable attribute
@@ -414,16 +434,19 @@ def convert_units_co2(ds, variable, new_units):
                     valid_range_maximum = numpy.amax(attr_limit)
                 else:
                     # we shouldn't get here
-                    msg = "convert_units_co2: unexpected option for attr ("+attr+")"
+                    msg = "convert_units_co2: unexpected option for attr (" + attr + ")"
                     logger.error(msg)
                     continue
         # is the valid_range attribute defined for this variable?
         if "valid_range" in variable["Attr"]:
             # if so, then update it
-            variable["Attr"]["valid_range"] = str(valid_range_minimum)+","+str(valid_range_maximum)
+            variable["Attr"]["valid_range"] = repr(valid_range_minimum)
+            variable["Attr"]["valid_range"] += "," + repr(valid_range_maximum)
         # update the variable attributes to the new units
         variable["Attr"]["units"] = new_units
-    elif old_units in ["mg/m3", "mgCO2/m3"] and new_units=="umol/mol":
+    elif old_units in ["mg/m3", "mgCO2/m3"] and new_units == "umol/mol":
+        ldt = GetVariable(ds, "DateTime")
+        months = numpy.array([dt.month for dt in ldt["Data"]])
         # convert the data
         ldt = GetVariable(ds, "DateTime")
         Month = numpy.array([d.month for d in ldt["Data"]])
@@ -462,7 +485,7 @@ def convert_units_co2(ds, variable, new_units):
                         attr_limit[m] = numpy.ma.min(limit)
                     else:
                         # we shouldn't get here
-                        msg = "convert_units_co2: unexpected option for attr ("+attr+")"
+                        msg = "convert_units_co2: unexpected option for attr (" + attr + ")"
                         logger.error(msg)
                         continue
                 # update the variable attribute with the converted limits
@@ -474,14 +497,15 @@ def convert_units_co2(ds, variable, new_units):
                     valid_range_maximum = numpy.amax(attr_limit)
                 else:
                     # we shouldn't get here
-                    msg = "convert_units_co2: unexpected option for attr ("+attr+")"
+                    msg = "convert_units_co2: unexpected option for attr (" + attr + ")"
                     logger.error(msg)
                     continue
         if "valid_range" in variable["Attr"]:
-            variable["Attr"]["valid_range"] = str(valid_range_minimum)+","+str(valid_range_maximum)
+            variable["Attr"]["valid_range"] = repr(valid_range_minimum)
+            variable["Attr"]["valid_range"] += "," + repr(valid_range_maximum)
         # update the variable attributes to the new units
         variable["Attr"]["units"] = new_units
-    elif old_units=="umol/mol" and new_units in ["mg/m3","mgCO2/m3"]:
+    elif old_units == "umol/mol" and new_units in ["mg/m3", "mgCO2/m3"]:
         ldt = GetVariable(ds, "DateTime")
         Month = numpy.array([d.month for d in ldt["Data"]])
         Ta = GetVariable(ds, "Ta")
@@ -519,7 +543,7 @@ def convert_units_co2(ds, variable, new_units):
                         attr_limit[m] = numpy.ma.min(limit)
                     else:
                         # we shouldn't get here
-                        msg = "convert_units_co2: unexpected option for attr ("+attr+")"
+                        msg = "convert_units_co2: unexpected option for attr (" + attr + ")"
                         logger.error(msg)
                         continue
                 # update the variable attribute with the converted limits
@@ -531,14 +555,15 @@ def convert_units_co2(ds, variable, new_units):
                     valid_range_maximum = numpy.amax(attr_limit)
                 else:
                     # we shouldn't get here
-                    msg = "convert_units_co2: unexpected option for attr ("+attr+")"
+                    msg = "convert_units_co2: unexpected option for attr (" + attr + ")"
                     logger.error(msg)
                     continue
         if "valid_range" in variable["Attr"]:
-            variable["Attr"]["valid_range"] = str(valid_range_minimum)+","+str(valid_range_maximum)
+            variable["Attr"]["valid_range"] = repr(valid_range_minimum)
+            variable["Attr"]["valid_range"] += "," + repr(valid_range_maximum)
         # update the variable attributes to the new units
         variable["Attr"]["units"] = new_units
-    elif old_units in ["mg/m2/s","mgCO2/m2/s"] and new_units=="umol/m2/s":
+    elif old_units in ["mg/m2/s", "mgCO2/m2/s"] and new_units == "umol/m2/s":
         # convert the data
         variable["Data"] = pfp_mf.Fc_umolpm2psfrommgCO2pm2ps(variable["Data"])
         # update the range check limits in the variable attribute
@@ -554,17 +579,44 @@ def convert_units_co2(ds, variable, new_units):
                     valid_range_maximum = numpy.amax(attr_limit)
                 else:
                     # we shouldn't get here
-                    msg = "convert_units_co2: unexpected option for attr ("+attr+")"
+                    msg = "convert_units_co2: unexpected option for attr (" + attr + ")"
                     logger.error(msg)
                     continue
         # is the valid_range attribute defined for this variable?
         if "valid_range" in variable["Attr"]:
             # if so, then update it
-            variable["Attr"]["valid_range"] = str(valid_range_minimum)+","+str(valid_range_maximum)
+            variable["Attr"]["valid_range"] = repr(valid_range_minimum)
+            variable["Attr"]["valid_range"] += "," + repr(valid_range_maximum)
+        # update the variable attributes to the new units
+        variable["Attr"]["units"] = new_units
+    elif old_units == "umol/m2/s" and new_units in ["mg/m2/s", "mgCO2/m2/s"]:
+        # convert the data
+        variable["Data"] = pfp_mf.Fc_mgCO2pm2psfromumolpm2ps(variable["Data"])
+        # update the range check limits in the variable attribute
+        # this one is easy because it is a simple numerical change
+        for attr in ["rangecheck_lower", "rangecheck_upper"]:
+            if attr in variable["Attr"]:
+                attr_limit = numpy.array(parse_rangecheck_limits(variable["Attr"][attr]))
+                attr_limit = pfp_mf.Fc_mgCO2pm2psfromumolpm2ps(attr_limit)
+                variable["Attr"][attr] = list(attr_limit)
+                if attr == "rangecheck_lower":
+                    valid_range_minimum = numpy.amin(attr_limit)
+                elif attr == "rangecheck_upper":
+                    valid_range_maximum = numpy.amax(attr_limit)
+                else:
+                    # we shouldn't get here
+                    msg = "convert_units_co2: unexpected option for attr (" + attr + ")"
+                    logger.error(msg)
+                    continue
+        # is the valid_range attribute defined for this variable?
+        if "valid_range" in variable["Attr"]:
+            # if so, then update it
+            variable["Attr"]["valid_range"] = repr(valid_range_minimum)
+            variable["Attr"]["valid_range"] += "," + repr(valid_range_maximum)
         # update the variable attributes to the new units
         variable["Attr"]["units"] = new_units
     else:
-        msg = " Unrecognised conversion from "+old_units+" to "+new_units
+        msg = " Unrecognised conversion from " + old_units + " to " + new_units
         logger.error(msg)
 
     return variable
@@ -1106,7 +1158,7 @@ def CreateDatetimeRange(start,stop,step=datetime.timedelta(minutes=30)):
         start = start + step
     return result
 
-def CreateEmptyVariable(label, nrecs, datetime=[], out_type="ma", attr=None):
+def CreateEmptyVariable(label, nrecs, datetime=None, out_type="ma", attr=None):
     """
     Purpose:
      Returns an empty variable.  Data values are set to -9999, flag values are set to 1
@@ -1124,11 +1176,20 @@ def CreateEmptyVariable(label, nrecs, datetime=[], out_type="ma", attr=None):
     flag = numpy.ones(nrecs, dtype=numpy.int32)
     attr_new = make_attribute_dictionary(attr)
     variable = {"Label": label, "Data": data, "Flag": flag, "Attr": attr_new}
-    if len(datetime) == nrecs:
-        variable["DateTime"] = datetime
+    if datetime is None:
+        pass
+    elif isinstance(datetime, numpy.ndarray):
+        if len(datetime) == nrecs:
+            variable["DateTime"] = datetime
+    elif isinstance(datetime, list):
+        if len(datetime) == nrecs:
+            variable["DateTime"] = numpy.array(datetime)
+    else:
+        msg = " Unrecognised type for datetime: " + type(datetime)
+        logger.warning(msg)
     return variable
 
-def CreateVariable(ds,variable):
+def CreateVariable(ds, variable, over_write=True):
     """
     Purpose:
      Create a variable in the data structure.
@@ -1147,22 +1208,90 @@ def CreateVariable(ds,variable):
     Date: September 2016
     """
     label = variable["Label"]
+    if label in list(ds.series.keys()) and not over_write:
+        msg = " Variable " + label + " already exists in data structure, not over written"
+        logger.warning(msg)
+        return
     # create a temporary series to avoid premature overwrites
-    ds.series["_tmp_"] = {}
+    ds.series[label] = {}
     # put the data into the temporary series
     if numpy.ma.isMA(variable["Data"]):
-        ds.series["_tmp_"]["Data"] = numpy.ma.filled(variable["Data"],
-                                                     float(c.missing_value))
+        ds.series[label]["Data"] = numpy.ma.filled(variable["Data"], float(c.missing_value))
     else:
-        ds.series["_tmp_"]["Data"] = numpy.array(variable["Data"])
+        ds.series[label]["Data"] = variable["Data"]
     # copy or make the QC flag
-    ds.series["_tmp_"]["Flag"] = numpy.array(variable["Flag"])
+    ds.series[label]["Flag"] = variable["Flag"]
     # do the attributes
-    ds.series["_tmp_"]["Attr"] = copy.deepcopy(variable["Attr"])
-    # and copy the temporary series back to the original label
-    ds.series[unicode(label)] = copy.deepcopy(ds.series['_tmp_'])
-    # delete the temporary series
-    del ds.series['_tmp_']
+    ds.series[label]["Attr"] = variable["Attr"]
+    return
+
+#def CreateVariable(ds,variable):
+    #"""
+    #Purpose:
+     #Create a variable in the data structure.
+     #If the variable already exists in the data structure, data values, QC flags and
+     #attributes will be overwritten.
+     #This utility is the prefered method for creating or updating a data series because
+     #it implements a consistent method for creating series in the data structure.  Direct
+     #writes to the contents of the data structure are discouraged (unless PRI wrote the code:=P).
+    #Usage:
+     #Fsd = pfp_utils.GetVariable(ds,"Fsd")
+      #... do something to Fsd here ...
+      #... and don't forget to update the QC flag ...
+      #... and the attributes ...
+     #pfp_utils.CreateVariable(ds,Fsd)
+    #Author: PRI
+    #Date: September 2016
+    #"""
+    #label = variable["Label"]
+    ## create a temporary series to avoid premature overwrites
+    #ds.series["_tmp_"] = {}
+    ## put the data into the temporary series
+    #if numpy.ma.isMA(variable["Data"]):
+        #ds.series["_tmp_"]["Data"] = numpy.ma.filled(variable["Data"], float(c.missing_value))
+    #else:
+        #ds.series["_tmp_"]["Data"] = numpy.array(variable["Data"])
+    ## copy or make the QC flag
+    #ds.series["_tmp_"]["Flag"] = numpy.array(variable["Flag"])
+    ## do the attributes
+    #ds.series["_tmp_"]["Attr"] = copy.deepcopy(variable["Attr"])
+    ## and copy the temporary series back to the original label
+    #ds.series[unicode(label)] = copy.deepcopy(ds.series['_tmp_'])
+    ## delete the temporary series
+    #del ds.series['_tmp_']
+
+def csv_string_to_list(input_string):
+    """ Convert a string containing items separated by commas into a list."""
+    if "," in input_string:
+        output_list = input_string.split(",")
+    else:
+        output_list = [input_string]
+    return output_list
+
+def DeleteVariable(ds, variable):
+    """
+    Purpose:
+     Delete a variable from the data structure.
+    Usage:
+     Fsd = pfp_utils.GetVariable(ds, Fsd)
+     pfp_utils.DeleteVariable(ds, Fsd)
+    Author: PRI
+    Date: November 2019
+    """
+    if isinstance(variable, basestring):
+        label = variable
+    elif isinstance(variable, dict):
+        label = variable["Label"]
+    else:
+        msg = " DeleteVariable: argument must be a variable dictionary or label"
+        logger.warning(msg)
+        return
+    if label in list(ds.series.keys()):
+        del ds.series[label]
+    else:
+        msg = " DeleteVariable: variable (" + label + ") not found in data structure"
+        logger.warning(msg)
+    return
 
 def file_exists(filename,mode="verbose"):
     if not os.path.exists(filename):
@@ -1225,6 +1354,17 @@ def FindIndicesOfBInA(a,b):
     return indices
 
 def FindMatchingIndices(a, b):
+    """
+    Purpose:
+     Find the indices of elements in a that match elements in b and
+     vice versa.
+     inds_a - the indices of elements in a that match elements in b
+     inds_b - the indices of elements in b that match elements in a
+    Usage:
+    Side effects:
+    Author: PRI but taken from Stackoverflow
+    Date: Back in the day.
+    """
     a1=numpy.argsort(a)
     b1=numpy.argsort(b)
     # use searchsorted:
@@ -1323,6 +1463,7 @@ def FixTimeGaps(ds):
     ldt_end = ldt_gaps[-1]
     nogaps = [result for result in perdelta(ldt_start,ldt_end,datetime.timedelta(minutes=ts))]
     ldt_nogaps = numpy.array(nogaps)
+    ldt_gaps = numpy.array(ldt_gaps)
     # update the global attribute containing the number of records
     nRecs = len(ldt_nogaps)
     ds.globalattributes['nc_nrecs'] = nRecs
@@ -1394,7 +1535,7 @@ def FixTimeStep(ds,fixtimestepmethod="round"):
         dtmax = numpy.max(dt)
         #log.info("After FixTimeGaps: "+str(dtmin)+" "+str(dtmax))
 
-def GetAverageSeriesKeys(cf, label, section=""):
+def GetAverageSeriesKeys(cf, label, section="Variables"):
     """
     Purpose:
      Get the AverageSeries Source key from the control file.
@@ -1419,37 +1560,6 @@ def GetAverageSeriesKeys(cf, label, section=""):
         msg += "key 'source' not in control file AverageSeries section for " + label
         logger.error()
     return src_list
-
-def GetAltName(cf,ds,ThisOne):
-    '''
-    Check to see if the specified variable name is in the data structure (ds).
-    If it is, return the variable name unchanged.
-    If it isn't, check the control file to see if an alternate name has been specified
-     and return the alternate name if one exists.
-    '''
-    if ThisOne not in ds.series.keys():
-        if ThisOne in cf['Variables'].keys():
-            ThisOne = cf['Variables'][ThisOne]['AltVarName']
-            if ThisOne not in ds.series.keys():
-                logger.error('GetAltName: alternate variable name not in ds')
-        else:
-            logger.error('GetAltName: cant find ',ThisOne,' in ds or control file')
-    return ThisOne
-
-def GetAltNameFromCF(cf,ThisOne):
-    '''
-    Get an alternate variable name from the control file.
-    '''
-    if ThisOne in cf['Variables'].keys():
-        if 'AltVarName' in cf['Variables'][ThisOne].keys():
-            ThisOne = str(cf['Variables'][ThisOne]['AltVarName'])
-        else:
-            msg = 'GetAltNameFromCF: AltVarName key not in control file for '+str(ThisOne)
-            logger.warning(msg)
-    else:
-        msg = 'GetAltNameFromCF: '+str(ThisOne)+' not in control file'
-        logger.warning(msg)
-    return ThisOne
 
 def GetAttributeDictionary(ds,ThisOne):
     attr = {}
@@ -1501,7 +1611,7 @@ def GetRangesFromCF(cf,ThisOne,mode="verbose"):
         lower, upper = None
     return lower, upper
 
-def GetDateIndex(ldt,date,ts=30,default=0,match='exact'):
+def GetDateIndex(ldt, date, ts=30, default=0, match='exact'):
     """
     Purpose:
      Return the index of a date/datetime string in an array of datetime objects
@@ -1536,7 +1646,12 @@ def GetDateIndex(ldt,date,ts=30,default=0,match='exact'):
     if default == -1:
         default = len(ldt)-1
     # is the input date a string?
-    if isinstance(date, str):
+    if (isinstance(date, numbers.Number)):
+        if date >= 0 and date <= len(ldt):
+            i = date
+        else:
+            i = default
+    elif isinstance(date, str):
         # if so, is it an empty string?
         if len(date) != 0:
             # if not empty, see if we can parse it
@@ -1615,7 +1730,7 @@ def GetGlobalAttributeValue(cf,ds,ThisOne):
             ds.globalattributes[ThisOne] = None
     return ds.globalattributes[ThisOne]
 
-def GetMergeSeriesKeys(cf, ThisOne, section=''):
+def GetMergeSeriesKeys(cf, ThisOne, section="Variables"):
     """
     Purpose:
      Get the MergeSeries Source key from the contro file.
@@ -1676,10 +1791,7 @@ def GetPlotVariableNamesFromCF(cf, n):
 def GetSeries(ds,ThisOne,si=0,ei=-1,mode="truncate"):
     """ Returns the data, QC flag and attributes of a series from the data structure."""
     # number of records
-    if "nc_nrecs" in ds.globalattributes:
-        nRecs = int(ds.globalattributes["nc_nrecs"])
-    else:
-        nRecs = len(ds.series[ThisOne]["Data"])
+    nRecs = int(ds.globalattributes["nc_nrecs"])
     # check the series requested is in the data structure
     if ThisOne in ds.series.keys():
         # series is in the data structure
@@ -1702,8 +1814,9 @@ def GetSeries(ds,ThisOne,si=0,ei=-1,mode="truncate"):
         else:
             Attr = MakeAttributeDictionary()
     else:
-        # make an empty series if the requested series does not exist in the data structure
-        logger.warning("GetSeries: "+ThisOne+" not found, making empty series ...")
+        # tell the user we can't find the series
+        msg = " GetSeries: " + ThisOne + " not found, creating empty series ..."
+        logger.warning(msg)
         Series,Flag,Attr = MakeEmptySeries(ds,ThisOne)
     # tidy up
     if ei==-1: ei = nRecs - 1
@@ -1767,7 +1880,7 @@ def GetSeries(ds,ThisOne,si=0,ei=-1,mode="truncate"):
             raise ValueError(msg)
     else:
         raise ValueError("GetSeries: unrecognised mode option "+str(mode))
-    return Series,Flag,Attr
+    return Series, Flag, Attr
 
 def MakeEmptySeries(ds,ThisOne):
     nRecs = int(ds.globalattributes['nc_nrecs'])
@@ -1827,25 +1940,27 @@ def GetVariable(ds, label, start=0, end=-1, mode="truncate", out_type="ma"):
      The code snippet below will return the incoming shortwave data values
      (Fsd), the associated QC flag and the variable attributes;
       ds = pfp_io.nc_read_series("HowardSprings_2011_L3.nc")
-      Fsd = pfp_utils.GetSeriesAsDict(ds,"Fsd")
+      Fsd = pfp_utils.GetVariable(ds, "Fsd")
     Author: PRI
     """
     nrecs = int(ds.globalattributes["nc_nrecs"])
-    if end == -1:
-        end = nrecs
     ts = int(ds.globalattributes["time_step"])
     ldt = ds.series["DateTime"]["Data"]
-    si = get_start_index(ldt, start)
-    ei = get_end_index(ldt, end)
-    data,flag,attr = GetSeries(ds, label, si=si, ei=ei, mode=mode)
+    # get the start and end indices
+    si = GetDateIndex(ldt, start, ts=ts, default=0, match="exact")
+    ei = GetDateIndex(ldt, end, ts=ts, default=nrecs-1, match="exact")
+    dt = ldt[si:ei+1]
+    data, flag, attr = GetSeries(ds, label, si=si, ei=ei, mode=mode)
+    # check to see what kind of output the user wants
     if isinstance(data, numpy.ndarray) and out_type == "ma":
         # convert to a masked array
         data, WasND = SeriestoMA(data)
     elif isinstance(data, numpy.ndarray) and out_type == "nan":
         # leave as ndarray, convert c.missing_value to NaN
         data = numpy.where(data == c.missing_value, numpy.nan, data)
-    variable = {"Label":label,"Data":data,"Flag":flag,"Attr":attr,
-                "DateTime":ldt[si:ei+1],"time_step":ts}
+    # assemble the variable dictionary
+    variable = {"Label":label, "Data":data, "Flag":flag, "Attr":attr,
+                "DateTime":dt, "time_step":ts}
     return variable
 
 def GetUnitsFromds(ds, ThisOne):
@@ -1864,6 +1979,10 @@ def get_cfsection(cf, label, mode='quiet'):
     '''
     got_section = False
     sections = list(cf.keys())
+    for section in ["level", "controlfile_name", "Files", "Global", "Options",
+                    "Soil", "Massman", "GUI", "ustar_threshold", "Plots"]:
+        if section in sections:
+            sections.remove(section)
     for section in sections:
         if label in cf[section]:
             got_section = True
@@ -1915,7 +2034,7 @@ def get_datetime(cf, ds):
     Date: August 2018
     """
     if "xlDateTime" in ds.series.keys():
-        get_datetime_from_xldate(ds)
+        get_datetime_from_xldatetime(ds)
     elif "DateTime" in cf["Variables"].keys():
         if "Function" in cf["Variables"]["DateTime"]:
             # call the function given in the control file to convert the date/time string to a datetime object
@@ -1955,7 +2074,14 @@ def get_datetime_from_nctime(ds):
     CreateVariable(ds, pydt)
     return
 
-def get_datetime_from_xldate(ds):
+def get_datetime_from_excel_date(values, xl_datemode):
+    values = numpy.array(values)
+    xl_date = values + 1462*int(xl_datemode)
+    base_date = datetime.datetime(1899, 12, 30)
+    dt = [base_date + datetime.timedelta(days=xl_date[i]) for i in range(len(values))]
+    return dt
+
+def get_datetime_from_xldatetime(ds):
     ''' Creates a series of Python datetime objects from the Excel date read from the Excel file.
         Thanks to John Machin for the quick and dirty code
          see http://stackoverflow.com/questions/1108428/how-do-i-read-a-date-in-excel-format-in-python'''
@@ -1974,6 +2100,31 @@ def get_datetime_from_xldate(ds):
     ds.series['DateTime']['Attr'] = {}
     ds.series['DateTime']['Attr']['long_name'] = 'Datetime in local timezone'
     ds.series['DateTime']['Attr']['units'] = 'None'
+
+def get_datetime_from_ymdhms(ds):
+    ''' Creates a series of Python datetime objects from the year, month,
+    day, hour, minute and second series stored in the netCDF file.'''
+    SeriesList = ds.series.keys()
+    if ('Year' not in SeriesList or 'Month' not in SeriesList or 'Day' not in SeriesList or
+        'Hour' not in SeriesList or 'Minute' not in SeriesList or 'Second' not in SeriesList):
+        logger.info(' get_datetime_from_ymdhms: unable to find all datetime fields required')
+        return
+    logger.info(' Getting the date and time series')
+    #pdb.set_trace()
+    year = ds.series["Year"]["Data"].astype('int')
+    month = ds.series["Month"]["Data"].astype('int')
+    day = ds.series["Day"]["Data"].astype('int')
+    hour = ds.series["Hour"]["Data"].astype('int')
+    minute = ds.series["Minute"]["Data"].astype('int')
+    second = ds.series["Second"]["Data"].astype('int')
+    dt = [datetime.datetime(yr,mn,dy,hr,mi,se) for yr,mn,dy,hr,mi,se in zip(year,month,day,hour,minute,second)]
+    ds.series["DateTime"] = {}
+    ds.series["DateTime"]["Data"] = numpy.array(dt)
+    ds.series["DateTime"]["Flag"] = numpy.zeros(len(dt))
+    ds.series["DateTime"]["Attr"] = {}
+    ds.series["DateTime"]["Attr"]["long_name"] = "Datetime in local timezone"
+    ds.series["DateTime"]["Attr"]["units"] = "None"
+    return
 
 def get_ddoy_from_datetime(dt):
     """ Return the decimal day of the year from a datetime."""
@@ -2159,7 +2310,7 @@ def get_number_from_heightstring(height):
     try:
         z = float(z)
     except:
-        z = 0.0
+        z = None
     return z
 
 def get_nctime_from_datetime(ds, time_units="seconds since 1970-01-01 00:00:00.0",
@@ -2458,21 +2609,21 @@ def MakeAttributeDictionary(**kwargs):
     Author: PRI
     Date: Back in the day
     """
-    default_list = ["height","instrument","long_name","serial_number","standard_name",
-                    "units","valid_range"]
+    default_list = ["height", "instrument", "long_name", "serial_number",
+                    "standard_name", "units", "valid_range", "group_name"]
     attr = {}
     for item in kwargs:
         if isinstance(item, dict):
             for entry in item: attr[entry] = item[entry]
         else:
-            attr[item] = kwargs.get(item,"not defined")
+            attr[item] = kwargs.get(item,"")
         if item in default_list: default_list.remove(item)
     if len(default_list)!=0:
         for item in default_list:
             if item == "valid_range":
-                attr[item] = str(c.small_value)+","+str(c.large_value)
+                attr[item] = repr(c.small_value)+","+repr(c.large_value)
             else:
-                attr[item] = "not defined"
+                attr[item] = ""
     attr["missing_value"] = c.missing_value
     return copy.deepcopy(attr)
 
@@ -2486,9 +2637,8 @@ def make_attribute_dictionary(attr_existing):
     Author: PRI
     Date: Back in the day
     """
-    attr_new = {"height": "not defined", "standard_name": "not defined",
-                "long_name": "not defined", "units": "not defined",
-                "missing_value": c.missing_value}
+    attr_new = {"height": "", "instrument": "", "long_name": "", "serial_number": "",
+                "standard_name": "", "units": "", "valid_range": "", "group_name": ""}
     if isinstance(attr_existing, dict):
         for item in attr_existing:
             if item in ["height", "standard_name", "long_name", "units"]:
@@ -2558,6 +2708,7 @@ def MergeVariables(ds, out_label, in_labels):
     Author: PRI
     Date: October 2018
     """
+    descr_level = "description_" + ds.globalattributes["nc_level"]
     var_in = GetVariable(ds, in_labels[0])
     var_out = CopyVariable(var_in)
     if len(in_labels) == 1:
@@ -2571,6 +2722,10 @@ def MergeVariables(ds, out_label, in_labels):
         condition = (out_mask == True) & (in_mask == False)
         var_out["Data"] = numpy.ma.where(condition, var_in["Data"], var_out["Data"])
         var_out["Flag"] = numpy.ma.where(condition, var_in["Flag"], var_out["Flag"])
+    if descr_level in var_out["Attr"]:
+        var_out["Attr"][descr_level] += ", merged from " + str(in_labels)
+    else:
+        var_out["Attr"][descr_level] = "Merged from " + str(in_labels)
     var_out["Attr"]["description"] = "Merged from "+str(in_labels)
     var_out["Label"] = out_label
     return var_out
@@ -2587,6 +2742,34 @@ def nxMom_nxScalar_alpha(zoL):
     nxScalar[stable] = 2.0 - 1.915 / (1 + 0.5 * zoL[stable])
     alpha[stable] = 1
     return nxMom, nxScalar, alpha
+
+def PadVariable(var_in, start, end, out_type="nan"):
+    """
+    Purpose:
+     Pad a variable to the specified start and end dates.
+    Usage:
+    Side effects:
+    Author: PRI
+    Date: November 2019
+    """
+    ts = int(var_in["time_step"])
+    ts_dt = datetime.timedelta(minutes=ts)
+    dt_padded = numpy.array([d for d in perdelta(start, end, ts_dt)])
+    n_padded = len(dt_padded)
+    if out_type == "nan":
+        data_padded = numpy.full(n_padded, numpy.nan, dtype=numpy.float64)
+    elif out_type == "ma":
+        data_padded = numpy.ma.masked_all(n_padded, dtype=numpy.float64)
+    else:
+        data_padded = numpy.full(n_padded, c.missing_value, dtype=numpy.float64)
+    flag_padded = numpy.full(n_padded, 1, dtype=numpy.int32)
+    idxa, idxb = FindMatchingIndices(dt_padded, var_in["DateTime"])
+    data_padded[idxa] = var_in["Data"]
+    flag_padded[idxa] = var_in["Flag"]
+    var_out = {"Label":var_in["Label"], "Attr":var_in["Attr"],
+               "Data":data_padded, "Flag":flag_padded,
+               "DateTime":dt_padded, "time_step":ts}
+    return var_out
 
 def parse_rangecheck_limits(s):
     """
@@ -2620,7 +2803,7 @@ def parse_rangecheck_limits(s):
             msg = "parse_rangecheck_limits: number of values must be 12 or 1"
             logger.error(msg)
             return []
-    return l
+    return [float(e) for e in l]
 
 def path_exists(pathname,mode="verbose"):
     if not os.path.isdir(pathname):
@@ -2730,11 +2913,24 @@ def round_datetime(ds,mode="nearest_timestep"):
 def roundtobase(x,base=5):
     return int(base*round(float(x)/base))
 
-def round2sig(x,sig=2):
-    '''
-    Round a float to a specified number of significant digits (default is 2).
-    '''
-    return round(x, sig-int(math.floor(math.log10(abs(x))))-1)
+def round2significant(x, d, direction='nearest'):
+    """
+    Round to 'd' significant digits with the option to round to
+    the nearest number, round up or round down.
+    """
+    if numpy.ma.is_masked(x):
+        y = float(0)
+    elif numpy.isclose(x, 0.0):
+        y = float(0)
+    else:
+        n = d - numpy.ceil(numpy.log10(abs(x)))
+        if direction.lower() == 'up':
+            y = round(numpy.ceil(x*10**n))/float(10**n)
+        elif direction.lower() == 'down':
+            y = round(numpy.floor(x*10**n))/float(10**n)
+        else:
+            y = round(x*10**n)/float(10**n)
+    return y
 
 def r(b, p, alpha):
     """
@@ -2780,6 +2976,12 @@ def startlog(loggername,loggerfile):
     logger.addHandler(ch)
     return logger
 
+def strip_non_numeric(s):
+    """
+    Strip non-numeric characters from a string.
+    """
+    return "".join([c for c in s if c in "-1234567890."])
+
 def UpdateGlobalAttributes(cf,ds,level):
     ds.globalattributes["nc_level"] = str(level)
     ds.globalattributes["python_version"] = sys.version
@@ -2810,3 +3012,4 @@ def update_progress(progress):
     text = "\rPercent: [{0}] {1}% {2}".format( "#"*block + "-"*(barLength-block), progress*100, status)
     sys.stdout.write(text)
     sys.stdout.flush()
+    return

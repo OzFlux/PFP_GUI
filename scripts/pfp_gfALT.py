@@ -166,9 +166,9 @@ def gfalternate_autocomplete(ds_tower, ds_alt, l4_info, called_by, mode="verbose
                 gap[1] = min(nRecs_gui - 1, gap[1] + l4a["gui"]["nperday"])
                 if gap[0] == 0 and gap[1] == nRecs_gui - 1:
                     msg = " Unable to find enough good points in data set for " + label_tower
-                    logger.error(msg)
+                    logger.warning(msg)
                     msg = " Replacing missing tower data with unmodified alternate data"
-                    logger.error(msg)
+                    logger.warning(msg)
                     gap[0] = 0; gap[1] = -1
                     l4a["gui"]["autoforce"] = True
                     not_enough_points = True
@@ -604,7 +604,8 @@ def gfalternate_getoutputstatistics(data_dict, stat_dict, l4a):
         error = (data_dict[label_tower]["data"]-data_dict[label]["fitcorr"])
         rmse = numpy.ma.sqrt(numpy.ma.average(error*error))
         stat_dict[label]["RMSE"] = trap_masked_constant(rmse)
-        data_range = numpy.ma.maximum.reduce(data_dict[label_tower]["data"])-numpy.ma.minimum.reduce(data_dict[label_tower]["data"])
+        data_range = numpy.ma.max(data_dict[label_tower]["data"])-numpy.ma.min(data_dict[label_tower]["data"])
+        data_range = numpy.maximum(data_range, 1)
         if numpy.ma.is_masked(data_range) or abs(data_range) < c.eps:
             nmse = float(c.missing_value)
         else:
