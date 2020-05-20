@@ -1459,7 +1459,7 @@ def netcdf_concatenate_truncate(ds_in, info):
     """
     inc = info["NetCDFConcatenate"]
     if inc["Truncate"] != "Yes":
-        return
+        return ds_in
     # copy the input data structure
     ds_out = copy.deepcopy(ds_in)
     # get the datetime
