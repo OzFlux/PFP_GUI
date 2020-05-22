@@ -895,6 +895,20 @@ def l1_update_cfg_variable_attributes(cfg, std):
         for vattr in vattrs_deprecated:
             if vattr in vattrs_cfg:
                 del cfg["Variables"][label]["Attr"][vattr]
+    # coerce units into a standard form
+    old_units = list(std["units_map"].keys())
+    new_units = [std["units_map"][o] for o in old_units]
+    ok_units = list(set(old_units + new_units))
+    for label_cfg in labels_cfg:
+        cfg_units = cfg["Variables"][label_cfg]["Attr"]["units"]
+        if cfg_units.lower() == "none" or len(cfg_units) == 0:
+            continue
+        if cfg_units not in ok_units:
+            msg = " Unrecognised units " + cfg_units + " for variable " + label_cfg
+            logger.warning(msg)
+            continue
+        if cfg_units in old_units:
+            cfg["Variables"][label_cfg]["Attr"]["units"] = std["units_map"][cfg_units]
     # force some variable attributes to particular values
     for label_std in labels_std:
         # length of the label stub in the standard control file
@@ -958,13 +972,23 @@ def l1_update_cfg_variable_names(cfg, std):
     Author: PRI
     Date: May 2020
     """
-    renames = list(std["rename"].keys())
+    # rename exact variable name matches
+    renames_exact = list(std["rename_exact"].keys())
     # loop over the variables in the control file
-    labels = list(cfg["Variables"].keys())
-    for label in labels:
-        if label in renames:
-            new_name = std["rename"][label]["rename"]
-            cfg["Variables"][new_name] = cfg["Variables"].pop(label)
+    labels_cfg = list(cfg["Variables"].keys())
+    for label_cfg in labels_cfg:
+        if label_cfg in renames_exact:
+            new_name = std["rename_exact"][label_cfg]
+            cfg["Variables"][new_name] = cfg["Variables"].pop(label_cfg)
+    # rename pattern matches
+    renames_pattern = list(std["rename_pattern"].keys())
+    for label_std in renames_pattern:
+        llen = len(label_std)
+        # loop over the variables in the control file
+        for label_cfg in labels_cfg:
+            if label_cfg[:llen] == label_std:
+                new_name = label_cfg.replace(label_cfg[:llen], label_std)
+                cfg["Variables"][new_name] = cfg["Variables"].pop(label_cfg)
     return cfg
 
 def l2_update_controlfile(cfg):

@@ -6,99 +6,55 @@
 [deprecated]
     [[xlDateTime]]
 # rename section
-[rename]
-    [[AGC_7500]]
-        rename = AGC_IRGA
-    [[Ah_7500_Av]]
-        rename = Ah_IRGA_Av
-    [[Ah_7500_Sd]]
-        rename = Ah_IRGA_Sd
-    [[Ah_7500_Vr]]
-        rename = Ah_IRGA_Vr
-    [[AhAh]]
-        rename = Ah_IRGA_Vr
-    [[Cc]]
-        rename = CO2
-    [[Cc_7500_Av]]
-        rename = CO2_IRGA_Av
-    [[Cc_7500_Sd]]
-        rename = CO2_IRGA_Sd
-    [[Cc_7500_Vr]]
-        rename = CO2_IRGA_Vr
-    [[CcCc]]
-        rename = CO2_IRGA_Vr
-    [[e]]
-        rename = VP
-    [[esat]]
-        rename = VPsat
-    [[Diag_7500]]
-        rename = Diag_IRGA
-    [[Diag_CSAT]]
-        rename = Diag_SONIC
-    [[Fn_KZ]]
-        rename = Fn_4cmpt
-    [[q]]
-        rename = SH
-    [[svwc]]
-        rename = Sws
-    [[Ta_CSAT]]
-        rename = Ta_SONIC_Av
-    [[Ta_CSAT_Av]]
-        rename = Ta_SONIC_Av
-    [[Ta_CSAT_Sd]]
-        rename = Ta_SONIC_Sd
-    [[Ta_CSAT_Vr]]
-        rename = Ta_SONIC_Vr
-    [[Tv_CSAT]]
-        rename = Tv_SONIC_Av
-    [[Tv_CSAT_Av]]
-        rename = Tv_SONIC_Av
-    [[Tv_CSAT_Sd]]
-        rename = Tv_SONIC_Sd
-    [[Tv_CSAT_Vr]]
-        rename = Tv_SONIC_Vr
-    [[u]]
-        rename = U_SONIC_Av
-    [[uu]]
-        rename = U_SONIC_Vr
-    [[Ux]]
-        rename = Ux_SONIC_Av
-    [[Ux_Sd]]
-        rename = Ux_SONIC_Sd
-    [[UxUx]]
-        rename = Ux_SONIC_Vr
-    [[Uy]]
-        rename = Uy_SONIC_Av
-    [[Uy_Sd]]
-        rename = Uy_SONIC_Sd
-    [[UyUy]]
-        rename = Uy_SONIC_Vr
-    [[Uz]]
-        rename = Uz_SONIC_Av
-    [[Uz_Sd]]
-        rename = Uz_SONIC_Sd
-    [[UzUz]]
-        rename = Uz_SONIC_Vr
-    [[v]]
-        rename = V_SONIC_Av
-    [[vv]]
-        rename = V_SONIC_Vr
-    [[w]]
-        rename = W_SONIC_Av
-    [[ww]]
-        rename = W_SONIC_Vr
-    [[Wd_CSAT]]
-        rename = Wd_SONIC_Av
-    [[Wd_CSAT_Sd]]
-        rename = Wd_SONIC_Sd
-    [[Wd_CSAT_Vr]]
-        rename = Wd_SONIC_Vr
-    [[Ws_CSAT]]
-        rename = Ws_SONIC_Av
-    [[Ws_CSAT_Sd]]
-        rename = Ws_SONIC_Sd
-    [[Ws_CSAT_Vr]]
-        rename = Ws_SONIC_Vr
+[rename_exact]
+    AGC_7500 = AGC_IRGA
+    Ah_7500_Av = Ah_IRGA_Av
+    Ah_7500_Sd = Ah_IRGA_Sd
+    Ah_7500_Vr = Ah_IRGA_Vr
+    AhAh = Ah_IRGA_Vr
+    Cc = CO2
+    Cc_7500_Av = CO2_IRGA_Av
+    Cc_7500_Sd = CO2_IRGA_Sd
+    Cc_7500_Vr = CO2_IRGA_Vr
+    CcCc = CO2_IRGA_Vr
+    Diag_7500 = Diag_IRGA
+    Diag_CSAT = Diag_SONIC
+    e = VP
+    esat = VPsat
+    Fn_KZ = Fn_4cmpt
+    q = SH
+    svwc = Sws
+    Ta_CSAT = Ta_SONIC_Av
+    Ta_CSAT_Av = Ta_SONIC_Av
+    Ta_CSAT_Sd = Ta_SONIC_Sd
+    Ta_CSAT_Vr = Ta_SONIC_Vr
+    Tv_CSAT = Tv_SONIC_Av
+    Tv_CSAT_Av = Tv_SONIC_Av
+    Tv_CSAT_Sd = Tv_SONIC_Sd
+    Tv_CSAT_Vr = Tv_SONIC_Vr
+    u = U_SONIC_Av
+    uu = U_SONIC_Vr
+    Ux = Ux_SONIC_Av
+    Ux_Sd = Ux_SONIC_Sd
+    UxUx = Ux_SONIC_Vr
+    Uy = Uy_SONIC_Av
+    Uy_Sd = Uy_SONIC_Sd
+    UyUy = Uy_SONIC_Vr
+    Uz = Uz_SONIC_Av
+    Uz_Sd = Uz_SONIC_Sd
+    UzUz = Uz_SONIC_Vr
+    v = V_SONIC_Av
+    vv = V_SONIC_Vr
+    w = W_SONIC_Av
+    ww = W_SONIC_Vr
+    Wd_CSAT = Wd_SONIC_Av
+    Wd_CSAT_Sd = Wd_SONIC_Sd
+    Wd_CSAT_Vr = Wd_SONIC_Vr
+    Ws_CSAT = Ws_SONIC_Av
+    Ws_CSAT_Sd = Ws_SONIC_Sd
+    Ws_CSAT_Vr = Ws_SONIC_Vr
+[rename_pattern]
+    Fc = Fco2
 # exclude variables that start with these strings
 [exclude]
     [[eta]]
@@ -178,30 +134,66 @@
     [[Ws]]
 # units mapping section
 [units_map]
-    frac = m3/m3
-    m2/m2 = (m/s)2
+    % = percent
+    C = degC
+    C2 = degC^2
+    deg = degrees
+    dS/m = dS/m
+    frac = m^3/m^3
+    fraction = 1
+    g/m3 = g/m^3
+    (g/m3)2 = g^2/m^6
+    g/m2/s = g/m^2/s
+    hPa = hPa
+    K = K
+    K2 = K^2
+    kg/m/s2 = kg/m/s^2
+    kPa = kPa
+    m/s = m/s
+    (m/s)2 = m^2/s^2
+    m2/s2 = m^2/s^2
+    m3/m3 = m^3/m^3
+    mC/s = m.degC/s
+    mK/s = m.K/s
+    mg/m3 = mg/m^3
+    (mg/m3)2 = mg^2/m^6
+    mg/m2/s = mg/m^2/s
+    mm = mm
+    mmol/m3 = mmol/m^3
+    mmol/mol = mmol/mol
+    mmol/m2/s = mmol/m^2/s
+    (mmol/m3)2 = mmol^2/m^6
+    (mmol/mol)2 = mmol^2/mol^2
+    Pa = Pa
+    umol/m3 = umol/m^3
+    umol/mol = umol/mol
+    umol/m2/s = umol/m^2/s
+    (umol/m3)2 = umol^2/m^6
+    (umol/mol)2 = umol^2/mol^2
+    V = V
+    W/m2 = W/m^2
 # variable attributes section
 [variable_attributes]
     [[AGC_IRGA]]
         long_name = IRGA automatic gain control value
         group_name = diagnostics
-        units = none
+        units = 
     [[Ah]]
         long_name = Absolute humidity
         group_name = meteorology
-        units = g/m3
+        units = g/m^3
     [[CO2]]
         long_name = CO2 concentration
         group_name = meteorology
-        units = mg/m3, umol/mol
+        units = mg/^m3,umol/mol
     [[Diag_IRGA]]
         long_name = IRGA diagnostic value
         group_name = diagnostics
-        units = none
+        units = 
     [[Diag_SONIC]]
         long_name = Sonic diagnostic value
         group_name = diagnostics
-        units = none
+        units = 
     [[EC_]]
         long_name = Electrical conductivity
         group_name = soil
@@ -209,60 +201,51 @@
     [[Fa]]
         long_name = Available energy
         group_name = flux
-        units = W/m2
+        units = W/m^2
     [[Fc]]
         long_name = CO2 flux
         group_name = flux
-        units = mg/m2/s,mgCO2/m2/s,umol/m2/s
-#    [[Fc_single]]
-#        long_name = CO2 flux (storage term)
-#        group_name = flux
-#    [[Fc_profile]]
-#        long_name = CO2 flux (storage term)
-#        group_name = flux
-#    [[Fc_storage]]
-#        long_name = CO2 flux (storage term)
-#        group_name = flux
+        units = mg/m^2/s,umol/m^2/s
     [[Fe]]
         long_name = Latent heat flux
         group_name = flux
-        units = W/m2
+        units = W/m^2
     [[Fg]]
         long_name = Ground heat flux
         group_name = soil
-        units = W/m2
+        units = W/m^2
     [[Fh]]
         long_name = Sensible heat flux
         group_name = flux
-        units = W/m2
+        units = W/m^2
     [[Fld]]
         long_name = Down-welling longwave radiation
         group_name = radiation
-        units = W/m2
+        units = W/m^2
     [[Flu]]
         long_name = Up-welling longwave radiation
         group_name = radiation
-        units = W/m2
+        units = W/m^2
     [[Fm]]
         long_name = Momentum flux
         group_name = flux
-        units = kg/m/s2
+        units = kg/m/s^2
     [[Fn]]
         long_name = Net radiation
         group_name = radiation
-        units = W/m2
+        units = W/m^2
     [[Fsd]]
         long_name = Down-welling shortwave radiation
         group_name = radiation
-        units = W/m2
+        units = W/m^2
     [[Fsu]]
         long_name = Up-welling shortwave radiation
         group_name = radiation
-        units = W/m2
+        units = W/m^2
     [[H2O]]
         long_name = H2O concentration
         group_name = meteorology
-        units = g/m3,mmol/mol
+        units = g/m^3,mmol/mol
     [[L]]
         long_name = Monin-Obukhov length
         group_name = meteorology
@@ -270,7 +253,7 @@
     [[PAR]]
         long_name = Photosynthetically active radiation
         group_name = radiation
-        units = umol/m2/s
+        units = umol/m^2/s
     [[Precip]]
         long_name = Rainfall
         group_name = meteorology
@@ -283,7 +266,7 @@
     [[RH]]
         long_name = Relative humidity
         group_name = meteorology
-        units = %,percent,frac
+        units = fraction,percent
     [[SH]]
         long_name = Specific humidity
         group_name = meteorlogy
@@ -295,19 +278,19 @@
     [[Sws]]
         long_name = Soil water content
         group_name = soil
-        units = m3/m3,frac
+        units = m^3/m^3
     [[Ta]]
         long_name = Air temperature
         group_name = meteorology
-        units = C,K
+        units = degC,K
     [[Ts]]
         long_name = Soil temperature
         group_name = soil
-        units = C,K
+        units = degC,K
     [[Tv]]
         long_name = Virtual temperature
         group_name = meteorology
-        units = C,K
+        units = degC,K
     [[ustar]]
         long_name = Friction velocity
         group_name = flux
@@ -323,27 +306,27 @@
     [[UxA]]
         long_name = Covariance of Ux and H2O
         group_name = covariances
-        units = g/m2/s,mmol/m2/s
+        units = g/m^2/s,mmol/m^2/s
     [[UxC]]
         long_name = Covariance of Ux and CO2
         group_name = covariances
-        units = mg/m2/s,umol/m2/s
+        units = mg/m^2/s,umol/m^2/s
     [[UxT]]
         long_name = Covariance of Ux and T
         group_name = covariances
-        units = mC/s,mK/s
+        units = m.C/s,m.K/s
     [[UxUx]]
         long_name = Variance of Ux
         group_name = covariances
-        units = m2/s2
+        units = m^2/s^2
     [[UxUy]]
         long_name = Covariance of Ux and Uy
         group_name = covariances
-        units = m2/s2
+        units = m^2/s^2
     [[UxUz]]
         long_name = Covariance of Ux and Uz
         group_name = covariances
-        units = m2/s2
+        units = m^2/s^2
     [[Uy_]]
         long_name = Lateral wind velocity component, sonic coordinates
         group_name = meteorology
@@ -351,23 +334,23 @@
     [[UyA]]
         long_name = Covariance of Uy and H2O
         group_name = covariances
-        units = g/m2/s,mmol/m2/s
+        units = g/m^2/s,mmol/m^2/s
     [[UyC]]
         long_name = Covariance of Uy and CO2
         group_name = covariances
-        units = mg/m2/s,umol/m2/s
+        units = mg/m^2/s,umol/m^2/s
     [[UyT]]
         long_name = Covariance of Uy and T
         group_name = covariances
-        units = mC/s,mK/s
+        units = m.C/s,m.K/s
     [[UyUy]]
         long_name = Variance of Uy
         group_name = covariances
-        units = m2/s2
+        units = m^2/s^2
     [[UyUz]]
         long_name = Covariance of Uy and Uz
         group_name = covariances
-        units = m2/s2
+        units = m^2/s^2
     [[Uz_]]
         long_name = Vertical wind velocity component, sonic coordinates
         group_name = meteorology
@@ -375,19 +358,19 @@
     [[UzA]]
         long_name = Covariance of Uz and H2O
         group_name = covariances
-        units = g/m2/s,mmol/m2/s
+        units = g/m^2/s,mmol/m^2/s
     [[UzC]]
         long_name = Covariance of Uz and CO2
         group_name = covariances
-        units = mg/m2/s,umol/m2/s
+        units = mg/m^2/s,umol/m^2/s
     [[UzT]]
         long_name = Covariance of Uz and T
         group_name = covariances
-        units = mC/s,mK/s
+        units = m.C/s,m.K/s
     [[UzUz]]
         long_name = Variance of Uz
         group_name = covariances
-        units = m2/s2
+        units = m^2/s^2
     [[V_]]
         long_name = Across wind velocity component
         group_name = meteorology
@@ -407,7 +390,7 @@
     [[Wd]]
         long_name = Wind direction
         group_name = meteorology
-        units = degrees,deg
+        units = degrees
     [[Ws]]
         long_name = Wind speed
         group_name = meteorology

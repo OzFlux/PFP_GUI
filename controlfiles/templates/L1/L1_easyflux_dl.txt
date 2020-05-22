@@ -663,7 +663,7 @@ Fund.'''
             long_name = CSAT diagnostic value
             serial_number = 
             standard_name = 
-            units = none
+            units =
     [[UxC]]
         [[[xl]]]
             sheet = Notes
@@ -741,7 +741,7 @@ Fund.'''
             long_name = Number of accepted CO2 samples
             serial_number = 
             standard_name = 
-            units = none
+            units =
     [[H2O_Samples]]
         [[[xl]]]
             sheet = Notes
@@ -752,7 +752,7 @@ Fund.'''
             long_name = Number of accepted H2O samples
             serial_number = 
             standard_name = 
-            units = none
+            units =
     [[Diag_IRGA]]
         [[[xl]]]
             sheet = Notes
@@ -763,7 +763,7 @@ Fund.'''
             long_name = EC150 diagnostic value
             serial_number = 
             standard_name = 
-            units = none
+            units =
     [[Tpanel]]
         [[[xl]]]
             sheet = Notes

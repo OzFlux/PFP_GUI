@@ -124,7 +124,7 @@ level = L1
             long_name = Momentum flux
             serial_number = 
             standard_name = 
-            units = kg/m2
+            units = kg/m/s2
     [[Fm_EPFlag]]
         [[[xl]]]
             sheet = full_output
@@ -236,7 +236,7 @@ level = L1
             long_name = Variance of virtual temperature from SONIC
             serial_number = 
             standard_name = 
-            units = C2
+            units = K2
     [[CO2_IRGA_Av]]
         [[[xl]]]
             sheet = full_output
@@ -258,7 +258,7 @@ level = L1
             long_name = CO2 concentration, variance
             serial_number = 
             standard_name = not defined
-            units = (mmol/m3)2
+            units = (umol/mol)2
     [[H2O_IRGA_Av]]
         [[[xl]]]
             sheet = full_output
@@ -280,7 +280,7 @@ level = L1
             long_name = H2O concentration, variance
             serial_number = 
             standard_name = not defined
-            units = (mmol/m3)2
+            units = (mmol/mol)2
     [[RH_IRGA_Av]]
         [[[xl]]]
             sheet = full_output
