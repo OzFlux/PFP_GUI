@@ -19,19 +19,19 @@ level = L5
             source = Fe,Fe_MDS
         [[[GapFillUsingMDS]]]
             [[[[Fe_MDS]]]]
-                drivers = ['Fsd','Ta','VPD']
-                tolerances = [(20, 50), 2.5, 0.5]
+                drivers = Fsd,Ta,VPD
+                tolerances = (20,50),2.5,0.5
     [[Fh]]
         [[[MergeSeries]]]
             source = Fh,Fh_MDS
         [[[GapFillUsingMDS]]]
             [[[[Fh_MDS]]]]
-                drivers = ['Fsd','Ta','VPD']
-                tolerances = [(20, 50), 2.5, 0.5]
+                drivers = Fsd,Ta,VPD
+                tolerances = (20,50),2.5,0.5
     [[Fc]]
         [[[MergeSeries]]]
             source = Fc,Fc_MDS
         [[[GapFillUsingMDS]]]
             [[[[Fc_MDS]]]]
-                drivers = ['Fsd','Ta','VPD']
-                tolerances = [(20, 50), 2.5, 0.5]
+                drivers = Fsd,Ta,VPD
+                tolerances = (20,50),2.5,0.5
