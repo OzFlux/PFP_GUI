@@ -56,7 +56,7 @@ def CheckExcelWorkbook(l1_info):
     nc_labels = list(l1ire["Variables"].keys())
     l1ire["xl_sheets"] = {}
     # check the requested sheets are present and get a list of variables for each sheet
-    msg = " Reading Excel workbook " + os.path.basename(l1ire["Files"]["file_name"])
+    msg = " Reading Excel workbook " + os.path.basename(l1ire["Files"]["in_filename"])
     logger.info(msg)
     xl_book = xlrd.open_workbook(l1ire["Files"]["file_name"], on_demand=True)
     # put the Excel workbook datemode into the global attributes
@@ -351,86 +351,13 @@ def ParseL1ControlFile(cf):
     l1_info = {"status": {"value": 0, "message": "OK"},
               "read_excel": {}}
     l1ire = l1_info["read_excel"]
-    # check we have an L1 control file
-    if "level" not in cf:
-        error_handler(l1_info, "Key 'level' not found in control file", 1)
-        return l1_info
-    if cf["level"] != "L1":
-        error_handler(l1_info, "Not an L1 control file", 1)
-        return l1_info
-    # check the expected sections are in the control file
-    for item in ["Files", "Global", "Variables"]:
-        if item not in list(cf.keys()):
-            msg = "Section '" + item + "' not in control file"
-            error_handler(l1_info, msg, 1)
-            return l1_info
     # copy the files section from the control file
     l1ire["Files"] = copy.deepcopy(cf["Files"])
-    # get the input file and check it exists
-    xl_file_name = pfp_io.get_infilenamefromcf(cf)
-    if not os.path.isfile(xl_file_name):
-        msg = "Input file not found: " + xl_file_name
-        error_handler(l1_info, msg, 1)
-        return l1_info
-    l1ire["Files"]["file_name"] = xl_file_name
-    # get the header row
-    try:
-        opt = pfp_utils.get_keyvaluefromcf(cf, ["Files"], "in_headerrow", default=2)
-        l1ire["Files"]["in_headerrow"] = int(opt) - 1
-    except ValueError:
-        error_handler(l1_info, "in_headerrow is not a number", 1)
-        return l1_info
-    # get the first data row
-    try:
-        opt = pfp_utils.get_keyvaluefromcf(cf, ["Files"], "in_firstdatarow", default=5)
-        l1ire["Files"]["in_firstdatarow"] = int(opt) - 1
-    except ValueError:
-        error_handler(l1_info, "in_firstdatarow is not a number", 1)
-        return l1_info
+    l1ire["Files"]["file_name"] = os.path.join(cf["Files"]["file_path"], cf["Files"]["in_filename"])
+    l1ire["Files"]["in_headerrow"] = int(cf["Files"]["in_headerrow"])- 1
+    l1ire["Files"]["in_firstdatarow"] = int(cf["Files"]["in_firstdatarow"]) - 1
     # get the global attributes
     l1ire["Global"] = copy.deepcopy(cf["Global"])
-    # check time step is present and makes sense
-    try:
-        ts = int(l1ire["Global"]["time_step"])
-    except ValueError:
-        error_handler(l1_info, "Global attribute 'time_step' is not a number", 1)
-        return l1_info
-    if ts not in [15, 20, 30, 60]:
-        msg = "Global attribute 'time_step' must be 15, 20, 30 or 60"
-        error_handler(l1_info, msg, 1)
-        return l1_info
-    # check latitude and longitude are present and make sense
-    try:
-        lat = float(l1ire["Global"]["latitude"])
-    except ValueError:
-        error_handler(l1_info, "Global attribute 'latitude' is not a number", 1)
-        return l1_info
-    if lat < -90.0 or lat > 90.0:
-        msg = "Global attribute 'latitude' must be between -90 and 90"
-        error_handler(l1_info, msg, 1)
-        return l1_info
-    try:
-        lon = float(l1ire["Global"]["longitude"])
-    except ValueError:
-        error_handler(l1_info, "Global attribute 'longitude' is not a number", 1)
-        return l1_info
-    if lat < -180.0 or lat > 180.0:
-        msg = "Global attribute 'longitude' must be between -180 and 180"
-        error_handler(l1_info, msg, 1)
-        return l1_info
-    # check the time zone
-    try:
-        tf = timezonefinder.TimezoneFinder()
-        tz_from_lat_lon = tf.timezone_at(lng=lon, lat=lat)
-        opt = pfp_utils.get_keyvaluefromcf(l1ire, ["Global"], "time_zone", default=tz_from_lat_lon)
-        if opt.lower() != tz_from_lat_lon.lower():
-            msg = "Global attribute 'time_zone' inconsistent with latitude and longitude"
-            error_handler(l1_info, msg, 1)
-            return l1_info
-        l1ire["Global"]["time_zone"] = opt
-    except:
-        error_handler(l1_info, "Error checking global attribute 'time_zone'", 1)
-        return l1_info
     # get the variables
     l1ire["Variables"] = copy.deepcopy(cf["Variables"])
     # checks of the 'Variables' sections would go here
@@ -755,6 +682,113 @@ def include_variables(cfg, ds_in):
                 ds_out.series[label] = ds_in.series[label]
     return ds_out
 
+def l1_check_controlfile(cfg):
+    """
+    Purpose:
+     Check the L1 control file to make sure it contains all information
+     needed to run L1 and that all information is correct.
+    Usage:
+    Side effects:
+    Author: PRI
+    Date: June 2020
+    """
+    ok = True
+    # check the expected sections are in the control file
+    for item in ["Files", "Global", "Variables"]:
+        if item not in list(cfg.keys()):
+            msg = " Section '" + item + "' not in control file"
+            logger.error(msg)
+            ok = False
+    # check the directory exists
+    file_path = pfp_utils.get_keyvaluefromcf(cfg, ["Files"], "file_path", default=".")
+    if not os.path.isdir(file_path):
+        msg = " Input directory " + file_path + " not found"
+        error_message(msg, mode="correct")
+        ok = False
+    # get the input file and check it exists
+    xl_file_name = pfp_io.get_infilenamefromcf(cfg)
+    if not os.path.isfile(xl_file_name):
+        msg = " Input file " + os.path.basename(xl_file_name) + " not found"
+        error_message(msg, mode="correct")
+        ok = False
+    # check the header row entry are numbers
+    try:
+        opt = pfp_utils.get_keyvaluefromcf(cfg, ["Files"], "in_headerrow", default=2)
+        opt = int(opt) - 1
+    except ValueError:
+        msg = " In the Files section of the control file, in_headerrow is not a number"
+        error_message(msg, mode="correct")
+        ok = False
+    # check the first data row entry are numbers
+    try:
+        opt = pfp_utils.get_keyvaluefromcf(cfg, ["Files"], "in_firstdatarow", default=5)
+        opt = int(opt) - 1
+    except ValueError:
+        msg = " In the Files section of the control file, in_firstdatarow is not a number"
+        error_message(msg, mode="correct")
+        ok = False
+    # check time step is present and makes sense
+    try:
+        ts = int(cfg["Global"]["time_step"])
+    except ValueError:
+        msg = " Global attribute 'time_step' is not a number"
+        error_message(msg, mode="correct")
+        ok = False
+    if ts not in [15, 20, 30, 60]:
+        msg = " Global attribute 'time_step' must be 15, 20, 30 or 60"
+        error_message(msg, mode="correct")
+        ok = False
+    # check latitude and longitude are present and make sense
+    try:
+        lat = float(cfg["Global"]["latitude"])
+    except ValueError:
+        msg = " Global attribute 'latitude' is not a number"
+        error_message(msg, mode="correct")
+        ok = False
+    if lat < -90.0 or lat > 90.0:
+        msg = "Global attribute 'latitude' must be between -90 and 90"
+        error_message(msg, mode="correct")
+        ok = False
+    try:
+        lon = float(cfg["Global"]["longitude"])
+    except ValueError:
+        msg = " Global attribute 'longitude' is not a number"
+        error_message(msg, mode="correct")
+        ok = False
+    if lon < -180.0 or lat > 180.0:
+        msg = " Global attribute 'longitude' must be between -180 and 180"
+        error_message(msg, mode="correct")
+        ok = False
+    ## check the time zone
+    #try:
+        #tf = timezonefinder.TimezoneFinder()
+        #tz_from_lat_lon = tf.timezone_at(lng=lon, lat=lat)
+        #opt = pfp_utils.get_keyvaluefromcf(cfg, ["Global"], "time_zone", default=tz_from_lat_lon)
+        #if opt.lower() != tz_from_lat_lon.lower():
+            #msg = " Global attribute 'time_zone' inconsistent with latitude and longitude"
+            #logger.warning(msg)
+            #msg = "  " + opt + " replaced with " + tz_from_lat_lon
+            #logger.warning(msg)
+            #cfg["Global"]["time_zone"] = tz_from_lat_lon
+            #file_name = os.path.basename(cfg.filename)
+            #msg = " Updated 'time_zone' global attribute and saved control file " + file_name
+            #logger.info(msg)
+            #cfg.write()
+    #except:
+        #msg = " Error checking global attribute 'time_zone'"
+        #error_message(msg)
+        #ok = False
+    return ok
+
+def error_message(msg, mode="correct"):
+    logger.error("!!!")
+    logger.error(msg)
+    if mode == "correct":
+        msg = " You can go back to the control file tab and correct the entry"
+        logger.error(msg)
+    logger.error("!!!")
+    return
+
 def l1_update_controlfile(cfg):
     """
     Purpose:
@@ -790,7 +824,7 @@ def l1_update_controlfile(cfg):
                                 # for keywords to lower case
                                 if key4.lower() != key4:
                                     cfg3[key4.lower()] = cfg3.pop(key4)
-                                cfg3[key4.lower()] = parse_cfg_variables_value(key3, cfg3[key4.lower()])
+                                cfg[key1][key2][key3][key4.lower()] = parse_cfg_variables_value(key3, cfg3[key4.lower()])
             else:
                 del cfg[key1]
         # check to see if the control file object has been changed
@@ -833,12 +867,12 @@ def l2_update_controlfile(cfg):
             elif key1 in ["Files"]:
                 for key2 in cfg[key1]:
                     cfg2 = cfg[key1][key2]
-                    cfg2 = parse_cfg_values(key2, cfg2, strip_list)
+                    cfg[key1][key2] = parse_cfg_values(key2, cfg2, strip_list)
             elif key1 in ["Options"]:
                 for key2 in cfg[key1]:
                     if key2 in ["irga_type", "SONIC_Check", "IRGA_Check"]:
                         cfg2 = cfg[key1][key2]
-                        cfg2 = parse_cfg_values(key2, cfg2, strip_list)
+                        cfg[key1][key2] = parse_cfg_values(key2, cfg2, strip_list)
                     else:
                         del cfg[key1][key2]
             elif key1 in ["Plots"]:
@@ -850,7 +884,7 @@ def l2_update_controlfile(cfg):
                         # force keywords to lower case
                         cfg2.rename(key3, key3.lower())
                         cfg3 = cfg2[key3.lower()]
-                        cfg3 = parse_cfg_plots_value(key3, cfg3)
+                        cfg[key1][title][key3.lower()] = parse_cfg_plots_value(key3.lower(), cfg3)
             elif key1 in ["Variables"]:
                 for key2 in cfg[key1]:
                     # deprecated variables
@@ -865,7 +899,7 @@ def l2_update_controlfile(cfg):
                                 # force keywords to lower case
                                 cfg3.rename(key4, key4.lower())
                                 cfg4 = cfg3[key4.lower()]
-                                cfg4 = parse_cfg_variables_value(key3, cfg4)
+                                cfg[key1][key2][key3][key4.lower()] = parse_cfg_variables_value(key3, cfg4)
             else:
                 del cfg[key1]
         # check to see if the control file object has been changed
@@ -932,14 +966,14 @@ def l3_update_controlfile(cfg):
             elif key1 in ["Files", "Global", "Soil", "Massman"]:
                 for key2 in cfg[key1]:
                     cfg2 = cfg[key1][key2]
-                    cfg2 = parse_cfg_values(key2, cfg2, strip_list)
+                    cfg[key1][key2] = parse_cfg_values(key2, cfg2, strip_list)
             elif key1 in ["Options"]:
                 for key2 in cfg[key1]:
                     if key2 in ["MassmanCorrection", "CO2Units", "FcUnits", "UseL2Fluxes",
                                 "2DCoordRotation", "ApplyFcStorage", "CorrectIndividualFg",
                                 "CorrectFgForStorage", "zms"]:
                         cfg2 = cfg[key1][key2]
-                        cfg2 = parse_cfg_values(key2, cfg2, strip_list)
+                        cfg[key1][key2] = parse_cfg_values(key2, cfg2, strip_list)
                     else:
                         del cfg[key1][key2]
             elif key1 in ["Plots"]:
@@ -951,7 +985,7 @@ def l3_update_controlfile(cfg):
                         # force keywords to lower case
                         cfg2.rename(key3, key3.lower())
                         cfg3 = cfg2[key3.lower()]
-                        cfg3 = parse_cfg_plots_value(key3, cfg3)
+                        cfg[key1][title][key3.lower()] = parse_cfg_plots_value(key3, cfg3)
             elif key1 in ["Variables"]:
                 for key2 in cfg[key1]:
                     # deprecated variables
@@ -966,7 +1000,7 @@ def l3_update_controlfile(cfg):
                                 # for keywords to lower case
                                 cfg3.rename(key4, key4.lower())
                                 cfg4 = cfg3[key4.lower()]
-                                cfg4 = parse_cfg_variables_value(key3, cfg4)
+                                cfg[key1][key2][key3][key4.lower()] = parse_cfg_variables_value(key3, cfg4)
             else:
                 del cfg[key1]
         # correct legacy variable names in the control file
