@@ -375,8 +375,22 @@ def read_eddypro_full(csvname):
 
     return ds
 
-def write_csv_reddyproc(cf):
-    # this needs to be re-written!
+def write_tsv_reddyproc(cf):
+    """
+    Purpose:
+     Write an input file for the REddyProc R scripts using data from an
+     OzFlux-style netCDF file.
+     REddyProc will only read tab separated value files, not comma separated
+     value files.  The default extension for the output file is ".tsv".
+    Usage:
+     pfp_io.write_tsv_reddyproc(cfg)
+     where cfg is a control file.
+    Side effects:
+     Produces a text file (tab separated values) in the same folder as the
+     input file.
+    Author: PRI
+    Date: Back in the day
+    """
     # get the file names
     file_path = cf["Files"]["file_path"]
     nc_name = cf["Files"]["in_filename"]

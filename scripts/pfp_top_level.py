@@ -136,7 +136,8 @@ def do_file_convert_nc2reddyproc(cfg, mode="standard"):
      Convert a PFP-style netCDF file to an REddyProc CSV file.
     Usage:
     Side effects:
-     Creates a CSV file in the same directory as the netCDF file.
+     Creates a TSV (tab separated values) file in the same directory
+     as the netCDF file.
     Author: PRI
     Date: Back in the day
     Mods:
@@ -151,7 +152,7 @@ def do_file_convert_nc2reddyproc(cfg, mode="standard"):
         # check to see if the user chose a standard or a custom run
         if cfg is None and mode == "standard":
             # standard run so we use the control file in PyFluxPro/controlfiles/standard
-            stdname = "controlfiles/standard/nc2csv_reddyproc.txt"
+            stdname = "controlfiles/standard/nc2tsv_reddyproc.txt"
             # check to see if the standard control file exists
             if os.path.exists(stdname):
                 # standard control file exists so read it
@@ -161,7 +162,7 @@ def do_file_convert_nc2reddyproc(cfg, mode="standard"):
                 # check that the netCDF file exists
                 if not os.path.exists(filename):
                     # return if no file chosen
-                    logger.info( " Write REddyProc CSV file: no input file chosen")
+                    logger.info( " Write REddyProc file: no input file chosen")
                     return
                 # add a [Files] section to the control file ...
                 if "Files" not in cfg:
@@ -170,10 +171,10 @@ def do_file_convert_nc2reddyproc(cfg, mode="standard"):
                 cfg["Files"]["file_path"] = os.path.join(os.path.split(filename)[0], "")
                 in_filename = os.path.split(filename)[1]
                 cfg["Files"]["in_filename"] = in_filename
-                cfg["Files"]["out_filename"] = in_filename.replace(".nc", "_REddyProc.csv")
+                cfg["Files"]["out_filename"] = in_filename.replace(".nc", "_REddyProc.tsv")
             else:
                 # issue an error mesage and return if the standard control file does not exist
-                msg = " Write REddyProc CSV file: standard control file 'nc2csv_reddyproc.txt' does not exist"
+                msg = " Write REddyProc file: standard control file 'nc2tsv_reddyproc.txt' does not exist"
                 logger.error(msg)
                 return
         elif cfg is not None and mode == "custom":
@@ -181,7 +182,7 @@ def do_file_convert_nc2reddyproc(cfg, mode="standard"):
             pass
         else:
             # tell the user we got the wrong input options and return
-            msg = " Write REddyProc CSV file: wrong input options"
+            msg = " Write REddyProc file: wrong input options"
             logger.error(msg)
             return
         # add the [Options] section and populate it
@@ -190,11 +191,12 @@ def do_file_convert_nc2reddyproc(cfg, mode="standard"):
         cfg["Options"]["call_mode"] = "interactive"
         cfg["Options"]["show_plots"] = "Yes"
         # do the business
-        result = pfp_io.write_csv_reddyproc(cfg)
+        result = pfp_io.write_tsv_reddyproc(cfg)
         # check everything went well
         if result == 1:
             # looks good
-            logger.info(" Finished converting netCDF file")
+            msg = " Finished writing REddyProc file " + cfg["Files"]["out_filename"]
+            logger.info(msg)
             logger.info("")
         else:
             # or not
@@ -203,7 +205,7 @@ def do_file_convert_nc2reddyproc(cfg, mode="standard"):
             logger.error("")
     except Exception:
         # tell the user if something goes wrong and put the exception in the log window
-        error_message = " Error converting to BIOMET format, see below for details ... "
+        error_message = " Error writing REddyProc file, see below for details ... "
         logger.error(error_message)
         error_message = traceback.format_exc()
         logger.error(error_message)
