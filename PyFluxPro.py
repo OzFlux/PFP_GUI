@@ -13,9 +13,9 @@ import matplotlib
 if platform.system() == "Darwin":
     # set backend to "macosx" on Macs
     matplotlib.use("macosx")
-else:
-    # set backend to "QT5Agg" for Windows and Linux
-    matplotlib.use("QT5Agg")
+#else:
+    ## set backend to "QT5Agg" for Windows and Linux
+    #matplotlib.use("QT5Agg")
 from PyQt5 import QtWidgets
 # PFP modules
 sys.path.append('scripts')
