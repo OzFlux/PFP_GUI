@@ -18,7 +18,7 @@ level = L3
     z0 = <roughness_length>
     north_separation = <north_separation>
     east_separation = <east_separation>
-[variables]
+[Variables]
     [[Fn]]
         [[[MergeSeries]]]
             source = Fn_4cmpt,Fn_NR

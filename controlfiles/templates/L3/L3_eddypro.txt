@@ -3,21 +3,18 @@ level = L3
     file_path = Right click to browse
     in_filename = Right click to browse
     out_filename = Right click to browse
-
 [Options]
     UseL2Fluxes = Yes
     zms = <height>
     CO2Units = umol/mol
     FcUnits = umol/m2/s
-
 [Soil]
     FgDepth = <depth>
     BulkDensity = <soil_bulk_density>
     OrganicContent = <soil_organic_content>
     SwsDefault = <soil_water_content_default>
     SwsSeries = Sws
-
-[variables]
+[Variables]
     [[Fn]]
         [[[MergeSeries]]]
             source = Fn_4cmpt,Fn
@@ -78,7 +75,6 @@ level = L3
         [[[RangeCheck]]]
             lower = 0
             upper = 60
-
 [Plots]
     [[Radiative fluxes]]
         variables = Fsd,Fsu,Fld,Flu,Fn

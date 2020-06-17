@@ -15,8 +15,7 @@ level = L3
     OrganicContent =
     SwsDefault =
     SwsSeries = Sws
-
-[variables]
+[Variables]
     [[Fn]]
         [[[MergeSeries]]]
             source = Fn_4cmpt,Fn

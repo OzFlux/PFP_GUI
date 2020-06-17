@@ -13,7 +13,7 @@ level = L4
             [[[[Fld_era5]]]]
                 source = era5
         [[[MergeSeries]]]
-            Source = Fld,Fld_era5
+            source = Fld,Fld_era5
     [[Fsd]]
         [[[GapFillFromAlternate]]]
             [[[[Fsd_era5]]]]
@@ -21,25 +21,25 @@ level = L4
                 fit = ols_thru0
                 lag = no
         [[[MergeSeries]]]
-            Source = Fsd,Fsd_era5
+            source = Fsd,Fsd_era5
     [[ps]]
         [[[GapFillFromAlternate]]]
             [[[[ps_era5]]]]
                 source = era5
         [[[MergeSeries]]]
-            Source = ps,ps_era5
+            source = ps,ps_era5
     [[RH]]
         [[[GapFillFromAlternate]]]
             [[[[RH_era5]]]]
                 source = era5
         [[[MergeSeries]]]
-            Source = RH,RH_era5
+            source = RH,RH_era5
     [[Ta]]
         [[[GapFillFromAlternate]]]
             [[[[Ta_era5]]]]
                 source = era5
         [[[MergeSeries]]]
-            Source = Ta,Ta_era5
+            source = Ta,Ta_era5
     [[Ws]]
         [[[GapFillFromAlternate]]]
             [[[[Ws_era5]]]]
@@ -47,7 +47,7 @@ level = L4
                 fit = ols_thru0
                 lag = no
         [[[MergeSeries]]]
-            Source = Ws,Ws_era5
+            source = Ws,Ws_era5
     [[Precip]]
         [[[GapFillFromAlternate]]]
             [[[[Precip_era5]]]]
@@ -55,4 +55,4 @@ level = L4
                 fit = replace
                 lag = no
         [[[MergeSeries]]]
-            Source = Precip,Precip_era5
+            source = Precip,Precip_era5
