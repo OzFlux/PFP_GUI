@@ -659,7 +659,7 @@ class edit_cfg_L2(QtWidgets.QWidget):
 
     def add_scatterplot(self):
         """ Add a new scatter plot to the 'Plots' section."""
-        new_plot = {"Type":"xy", "XSeries":"", "YSeries":""}
+        new_plot = {"type":"xy", "xseries":"", "yseries":""}
         parent = QtGui.QStandardItem("New scatter plot")
         for key in new_plot:
             val = new_plot[key]
