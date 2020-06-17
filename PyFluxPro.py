@@ -266,9 +266,6 @@ class pfp_main_ui(QtWidgets.QWidget):
             if not pfp_compliance.l1_update_controlfile(self.cfg): return
             # put the GUI for editing the L1 control file in a new tab
             self.tabs.tab_dict[self.tabs.tab_index_all] = pfp_gui.edit_cfg_L1(self)
-            # !!!
-            # !!! compliance check of L1 control file goes here
-            # !!!
             # get the control file data from the L1 edit GUI
             self.tabs.cfg_dict[self.tabs.tab_index_all] = self.tabs.tab_dict[self.tabs.tab_index_all].get_data_from_model()
             # put the control file path into the cfg dictionary
@@ -577,6 +574,8 @@ class pfp_main_ui(QtWidgets.QWidget):
         # call the appropriate processing routine depending on the level
         self.tabs.tab_index_running = tab_index_current
         if self.tabs.cfg_dict[tab_index_current]["level"] == "L1":
+            # check the L1 control file to see if it is OK to run
+            if not pfp_compliance.l1_check_controlfile(cfg): return
             pfp_top_level.do_run_l1(cfg)
         elif self.tabs.cfg_dict[tab_index_current]["level"] == "L2":
             pfp_top_level.do_run_l2(cfg)
