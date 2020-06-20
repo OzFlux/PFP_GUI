@@ -3,7 +3,7 @@ level = L2
     file_path = Right click to browse
     in_filename = Right click to browse (*.nc)
     out_filename = Right click to browse (*.nc)
-
+    plot_path = Right click to browse
 [Variables]
     [[Fn]]
         [[[RangeCheck]]]
