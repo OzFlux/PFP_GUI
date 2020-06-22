@@ -1149,6 +1149,7 @@ def plot_onetimeseries_right(fig,n,ThisOne,xarray,yarray,p):
 
 def plotxy(cf, title, plt_cf, dsa, dsb):
     SiteName = dsa.globalattributes['site_name']
+    Level = dsb.globalattributes['nc_level']
     PlotDescription = str(title)
     fig = plt.figure()
     fig.clf()
@@ -1176,7 +1177,17 @@ def plotxy(cf, title, plt_cf, dsa, dsb):
             yb,flag,attr = pfp_utils.GetSeriesasMA(dsb,yname)
             xyplot(xa,ya,sub=[1,2,1],xlabel=xname,ylabel=yname)
             xyplot(xb,yb,sub=[1,2,2],regr=1,xlabel=xname,ylabel=yname)
-    fig.show()
+    #fig.show()
+    plt.draw()
+    mypause(0.5)
+    if "plot_path" in cf["Files"]:
+        plot_path = os.path.join(cf["Files"]["plot_path"],Level)
+    else:
+        plot_path = "plots/"
+    if not os.path.exists(plot_path):
+        os.makedirs(plot_path)
+    fname = os.path.join(plot_path, SiteName.replace(' ','')+'_'+Level+'_'+PlotDescription.replace(' ','')+'.png')
+    fig.savefig(fname,format='png')
 
 def xyplot(x,y,sub=[1,1,1],regr=0,thru0=0,title=None,xlabel=None,ylabel=None,fname=None):
     '''Generic XY scatter plot routine'''
