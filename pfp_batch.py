@@ -163,7 +163,10 @@ def do_concatenate_batch(cf_level):
             file_path = ntpath.split(file_name)[0] + "/"
             cf_fp["Files"]["file_path"] = file_path
             cf_fp["Files"]["in_filename"] = ntpath.split(file_name)[1]
-            cf_fp["Files"]["plot_path"] = file_path[:file_path.index("Data")] + "Plots/"
+            if "plot_path" in cf_cc["Files"]:
+                cf_fp["Files"]["plot_path"] = cf_cc["Files"]["plot_path"]
+            else:
+                cf_fp["Files"]["plot_path"] = file_path[:file_path.index("Data")] + "Plots/"
             if "Options" not in cf_fp:
                 cf_fp["Options"] = {}
             cf_fp["Options"]["call_mode"] = "batch"

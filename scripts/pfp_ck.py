@@ -239,8 +239,11 @@ def ApplyTurbulenceFilter_checks(cf, ds):
     opt["turbulence_filter"] = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "TurbulenceFilter", default="ustar")
     # return if turbulence filter disabled
     if opt["turbulence_filter"].lower() == "none":
-        msg = " Turbulence filter disabled in control file at "+ds.globalattributes["nc_level"]
-        logger.info(msg)
+        logger.warning("!!!")
+        msg = "!!! Turbulence filter disabled in control file at "
+        msg += ds.globalattributes["nc_level"]
+        logger.warning(msg)
+        logger.warning("!!!")
         opt["OK"] = False
         return opt
     # check to see if filter type can be handled

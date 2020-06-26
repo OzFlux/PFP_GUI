@@ -1079,6 +1079,8 @@ def l4_update_controlfile(cfg):
                                 cfg3.rename(key4, key4.lower())
                                 cfg4 = cfg[key1][key2][key3][key4.lower()]
                                 cfg4 = parse_cfg_variables_value(key3, cfg4)
+            elif key1 in ["GUI"]:
+                continue
             else:
                 del cfg[key1]
         # check to see if the control file object has been changed
@@ -1159,6 +1161,8 @@ def l5_update_controlfile(cfg):
                                 cfg3.rename(key4, key4.lower())
                                 cfg4 = cfg3[key4.lower()]
                                 cfg4 = parse_cfg_variables_value(key3, cfg4)
+            elif key1 in ["GUI"]:
+                continue
             else:
                 del cfg[key1]
         # check to see if the control file object has been changed
@@ -1232,6 +1236,8 @@ def l6_update_controlfile(cfg):
                     for key3 in cfg[key1][key2]:
                         cfg3 = cfg[key1][key2][key3]
                         cfg3 = parse_cfg_values(key3, cfg3, strip_list)
+            elif key1 in ["GUI"]:
+                continue
             else:
                 del cfg[key1]
         # check to see if the control file object has been changed
