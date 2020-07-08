@@ -10,6 +10,7 @@ import dateutil
 import matplotlib.pyplot as plt
 import numpy
 import pylab
+import xlwt
 # PFP modules
 if not os.path.exists("../scripts/"):
     print "portal_audit: the scripts directory is missing"
@@ -29,14 +30,14 @@ def do_audit_analysis(base_path):
                  "end_date": datetime.datetime(2000,1,1,0,0)}
     n = 0
     for site in sites:
-        portal_dir = os.path.join(base_path, site, "Data", "Portal")
+        portal_dir = os.path.join(base_path, site, "Data", "Processed")
         file_mask = os.path.join(portal_dir, "*.nc")
         files = glob.glob(file_mask)
-        l3_name = os.path.join(portal_dir, site + "_L3")
+        l3_name = os.path.join(portal_dir, site + "_L3.nc")
         if os.path.isfile(l3_name):
             print "Processing ", site
             site_info[site] = {"file_name":l3_name}
-            ds = qcio.nc_read_series(l3_name)
+            ds = pfp_io.nc_read_series(l3_name)
             site_info[site]["site_name"] = ds.globalattributes["site_name"]
             start_date = dateutil.parser.parse(ds.globalattributes["start_date"])
             site_info[site]["start_date"] = start_date
@@ -63,6 +64,18 @@ else:
         l = pickle.load(handle)
         all_sites = l[0]
         site_info = l[1]
+# write to Excel file
+xl_file = xlwt.Workbook()
+xl_sheet = xl_file.add_sheet("Dates")
+xl_sheet.write(0,0,"Site")
+xl_sheet.write(0,1,"Start")
+xl_sheet.write(0,2,"End")
+for n,site in enumerate(sorted(list(site_info.keys()))):
+    xl_sheet.write(n+1,0,site_info[site]["site_name"])
+    xl_sheet.write(n+1,1,str(site_info[site]["start_date"]))
+    xl_sheet.write(n+1,2,str(site_info[site]["end_date"]))
+xl_file.save("portal_audit.xls")
+
 end_year = all_sites["end_date"].year
 all_sites["end_date"] = datetime.datetime(end_year+1, 1, 1, 0, 0)
 site_list = site_info.keys()
