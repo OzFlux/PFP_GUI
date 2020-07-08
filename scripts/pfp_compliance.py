@@ -72,18 +72,18 @@ def CheckExcelWorkbook(l1_info):
             del l1ire["Variables"][nc_label]
             continue
         if xl_sheet not in list(l1ire["xl_sheets"].keys()):
-            l1ire["xl_sheets"][xl_sheet] = {}
-        l1ire["xl_sheets"][xl_sheet][xl_label] = nc_label
+            l1ire["xl_sheets"][xl_sheet] = {"DateTime": "", "xl_labels":{}}
+        l1ire["xl_sheets"][xl_sheet]["xl_labels"][xl_label] = nc_label
     # check the requested variables are on the specified sheets
     xl_data = {}
     for xl_sheet in list(l1ire["xl_sheets"].keys()):
         xl_data[xl_sheet] = xl_book.sheet_by_name(xl_sheet)
         headers = xl_data[xl_sheet].row_values(l1ire["Files"]["in_headerrow"])
-        for xl_label in list(l1ire["xl_sheets"][xl_sheet].keys()):
+        for xl_label in list(l1ire["xl_sheets"][xl_sheet]["xl_labels"].keys()):
             if xl_label not in headers:
                 msg = " Variable " + xl_label + " not found on sheet " + xl_sheet + ", skipping ..."
                 logger.warning(msg)
-                del l1ire["xl_sheets"][xl_sheet][xl_label]
+                del l1ire["xl_sheets"][xl_sheet]["xl_labels"][xl_label]
     # now we know what variables on which sheets have been requested and are present
     # find the timestamp label for each sheet
     fdr = int(l1ire["Files"]["in_firstdatarow"])
@@ -96,11 +96,12 @@ def CheckExcelWorkbook(l1_info):
             types = numpy.array(xl_data[xl_sheet].col_types(col)[fdr:ldr])
             mode = scipy.stats.mode(types)
             #print xl_sheet, xl_label, col, mode[0][0], fdr, ldr
-            if mode[0][0] == 3 and 100*mode[1][0]/len(types) > 75:
+            if mode[0][0] == xlrd.XL_CELL_DATE and 100*mode[1][0]/len(types) > 75:
                 got_timestamp = True
                 #print " Time stamp is " + xl_label + " for sheet " + xl_sheet
-                if xl_label not in l1ire["xl_sheets"][xl_sheet]:
-                    l1ire["xl_sheets"][xl_sheet][xl_label] = "DateTime"
+                l1ire["xl_sheets"][xl_sheet]["DateTime"] = xl_label
+                if xl_label in l1ire["xl_sheets"][xl_sheet]["xl_labels"]:
+                    del l1ire["xl_sheets"][xl_sheet]["xl_labels"][xl_label]
                 break
         if not got_timestamp:
             msg = " Time stamp not found for sheet " + xl_sheet +", skipping ..."
