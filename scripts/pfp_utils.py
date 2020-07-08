@@ -2079,7 +2079,7 @@ def get_datetime_from_excel_date(values, xl_datemode):
     xl_date = values + 1462*int(xl_datemode)
     base_date = datetime.datetime(1899, 12, 30)
     dt = [base_date + datetime.timedelta(days=xl_date[i]) for i in range(len(values))]
-    return dt
+    return numpy.ma.array(dt)
 
 def get_datetime_from_xldatetime(ds):
     ''' Creates a series of Python datetime objects from the Excel date read from the Excel file.

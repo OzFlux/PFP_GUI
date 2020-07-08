@@ -967,38 +967,40 @@ def ExcelToDataStructures(xl_data, l1_info):
         active_sheet = xl_data[xl_sheet]
         headers = active_sheet.row_values(hdr)
         ldr = int(active_sheet.nrows)
-        ds[xl_sheet].globalattributes["nc_nrecs"] = nrecs = ldr - fdr
-        xl_labels = list(l1ire["xl_sheets"][xl_sheet].keys())
+        # do the datetime first
+        xl_label = l1ire["xl_sheets"][xl_sheet]["DateTime"]
+        msg = " Getting time stamp " + xl_label + " from sheet " + xl_sheet
+        logger.info(msg)
+        col = headers.index(xl_label)
+        values = numpy.array(active_sheet.col_values(col)[fdr:ldr])
+        types = numpy.array(active_sheet.col_types(col)[fdr:ldr])
+        idx = numpy.where(types == xlrd.XL_CELL_DATE)[0]
+        ds[xl_sheet].globalattributes["nc_nrecs"] = nrecs = len(idx)
+        dt = pfp_utils.get_datetime_from_excel_date(values[idx], xl_datemode)
+        var = pfp_utils.CreateEmptyVariable("DateTime", nrecs)
+        var["Label"] = "DateTime"
+        var["Data"] = dt
+        var["Flag"] = numpy.zeros(nrecs)
+        var["Attr"] = {"long_name": "Datetime in local timezone",
+                       "cf_role": "timeseries_id",
+                       "units": "days since 1899-12-31 00:00:00"}
+        pfp_utils.CreateVariable(ds[xl_sheet], var)
+        # now do the rest of the variables for this sheet
+        xl_labels = list(l1ire["xl_sheets"][xl_sheet]["xl_labels"].keys())
         for xl_label in xl_labels:
-            nc_label = l1ire["xl_sheets"][xl_sheet][xl_label]
+            nc_label = l1ire["xl_sheets"][xl_sheet]["xl_labels"][xl_label]
+            msg = " Getting data for " + nc_label + " from sheet " + xl_sheet
+            logger.info(msg)
             col = headers.index(xl_label)
             #print nc_label, xl_label, xl_sheet, col
             values = numpy.array(active_sheet.col_values(col)[fdr:ldr])
             types = numpy.array(active_sheet.col_types(col)[fdr:ldr])
-            mode = scipy.stats.mode(types)
-            #print xl_label, mode[0][0], mode[1][0]
-            if mode[0][0] == 3 and 100*mode[1][0]/nrecs > 75:
-                # time stamp (Excel cell type = 3)
-                msg = " Got time stamp " + xl_label + " from sheet " + xl_sheet
-                logger.info(msg)
-                dt = pfp_utils.get_datetime_from_excel_date(values, xl_datemode)
-                var = pfp_utils.CreateEmptyVariable(nc_label, nrecs)
-                var["Label"] = "DateTime"
-                var["Data"] = numpy.ma.masked_where(types != 3, dt)
-                var["Flag"] = numpy.where(types != 3, numpy.ones(nrecs), numpy.zeros(nrecs))
-                var["Attr"] = {"long_name": "Datetime in local timezone",
-                               "cf_role": "timeseries_id",
-                               "units": "days since 1899-12-31 00:00:00"}
-                pfp_utils.CreateVariable(ds[xl_sheet], var)
-            elif mode[0][0] == 2:
-                msg = " Got data for " + nc_label + " from sheet " + xl_sheet
-                logger.info(msg)
-                var = pfp_utils.CreateEmptyVariable(nc_label, nrecs)
-                var["Label"] = nc_label
-                var["Data"] = numpy.ma.masked_where(types != 2, values)
-                var["Flag"] = numpy.where(types != 2, numpy.ones(nrecs), numpy.zeros(nrecs))
-                var["Attr"] = l1ire["Variables"][nc_label]["Attr"]
-                pfp_utils.CreateVariable(ds[xl_sheet], var)
+            var = pfp_utils.CreateEmptyVariable(nc_label, nrecs)
+            var["Label"] = nc_label
+            var["Data"] = numpy.ma.masked_where(types[idx] != xlrd.XL_CELL_NUMBER, values[idx])
+            var["Flag"] = numpy.where(types[idx] != xlrd.XL_CELL_NUMBER, numpy.ones(nrecs), numpy.zeros(nrecs))
+            var["Attr"] = l1ire["Variables"][nc_label]["Attr"]
+            pfp_utils.CreateVariable(ds[xl_sheet], var)
         # round the Python datetime to the nearest second
         pfp_utils.round_datetime(ds[xl_sheet], mode="nearest_second")
     return ds
