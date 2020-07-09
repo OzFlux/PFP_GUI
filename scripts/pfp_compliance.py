@@ -1,6 +1,7 @@
 # standard modules
 import copy
 import datetime
+import inspect
 import logging
 import ntpath
 import os
@@ -16,6 +17,7 @@ import xlrd
 # PFP modules
 import constants as c
 import pfp_cfg
+import pfp_func
 import pfp_gui
 import pfp_io
 import pfp_ts
@@ -63,17 +65,18 @@ def CheckExcelWorkbook(l1_info):
     l1ire["Global"]["xl_datemode"] = str(xl_book.datemode)
     xl_sheets_present = xl_book.sheet_names()
     for nc_label in nc_labels:
-        xl_sheet = l1ire["Variables"][nc_label]["xl"]["sheet"]
-        xl_label = l1ire["Variables"][nc_label]["xl"]["name"]
-        #print xl_sheet, xl_label, nc_label
-        if xl_sheet not in xl_sheets_present:
-            msg = " Sheet " + xl_sheet + " (" + xl_label + ") not found in workbook, skipping ..."
-            logger.warning(msg)
-            del l1ire["Variables"][nc_label]
-            continue
-        if xl_sheet not in list(l1ire["xl_sheets"].keys()):
-            l1ire["xl_sheets"][xl_sheet] = {"DateTime": "", "xl_labels":{}}
-        l1ire["xl_sheets"][xl_sheet]["xl_labels"][xl_label] = nc_label
+        if "xl" in list(l1ire["Variables"][nc_label].keys()):
+            xl_sheet = l1ire["Variables"][nc_label]["xl"]["sheet"]
+            xl_label = l1ire["Variables"][nc_label]["xl"]["name"]
+            #print xl_sheet, xl_label, nc_label
+            if xl_sheet not in xl_sheets_present:
+                msg = " Sheet " + xl_sheet + " (" + xl_label + ") not found in workbook, skipping ..."
+                logger.warning(msg)
+                del l1ire["Variables"][nc_label]
+                continue
+            if xl_sheet not in list(l1ire["xl_sheets"].keys()):
+                l1ire["xl_sheets"][xl_sheet] = {"DateTime": "", "xl_labels":{}}
+            l1ire["xl_sheets"][xl_sheet]["xl_labels"][xl_label] = nc_label
     # check the requested variables are on the specified sheets
     xl_data = {}
     for xl_sheet in list(l1ire["xl_sheets"].keys()):
@@ -363,23 +366,65 @@ def ParseL1ControlFile(cf):
     l1ire["Variables"] = copy.deepcopy(cf["Variables"])
     # checks of the 'Variables' sections would go here
     for label in list(l1ire["Variables"].keys()):
-        # check the 'xl' and 'Attr' subsections are present
+        # check the 'xl' subsection is present
         ok = True
-        for item in ["xl", "Attr"]:
-            if item not in list(l1ire["Variables"][label].keys()):
-                msg = " Skipping " + label + " (subsection '" + item + "' not found)"
+        if "xl" not in list(l1ire["Variables"][label].keys()):
+            # the xl subsection can be missing if Function is present
+            if "Function" in list(l1ire["Variables"][label].keys()):
+                pass
+            else:
+                msg = " Skipping " + label + " (subsections 'xl' or 'Function' not found)"
                 logger.warning(msg)
                 ok = False
+        # check the 'Attr' subsection is present
+        if "Attr" not in list(l1ire["Variables"][label].keys()):
+            msg = " Skipping " + label + " (subsection 'Attr' not found)"
+            logger.warning(msg)
+            ok = False
         if not ok:
             del l1ire["Variables"][label]
             continue
         # check 'sheet' and 'name' are in the 'xl' subsection
         ok = True
-        for item in ["sheet", "name"]:
-            if item not in list(l1ire["Variables"][label]["xl"].keys()):
-                msg = " Skipping " + label + " (subsection '" + item + "' not found)"
+        if "xl" in list(l1ire["Variables"][label].keys()):
+            for item in ["sheet", "name"]:
+                if item not in list(l1ire["Variables"][label]["xl"].keys()):
+                    msg = " Skipping " + label + " ('" + item + "' not found in 'xl' subsection)"
+                    logger.warning(msg)
+                    ok = False
+        # check the 'Function' subsection
+        elif "Function" in list(l1ire["Variables"][label].keys()):
+            # check 'func' is in the 'Function' subsection
+            if "func" not in list(l1ire["Variables"][label]["Function"].keys()):
+                msg = " Skipping " + label + " ('func' not found in 'Function' subsection)"
                 logger.warning(msg)
                 ok = False
+            # check the function name and arguments
+            else:
+                # get a list of function names in pfp_func
+                implemented_functions_name = [name for name,data in inspect.getmembers(pfp_func,inspect.isfunction)]
+                function_string = l1ire["Variables"][label]["Function"]["func"]
+                function_name = function_string[:function_string.index("(")]
+                # check the function name is implemented
+                if function_name not in implemented_functions_name:
+                    msg = " Skipping " + label + " (function " + function_name + " not implemented)"
+                    logger.warning(msg)
+                    ok = False
+                # check the arguments are being read in
+                else:
+                    function_args = function_string[function_string.index("(")+1:-1].split(",")
+                    for item in function_args:
+                        if item not in list(l1ire["Variables"].keys()):
+                            msg = " Skipping " + label + "(function argument '" + item + "' not found"
+                            logger.warning(msg)
+                            ok = False
+                        else:
+                            pass
+        # we should never get here
+        else:
+            msg = " These are not the droids you are looking for!"
+            logger.error(msg)
+            ok = False
         if not ok:
             del l1ire["Variables"][label]
             continue

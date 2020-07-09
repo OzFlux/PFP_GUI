@@ -1,22 +1,12 @@
 [Variables]
-    [[Ta]]
-        format = 0.00
     [[Ah]]
         format = 0.00
-    [[RH]]
-        format = 0
-    [[SH]]
-        format = 0.0000
     [[CO2]]
         format = 0.0
-    [[H2O]]
-        format = 0.00
-    [[Ws]]
-        format = 0.00
-    [[Wd]]
+    [[Fa]]
         format = 0
-    [[ps]]
-        format = 0.00
+    [[Fg]]
+        format = 0
     [[Fld]]
         format = 0
     [[Flu]]
@@ -27,11 +17,21 @@
         format = 0
     [[Fsu]]
         format = 0
-    [[Ts]]
+    [[H2O]]
         format = 0.00
+    [[ps]]
+        format = 0.00
+    [[RH]]
+        format = 0
+    [[SH]]
+        format = 0.0000
     [[Sws]]
         format = 0.000
-    [[Fg]]
+    [[Ta]]
+        format = 0.00
+    [[Ts]]
+        format = 0.00
+    [[Wd]]
         format = 0
-    [[Fa]]
-        format = 0
+    [[Ws]]
+        format = 0.00

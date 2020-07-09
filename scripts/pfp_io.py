@@ -980,7 +980,7 @@ def ExcelToDataStructures(xl_data, l1_info):
         var = pfp_utils.CreateEmptyVariable("DateTime", nrecs)
         var["Label"] = "DateTime"
         var["Data"] = dt
-        var["Flag"] = numpy.zeros(nrecs)
+        var["Flag"] = numpy.zeros(nrecs, dtype=numpy.int32)
         var["Attr"] = {"long_name": "Datetime in local timezone",
                        "cf_role": "timeseries_id",
                        "units": "days since 1899-12-31 00:00:00"}
@@ -988,18 +988,32 @@ def ExcelToDataStructures(xl_data, l1_info):
         # now do the rest of the variables for this sheet
         xl_labels = list(l1ire["xl_sheets"][xl_sheet]["xl_labels"].keys())
         for xl_label in xl_labels:
+            # get the netCDF variable name
             nc_label = l1ire["xl_sheets"][xl_sheet]["xl_labels"][xl_label]
             msg = " Getting data for " + nc_label + " from sheet " + xl_sheet
             logger.info(msg)
+            # column number on the Excel worksheet
             col = headers.index(xl_label)
-            #print nc_label, xl_label, xl_sheet, col
-            values = numpy.array(active_sheet.col_values(col)[fdr:ldr])
-            types = numpy.array(active_sheet.col_types(col)[fdr:ldr])
+            # col_values and col_types return lists
+            v = active_sheet.col_values(col)[fdr:ldr]
+            t = active_sheet.col_types(col)[fdr:ldr]
+            # replace non-number values with missing data code
+            v = [c.missing_value if tt != xlrd.XL_CELL_NUMBER else vv for vv, tt in zip(v, t)]
+            # make it an array so we can index it
+            values = numpy.array(v)
+            # create an empty variable
             var = pfp_utils.CreateEmptyVariable(nc_label, nrecs)
+            # fill the variable entries
             var["Label"] = nc_label
-            var["Data"] = numpy.ma.masked_where(types[idx] != xlrd.XL_CELL_NUMBER, values[idx])
-            var["Flag"] = numpy.where(types[idx] != xlrd.XL_CELL_NUMBER, numpy.ones(nrecs), numpy.zeros(nrecs))
+            # mask missing data codes
+            var["Data"] = numpy.ma.masked_values(values[idx], c.missing_value)
+            # set the quality control flag
+            var["Flag"] = numpy.where(numpy.ma.getmaskarray(var["Data"]) == True,
+                                      numpy.ones(nrecs, dtype=numpy.int32),
+                                      numpy.zeros(nrecs, dtype=numpy.int32))
+            # copy the attributes
             var["Attr"] = l1ire["Variables"][nc_label]["Attr"]
+            # put the variable into the data structure
             pfp_utils.CreateVariable(ds[xl_sheet], var)
         # round the Python datetime to the nearest second
         pfp_utils.round_datetime(ds[xl_sheet], mode="nearest_second")
