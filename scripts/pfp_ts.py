@@ -807,7 +807,7 @@ def CheckCovarianceUnits(ds):
             if "H" in item: item = item.replace("H","A")
             pfp_utils.CreateSeries(ds,item,data,flag,attr)
 
-def CombineSeries(cf, ds, label, convert_units=False, save_originals=False):
+def CombineSeries(cf, ds, label, convert_units=False, save_originals=False, mode="quiet"):
     """
     Purpose:
      Combine two variables by merging or element-wise averaging.
@@ -826,20 +826,23 @@ def CombineSeries(cf, ds, label, convert_units=False, save_originals=False):
     Author: PRI
     Date: October 2019
     """
-    if label not in cf["Variables"]:
-        msg = " CombineSeries: Variable " + label + " not found in control file"
-        msg += ", skipping ..."
-        logger.warning(msg)
+    if (label not in cf["Variables"]):
+        if mode != "quiet":
+            msg = " CombineSeries: Variable " + label + " not found in control file"
+            msg += ", skipping ..."
+            logger.warning(msg)
         return
     if "MergeSeries" in cf["Variables"][label]:
         MergeSeries(cf, ds, label, convert_units=convert_units, save_originals=save_originals)
     elif "AverageSeries" in cf["Variables"][label]:
         AverageSeriesByElements(cf, ds, label)
     else:
-        msg = " CombineSeries: Neither MergeSeries nor AverageSeries "
-        msg += " option given for variable " + label
-        msg += ", skipping ..."
-        logger.warning(msg)
+        if mode != "quiet":
+            msg = " CombineSeries: Neither MergeSeries nor AverageSeries "
+            msg += " option given for variable " + label
+            msg += ", skipping ..."
+            logger.warning(msg)
+        pass
     return
 
 def CoordRotation2D(cf, ds):
