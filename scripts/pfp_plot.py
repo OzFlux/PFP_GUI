@@ -1036,10 +1036,7 @@ def plot_setup(cf, title):
         p["plot_path"] = os.path.join("plots", cf["level"])
     p['PlotDescription'] = str(title)
     var_string = cf['Plots'][str(title)]['variables']
-    if "," in var_string:
-        p['SeriesList'] = var_string.split(",")
-    else:
-        p['SeriesList'] = [var_string]
+    p['SeriesList'] = pfp_cfg.cfg_string_to_list(var_string)
     p['nGraphs'] = len(p['SeriesList'])
     p['PlotWidth'] = 13
     p['PlotHeight'] = 8
