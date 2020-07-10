@@ -981,6 +981,11 @@ class edit_cfg_L2(QtWidgets.QWidget):
                         self.context_menu.actionSetIRGATypeLi7200.setText("Li-7200")
                         self.context_menu.addAction(self.context_menu.actionSetIRGATypeLi7200)
                         self.context_menu.actionSetIRGATypeLi7200.triggered.connect(self.set_irga_li7200)
+                    if existing_entry != "Li-7200RS":
+                        self.context_menu.actionSetIRGATypeLi7200RS = QtWidgets.QAction(self)
+                        self.context_menu.actionSetIRGATypeLi7200RS.setText("Li-7200RS")
+                        self.context_menu.addAction(self.context_menu.actionSetIRGATypeLi7200RS)
+                        self.context_menu.actionSetIRGATypeLi7200RS.triggered.connect(self.set_irga_li7200RS)
                     if existing_entry != "EC150":
                         self.context_menu.actionSetIRGATypeEC150 = QtWidgets.QAction(self)
                         self.context_menu.actionSetIRGATypeEC150.setText("EC150")
@@ -1351,6 +1356,13 @@ class edit_cfg_L2(QtWidgets.QWidget):
         selected_item = idx.model().itemFromIndex(idx)
         parent = selected_item.parent()
         parent.child(selected_item.row(), 1).setText("Li-7200")
+
+    def set_irga_li7200RS(self):
+        """ Set the IRGA type to Li-7200RS."""
+        idx = self.view.selectedIndexes()[0]
+        selected_item = idx.model().itemFromIndex(idx)
+        parent = selected_item.parent()
+        parent.child(selected_item.row(), 1).setText("Li-7200RS")
 
     def set_irga_ec150(self):
         """ Set the IRGA type to EC150."""
