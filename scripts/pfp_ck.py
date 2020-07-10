@@ -480,7 +480,7 @@ def do_EC155check(cf,ds):
     """
     # check to see if we have a Diag_IRGA series to work with
     if "Diag_IRGA" not in ds.series.keys():
-        msg = " Diag_IRGA not found in data, skipping IRGA checks ..."
+        msg = " IRGA diagnostics not found in data, skipping IRGA checks ..."
         logger.warning(msg)
         return
     # seems OK to continue
@@ -672,7 +672,7 @@ def do_IRGAcheck(cf,ds):
     if irga_type in ["Li-7500", "Li-7500A", "Li-7500A (<V6.5)"]:
         ds.globalattributes["irga_type"] = irga_type
         do_li7500check(cf, ds)
-    elif irga_type in ["Li-7500A (>=V6.5)", "Li-7500RS"]:
+    elif irga_type in ["Li-7500A (>=V6.5)", "Li-7500RS", "Li-7200", "Li-7200RS"]:
         ds.globalattributes["irga_type"] = irga_type
         do_li7500acheck(cf, ds)
     elif irga_type in ["EC150", "EC155", "IRGASON"]:
@@ -781,7 +781,7 @@ def do_li7500acheck(cf,ds):
        Ah_7500_Sd (standard deviation of absolute humidity) and Cc_7500_Sd (standard
        deviation of CO2 concentration).'''
     if "Diag_IRGA" not in ds.series.keys():
-        msg = " Diag_IRGA not found in data, skipping IRGA checks ..."
+        msg = " IRGA diagnostics not found in data, skipping IRGA checks ..."
         logger.warning(msg)
         return
     logger.info(' Doing the 7500A check')
@@ -794,7 +794,9 @@ def do_li7500acheck(cf,ds):
     used_H2O = False
     used_CO2 = False
     LI75_dependents = []
-    for item in ['Signal_H2O','Signal_CO2','H2O_IRGA_Sd','CO2_IRGA_Sd','H2O_IRGA_Vr','CO2_IRGA_Vr']:
+    for item in ['Signal_H2O','Signal_CO2','Signal_Avg',
+                 'H2O_IRGA_Sd','CO2_IRGA_Sd',
+                 'H2O_IRGA_Vr','CO2_IRGA_Vr']:
         if item in ds.series.keys():
             if ("Signal_H2O" in item) or ("Signal_CO2" in item):
                 used_Signal = True
