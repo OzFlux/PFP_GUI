@@ -322,7 +322,7 @@ def do_SONICcheck(cf, ds, code=3):
     if "Diag_SONIC" in series_list:
         pass
     elif "Diag_CSAT" in series_list:
-        ds.series[unicode("Diag_SONIC")] = copy.deepcopy(ds.series["Diag_CSAT"])
+        ds.series["Diag_SONIC"] = copy.deepcopy(ds.series["Diag_CSAT"])
     else:
         msg = " Sonic diagnostics not found in data, skipping sonic checks ..."
         logger.warning(msg)

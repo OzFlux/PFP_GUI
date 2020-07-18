@@ -707,6 +707,11 @@ def gfMDS_createdict(cf, ds, l5_info, label, called_by, flag_code):
     Author: PRI
     Date: May 2018
     """
+    nrecs = int(ds.globalattributes["nc_nrecs"])
+    # make the L5 "description" attrubute for the target variable
+    descr_level = "description_" + ds.globalattributes["nc_level"]
+    ds.series[label]["Attr"][descr_level] = ""
+    # create the solo settings directory
     if called_by not in l5_info:
         l5_info[called_by] = {"outputs": {}, "info": {}}
     # file path and input file name

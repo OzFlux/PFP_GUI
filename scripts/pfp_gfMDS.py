@@ -33,7 +33,7 @@ def GapFillUsingMDS(ds, l5_info, called_by):
     nc_full_path = os.path.join(file_path, file_name)
     nc_name = os.path.split(nc_full_path)[1]
     # get some useful metadata
-    ts = int(ds.globalattributes["nc_nrecs"])
+    ts = int(ds.globalattributes["time_step"])
     site_name = ds.globalattributes["site_name"]
     level = ds.globalattributes["nc_level"]
     # define the MDS input file location
@@ -221,7 +221,7 @@ def gfMDS_make_data_array(ds, current_year, info):
     Date: May 2018
     """
     ldt = pfp_utils.GetVariable(ds, "DateTime")
-    nrecs = ds.globalattributes["nc_nrecs"]
+    nrecs = int(ds.globalattributes["nc_nrecs"])
     ts = int(ds.globalattributes["time_step"])
     start = datetime.datetime(current_year,1,1,0,30,0)
     end = datetime.datetime(current_year+1,1,1,0,0,0)
