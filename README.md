@@ -84,7 +84,7 @@ To run PyFluxPro, follow these steps:
 * 3. After a short time, the PyFluxPro GUI will appear.  This can take a couple of minutes when the program is run for the first time.
 
 # PyFluxPro Examples
-Example data and control files for 2 OzFlux sites, Calperum and Loxton, are available from a GitHub repository, see https://github.com/OzFlux/PFP_examples.  Use the same process described in **Installing PyFluxPro** o install the PyFluxPro examples repository on your local machine.  The site folders contain both the control files and the data files.
+Example data and control files for 2 OzFlux sites, Calperum and Loxton, are available from a GitHub repository, see https://github.com/OzFlux/PFP_examples.  Use the same process described in **Installing PyFluxPro** to install the PyFluxPro examples repository on your local machine.  The site folders contain both the control files and the data files.
 
 # Using PyFluxPro
 Coming to the Wiki soon ...
