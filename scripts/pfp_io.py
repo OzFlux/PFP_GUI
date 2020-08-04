@@ -1,6 +1,5 @@
 # Python modules
 from collections import OrderedDict
-import ast
 import copy
 import csv
 import datetime

@@ -65,11 +65,15 @@ def  gfSOLO_gui(main_gui, ds, l5_info, called_by):
     if l5_info[called_by]["info"]["called_by"] == "GapFillLongSOLO":
         main_gui.solo_gui.setWindowTitle("Gap fill using SOLO (long gaps)")
         main_gui.solo_gui.radioButton_Manual.setChecked(True)
+        main_gui.solo_gui.lineEdit_StartDate.setText(start_date)
+        main_gui.solo_gui.lineEdit_EndDate.setText(end_date)
         main_gui.solo_gui.lineEdit_MinPercent.setText("25")
         main_gui.solo_gui.lineEdit_Nodes.setText("Auto")
         main_gui.solo_gui.checkBox_AutoComplete.setChecked(True)
     elif l5_info[called_by]["info"]["called_by"] == "GapFillUsingSOLO":
         main_gui.solo_gui.setWindowTitle("Gap fill using SOLO (short gaps)")
+        main_gui.solo_gui.lineEdit_StartDate.setText("")
+        main_gui.solo_gui.lineEdit_EndDate.setText("")
         main_gui.solo_gui.radioButton_NumberMonths.setChecked(True)
         main_gui.solo_gui.lineEdit_NumberMonths.setText("2")
         main_gui.solo_gui.lineEdit_MinPercent.setText("25")
@@ -79,6 +83,8 @@ def  gfSOLO_gui(main_gui, ds, l5_info, called_by):
     elif l5_info[called_by]["info"]["called_by"] == "ERUsingSOLO":
         main_gui.solo_gui.setWindowTitle("ER using SOLO")
         main_gui.solo_gui.radioButton_Manual.setChecked(True)
+        main_gui.solo_gui.lineEdit_StartDate.setText(start_date)
+        main_gui.solo_gui.lineEdit_EndDate.setText(end_date)
         main_gui.solo_gui.lineEdit_Nodes.setText("1")
         main_gui.solo_gui.lineEdit_MinPercent.setText("10")
         main_gui.solo_gui.checkBox_AutoComplete.setChecked(True)
