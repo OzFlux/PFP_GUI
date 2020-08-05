@@ -3555,6 +3555,9 @@ class myTreeView(QtWidgets.QTreeView):
         self.setDragEnabled(True)
         self.setAcceptDrops(True)
         self.setDropIndicatorShown(True)
+        # rows have alternating colours and headers
+        self.setAlternatingRowColors(True)
+        self.setHeaderHidden(False)
         # create info dictionary
         self.info = {"one_line_sections": ["Files", "Global", "Options", "Soil", "Massman",
                                            "ustar_threshold"]}
@@ -3653,7 +3656,9 @@ class edit_cfg_L5(QtWidgets.QWidget):
         """ Edit an L5 control file GUI."""
         # get a QTreeView
         self.view = myTreeView()
+        # get a QStandardItemModel
         self.model = QtGui.QStandardItemModel()
+        # add the model to the view
         self.view.setModel(self.model)
         # set the context menu policy
         self.view.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
@@ -3663,13 +3668,6 @@ class edit_cfg_L5(QtWidgets.QWidget):
         vbox.addWidget(self.view)
         self.setLayout(vbox)
         self.setGeometry(300, 300, 600, 400)
-        # Tree view
-        self.view.setAlternatingRowColors(True)
-        self.view.setHeaderHidden(False)
-        #self.view.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectItems)
-        self.view.setModel(self.model)
-        # enable drag and drop
-        #self.view.setDragDropMode(QtWidgets.QAbstractItemView.InternalMove)
         # build the model
         self.get_model_from_data()
         # set the default width for the first column
@@ -3750,10 +3748,7 @@ class edit_cfg_L5(QtWidgets.QWidget):
                 # sections with only 1 level
                 for j in range(section.rowCount()):
                     key2 = str(section.child(j, 0).text())
-                    try:
-                        val2 = str(section.child(j, 1).text())
-                    except:
-                        print "yay"
+                    val2 = str(section.child(j, 1).text())
                     cfg[key1][key2] = val2
             elif key1 in ["Imports", "SummaryPlots"]:
                 # sections with 2 levels
@@ -3799,8 +3794,6 @@ class edit_cfg_L5(QtWidgets.QWidget):
 
     def handleItemChanged(self, item):
         """ Handler for when view items are edited."""
-        # update the control file contents
-        #self.cfg = self.get_data_from_model()
         # update the list of altered series
         self.update_altered_list()
         # add an asterisk to the tab text to indicate the tab contents have changed
@@ -3846,7 +3839,6 @@ class edit_cfg_L5(QtWidgets.QWidget):
                     self.context_menu.actionAddUstarThreshold.setText("Add u* threshold section")
                     self.context_menu.addAction(self.context_menu.actionAddUstarThreshold)
                     self.context_menu.actionAddUstarThreshold.triggered.connect(self.add_ustar_threshold_section)
-                    #add_separator = True
                 if "Imports" not in self.section_headings:
                     if add_separator:
                         self.context_menu.addSeparator()
@@ -3855,7 +3847,6 @@ class edit_cfg_L5(QtWidgets.QWidget):
                     self.context_menu.actionAddImports.setText("Add Imports section")
                     self.context_menu.addAction(self.context_menu.actionAddImports)
                     self.context_menu.actionAddImports.triggered.connect(self.add_imports_section)
-                    #add_separator = True
             elif selected_text == "Output":
                 pass
             elif selected_text == "Options":
@@ -3890,36 +3881,16 @@ class edit_cfg_L5(QtWidgets.QWidget):
                     self.context_menu.actionAddDayNightFilter.setText("DayNightFilter")
                     self.context_menu.addAction(self.context_menu.actionAddDayNightFilter)
                     self.context_menu.actionAddDayNightFilter.triggered.connect(self.add_daynightfilter)
-                #if "UseFsdsyn_threshold" not in existing_entries:
-                    #self.context_menu.actionAddUseFsdsyn_threshold = QtWidgets.QAction(self)
-                    #self.context_menu.actionAddUseFsdsyn_threshold.setText("UseFsdsyn_threshold")
-                    #self.context_menu.addAction(self.context_menu.actionAddUseFsdsyn_threshold)
-                    #self.context_menu.actionAddUseFsdsyn_threshold.triggered.connect(self.add_usefsdsynthreshold)
                 if "AcceptDayTimes" not in existing_entries:
                     self.context_menu.actionAddAcceptDayTimes = QtWidgets.QAction(self)
                     self.context_menu.actionAddAcceptDayTimes.setText("AcceptDayTimes")
                     self.context_menu.addAction(self.context_menu.actionAddAcceptDayTimes)
                     self.context_menu.actionAddAcceptDayTimes.triggered.connect(self.add_acceptdaytimes)
-                #if "UseEveningFilter" not in existing_entries:
-                    #self.context_menu.actionAddUseEveningFilter = QtWidgets.QAction(self)
-                    #self.context_menu.actionAddUseEveningFilter.setText("UseEveningFilter")
-                    #self.context_menu.addAction(self.context_menu.actionAddUseEveningFilter)
-                    #self.context_menu.actionAddUseEveningFilter.triggered.connect(self.add_useeveningfilter)
-                #if "EveningFilterLength" not in existing_entries:
-                    #self.context_menu.actionAddEveningFilterLength = QtWidgets.QAction(self)
-                    #self.context_menu.actionAddEveningFilterLength.setText("EveningFilterLength")
-                    #self.context_menu.addAction(self.context_menu.actionAddEveningFilterLength)
-                    #self.context_menu.actionAddEveningFilterLength.triggered.connect(self.add_eveningfilterlength)
                 if "Fsd_threshold" not in existing_entries:
                     self.context_menu.actionAddFsd_threshold = QtWidgets.QAction(self)
                     self.context_menu.actionAddFsd_threshold.setText("Fsd_threshold")
                     self.context_menu.addAction(self.context_menu.actionAddFsd_threshold)
                     self.context_menu.actionAddFsd_threshold.triggered.connect(self.add_fsdthreshold)
-                #if "sa_threshold" not in existing_entries:
-                    #self.context_menu.actionAddsa_threshold = QtWidgets.QAction(self)
-                    #self.context_menu.actionAddsa_threshold.setText("sa_threshold")
-                    #self.context_menu.addAction(self.context_menu.actionAddsa_threshold)
-                    #self.context_menu.actionAddsa_threshold.triggered.connect(self.add_sathreshold)
                 if "TruncateToImports" not in existing_entries:
                     self.context_menu.actionAddTruncateToImports = QtWidgets.QAction(self)
                     self.context_menu.actionAddTruncateToImports.setText("TruncateToImports")
@@ -4010,7 +3981,6 @@ class edit_cfg_L5(QtWidgets.QWidget):
                 self.context_menu.actionRemoveImportsVariable.setText("Remove variable")
                 self.context_menu.addAction(self.context_menu.actionRemoveImportsVariable)
                 self.context_menu.actionRemoveImportsVariable.triggered.connect(self.remove_item)
-            #elif (str(parent.text()) == "Options") and (selected_item.column() == 1):
             elif (str(parent.text()) == "Options"):
                 key = str(parent.child(selected_item.row(),0).text())
                 if (selected_item.column() == 0):
