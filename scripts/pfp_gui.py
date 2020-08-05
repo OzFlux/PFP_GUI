@@ -3566,7 +3566,7 @@ class myTreeView(QtWidgets.QTreeView):
             self.info["source_parent"] = self.info["source_item"].parent()
             source_parent = self.info["source_parent"]
             self.info["source_key"] = QtGui.QStandardItem(source_parent.child(idxs.row(),0).text())
-            if self.info["source_item"].columnCount() == 0:
+            if self.info["source_parent"].text() in ["Files", "Global", "Options", "Imports", "Massman", "ustar_threshold"]:
                 self.info["source_value"] = QtGui.QStandardItem(source_parent.child(idxs.row(),1).text())
             else:
                 self.info["source_value"] = ""
@@ -3583,7 +3583,7 @@ class myTreeView(QtWidgets.QTreeView):
         source_parent_text = self.info["source_parent"].text()
         if (destination_parent_text == source_parent_text):
             if (self.dropIndicatorPosition() != QtWidgets.QAbstractItemView.OnItem):
-                if (self.info["source_item"].columnCount() == 0):
+                if self.info["source_parent"].text() in ["Files", "Global", "Options", "Imports", "Massman", "ustar_threshold"]:
                     idxs = self.info["source_index"]
                     key = self.info["source_key"]
                     value = self.info["source_value"]
@@ -3956,7 +3956,7 @@ class edit_cfg_L5(QtWidgets.QWidget):
                     self.context_menu.actionBrowseInputFile.triggered.connect(self.browse_input_file)
             elif (str(parent.text()) == "Files") and (selected_item.column() == 0):
                 key = str(parent.child(selected_item.row(),0).text())
-                if key not in ["file_path", "plot_path", "in_filename", "out_filename"]:
+                if key not in ["file_path", "plot_path", "in_filename", "out_filename", "cpd_filename"]:
                     self.context_menu.actionRemoveItem = QtWidgets.QAction(self)
                     self.context_menu.actionRemoveItem.setText("Remove item")
                     self.context_menu.addAction(self.context_menu.actionRemoveItem)
@@ -3968,7 +3968,8 @@ class edit_cfg_L5(QtWidgets.QWidget):
                 self.context_menu.actionRemoveImportsVariable.setText("Remove variable")
                 self.context_menu.addAction(self.context_menu.actionRemoveImportsVariable)
                 self.context_menu.actionRemoveImportsVariable.triggered.connect(self.remove_item)
-            elif (str(parent.text()) == "Options") and (selected_item.column() == 1):
+            #elif (str(parent.text()) == "Options") and (selected_item.column() == 1):
+            elif (str(parent.text()) == "Options"):
                 key = str(parent.child(selected_item.row(),0).text())
                 if (selected_item.column() == 0):
                     self.context_menu.actionRemoveOption = QtWidgets.QAction(self)
