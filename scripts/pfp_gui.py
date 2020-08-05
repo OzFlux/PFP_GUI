@@ -1,4 +1,5 @@
 # standard modules
+from collections import OrderedDict
 import copy
 import inspect
 import logging
@@ -1778,6 +1779,7 @@ class edit_cfg_L3(QtWidgets.QWidget):
         level = self.get_level_selected_item()
         if level == 0:
             add_separator = False
+            # get the selected item text
             selected_text = str(idx.data())
             self.section_headings = []
             root = self.model.invisibleRootItem()
@@ -1896,7 +1898,10 @@ class edit_cfg_L3(QtWidgets.QWidget):
                 self.context_menu.addAction(self.context_menu.actionAddScatterPlot)
                 self.context_menu.actionAddScatterPlot.triggered.connect(self.add_scatterplot)
         elif level == 1:
+            # sections with 2 levels
+            # get the selected item
             selected_item = idx.model().itemFromIndex(idx)
+            # get the parent of the selected item
             parent = selected_item.parent()
             if (str(parent.text()) == "Files") and (selected_item.column() == 1):
                 key = str(parent.child(selected_item.row(),0).text())
@@ -2835,23 +2840,40 @@ class edit_cfg_L4(QtWidgets.QWidget):
         self.context_menu = QtWidgets.QMenu()
         # get the index of the selected item
         idx = self.view.selectedIndexes()[0]
-        # get the selected item text
-        selected_text = str(idx.data())
-        # get the selected item
-        selected_item = idx.model().itemFromIndex(idx)
         # get the level of the selected item
         level = self.get_level_selected_item()
-        # initialise logical for inserting a separator
-        add_separator = False
         if level == 0:
+            add_separator = False
+            # get the selected item text
+            selected_text = str(idx.data())
+            ## get the selected item
+            #selected_item = idx.model().itemFromIndex(idx)
+            self.section_headings = []
+            root = self.model.invisibleRootItem()
+            for i in range(root.rowCount()):
+                self.section_headings.append(str(root.child(i).text()))
+            if "Imports" not in self.section_headings and selected_text == "Files":
+                self.context_menu.actionAddImportsSection = QtWidgets.QAction(self)
+                self.context_menu.actionAddImportsSection.setText("Add Imports section")
+                self.context_menu.addAction(self.context_menu.actionAddImportsSection)
+                self.context_menu.actionAddImportsSection.triggered.connect(self.add_imports_section)
+                add_separator = True
             # sections with only 1 level
             if selected_text == "Files":
                 self.context_menu.actionAddFileEntry = QtWidgets.QAction(self)
                 self.context_menu.actionAddFileEntry.setText("Add item")
                 self.context_menu.addAction(self.context_menu.actionAddFileEntry)
                 self.context_menu.actionAddFileEntry.triggered.connect(self.add_fileentry)
-            elif selected_text == "Output":
-                pass
+            elif selected_text == "Imports":
+                self.context_menu.actionAddImportsVariable = QtWidgets.QAction(self)
+                self.context_menu.actionAddImportsVariable.setText("Add variable")
+                self.context_menu.addAction(self.context_menu.actionAddImportsVariable)
+                self.context_menu.actionAddImportsVariable.triggered.connect(self.add_imports_variable)
+                self.context_menu.addSeparator()
+                self.context_menu.actionRemoveImportsSection = QtWidgets.QAction(self)
+                self.context_menu.actionRemoveImportsSection.setText("Remove section")
+                self.context_menu.addAction(self.context_menu.actionRemoveImportsSection)
+                self.context_menu.actionRemoveImportsSection.triggered.connect(self.remove_section)
             elif selected_text == "Options":
                 # get a list of existing entries
                 existing_entries = self.get_existing_entries()
@@ -2873,6 +2895,10 @@ class edit_cfg_L4(QtWidgets.QWidget):
                 self.context_menu.actionAddVariable.triggered.connect(self.add_new_variable)
         elif level == 1:
             # sections with 2 levels
+            # get the selected item
+            selected_item = idx.model().itemFromIndex(idx)
+            # get the selected item text
+            selected_text = str(idx.data())
             # get the parent of the selected item
             parent = selected_item.parent()
             if (str(parent.text()) == "Files") and (selected_item.column() == 1):
@@ -2906,6 +2932,11 @@ class edit_cfg_L4(QtWidgets.QWidget):
                     self.context_menu.actionRemoveItem.triggered.connect(self.remove_item)
                 else:
                     pass
+            elif (str(parent.text()) == "Imports"):
+                self.context_menu.actionRemoveImportsVariable = QtWidgets.QAction(self)
+                self.context_menu.actionRemoveImportsVariable.setText("Remove variable")
+                self.context_menu.addAction(self.context_menu.actionRemoveImportsVariable)
+                self.context_menu.actionRemoveImportsVariable.triggered.connect(self.remove_item)
             elif (str(parent.text()) == "Options"):
                 key = str(parent.child(selected_item.row(),0).text())
                 if (selected_item.column() == 0):
@@ -3158,6 +3189,25 @@ class edit_cfg_L4(QtWidgets.QWidget):
         dict_to_add = {"New item":""}
         # add the subsection
         self.add_subsection(dict_to_add)
+
+    def add_imports_section(self):
+        """ Add an Imports section."""
+        self.sections["Imports"] = QtGui.QStandardItem("Imports")
+        self.add_imports_variable()
+        self.model.insertRow(self.section_headings.index("Files")+1, self.sections["Imports"])
+        self.update_tab_text()
+
+    def add_imports_variable(self):
+        """ Add a variable to the Imports section."""
+        new_import = {"file_name": "Right click to browse", "var_name": "<variable_name>"}
+        new_variable = QtGui.QStandardItem("New variable")
+        for key in new_import:
+            val = new_import[key]
+            child0 = QtGui.QStandardItem(key)
+            child1 = QtGui.QStandardItem(val)
+            new_variable.appendRow([child0, child1])
+        self.sections["Imports"].appendRow(new_variable)
+        self.update_tab_text()
 
     def add_interpolatetype(self):
         """ Add InterpolateType to the [Options] section."""
@@ -3461,12 +3511,130 @@ class edit_cfg_L4(QtWidgets.QWidget):
             parent.removeRow(selected_item.row())
         self.update_tab_text()
 
+    def remove_section(self):
+        """ Remove a section from the view."""
+        # loop over selected items in the tree
+        idx = self.view.selectedIndexes()[0]
+        # get the selected item from the index
+        selected_item = idx.model().itemFromIndex(idx)
+        # get the root
+        root = self.model.invisibleRootItem()
+        # remove the row
+        root.removeRow(selected_item.row())
+        self.update_tab_text()
+
     def update_tab_text(self):
         """ Add an asterisk to the tab title text to indicate tab contents have changed."""
         # add an asterisk to the tab text to indicate the tab contents have changed
         tab_text = str(self.tabs.tabText(self.tabs.tab_index_current))
         if "*" not in tab_text:
             self.tabs.setTabText(self.tabs.tab_index_current, tab_text+"*")
+
+class myTreeView(QtWidgets.QTreeView):
+    """
+    Purpose:
+     Subclass of QTreeView with the dragEnterEvent() and dropEvent() methods overloaded
+     to constrain drag and drop moves within the control file. The following drag
+     and drop rules are implemented:
+     1) items can only be dropped within the section from which they originate.
+     2) items can't be dropped on top of other items.
+    Usage:
+     view = myTreeView()
+    Author: PRI
+    Date: August 2020
+    """
+    def __init__(self):
+        QtWidgets.QTreeView.__init__(self)
+        # disable multiple selections
+        self.setSelectionMode(self.SingleSelection)
+        # enable selction of single cells
+        self.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectItems)
+        # enable drag and drop as internal move only
+        self.setDragDropMode(QtWidgets.QAbstractItemView.InternalMove)
+        # enable drag and drop
+        self.setDragEnabled(True)
+        self.setAcceptDrops(True)
+        self.setDropIndicatorShown(True)
+        # create info dictionary
+        self.info = {"one_line_sections": ["Files", "Global", "Options", "Soil", "Massman",
+                                           "ustar_threshold"]}
+
+    def dragEnterEvent(self, event):
+        """
+        Purpose:
+         Re-implement the standard dragEnterEvent to get the behaviour we want.
+        Usage:
+        Author: PRI
+        Date: August 2020
+        """
+        # wrap in a try ... except to trap unforseen events (quick but dirty)
+        try:
+            self.setDropIndicatorShown(True)
+            # index of selected item
+            idxs = self.selectedIndexes()[0]
+            # only enable event if user has clicked in first column
+            if idxs.column() == 0:
+                # save some stuff needed for the drop event
+                self.info["source_index"] = idxs
+                self.info["source_item"] = idxs.model().itemFromIndex(idxs)
+                self.info["source_parent"] = self.info["source_item"].parent()
+                source_parent = self.info["source_parent"]
+                self.info["source_key"] = QtGui.QStandardItem(source_parent.child(idxs.row(),0).text())
+                # second column only available if section in "one_line_sections"
+                if self.info["source_parent"].text() in self.info["one_line_sections"]:
+                    self.info["source_value"] = QtGui.QStandardItem(source_parent.child(idxs.row(),1).text())
+                else:
+                    self.info["source_value"] = QtGui.QStandardItem("")
+                # accept this event
+                event.accept()
+            else:
+                # ignore everything else
+                event.ignore()
+        except:
+            event.ignore()
+
+    def dropEvent(self, event):
+        """
+        Purpose:
+         Re-implement the standard dropEvent to get the behaviour we want.
+        Usage:
+        Author: PRI
+        Date: August 2020
+        """
+        # wrap in a try ... except to trap unforseen events (dirty coding)
+        try:
+            # index of the item under the drop
+            idxd = self.indexAt(event.pos())
+            # save so useful stuff
+            self.info["destination_index"] = idxd
+            self.info["destination_item"] = idxd.model().itemFromIndex(idxd)
+            self.info["destination_parent"] = self.info["destination_item"].parent()
+            destination_parent_text = self.info["destination_parent"].text()
+            source_parent_text = self.info["source_parent"].text()
+            # only allow drag and drop within the same section
+            if (destination_parent_text == source_parent_text):
+                # don't allow drop on another item
+                if (self.dropIndicatorPosition() != QtWidgets.QAbstractItemView.OnItem):
+                    # use special drop event code for one line sections
+                    if self.info["source_parent"].text() in self.info["one_line_sections"]:
+                        idxs = self.info["source_index"]
+                        key = self.info["source_key"]
+                        value = self.info["source_value"]
+                        self.info["source_parent"].removeRow(idxs.row())
+                        self.info["source_parent"].insertRow(idxd.row(), [key, value])
+                        event.accept()
+                    else:
+                        # use standard drop event code for everything else
+                        QtWidgets.QTreeView.dropEvent(self, event)
+                else:
+                    # ignore everything else
+                    event.ignore()
+            else:
+                event.ignore()
+        except:
+            event.ignore()
+        # refresh the GUI
+        self.model().layoutChanged.emit()
 
 class edit_cfg_L5(QtWidgets.QWidget):
     def __init__(self, main_gui):
@@ -3484,8 +3652,9 @@ class edit_cfg_L5(QtWidgets.QWidget):
     def edit_l5_gui(self):
         """ Edit an L5 control file GUI."""
         # get a QTreeView
-        self.view = QtWidgets.QTreeView()
+        self.view = myTreeView()
         self.model = QtGui.QStandardItemModel()
+        self.view.setModel(self.model)
         # set the context menu policy
         self.view.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
         # connect the context menu requested signal to appropriate slot
@@ -3497,10 +3666,10 @@ class edit_cfg_L5(QtWidgets.QWidget):
         # Tree view
         self.view.setAlternatingRowColors(True)
         self.view.setHeaderHidden(False)
-        self.view.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectItems)
+        #self.view.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectItems)
         self.view.setModel(self.model)
         # enable drag and drop
-        self.view.setDragDropMode(QtWidgets.QAbstractItemView.InternalMove)
+        #self.view.setDragDropMode(QtWidgets.QAbstractItemView.InternalMove)
         # build the model
         self.get_model_from_data()
         # set the default width for the first column
@@ -3581,7 +3750,10 @@ class edit_cfg_L5(QtWidgets.QWidget):
                 # sections with only 1 level
                 for j in range(section.rowCount()):
                     key2 = str(section.child(j, 0).text())
-                    val2 = str(section.child(j, 1).text())
+                    try:
+                        val2 = str(section.child(j, 1).text())
+                    except:
+                        print "yay"
                     cfg[key1][key2] = val2
             elif key1 in ["Imports", "SummaryPlots"]:
                 # sections with 2 levels
@@ -3628,7 +3800,7 @@ class edit_cfg_L5(QtWidgets.QWidget):
     def handleItemChanged(self, item):
         """ Handler for when view items are edited."""
         # update the control file contents
-        self.cfg = self.get_data_from_model()
+        #self.cfg = self.get_data_from_model()
         # update the list of altered series
         self.update_altered_list()
         # add an asterisk to the tab text to indicate the tab contents have changed
@@ -3636,6 +3808,7 @@ class edit_cfg_L5(QtWidgets.QWidget):
 
     def context_menu(self, position):
         """ Right click context menu."""
+        self.view.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectItems)
         # get a menu
         self.context_menu = QtWidgets.QMenu()
         # get the index of the selected item
@@ -3651,33 +3824,38 @@ class edit_cfg_L5(QtWidgets.QWidget):
         if level == 0:
             # sections with only 1 level
             # get a list of the section headings at the root level
-            section_headings = []
+            self.section_headings = []
             root = self.model.invisibleRootItem()
             for i in range(root.rowCount()):
-                section_headings.append(str(root.child(i).text()))
-            if "SummaryPlots" not in section_headings:
-                self.context_menu.actionAddSummaryPlots = QtWidgets.QAction(self)
-                self.context_menu.actionAddSummaryPlots.setText("Add summary plots section")
-                self.context_menu.addAction(self.context_menu.actionAddSummaryPlots)
-                self.context_menu.actionAddSummaryPlots.triggered.connect(self.add_summary_plots_section)
-                add_separator = True
-            if "ustar_threshold" not in section_headings:
-                self.context_menu.actionAddUstarThreshold = QtWidgets.QAction(self)
-                self.context_menu.actionAddUstarThreshold.setText("Add u* threshold section")
-                self.context_menu.addAction(self.context_menu.actionAddUstarThreshold)
-                self.context_menu.actionAddUstarThreshold.triggered.connect(self.add_ustar_threshold_section)
-                add_separator = True
-            if "Imports" not in section_headings:
-                self.context_menu.actionAddImports = QtWidgets.QAction(self)
-                self.context_menu.actionAddImports.setText("Add Imports section")
-                self.context_menu.addAction(self.context_menu.actionAddImports)
-                self.context_menu.actionAddImports.triggered.connect(self.add_imports_section)
-                add_separator = True
+                self.section_headings.append(str(root.child(i).text()))
             if selected_text == "Files":
-                self.context_menu.actionAddFileEntry = QtWidgets.QAction(self)
-                self.context_menu.actionAddFileEntry.setText("Add item")
-                self.context_menu.addAction(self.context_menu.actionAddFileEntry)
-                self.context_menu.actionAddFileEntry.triggered.connect(self.add_fileentry)
+                # get a list of existing entries in this section
+                existing_entries = self.get_existing_entries()
+                for item in ["plot_path", "file_path", "in_filename", "out_filename", "cpd_filename"]:
+                    if item not in existing_entries:
+                        self.context_menu.actionAddFileEntry = QtWidgets.QAction(self)
+                        self.context_menu.actionAddFileEntry.setText("Add " + item)
+                        self.context_menu.addAction(self.context_menu.actionAddFileEntry)
+                        self.context_menu.actionAddFileEntry.triggered.connect(lambda:self.add_fileentry(item))
+                        add_separator = True
+                if "ustar_threshold" not in self.section_headings:
+                    if add_separator:
+                        self.context_menu.addSeparator()
+                        add_separator = False
+                    self.context_menu.actionAddUstarThreshold = QtWidgets.QAction(self)
+                    self.context_menu.actionAddUstarThreshold.setText("Add u* threshold section")
+                    self.context_menu.addAction(self.context_menu.actionAddUstarThreshold)
+                    self.context_menu.actionAddUstarThreshold.triggered.connect(self.add_ustar_threshold_section)
+                    #add_separator = True
+                if "Imports" not in self.section_headings:
+                    if add_separator:
+                        self.context_menu.addSeparator()
+                        add_separator = False
+                    self.context_menu.actionAddImports = QtWidgets.QAction(self)
+                    self.context_menu.actionAddImports.setText("Add Imports section")
+                    self.context_menu.addAction(self.context_menu.actionAddImports)
+                    self.context_menu.actionAddImports.triggered.connect(self.add_imports_section)
+                    #add_separator = True
             elif selected_text == "Output":
                 pass
             elif selected_text == "Options":
@@ -3712,41 +3890,46 @@ class edit_cfg_L5(QtWidgets.QWidget):
                     self.context_menu.actionAddDayNightFilter.setText("DayNightFilter")
                     self.context_menu.addAction(self.context_menu.actionAddDayNightFilter)
                     self.context_menu.actionAddDayNightFilter.triggered.connect(self.add_daynightfilter)
-                if "UseFsdsyn_threshold" not in existing_entries:
-                    self.context_menu.actionAddUseFsdsyn_threshold = QtWidgets.QAction(self)
-                    self.context_menu.actionAddUseFsdsyn_threshold.setText("UseFsdsyn_threshold")
-                    self.context_menu.addAction(self.context_menu.actionAddUseFsdsyn_threshold)
-                    self.context_menu.actionAddUseFsdsyn_threshold.triggered.connect(self.add_usefsdsynthreshold)
+                #if "UseFsdsyn_threshold" not in existing_entries:
+                    #self.context_menu.actionAddUseFsdsyn_threshold = QtWidgets.QAction(self)
+                    #self.context_menu.actionAddUseFsdsyn_threshold.setText("UseFsdsyn_threshold")
+                    #self.context_menu.addAction(self.context_menu.actionAddUseFsdsyn_threshold)
+                    #self.context_menu.actionAddUseFsdsyn_threshold.triggered.connect(self.add_usefsdsynthreshold)
                 if "AcceptDayTimes" not in existing_entries:
                     self.context_menu.actionAddAcceptDayTimes = QtWidgets.QAction(self)
                     self.context_menu.actionAddAcceptDayTimes.setText("AcceptDayTimes")
                     self.context_menu.addAction(self.context_menu.actionAddAcceptDayTimes)
                     self.context_menu.actionAddAcceptDayTimes.triggered.connect(self.add_acceptdaytimes)
-                if "UseEveningFilter" not in existing_entries:
-                    self.context_menu.actionAddUseEveningFilter = QtWidgets.QAction(self)
-                    self.context_menu.actionAddUseEveningFilter.setText("UseEveningFilter")
-                    self.context_menu.addAction(self.context_menu.actionAddUseEveningFilter)
-                    self.context_menu.actionAddUseEveningFilter.triggered.connect(self.add_useeveningfilter)
-                if "EveningFilterLength" not in existing_entries:
-                    self.context_menu.actionAddEveningFilterLength = QtWidgets.QAction(self)
-                    self.context_menu.actionAddEveningFilterLength.setText("EveningFilterLength")
-                    self.context_menu.addAction(self.context_menu.actionAddEveningFilterLength)
-                    self.context_menu.actionAddEveningFilterLength.triggered.connect(self.add_eveningfilterlength)
+                #if "UseEveningFilter" not in existing_entries:
+                    #self.context_menu.actionAddUseEveningFilter = QtWidgets.QAction(self)
+                    #self.context_menu.actionAddUseEveningFilter.setText("UseEveningFilter")
+                    #self.context_menu.addAction(self.context_menu.actionAddUseEveningFilter)
+                    #self.context_menu.actionAddUseEveningFilter.triggered.connect(self.add_useeveningfilter)
+                #if "EveningFilterLength" not in existing_entries:
+                    #self.context_menu.actionAddEveningFilterLength = QtWidgets.QAction(self)
+                    #self.context_menu.actionAddEveningFilterLength.setText("EveningFilterLength")
+                    #self.context_menu.addAction(self.context_menu.actionAddEveningFilterLength)
+                    #self.context_menu.actionAddEveningFilterLength.triggered.connect(self.add_eveningfilterlength)
                 if "Fsd_threshold" not in existing_entries:
                     self.context_menu.actionAddFsd_threshold = QtWidgets.QAction(self)
                     self.context_menu.actionAddFsd_threshold.setText("Fsd_threshold")
                     self.context_menu.addAction(self.context_menu.actionAddFsd_threshold)
                     self.context_menu.actionAddFsd_threshold.triggered.connect(self.add_fsdthreshold)
-                if "sa_threshold" not in existing_entries:
-                    self.context_menu.actionAddsa_threshold = QtWidgets.QAction(self)
-                    self.context_menu.actionAddsa_threshold.setText("sa_threshold")
-                    self.context_menu.addAction(self.context_menu.actionAddsa_threshold)
-                    self.context_menu.actionAddsa_threshold.triggered.connect(self.add_sathreshold)
+                #if "sa_threshold" not in existing_entries:
+                    #self.context_menu.actionAddsa_threshold = QtWidgets.QAction(self)
+                    #self.context_menu.actionAddsa_threshold.setText("sa_threshold")
+                    #self.context_menu.addAction(self.context_menu.actionAddsa_threshold)
+                    #self.context_menu.actionAddsa_threshold.triggered.connect(self.add_sathreshold)
                 if "TruncateToImports" not in existing_entries:
                     self.context_menu.actionAddTruncateToImports = QtWidgets.QAction(self)
                     self.context_menu.actionAddTruncateToImports.setText("TruncateToImports")
                     self.context_menu.addAction(self.context_menu.actionAddTruncateToImports)
                     self.context_menu.actionAddTruncateToImports.triggered.connect(self.add_truncatetoimports)
+                if "KeepIntermediateSeries" not in existing_entries:
+                    self.context_menu.actionAddKeepIntermediateSeries = QtWidgets.QAction(self)
+                    self.context_menu.actionAddKeepIntermediateSeries.setText("KeepIntermediateSeries")
+                    self.context_menu.addAction(self.context_menu.actionAddKeepIntermediateSeries)
+                    self.context_menu.actionAddKeepIntermediateSeries.triggered.connect(self.add_keepintermediateseries)
             elif selected_text in ["Fluxes", "Variables"]:
                 self.context_menu.actionAddVariable = QtWidgets.QAction(self)
                 self.context_menu.actionAddVariable.setText("Add variable")
@@ -3754,7 +3937,7 @@ class edit_cfg_L5(QtWidgets.QWidget):
                 self.context_menu.actionAddVariable.triggered.connect(self.add_new_variable)
             elif selected_text in ["ustar_threshold"]:
                 self.context_menu.actionAddUstarThreshold = QtWidgets.QAction(self)
-                self.context_menu.actionAddUstarThreshold.setText("Add year")
+                self.context_menu.actionAddUstarThreshold.setText("Add date range")
                 self.context_menu.addAction(self.context_menu.actionAddUstarThreshold)
                 self.context_menu.actionAddUstarThreshold.triggered.connect(self.add_ustar_threshold_daterange)
                 self.context_menu.addSeparator()
@@ -3815,13 +3998,19 @@ class edit_cfg_L5(QtWidgets.QWidget):
                     self.context_menu.actionBrowseInputFile.triggered.connect(self.browse_input_file)
             elif (str(parent.text()) == "Files") and (selected_item.column() == 0):
                 key = str(parent.child(selected_item.row(),0).text())
-                if key not in ["file_path", "plot_path", "in_filename", "out_filename"]:
+                if key not in ["file_path", "plot_path", "in_filename", "out_filename", "cpd_filename"]:
                     self.context_menu.actionRemoveItem = QtWidgets.QAction(self)
                     self.context_menu.actionRemoveItem.setText("Remove item")
                     self.context_menu.addAction(self.context_menu.actionRemoveItem)
                     self.context_menu.actionRemoveItem.triggered.connect(self.remove_item)
                 else:
                     pass
+            elif (str(parent.text()) == "Imports"):
+                self.context_menu.actionRemoveImportsVariable = QtWidgets.QAction(self)
+                self.context_menu.actionRemoveImportsVariable.setText("Remove variable")
+                self.context_menu.addAction(self.context_menu.actionRemoveImportsVariable)
+                self.context_menu.actionRemoveImportsVariable.triggered.connect(self.remove_item)
+            #elif (str(parent.text()) == "Options") and (selected_item.column() == 1):
             elif (str(parent.text()) == "Options"):
                 key = str(parent.child(selected_item.row(),0).text())
                 if (selected_item.column() == 0):
@@ -3829,6 +4018,17 @@ class edit_cfg_L5(QtWidgets.QWidget):
                     self.context_menu.actionRemoveOption.setText("Remove option")
                     self.context_menu.addAction(self.context_menu.actionRemoveOption)
                     self.context_menu.actionRemoveOption.triggered.connect(self.remove_item)
+                elif (selected_item.column() == 1) and (key == "AcceptDayTimes"):
+                    if selected_text != "Yes":
+                        self.context_menu.actionChangeAcceptDayTimes = QtWidgets.QAction(self)
+                        self.context_menu.actionChangeAcceptDayTimes.setText("Yes")
+                        self.context_menu.addAction(self.context_menu.actionChangeAcceptDayTimes)
+                        self.context_menu.actionChangeAcceptDayTimes.triggered.connect(lambda:self.change_selected_text("Yes"))
+                    if selected_text != "No":
+                        self.context_menu.actionChangeAcceptDayTimes = QtWidgets.QAction(self)
+                        self.context_menu.actionChangeAcceptDayTimes.setText("No")
+                        self.context_menu.addAction(self.context_menu.actionChangeAcceptDayTimes)
+                        self.context_menu.actionChangeAcceptDayTimes.triggered.connect(lambda:self.change_selected_text("No"))
                 elif (selected_item.column() == 1) and (key == "InterpolateType"):
                     if selected_text != "linear":
                         self.context_menu.actionChangeInterpolateType = QtWidgets.QAction(self)
@@ -3840,6 +4040,45 @@ class edit_cfg_L5(QtWidgets.QWidget):
                         self.context_menu.actionChangeInterpolateType.setText("Akima")
                         self.context_menu.addAction(self.context_menu.actionChangeInterpolateType)
                         self.context_menu.actionChangeInterpolateType.triggered.connect(lambda:self.change_selected_text("Akima"))
+                elif (selected_item.column() == 1) and (key == "KeepIntermediateSeries"):
+                    if selected_text != "Yes":
+                        self.context_menu.actionChangeKeepIntermediateSeries = QtWidgets.QAction(self)
+                        self.context_menu.actionChangeKeepIntermediateSeries.setText("Yes")
+                        self.context_menu.addAction(self.context_menu.actionChangeKeepIntermediateSeries)
+                        self.context_menu.actionChangeKeepIntermediateSeries.triggered.connect(lambda:self.change_selected_text("Yes"))
+                    if selected_text != "No":
+                        self.context_menu.actionChangeKeepIntermediateSeries = QtWidgets.QAction(self)
+                        self.context_menu.actionChangeKeepIntermediateSeries.setText("No")
+                        self.context_menu.addAction(self.context_menu.actionChangeKeepIntermediateSeries)
+                        self.context_menu.actionChangeKeepIntermediateSeries.triggered.connect(lambda:self.change_selected_text("No"))
+                elif (selected_item.column() == 1) and (key == "TruncateToImports"):
+                    if selected_text != "Yes":
+                        self.context_menu.actionChangeTruncateToImports = QtWidgets.QAction(self)
+                        self.context_menu.actionChangeTruncateToImports.setText("Yes")
+                        self.context_menu.addAction(self.context_menu.actionChangeTruncateToImports)
+                        self.context_menu.actionChangeTruncateToImports.triggered.connect(lambda:self.change_selected_text("Yes"))
+                    if selected_text != "No":
+                        self.context_menu.actionChangeTruncateToImports = QtWidgets.QAction(self)
+                        self.context_menu.actionChangeTruncateToImports.setText("No")
+                        self.context_menu.addAction(self.context_menu.actionChangeTruncateToImports)
+                        self.context_menu.actionChangeTruncateToImports.triggered.connect(lambda:self.change_selected_text("No"))
+                elif (selected_item.column() == 1) and (key == "TurbulenceFilter"):
+                    existing_entry = str(parent.child(selected_item.row(),1).text())
+                    if existing_entry != "ustar":
+                        self.context_menu.actionSetTurbulanceFilter2ustar = QtWidgets.QAction(self)
+                        self.context_menu.actionSetTurbulanceFilter2ustar.setText("ustar")
+                        self.context_menu.addAction(self.context_menu.actionSetTurbulanceFilter2ustar)
+                        self.context_menu.actionSetTurbulanceFilter2ustar.triggered.connect(self.set_ustar)
+                    if existing_entry != "ustar_persist":
+                        self.context_menu.actionSetTurbulanceFilter2ustarpersist = QtWidgets.QAction(self)
+                        self.context_menu.actionSetTurbulanceFilter2ustarpersist.setText("ustar_persist")
+                        self.context_menu.addAction(self.context_menu.actionSetTurbulanceFilter2ustarpersist)
+                        self.context_menu.actionSetTurbulanceFilter2ustarpersist.triggered.connect(self.set_ustar_persist)
+                    if existing_entry != "L":
+                        self.context_menu.actionSetTurbulanceFilter2L = QtWidgets.QAction(self)
+                        self.context_menu.actionSetTurbulanceFilter2L.setText("L")
+                        self.context_menu.addAction(self.context_menu.actionSetTurbulanceFilter2L)
+                        self.context_menu.actionSetTurbulanceFilter2L.triggered.connect(self.set_L)
             elif (str(parent.text()) in ["Fluxes", "Variables"]):
                 # get a list of existing entries
                 existing_entries = self.get_existing_entries()
@@ -3861,12 +4100,6 @@ class edit_cfg_L5(QtWidgets.QWidget):
                     self.context_menu.actionAddMDS.setText("Add MDS")
                     self.context_menu.addAction(self.context_menu.actionAddMDS)
                     self.context_menu.actionAddMDS.triggered.connect(self.add_MDS)
-                    add_separator = True
-                if "GapFillFromClimatology" not in existing_entries:
-                    self.context_menu.actionAddClimatology = QtWidgets.QAction(self)
-                    self.context_menu.actionAddClimatology.setText("Add Climatology")
-                    self.context_menu.addAction(self.context_menu.actionAddClimatology)
-                    self.context_menu.actionAddClimatology.triggered.connect(self.add_climatology)
                     add_separator = True
                 if add_separator:
                     add_separator = False
@@ -3989,7 +4222,7 @@ class edit_cfg_L5(QtWidgets.QWidget):
         """ Add GapFillUsingSOLO to a variable."""
         idx = self.view.selectedIndexes()[0]
         var_name = str(idx.data()) + "_SOLO"
-        dict_to_add = {"GapFillUsingSOLO":{var_name: {"drivers": "Fn,Fg,q,VPD,Ta,Ts"}}}
+        dict_to_add = {"GapFillUsingSOLO":{var_name: {"drivers": "Fn,Fg,SH,VPD,Ta,Ts"}}}
         # add the subsubsection (GapFillUsingSOLO)
         self.add_subsubsubsection(dict_to_add)
         # update the Merge section
@@ -4004,7 +4237,7 @@ class edit_cfg_L5(QtWidgets.QWidget):
         """ Add GapFillLongSOLO to a variable."""
         idx = self.view.selectedIndexes()[0]
         var_name = str(idx.data()) + "_LONG"
-        dict_to_add = {"GapFillLongSOLO":{var_name: {"drivers": "Fn,Fg,q,VPD,Ta,Ts,EVI"}}}
+        dict_to_add = {"GapFillLongSOLO":{var_name: {"drivers": "Fn,Fg,SH,VPD,Ta,Ts,EVI"}}}
         # add the subsubsection (GapFillUsingSOLO)
         self.add_subsubsubsection(dict_to_add)
         # update the Merge section
@@ -4020,21 +4253,6 @@ class edit_cfg_L5(QtWidgets.QWidget):
         dict_to_add = {"solo_settings":"5,500,5,0.001,500"}
         # add the subsubsection (GapFillFromAlternate)
         self.add_subsection(dict_to_add)
-
-    def add_climatology(self):
-        """ Add GapFillFromClimatology to a variable."""
-        idx = self.view.selectedIndexes()[0]
-        var_name = str(idx.data()) + "_cli"
-        dict_to_add = {"GapFillFromClimatology": {var_name: {"method":"interpolated daily"}}}
-        # add the subsubsection (GapFillFromClimatology)
-        self.add_subsubsubsection(dict_to_add)
-        # update the Merge section
-        selected_item =idx.model().itemFromIndex(idx)
-        for i in range(selected_item.rowCount()):
-            if str(selected_item.child(i, 0).text()) == "MergeSeries":
-                sources = str(selected_item.child(i).child(0, 1).text())
-                sources = sources + "," + var_name
-                selected_item.child(i).child(0,1).setText(sources)
 
     def add_dependencycheck(self):
         """ Add a dependency check to a variable."""
@@ -4073,9 +4291,9 @@ class edit_cfg_L5(QtWidgets.QWidget):
         # update the list of altered series
         self.update_altered_list()
 
-    def add_fileentry(self):
+    def add_fileentry(self, item):
         """ Add a new entry to the [Files] section."""
-        dict_to_add = {"New item":""}
+        dict_to_add = {item: "Right click to browse"}
         # add the subsection
         self.add_subsection(dict_to_add)
 
@@ -4083,20 +4301,21 @@ class edit_cfg_L5(QtWidgets.QWidget):
         """ Add an Imports section."""
         self.sections["Imports"] = QtGui.QStandardItem("Imports")
         self.add_imports_variable()
-        self.model.appendRow(self.sections["Imports"])
+        idx = self.section_headings.index("Files")+1
+        self.model.insertRow(idx, self.sections["Imports"])
+        self.section_headings.insert(idx, "Imports")
         self.update_tab_text()
 
     def add_imports_variable(self):
-        """ Add a new variable to the 'Imports' section."""
-        new_import = {"source": "", "file_name": "Right click to browse",
-                      "var_name": ""}
-        parent = QtGui.QStandardItem("New variable")
+        """ Add a variable to the Imports section."""
+        new_import = {"file_name": "Right click to browse", "var_name": "<variable_name>"}
+        new_variable = QtGui.QStandardItem("New variable")
         for key in new_import:
-            value = new_import[key]
+            val = new_import[key]
             child0 = QtGui.QStandardItem(key)
-            child1 = QtGui.QStandardItem(str(value))
-            parent.appendRow([child0, child1])
-        self.sections["Imports"].appendRow(parent)
+            child1 = QtGui.QStandardItem(val)
+            new_variable.appendRow([child0, child1])
+        self.sections["Imports"].appendRow(new_variable)
         self.update_tab_text()
 
     def add_interpolatetype(self):
@@ -4126,6 +4345,12 @@ class edit_cfg_L5(QtWidgets.QWidget):
         # update the tab text with an asterix if required
         self.update_tab_text()
 
+    def add_keepintermediateseries(self):
+        """ Add KeepIntermediateSeries to the [Options] section."""
+        dict_to_add = {"KeepIntermediateSeries": "No"}
+        # add the subsection
+        self.add_subsection(dict_to_add)
+
     def add_maxgapinterpolate(self):
         """ Add MaxGapInterpolate to the [Options] section."""
         dict_to_add = {"MaxGapInterpolate": "3"}
@@ -4134,7 +4359,7 @@ class edit_cfg_L5(QtWidgets.QWidget):
 
     def add_maxshortgapdays(self):
         """ Add MaxShortGapDays to the [Options] section."""
-        dict_to_add = {"MaxShortGapDays": "30"}
+        dict_to_add = {"MaxShortGapDays": "14"}
         # add the subsection
         self.add_subsection(dict_to_add)
 
@@ -4230,7 +4455,9 @@ class edit_cfg_L5(QtWidgets.QWidget):
         child0 = QtGui.QStandardItem("0")
         child1 = QtGui.QStandardItem("YYYY-mm-dd HH:MM, YYYY-mm-dd HH:MM, <ustar_threshold>")
         self.sections["ustar_threshold"].appendRow([child0, child1])
-        self.model.appendRow(self.sections["ustar_threshold"])
+        idx = self.section_headings.index("Fluxes")
+        self.model.insertRow(idx, self.sections["ustar_threshold"])
+        self.section_headings.insert(idx, "ustar_threshold")
         self.update_tab_text()
 
     def add_ustar_threshold_daterange(self):
@@ -4321,13 +4548,15 @@ class edit_cfg_L5(QtWidgets.QWidget):
     def add_new_variable(self):
         """ Add a new variable."""
         gfSOLO = {"<var>_SOLO": {"drivers": ""}}
-        gfMDS = {"<var>_MDS": {"drivers": "Fsd,Ta,VPD", "tolerances": "(20, 50), 2.5, 0.5"}}
-        gfCLIM = {"<var>_cli": {"method": "interpolated daily"}}
-        gfMS = {"source": "<var>,<var>_SOLO,<var>_MDS,<var>_cli"}
-        d2a = {"New variable": {"GapFillUsingSOLO": gfSOLO,
-                                "GapFillUsingMDS": gfMDS,
-                                "GapFillFromClimatology": gfCLIM,
-                                "MergeSeries": gfMS}}
+        gfLONG = {"<var>_LONG": {"drivers": ""}}
+        gfMDS = {"<var>_MDS": {"drivers": "Fsd,Ta,VPD", "tolerances": "(20,50),2.5,0.5"}}
+        gfMS = {"source": "<var>,<var>_MDS,<var>_SOLO,<var>_LONG"}
+        var_dict = OrderedDict()
+        var_dict["GapFillUsingMDS"] = gfMDS
+        var_dict["GapFillUsingSOLO"] = gfSOLO
+        var_dict["GapFillLongSOLO"] = gfLONG
+        var_dict["MergeSeries"] = gfMS
+        d2a = {"<var>": var_dict}
         self.add_variable(d2a)
         # update the tab text with an asterix if required
         self.update_tab_text()
@@ -4339,7 +4568,7 @@ class edit_cfg_L5(QtWidgets.QWidget):
             # key3 is the gap filling method
             for key3 in d2a[key2]:
                 parent3 = QtGui.QStandardItem(key3)
-                if key3 in ["GapFillUsingSOLO", "GapFillUsingMDS", "GapFillFromClimatology"]:
+                if key3 in ["GapFillUsingMDS", "GapFillUsingSOLO", "GapFillLongSOLO"]:
                     # key4 is the gap fill variable name
                     for key4 in d2a[key2][key3]:
                         parent4 = QtGui.QStandardItem(key4)
@@ -4569,11 +4798,35 @@ class edit_cfg_L5(QtWidgets.QWidget):
         idx = self.view.selectedIndexes()[0]
         # get the selected item from the index
         selected_item = idx.model().itemFromIndex(idx)
+        # remove the entry from the section_headings list
+        self.section_headings.remove(selected_item.text())
         # get the root
         root = self.model.invisibleRootItem()
         # remove the row
         root.removeRow(selected_item.row())
+        # update the tab text
         self.update_tab_text()
+
+    def set_L(self):
+        """ Set the turbulence filter to L."""
+        idx = self.view.selectedIndexes()[0]
+        selected_item = idx.model().itemFromIndex(idx)
+        parent = selected_item.parent()
+        parent.child(selected_item.row(), 1).setText("L")
+
+    def set_ustar(self):
+        """ Set the turbulence filter to ustar."""
+        idx = self.view.selectedIndexes()[0]
+        selected_item = idx.model().itemFromIndex(idx)
+        parent = selected_item.parent()
+        parent.child(selected_item.row(), 1).setText("ustar")
+
+    def set_ustar_persist(self):
+        """ Set the turbulence filter to ustar_persist."""
+        idx = self.view.selectedIndexes()[0]
+        selected_item = idx.model().itemFromIndex(idx)
+        parent = selected_item.parent()
+        parent.child(selected_item.row(), 1).setText("ustar_persist")
 
     def update_altered_list(self):
         """ Update the list of entries in the control file that have been altered."""
@@ -4770,13 +5023,51 @@ class edit_cfg_L6(QtWidgets.QWidget):
         add_separator = False
         if level == 0:
             # sections with only 1 level
+            self.section_headings = []
+            root = self.model.invisibleRootItem()
+            for i in range(root.rowCount()):
+                self.section_headings.append(str(root.child(i).text()))
+            if "Imports" not in self.section_headings and selected_text == "Files":
+                self.context_menu.actionAddImportsSection = QtWidgets.QAction(self)
+                self.context_menu.actionAddImportsSection.setText("Add Imports section")
+                self.context_menu.addAction(self.context_menu.actionAddImportsSection)
+                self.context_menu.actionAddImportsSection.triggered.connect(self.add_imports_section)
+                add_separator = True
             if selected_text == "Files":
-                self.context_menu.actionAddFileEntry = QtWidgets.QAction(self)
-                self.context_menu.actionAddFileEntry.setText("Add item")
-                self.context_menu.addAction(self.context_menu.actionAddFileEntry)
-                self.context_menu.actionAddFileEntry.triggered.connect(self.add_fileentry)
-            elif selected_text == "Output":
-                pass
+                if add_separator:
+                    self.context_menu.addSeparator()
+                    add_separator = False
+                existing_entries = self.get_existing_entries()
+                if "file_path" not in existing_entries:
+                    self.context_menu.actionAddfile_path = QtWidgets.QAction(self)
+                    self.context_menu.actionAddfile_path.setText("Add file_path")
+                    self.context_menu.addAction(self.context_menu.actionAddfile_path)
+                    self.context_menu.actionAddfile_path.triggered.connect(self.add_file_path)
+                if "in_filename" not in existing_entries:
+                    self.context_menu.actionAddin_filename = QtWidgets.QAction(self)
+                    self.context_menu.actionAddin_filename.setText("Add in_filename")
+                    self.context_menu.addAction(self.context_menu.actionAddin_filename)
+                    self.context_menu.actionAddin_filename.triggered.connect(self.add_in_filename)
+                if "out_filename" not in existing_entries:
+                    self.context_menu.actionAddout_filename = QtWidgets.QAction(self)
+                    self.context_menu.actionAddout_filename.setText("Add out_filename")
+                    self.context_menu.addAction(self.context_menu.actionAddout_filename)
+                    self.context_menu.actionAddout_filename.triggered.connect(self.add_out_filename)
+                if "plot_path" not in existing_entries:
+                    self.context_menu.actionAddplot_path = QtWidgets.QAction(self)
+                    self.context_menu.actionAddplot_path.setText("Add plot_path")
+                    self.context_menu.addAction(self.context_menu.actionAddplot_path)
+                    self.context_menu.actionAddplot_path.triggered.connect(self.add_plot_path)
+            elif selected_text == "Imports":
+                self.context_menu.actionAddImportsVariable = QtWidgets.QAction(self)
+                self.context_menu.actionAddImportsVariable.setText("Add variable")
+                self.context_menu.addAction(self.context_menu.actionAddImportsVariable)
+                self.context_menu.actionAddImportsVariable.triggered.connect(self.add_imports_variable)
+                self.context_menu.addSeparator()
+                self.context_menu.actionRemoveImportsSection = QtWidgets.QAction(self)
+                self.context_menu.actionRemoveImportsSection.setText("Remove section")
+                self.context_menu.addAction(self.context_menu.actionRemoveImportsSection)
+                self.context_menu.actionRemoveImportsSection.triggered.connect(self.remove_section)
             elif selected_text == "Options":
                 # get a list of existing entries in this section
                 existing_entries = self.get_existing_entries()
@@ -4878,6 +5169,25 @@ class edit_cfg_L6(QtWidgets.QWidget):
         dict_to_add = {"New attribute":""}
         # add the subsection
         self.add_subsection(dict_to_add)
+
+    def add_imports_section(self):
+        """ Add an Imports section."""
+        self.sections["Imports"] = QtGui.QStandardItem("Imports")
+        self.add_imports_variable()
+        self.model.insertRow(self.section_headings.index("Files")+1, self.sections["Imports"])
+        self.update_tab_text()
+
+    def add_imports_variable(self):
+        """ Add a variable to the Imports section."""
+        new_import = {"file_name": "Right click to browse", "var_name": "<variable_name>"}
+        new_variable = QtGui.QStandardItem("New variable")
+        for key in new_import:
+            val = new_import[key]
+            child0 = QtGui.QStandardItem(key)
+            child1 = QtGui.QStandardItem(val)
+            new_variable.appendRow([child0, child1])
+        self.sections["Imports"].appendRow(new_variable)
+        self.update_tab_text()
 
     def add_maxgapinterpolate(self):
         """ Add MaxGapInterpolate to the [Options] section."""
@@ -5005,6 +5315,18 @@ class edit_cfg_L6(QtWidgets.QWidget):
             parent = selected_item.parent()
             # remove the row
             parent.removeRow(selected_item.row())
+        self.update_tab_text()
+
+    def remove_section(self):
+        """ Remove a section from the view."""
+        # loop over selected items in the tree
+        idx = self.view.selectedIndexes()[0]
+        # get the selected item from the index
+        selected_item = idx.model().itemFromIndex(idx)
+        # get the root
+        root = self.model.invisibleRootItem()
+        # remove the row
+        root.removeRow(selected_item.row())
         self.update_tab_text()
 
     def update_tab_text(self):
