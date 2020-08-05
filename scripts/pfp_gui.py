@@ -3545,49 +3545,78 @@ class myTreeView(QtWidgets.QTreeView):
     """
     def __init__(self):
         QtWidgets.QTreeView.__init__(self)
-        #model = Model()
-        #self.setModel(model)
-
+        # disable multiple selections
         self.setSelectionMode(self.SingleSelection)
+        # enable selction of single cells
         self.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectItems)
+        # enable drag and drop as internal move only
         self.setDragDropMode(QtWidgets.QAbstractItemView.InternalMove)
+        # enable drag and drop
         self.setDragEnabled(True)
         self.setAcceptDrops(True)
         self.setDropIndicatorShown(True)
-
-        self.info = {}
+        # create info dictionary
+        self.info = {"one_line_sections": ["Files", "Global", "Options", "Soil", "Massman",
+                                           "ustar_threshold"]}
 
     def dragEnterEvent(self, event):
+        """
+        Purpose:
+         Re-implement the standard dragEnterEvent to get the behaviour we want.
+        Usage:
+        Author: PRI
+        Date: August 2020
+        """
+        # wrap in a try ... except to trap unforseen events (quick but dirty)
         try:
             self.setDropIndicatorShown(True)
+            # index of selected item
             idxs = self.selectedIndexes()[0]
+            # only enable event if user has clicked in first column
             if idxs.column() == 0:
+                # save some stuff needed for the drop event
                 self.info["source_index"] = idxs
                 self.info["source_item"] = idxs.model().itemFromIndex(idxs)
                 self.info["source_parent"] = self.info["source_item"].parent()
                 source_parent = self.info["source_parent"]
                 self.info["source_key"] = QtGui.QStandardItem(source_parent.child(idxs.row(),0).text())
-                if self.info["source_parent"].text() in ["Files", "Global", "Options", "Massman", "ustar_threshold"]:
+                # second column only available if section in "one_line_sections"
+                if self.info["source_parent"].text() in self.info["one_line_sections"]:
                     self.info["source_value"] = QtGui.QStandardItem(source_parent.child(idxs.row(),1).text())
                 else:
-                    self.info["source_value"] = ""
+                    self.info["source_value"] = QtGui.QStandardItem("")
+                # accept this event
                 event.accept()
             else:
+                # ignore everything else
                 event.ignore()
         except:
             event.ignore()
 
     def dropEvent(self, event):
+        """
+        Purpose:
+         Re-implement the standard dropEvent to get the behaviour we want.
+        Usage:
+        Author: PRI
+        Date: August 2020
+        """
+        # wrap in a try ... except to trap unforseen events (dirty coding)
         try:
+            # index of the item under the drop
             idxd = self.indexAt(event.pos())
+            # save so useful stuff
             self.info["destination_index"] = idxd
             self.info["destination_item"] = idxd.model().itemFromIndex(idxd)
             self.info["destination_parent"] = self.info["destination_item"].parent()
             destination_parent_text = self.info["destination_parent"].text()
             source_parent_text = self.info["source_parent"].text()
+            # only allow drag and drop within the same section
             if (destination_parent_text == source_parent_text):
+                # don't allow drop on another item
                 if (self.dropIndicatorPosition() != QtWidgets.QAbstractItemView.OnItem):
-                    if self.info["source_parent"].text() in ["Files", "Global", "Options", "Massman", "ustar_threshold"]:
+                    # use special drop event code for one line sections
+                    if self.info["source_parent"].text() in self.info["one_line_sections"]:
                         idxs = self.info["source_index"]
                         key = self.info["source_key"]
                         value = self.info["source_value"]
@@ -3595,13 +3624,16 @@ class myTreeView(QtWidgets.QTreeView):
                         self.info["source_parent"].insertRow(idxd.row(), [key, value])
                         event.accept()
                     else:
+                        # use standard drop event code for everything else
                         QtWidgets.QTreeView.dropEvent(self, event)
                 else:
+                    # ignore everything else
                     event.ignore()
             else:
                 event.ignore()
         except:
             event.ignore()
+        # refresh the GUI
         self.model().layoutChanged.emit()
 
 class edit_cfg_L5(QtWidgets.QWidget):
