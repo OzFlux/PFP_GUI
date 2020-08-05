@@ -3558,43 +3558,49 @@ class myTreeView(QtWidgets.QTreeView):
         self.info = {}
 
     def dragEnterEvent(self, event):
-        self.setDropIndicatorShown(True)
-        idxs = self.selectedIndexes()[0]
-        if idxs.column() == 0:
-            self.info["source_index"] = idxs
-            self.info["source_item"] = idxs.model().itemFromIndex(idxs)
-            self.info["source_parent"] = self.info["source_item"].parent()
-            source_parent = self.info["source_parent"]
-            self.info["source_key"] = QtGui.QStandardItem(source_parent.child(idxs.row(),0).text())
-            if self.info["source_parent"].text() in ["Files", "Global", "Options", "Imports", "Massman", "ustar_threshold"]:
-                self.info["source_value"] = QtGui.QStandardItem(source_parent.child(idxs.row(),1).text())
+        try:
+            self.setDropIndicatorShown(True)
+            idxs = self.selectedIndexes()[0]
+            if idxs.column() == 0:
+                self.info["source_index"] = idxs
+                self.info["source_item"] = idxs.model().itemFromIndex(idxs)
+                self.info["source_parent"] = self.info["source_item"].parent()
+                source_parent = self.info["source_parent"]
+                self.info["source_key"] = QtGui.QStandardItem(source_parent.child(idxs.row(),0).text())
+                if self.info["source_parent"].text() in ["Files", "Global", "Options", "Massman", "ustar_threshold"]:
+                    self.info["source_value"] = QtGui.QStandardItem(source_parent.child(idxs.row(),1).text())
+                else:
+                    self.info["source_value"] = ""
+                event.accept()
             else:
-                self.info["source_value"] = ""
-            event.accept()
-        else:
+                event.ignore()
+        except:
             event.ignore()
 
     def dropEvent(self, event):
-        idxd = self.indexAt(event.pos())
-        self.info["destination_index"] = idxd
-        self.info["destination_item"] = idxd.model().itemFromIndex(idxd)
-        self.info["destination_parent"] = self.info["destination_item"].parent()
-        destination_parent_text = self.info["destination_parent"].text()
-        source_parent_text = self.info["source_parent"].text()
-        if (destination_parent_text == source_parent_text):
-            if (self.dropIndicatorPosition() != QtWidgets.QAbstractItemView.OnItem):
-                if self.info["source_parent"].text() in ["Files", "Global", "Options", "Imports", "Massman", "ustar_threshold"]:
-                    idxs = self.info["source_index"]
-                    key = self.info["source_key"]
-                    value = self.info["source_value"]
-                    self.info["source_parent"].removeRow(idxs.row())
-                    self.info["source_parent"].insertRow(idxd.row(), [key, value])
-                    event.accept()
+        try:
+            idxd = self.indexAt(event.pos())
+            self.info["destination_index"] = idxd
+            self.info["destination_item"] = idxd.model().itemFromIndex(idxd)
+            self.info["destination_parent"] = self.info["destination_item"].parent()
+            destination_parent_text = self.info["destination_parent"].text()
+            source_parent_text = self.info["source_parent"].text()
+            if (destination_parent_text == source_parent_text):
+                if (self.dropIndicatorPosition() != QtWidgets.QAbstractItemView.OnItem):
+                    if self.info["source_parent"].text() in ["Files", "Global", "Options", "Massman", "ustar_threshold"]:
+                        idxs = self.info["source_index"]
+                        key = self.info["source_key"]
+                        value = self.info["source_value"]
+                        self.info["source_parent"].removeRow(idxs.row())
+                        self.info["source_parent"].insertRow(idxd.row(), [key, value])
+                        event.accept()
+                    else:
+                        QtWidgets.QTreeView.dropEvent(self, event)
                 else:
-                    QtWidgets.QTreeView.dropEvent(self, event)
+                    event.ignore()
             else:
                 event.ignore()
-        else:
+        except:
             event.ignore()
         self.model().layoutChanged.emit()
 
@@ -3791,11 +3797,15 @@ class edit_cfg_L5(QtWidgets.QWidget):
             for i in range(root.rowCount()):
                 self.section_headings.append(str(root.child(i).text()))
             if selected_text == "Files":
-                self.context_menu.actionAddFileEntry = QtWidgets.QAction(self)
-                self.context_menu.actionAddFileEntry.setText("Add item")
-                self.context_menu.addAction(self.context_menu.actionAddFileEntry)
-                self.context_menu.actionAddFileEntry.triggered.connect(self.add_fileentry)
-                add_separator = True
+                # get a list of existing entries in this section
+                existing_entries = self.get_existing_entries()
+                for item in ["plot_path", "file_path", "in_filename", "out_filename", "cpd_filename"]:
+                    if item not in existing_entries:
+                        self.context_menu.actionAddFileEntry = QtWidgets.QAction(self)
+                        self.context_menu.actionAddFileEntry.setText("Add " + item)
+                        self.context_menu.addAction(self.context_menu.actionAddFileEntry)
+                        self.context_menu.actionAddFileEntry.triggered.connect(lambda:self.add_fileentry(item))
+                        add_separator = True
                 if "ustar_threshold" not in self.section_headings:
                     if add_separator:
                         self.context_menu.addSeparator()
@@ -4249,9 +4259,9 @@ class edit_cfg_L5(QtWidgets.QWidget):
         # update the list of altered series
         self.update_altered_list()
 
-    def add_fileentry(self):
+    def add_fileentry(self, item):
         """ Add a new entry to the [Files] section."""
-        dict_to_add = {"New item":""}
+        dict_to_add = {item: "Right click to browse"}
         # add the subsection
         self.add_subsection(dict_to_add)
 
@@ -4259,7 +4269,9 @@ class edit_cfg_L5(QtWidgets.QWidget):
         """ Add an Imports section."""
         self.sections["Imports"] = QtGui.QStandardItem("Imports")
         self.add_imports_variable()
-        self.model.insertRow(self.section_headings.index("Files")+1, self.sections["Imports"])
+        idx = self.section_headings.index("Files")+1
+        self.model.insertRow(idx, self.sections["Imports"])
+        self.section_headings.insert(idx, "Imports")
         self.update_tab_text()
 
     def add_imports_variable(self):
@@ -4411,7 +4423,9 @@ class edit_cfg_L5(QtWidgets.QWidget):
         child0 = QtGui.QStandardItem("0")
         child1 = QtGui.QStandardItem("YYYY-mm-dd HH:MM, YYYY-mm-dd HH:MM, <ustar_threshold>")
         self.sections["ustar_threshold"].appendRow([child0, child1])
-        self.model.appendRow(self.sections["ustar_threshold"])
+        idx = self.section_headings.index("Fluxes")
+        self.model.insertRow(idx, self.sections["ustar_threshold"])
+        self.section_headings.insert(idx, "ustar_threshold")
         self.update_tab_text()
 
     def add_ustar_threshold_daterange(self):
@@ -4752,10 +4766,13 @@ class edit_cfg_L5(QtWidgets.QWidget):
         idx = self.view.selectedIndexes()[0]
         # get the selected item from the index
         selected_item = idx.model().itemFromIndex(idx)
+        # remove the entry from the section_headings list
+        self.section_headings.remove(selected_item.text())
         # get the root
         root = self.model.invisibleRootItem()
         # remove the row
         root.removeRow(selected_item.row())
+        # update the tab text
         self.update_tab_text()
 
     def set_L(self):
