@@ -1,5 +1,12 @@
 version_name = "PyFluxPro"
-version_number = "V1.0.1"
+version_number = "V1.0.2"
+# V1.0.2 - 6th August 2020 (long oerdue version change)
+#        - check GitHub for what has been done since
+#          5th August 2019
+#        - most recent changes are:
+#          - implementation of pfp_gui.TreeView() subclassed from QTreeView
+#            to get the drag and drop behaviour we want
+#          - rename Eva's second ustar filter method to "ustar (EvGb)"
 # V1.0.1 - 5th August 2019
 #        - remove redundant SOLO code at L6
 #        - implement L1 to L4 batch processing
