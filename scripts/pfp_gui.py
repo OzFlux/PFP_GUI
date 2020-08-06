@@ -4039,11 +4039,11 @@ class edit_cfg_L5(QtWidgets.QWidget):
                         self.context_menu.actionSetTurbulanceFilter2ustar.setText("ustar")
                         self.context_menu.addAction(self.context_menu.actionSetTurbulanceFilter2ustar)
                         self.context_menu.actionSetTurbulanceFilter2ustar.triggered.connect(self.set_ustar)
-                    if existing_entry != "ustar_persist":
-                        self.context_menu.actionSetTurbulanceFilter2ustarpersist = QtWidgets.QAction(self)
-                        self.context_menu.actionSetTurbulanceFilter2ustarpersist.setText("ustar_persist")
-                        self.context_menu.addAction(self.context_menu.actionSetTurbulanceFilter2ustarpersist)
-                        self.context_menu.actionSetTurbulanceFilter2ustarpersist.triggered.connect(self.set_ustar_persist)
+                    if existing_entry != "ustar (EvGb)":
+                        self.context_menu.actionSetTurbulanceFilter2ustar_evgb = QtWidgets.QAction(self)
+                        self.context_menu.actionSetTurbulanceFilter2ustar_evgb.setText("ustar (EvGb)")
+                        self.context_menu.addAction(self.context_menu.actionSetTurbulanceFilter2ustar_evgb)
+                        self.context_menu.actionSetTurbulanceFilter2ustar_evgb.triggered.connect(self.set_ustar_evgb)
                     if existing_entry != "L":
                         self.context_menu.actionSetTurbulanceFilter2L = QtWidgets.QAction(self)
                         self.context_menu.actionSetTurbulanceFilter2L.setText("L")
@@ -4791,12 +4791,12 @@ class edit_cfg_L5(QtWidgets.QWidget):
         parent = selected_item.parent()
         parent.child(selected_item.row(), 1).setText("ustar")
 
-    def set_ustar_persist(self):
-        """ Set the turbulence filter to ustar_persist."""
+    def set_ustar_evgb(self):
+        """ Set the turbulence filter to ustar_evgb."""
         idx = self.view.selectedIndexes()[0]
         selected_item = idx.model().itemFromIndex(idx)
         parent = selected_item.parent()
-        parent.child(selected_item.row(), 1).setText("ustar_persist")
+        parent.child(selected_item.row(), 1).setText("ustar (EvGb)")
 
     def update_altered_list(self):
         """ Update the list of entries in the control file that have been altered."""

@@ -877,7 +877,7 @@ def get_turbulence_indicator_ustar(ldt, ustar, ustar_dict, ts):
         #print year, len(idx), ei-si+1
     return turbulence_indicator
 
-def get_turbulence_indicator_ustar_evg(ldt, ind_day, ind_ustar, ustar, ustar_dict):
+def get_turbulence_indicator_ustar_evgb(ldt, ind_day, ind_ustar, ustar, ustar_dict):
     """
     Purpose:
      Returns a dictionary containing an indicator series and some attributes.

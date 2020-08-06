@@ -110,14 +110,14 @@ def ApplyTurbulenceFilter(cf, ds, l5_info, ustar_threshold=None):
     if opt["turbulence_filter"].lower() == "ustar":
         # indicators["turbulence"] = 1 ==> turbulent, indicators["turbulence"] = 0 ==> not turbulent
         indicators["turbulence"] = pfp_rp.get_turbulence_indicator_ustar(ldt, ustar, ustar_dict, ts)
-    elif opt["turbulence_filter"].lower() == "ustar_evg":
+    elif opt["turbulence_filter"].lower() == "ustar (evgb)":
         # ustar >= threshold ==> ind_ustar = 1, ustar < threshold == ind_ustar = 0
         indicators["ustar"] = pfp_rp.get_turbulence_indicator_ustar(ldt, ustar, ustar_dict, ts)
         ind_ustar = indicators["ustar"]["values"]
         # ustar >= threshold during day AND ustar has been >= threshold since sunset ==> indicators["turbulence"] = 1
         # indicators["turbulence"] = 0 during night once ustar has dropped below threshold even if it
         # increases above the threshold later in the night
-        indicators["turbulence"] = pfp_rp.get_turbulence_indicator_ustar_evg(ldt, ind_day, ind_ustar, ustar, ustar_dict)
+        indicators["turbulence"] = pfp_rp.get_turbulence_indicator_ustar_evgb(ldt, ind_day, ind_ustar, ustar, ustar_dict)
     elif opt["turbulence_filter"].lower() == "l":
         #indicators["turbulence] = get_turbulence_indicator_l(ldt,L,z,d,zmdonL_threshold)
         indicators["turbulence"] = numpy.ones(len(ldt))
@@ -247,7 +247,7 @@ def ApplyTurbulenceFilter_checks(cf, ds):
         opt["OK"] = False
         return opt
     # check to see if filter type can be handled
-    if opt["turbulence_filter"].lower() not in ["ustar", "ustar_evg", "l"]:
+    if opt["turbulence_filter"].lower() not in ["ustar", "ustar (evgb)", "l"]:
         msg = " Unrecognised turbulence filter option ("
         msg = msg+opt["turbulence_filter"]+"), no filter applied"
         logger.error(msg)
