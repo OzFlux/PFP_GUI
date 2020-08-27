@@ -164,19 +164,27 @@ def l3qc(cf, ds2):
     # **************************
     # *** CO2 and Fc section ***
     # **************************
-    # convert CO2 units if required
-    pfp_utils.ConvertCO2Units(cf, ds3, CO2=CO2)
-    # calculate Fc storage term - single height only at present
-    pfp_ts.CalculateFcStorageSinglePoint(cf, ds3, Fc_out='Fc_single', CO2_in=CO2)
-    # convert Fc and Fc_storage units if required
-    #pfp_utils.ConvertFcUnits(cf, ds3)
-    Fc_list = ["Fc", "Fc_single", "Fc_profile", "Fc_storage"]
-    pfp_utils.CheckUnits(ds3, Fc_list, "umol/m2/s", convert_units=True)
     # merge Fc and Fc_storage series if required
     cfv = cf["Variables"]
     merge_list = [l for l in cfv.keys() if l[0:2] == "Fc" and "MergeSeries" in cfv[l].keys()]
     for label in merge_list:
         pfp_ts.CombineSeries(cf, ds3, label, save_originals=True)
+    # convert CO2 units if required
+    pfp_utils.ConvertCO2Units(cf, ds3, CO2=CO2)
+    # calculate Fc storage term - single height only at present
+    pfp_ts.CalculateFcStorageSinglePoint(cf, ds3, Fc_out='Fc_single', CO2_in=CO2)
+    # convert Fc units if required
+    ## PRI 27/08/2020 reinstate use of pfp_utils.ConvertFcUnits()
+    pfp_utils.ConvertFcUnits(cf, ds3)
+    #Fc_list = ["Fc", "Fc_PFP", "Fc_single", "Fc_profile", "Fc_storage"]
+    #Fc_list = [l for l in ds3.series.keys() if l[0:2] == "Fc" and "Flag" not in l]
+    #pfp_utils.CheckUnits(ds3, Fc_list, "umol/m2/s", convert_units=True)
+    ## PRI 27/08/2020 move merge before single point storage calculation
+    ## merge Fc and Fc_storage series if required
+    #cfv = cf["Variables"]
+    #merge_list = [l for l in cfv.keys() if l[0:2] == "Fc" and "MergeSeries" in cfv[l].keys()]
+    #for label in merge_list:
+        #pfp_ts.CombineSeries(cf, ds3, label, save_originals=True)
     # correct Fc for storage term - only recommended if storage calculated from profile available
     pfp_ts.CorrectFcForStorage(cf, ds3)
     # *************************

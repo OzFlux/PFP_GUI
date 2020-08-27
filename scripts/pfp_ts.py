@@ -1309,7 +1309,7 @@ def CorrectFgForStorage(cf,ds,Fg_out='Fg',Fg_in='Fg',Ts_in='Ts',Sws_in='Sws'):
     if len(iom) != 0:
         msg = "  CorrectFgForStorage: default soil moisture used for "
         msg += str(len(iom)) + " values"
-        logger.warning(msg)
+        logger.info(msg)
         Sws[iom] = Sws_default
     # get the soil temperature difference from time step to time step
     dTs = numpy.ma.zeros(nRecs)
@@ -1616,87 +1616,118 @@ def DoFunctions(ds, info):
             logger.info(msg)
 
 def CalculateStandardDeviations(ds):
+    """
+    Purpose:
+     Calculate standard deviations from variances and vice versa.
+    Usage:
+     pfp_ts.CalculateStandardDeviations(ds)
+     where ds is a data structure
+    Author: PRI
+    Date: Back in the day
+    """
     logger.info(' Getting variances from standard deviations & vice versa')
-    if 'AhAh' in ds.series.keys() and 'Ah_7500_Sd' not in ds.series.keys():
-        AhAh,flag,attr = pfp_utils.GetSeriesasMA(ds,'AhAh')
-        Ah_7500_Sd = numpy.ma.sqrt(AhAh)
-        attr = pfp_utils.MakeAttributeDictionary(long_name='Absolute humidity from IRGA, standard deviation',units='g/m3')
-        pfp_utils.CreateSeries(ds,'Ah_7500_Sd',Ah_7500_Sd,flag,attr)
-    if 'Ah_7500_Sd' in ds.series.keys() and 'AhAh' not in ds.series.keys():
-        Ah_7500_Sd,flag,attr = pfp_utils.GetSeriesasMA(ds,'Ah_7500_Sd')
-        AhAh = Ah_7500_Sd*Ah_7500_Sd
-        attr = pfp_utils.MakeAttributeDictionary(long_name='Absolute humidity from IRGA, variance',units='(g/m3)2')
-        pfp_utils.CreateSeries(ds,'AhAh',AhAh,flag,attr)
-    if 'Ah_IRGA_Vr' in ds.series.keys() and 'Ah_IRGA_Sd' not in ds.series.keys():
-        Ah_IRGA_Vr,flag,attr = pfp_utils.GetSeriesasMA(ds,'Ah_IRGA_Vr')
-        Ah_IRGA_Sd = numpy.ma.sqrt(Ah_IRGA_Vr)
-        attr = pfp_utils.MakeAttributeDictionary(long_name='Absolute humidity from IRGA, standard deviation',units='g/m3')
-        pfp_utils.CreateSeries(ds,'Ah_IRGA_Sd',Ah_IRGA_Sd,flag,attr)
-    if 'Ah_IRGA_Sd' in ds.series.keys() and 'Ah_IRGA_Vr' not in ds.series.keys():
-        Ah_IRGA_Sd,flag,attr = pfp_utils.GetSeriesasMA(ds,'Ah_IRGA_Sd')
-        Ah_IRGA_Vr = Ah_IRGA_Sd*Ah_IRGA_Sd
-        attr = pfp_utils.MakeAttributeDictionary(long_name='Absolute humidity from IRGA, variance',units='(g/m3)2')
-        pfp_utils.CreateSeries(ds,'Ah_IRGA_Vr',Ah_IRGA_Vr,flag,attr)
-    if 'H2O_IRGA_Vr' in ds.series.keys() and 'H2O_IRGA_Sd' not in ds.series.keys():
-        H2O_IRGA_Vr,flag,attr = pfp_utils.GetSeriesasMA(ds,'H2O_IRGA_Vr')
-        H2O_IRGA_Sd = numpy.ma.sqrt(H2O_IRGA_Vr)
-        attr = pfp_utils.MakeAttributeDictionary(long_name='Absolute humidity from IRGA, standard deviation',units='g/m3')
-        pfp_utils.CreateSeries(ds,'H2O_IRGA_Sd',H2O_IRGA_Sd,flag,attr)
-    if 'H2O_IRGA_Sd' in ds.series.keys() and 'H2O_IRGA_Vr' not in ds.series.keys():
-        H2O_IRGA_Sd,flag,attr = pfp_utils.GetSeriesasMA(ds,'H2O_IRGA_Sd')
-        H2O_IRGA_Vr = H2O_IRGA_Sd*H2O_IRGA_Sd
-        attr = pfp_utils.MakeAttributeDictionary(long_name='Absolute humidity from IRGA, variance',units='(g/m3)2')
-        pfp_utils.CreateSeries(ds,'H2O_IRGA_Vr',H2O_IRGA_Vr,flag,attr)
-    if 'CcCc' in ds.series.keys() and 'Cc_7500_Sd' not in ds.series.keys():
-        CcCc,flag,attr = pfp_utils.GetSeriesasMA(ds,'CcCc')
-        Cc_7500_Sd = numpy.ma.sqrt(CcCc)
-        attr = pfp_utils.MakeAttributeDictionary(long_name='CO2 concentration from IRGA, standard deviation',units='mg/m3')
-        pfp_utils.CreateSeries(ds,'Cc_7500_Sd',Cc_7500_Sd,flag,attr)
-    if 'CO2_IRGA_Sd' in ds.series.keys() and 'CO2_IRGA_Vr' not in ds.series.keys():
-        CO2_IRGA_Sd,flag,attr = pfp_utils.GetSeriesasMA(ds,'CO2_IRGA_Sd')
-        CO2_IRGA_Vr = CO2_IRGA_Sd*CO2_IRGA_Sd
-        attr = pfp_utils.MakeAttributeDictionary(long_name='CO2 concentration from IRGA, variance',units='(mg/m3)2')
-        pfp_utils.CreateSeries(ds,'CO2_IRGA_Vr',CO2_IRGA_Vr,flag,attr)
-    if 'Cc_7500_Sd' in ds.series.keys() and 'CcCc' not in ds.series.keys():
-        Cc_7500_Sd,flag,attr = pfp_utils.GetSeriesasMA(ds,'Cc_7500_Sd')
-        CcCc = Cc_7500_Sd*Cc_7500_Sd
-        attr = pfp_utils.MakeAttributeDictionary(long_name='CO2 concentration from IRGA, variance',units='(mg/m3)2')
-        pfp_utils.CreateSeries(ds,'CcCc',CcCc,flag,attr)
-    if 'CO2_IRGA_Vr' in ds.series.keys() and 'CO2_IRGA_Sd' not in ds.series.keys():
-        CO2_IRGA_Vr,flag,attr = pfp_utils.GetSeriesasMA(ds,'CO2_IRGA_Vr')
-        CO2_IRGA_Sd = numpy.ma.sqrt(CO2_IRGA_Vr)
-        attr = pfp_utils.MakeAttributeDictionary(long_name='CO2 concentration from IRGA, standard deviation',units='mg/m3')
-        pfp_utils.CreateSeries(ds,'CO2_IRGA_Sd',CO2_IRGA_Sd,flag,attr)
-    if 'Ux_Sd' in ds.series.keys() and 'UxUx' not in ds.series.keys():
-        Ux_Sd,flag,attr = pfp_utils.GetSeriesasMA(ds,'Ux_Sd')
-        UxUx = Ux_Sd*Ux_Sd
-        attr = pfp_utils.MakeAttributeDictionary(long_name='Longitudinal velocity component from CSAT, variance',units='(m/s)2')
-        pfp_utils.CreateSeries(ds,'UxUx',UxUx,flag,attr)
-    if 'UxUx' in ds.series.keys() and 'Ux_Sd' not in ds.series.keys():
-        UxUx,flag,attr = pfp_utils.GetSeriesasMA(ds,'UxUx')
-        Ux_Sd = numpy.ma.sqrt(UxUx)
-        attr = pfp_utils.MakeAttributeDictionary(long_name='Longitudinal velocity component from CSAT, standard deviation',units='m/s')
-        pfp_utils.CreateSeries(ds,'Ux_Sd',Ux_Sd,flag,attr)
-    if 'Uy_Sd' in ds.series.keys() and 'UyUy' not in ds.series.keys():
-        Uy_Sd,flag,attr = pfp_utils.GetSeriesasMA(ds,'Uy_Sd')
-        UyUy = Uy_Sd*Uy_Sd
-        attr = pfp_utils.MakeAttributeDictionary(long_name='Lateral velocity component from CSAT, variance',units='(m/s)2')
-        pfp_utils.CreateSeries(ds,'UyUy',UyUy,flag,attr)
-    if 'UyUy' in ds.series.keys() and 'Uy_Sd' not in ds.series.keys():
-        UyUy,flag,attr = pfp_utils.GetSeriesasMA(ds,'UyUy')
-        Uy_Sd = numpy.ma.sqrt(UyUy)
-        attr = pfp_utils.MakeAttributeDictionary(long_name='Lateral velocity component from CSAT, standard deviation',units='m/s')
-        pfp_utils.CreateSeries(ds,'Uy_Sd',Uy_Sd,flag,attr)
-    if 'Uz_Sd' in ds.series.keys() and 'UzUz' not in ds.series.keys():
-        Uz_Sd,flag,attr = pfp_utils.GetSeriesasMA(ds,'Uz_Sd')
-        UzUz = Uz_Sd*Uz_Sd
-        attr = pfp_utils.MakeAttributeDictionary(long_name='Vertical velocity component from CSAT, variance',units='(m/s)2')
-        pfp_utils.CreateSeries(ds,'UzUz',UzUz,flag,attr)
-    if 'UzUz' in ds.series.keys() and 'Uz_Sd' not in ds.series.keys():
-        UzUz,flag,attr = pfp_utils.GetSeriesasMA(ds,'UzUz')
-        Uz_Sd = numpy.ma.sqrt(UzUz)
-        attr = pfp_utils.MakeAttributeDictionary(long_name='Vertical velocity component from CSAT, standard deviation',units='m/s')
-        pfp_utils.CreateSeries(ds,'Uz_Sd',Uz_Sd,flag,attr)
+    # !!! this section deals with messy legacy variable names !!!
+    # initialise lists of variables that have been done
+    sd_done = []
+    vr_done = []
+    # get a dictionary of variances and the stadard deviations we want from them
+    d = {"AhAh": {"sd_label": "Ah_7500_Sd", "long_name": "Absolute humidity from IRGA, standard deviation", "units": "g/m3"},
+         "CcCc": {"sd_label": "Cc_7500_Sd", "long_name": "CO2 concentration from IRGA, standard deviation", "units": "mg/m3"},
+         "UxUx": {"sd_label": "Ux_Sd", "long_name": "Longitudinal velocity component from CSAT, standard deviation", "units": "m/s"},
+         "UyUy": {"sd_label": "Uy_Sd", "long_name": "Lateral velocity component from CSAT, standard deviation", "units": "m/s"},
+         "UzUz": {"sd_label": "Uz_Sd", "long_name": "Vertical velocity component from CSAT, standard deviation", "units": "m/s"}}
+    # get a list of variables in the data structure
+    labels = list(ds.series.keys())
+    # loop over the variances and create the standard deviations
+    for vr_label in list(d.keys()):
+        if vr_label in labels and d[vr_label]["sd_label"] not in labels:
+            vr = pfp_utils.GetVariable(ds, vr_label)
+            sd = copy.deepcopy(vr)
+            sd["Label"] = d[vr_label]["sd_label"]
+            sd["Data"] = numpy.ma.sqrt(vr["Data"])
+            sd["Attr"]["long_name"] = d[vr_label]["long_name"]
+            sd["Attr"]["units"] = d[vr_label]["units"]
+            pfp_utils.CreateVariable(ds, sd)
+            sd_done.append(sd["Label"])
+    # now do the same with the standard deviations
+    d = {"Ah_7500_Sd": {"vr_label": "AhAh", "long_name": "Absolute humidity from IRGA, variance", "units": "(g/m3)2"},
+         "Cc_7500_Sd": {"vr_label": "CcCc", "long_name": "CO2 concentration from IRGA, variance", "units": "(mg/m3)2"},
+         "Ux_Sd": {"vr_label": "UxUx", "long_name": "Longitudinal velocity component from CSAT, variance", "units": "(m/s)2"},
+         "Uy_Sd": {"vr_label": "UyUy", "long_name": "Lateral velocity component from CSAT, variance", "units": "(m/s)2"},
+         "Uz_Sd": {"vr_label": "UzUz", "long_name": "Vertical velocity component from CSAT, variance", "units": "(m/s)2"}}
+    labels = list(ds.series.keys())
+    # loop over the standard deviations and create the variances
+    for sd_label in list(d.keys()):
+        if sd_label in labels and d[sd_label]["vr_label"] not in labels and sd_label not in sd_done:
+            sd = pfp_utils.GetVariable(ds, sd_label)
+            vr = copy.deepcopy(sd)
+            vr["Label"] = d[sd_label]["vr_label"]
+            vr["Data"] = sd["Data"]*sd["Data"]
+            vr["Attr"]["long_name"] = d[sd_label]["long_name"]
+            vr["Attr"]["units"] = d[sd_label]["units"]
+            pfp_utils.CreateVariable(ds, vr)
+            vr_done.append(vr["Label"])
+    # !!! this section deals with current variable naming convention !!!
+    # first, standard deviations from variances
+    # get a list of variances that were not created in step 1 above
+    labels = list(ds.series.keys())
+    vr_labels = [l for l in labels if l[-3:] == "_Vr" and l not in vr_done]
+    # loop over the variances
+    for vr_label in vr_labels:
+        # get the standard deviation label
+        sd_label = vr_label.replace("_Vr", "_Sd")
+        # check to see if the standard deviation is in the data structure
+        if sd_label not in labels:
+            # create it if it isn't
+            vr = pfp_utils.GetVariable(ds, vr_label)
+            sd = copy.deepcopy(vr)
+            sd["Label"] = sd_label
+            sd["Data"] = numpy.ma.sqrt(vr["Data"])
+            sd["Attr"]["long_name"] = vr["Attr"]["long_name"].replace("variance", "standard deviation")
+            sd["Attr"]["units"] = variance_units_to_standard_deviation(vr["Attr"]["units"])
+            pfp_utils.CreateVariable(ds, sd)
+    # second, variances from standard deviations
+    # get a list of standard deviations that were not created in step 1 above
+    labels = list(ds.series.keys())
+    sd_labels = [l for l in labels if l[-3:] == "_Sd" and l not in sd_done]
+    for sd_label in sd_labels:
+        vr_label = sd_label.replace("_Sd", "_Vr")
+        if vr_label not in labels:
+            sd = pfp_utils.GetVariable(ds, sd_label)
+            vr = copy.deepcopy(sd)
+            vr["Label"] = vr_label
+            vr["Data"] = sd["Data"]*sd["Data"]
+            vr["Attr"]["long_name"] = sd["Attr"]["long_name"].replace("standard deviation", "variance")
+            vr["Attr"]["units"] = standard_deviation_units_to_variance(sd["Attr"]["units"])
+            pfp_utils.CreateVariable(ds, vr)
+    return
+
+def variance_units_to_standard_deviation(units):
+    """
+    Purpose:
+     Convert variance units string to standard deviation units string.
+    Usage:
+     sd_units = pfp_ts.variance_units_to_standard_deviation(vr_units)
+    Author: PRI
+    Date: August 2020
+    """
+    if (("(" in units) and (")" in units)):
+        units = units[units.index("(")+1:units.index(")")]
+    else:
+        units = ""
+    return units
+
+def standard_deviation_units_to_variance(units):
+    """
+    Purpose:
+     Convert standard deviation units string to variance units string.
+    Usage:
+     vr_units = pfp_ts.standard_deviation_units_to_variance(sd_units)
+    Author: PRI
+    Date: August 2020
+    """
+    units = "(" + units + ")2"
+    return units
 
 def do_mergeseries(ds,target,srclist,mode="verbose"):
     if mode.lower()!="quiet":

@@ -347,15 +347,15 @@ if os.path.exists(cfg_name):
 else:
     print " 'map_old_to_new' control file not found"
 
-rp = os.path.join(os.sep, "mnt", "OzFlux", "Sites")
+rp = os.path.join(os.sep, "/home/peter/WD2TB", "OzFlux", "Sites")
 #sites = sorted([d for d in os.listdir(rp) if os.path.isdir(os.path.join(rp,d))])
-sites = ["AdelaideRiver", "AliceSpringsMulga", "Boyagin", "Calperum", "CapeTribulation", "Collie",
-         "CowBay", "CumberlandPlain", "DalyPasture", "DalyUncleared", "DryRiver", "Emerald",
-         "FoggDam", "Gingin", "GreatWesternWoodlands", "HowardSprings", "Litchfield", "Longreach",
-         "Loxton", "Otway", "RedDirtMelonFarm", "Ridgefield", "RiggsCreek", "RobsonCreek", "Samford",
-         "SturtPlains", "TiTreeEast", "Tumbarumba", "WallabyCreek", "Warra", "Whroo",
-         "WombatStateForest", "Yanco"]
-#sites = ["Samford"]
+#sites = ["AdelaideRiver", "AliceSpringsMulga", "Boyagin", "Calperum", "CapeTribulation", "Collie",
+#         "CowBay", "CumberlandPlain", "DalyPasture", "DalyUncleared", "DryRiver", "Emerald",
+#         "FoggDam", "Gingin", "GreatWesternWoodlands", "HowardSprings", "Litchfield", "Longreach",
+#         "Loxton", "Otway", "RedDirtMelonFarm", "Ridgefield", "RiggsCreek", "RobsonCreek", "Samford",
+#         "SturtPlains", "TiTreeEast", "Tumbarumba", "WallabyCreek", "Warra", "Whroo",
+#         "WombatStateForest", "Yanco"]
+sites = ["CumberlandPlain"]
 for site in sites:
     sp = os.path.join(rp, site, "Data", "Portal")
     op = os.path.join(rp, site, "Data", "Processed")

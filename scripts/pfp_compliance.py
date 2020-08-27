@@ -940,12 +940,17 @@ def l2_update_controlfile(cfg):
                     for key3 in cfg[key1][key2]:
                         cfg3 = cfg[key1][key2][key3]
                         if key3 in ["RangeCheck", "DependencyCheck", "DiurnalCheck", "ExcludeDates",
-                                    "ApplyFcStorage", "MergeSeries", "AverageSeries"]:
+                                    "ApplyFcStorage", "MergeSeries", "AverageSeries",
+                                    "LowerCheck", "UpperCheck"]:
                             for key4 in cfg3:
                                 # force keywords to lower case
                                 cfg3.rename(key4, key4.lower())
                                 cfg4 = cfg3[key4.lower()]
                                 cfg[key1][key2][key3][key4.lower()] = parse_cfg_variables_value(key3, cfg4)
+                        if key3 in ["ExcludeHours"]:
+                            for key4 in cfg3:
+                                cfg4 = cfg3[key4]
+                                cfg[key1][key2][key3][key4] = parse_cfg_variables_excludehours(key3, cfg4)
             else:
                 del cfg[key1]
         # check to see if the control file object has been changed
@@ -1091,12 +1096,12 @@ def l4_update_controlfile(cfg):
             elif key1 in ["Files", "Global"]:
                 for key2 in cfg[key1]:
                     cfg2 = cfg[key1][key2]
-                    cfg2 = parse_cfg_values(key2, cfg2, strip_list)
+                    cfg[key1][key2] = parse_cfg_values(key2, cfg2, strip_list)
             elif key1 in ["Options"]:
                 for key2 in cfg[key1]:
-                    cfg2 = cfg[key1][key2]
                     if key2 in ["MaxGapInterpolate"]:
-                        cfg2 = parse_cfg_values(key2, cfg2, strip_list)
+                        cfg2 = cfg[key1][key2]
+                        cfg[key1][key2] = parse_cfg_values(key2, cfg2, strip_list)
                     else:
                         del cfg[key1][key2]
             elif key1 in ["Imports"]:
@@ -1104,7 +1109,7 @@ def l4_update_controlfile(cfg):
                     for key2 in cfg[key1]:
                         for key3 in cfg[key1][key2]:
                             cfg3 = cfg[key1][key2][key3]
-                            cfg3 = parse_cfg_values(key3, cfg3, strip_list)
+                            cfg[key1][key2][key3] = parse_cfg_values(key3, cfg3, strip_list)
             elif key1 in ["Drivers"]:
                 for key2 in cfg[key1]:
                     for key3 in cfg[key1][key2]:
@@ -1116,7 +1121,7 @@ def l4_update_controlfile(cfg):
                                 for key5 in cfg4:
                                     cfg4.rename(key5, key5.lower())
                                     cfg5 = cfg4[key5.lower()]
-                                    cfg5 = parse_cfg_values(key5, cfg5, strip_list)
+                                    cfg[key1][key2][key3][key4][key5.lower()] = parse_cfg_values(key5, cfg5, strip_list)
                         elif key3 in ["RangeCheck", "DependencyCheck", "DiurnalCheck",
                                       "ExcludeDates", "MergeSeries"]:
                             # strip out unwanted characters
@@ -1124,7 +1129,7 @@ def l4_update_controlfile(cfg):
                                 # force lower case
                                 cfg3.rename(key4, key4.lower())
                                 cfg4 = cfg[key1][key2][key3][key4.lower()]
-                                cfg4 = parse_cfg_variables_value(key3, cfg4)
+                                cfg[key1][key2][key3][key4.lower()] = parse_cfg_variables_value(key3, cfg4)
             elif key1 in ["GUI"]:
                 continue
             else:
@@ -1169,21 +1174,21 @@ def l5_update_controlfile(cfg):
             elif key1 in ["Files", "Global", "ustar_threshold"]:
                 for key2 in cfg[key1]:
                     cfg2 = cfg[key1][key2]
-                    cfg2 = parse_cfg_values(key2, cfg2, strip_list)
+                    cfg[key1][key2] = parse_cfg_values(key2, cfg2, strip_list)
             elif key1 in ["Options"]:
                 for key2 in cfg[key1]:
                     if key2 in ["MaxGapInterpolate", "MaxShortGapLength", "FilterList",
                                 "TurbulenceFilter", "DayNightFilter", "AcceptDayTimes",
                                 "TruncateToImports"]:
                         cfg2 = cfg[key1][key2]
-                        cfg2 = parse_cfg_values(key2, cfg2, strip_list)
+                        cfg[key1][key2] = parse_cfg_values(key2, cfg2, strip_list)
                     else:
                         del cfg[key1][key2]
             elif key1 in ["Imports"]:
                 for key2 in cfg[key1]:
                     for key3 in cfg[key1][key2]:
                         cfg3 = cfg[key1][key2][key3]
-                        cfg3 = parse_cfg_values(key3, cfg3, strip_list)
+                        cfg[key1][key2][key3] = parse_cfg_values(key3, cfg3, strip_list)
             elif key1 in ["Fluxes"]:
                 # key2 is the variable name
                 for key2 in cfg[key1]:
@@ -1198,7 +1203,7 @@ def l5_update_controlfile(cfg):
                                 for key5 in cfg4:
                                     cfg4.rename(key5, key5.lower())
                                     cfg5 = cfg4[key5.lower()]
-                                    cfg5 = parse_cfg_values(key5, cfg5, strip_list)
+                                    cfg[key1][key2][key3][key4][key5.lower()] = parse_cfg_values(key5, cfg5, strip_list)
                         elif key3 in ["MergeSeries", "RangeCheck", "DependencyCheck",
                                       "DiurnalCheck", "ExcludeDates"]:
                             # strip out unwanted characters
@@ -1206,7 +1211,7 @@ def l5_update_controlfile(cfg):
                                 # force lower case
                                 cfg3.rename(key4, key4.lower())
                                 cfg4 = cfg3[key4.lower()]
-                                cfg4 = parse_cfg_variables_value(key3, cfg4)
+                                cfg[key1][key2][key3][key4.lower()] = parse_cfg_variables_value(key3, cfg4)
             elif key1 in ["GUI"]:
                 continue
             else:
@@ -1336,6 +1341,17 @@ def parse_cfg_values(k, v, strip_list):
             v = os.path.join(str(v), "")
     return v
 
+def parse_cfg_variables_excludehours(k, v):
+    """ Parse value from ExcludeHours to remove unwanted characters"""
+    v = v.replace("[", "").replace("]", "")
+    if k in ["ExcludeHours"]:
+        strip_list = ["'", '"']
+    # strip unwanted characters
+    for c in strip_list:
+        if c in v:
+            v = v.replace(c, "")
+    return v
+
 def parse_cfg_variables_value(k, v):
     """ Parse value from control file to remove unnecessary characters."""
     try:
@@ -1349,7 +1365,7 @@ def parse_cfg_variables_value(k, v):
             # old style of [1,2,3,4,5,6,7,8,9,10,11,12]
             v = v.replace("[", "").replace("]", "")
     # remove white space and quotes
-    if k in ["ExcludeDates", "ExcludeHours", "LowerCheck", "UpperCheck"]:
+    if k in ["ExcludeDates", "LowerCheck", "UpperCheck"]:
         # don't remove white space between date and time
         strip_list = ['"', "'"]
     elif k in ["Attr"]:
@@ -1403,6 +1419,7 @@ def nc_update(cfg):
     os.rename(nc_file_path, new_file_path)
     # write the updated file
     nc_file = pfp_io.nc_open_write(nc_file_path)
+    if nc_file is None: return
     pfp_io.nc_write_series(nc_file, ds2)
 
     return 0

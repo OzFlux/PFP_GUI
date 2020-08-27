@@ -181,6 +181,7 @@ def plot_fcvsustar(ds):
         plt.ylabel("Fc ("+Fc["Attr"]["units"]+")")
         plt.title(site_name+": "+str(year))
         plt.draw()
+        mypause(0.5)
     # plot 4 seasons for each year
     logger.info(" Doing seasonal Fc versus u* plots")
     seasons = {"summer":[12, 1, 2], "autumn":[3, 4, 5], "winter":[6, 7, 8], "spring":[9, 10, 11]}
@@ -246,6 +247,7 @@ def plot_fcvsustar(ds):
             axs[row, col].set_ylabel("Fc ("+Fc["Attr"]["units"]+")")
         fig.tight_layout()
         plt.draw()
+        mypause(0.5)
     plt.ioff()
     return
 
@@ -464,6 +466,7 @@ def plot_fluxnet(cf):
         figname += '_' + ds.globalattributes['nc_level'] + '_FC_' + label + '.png'
         fig.savefig(figname, format='png')
         plt.draw()
+        mypause(0.5)
     plt.ioff()
 
 def plottimeseries(cf, nFig, dsa, dsb):
@@ -572,7 +575,6 @@ def plottimeseries(cf, nFig, dsa, dsb):
             #if n > 0: plt.setp(bar_ax.get_xticklabels(), visible=False)
         else:
             logger.error('  plttimeseries: series '+ThisOne+' not in data structure')
-    #fig.show()
     plt.draw()
     mypause(0.5)
     if "plot_path" in cf["Files"]:
@@ -899,8 +901,8 @@ def plot_quickcheck(cf):
     file_name = site_name.replace(" ", "") + "_" + level +"_QC_DailyRadn.png"
     figure_name = os.path.join("plots", file_name)
     fig.savefig(figure_name, format="png")
-    mypause(0.5)
     plt.draw()
+    mypause(0.5)
     # plot the daily average fluxes
     nFig = nFig + 1
     fig = plt.figure(nFig, figsize=(9, 6))

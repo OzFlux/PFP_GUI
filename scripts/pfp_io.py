@@ -286,7 +286,7 @@ def csv_read_series(cf):
     ds.returncodes = {"value":0,"message":"OK"}
     return ds
 
-def nc_2xls(ncfilename,outputlist=None):
+def nc_2xls(ncfilename, outputlist=None):
     # read the netCDF file
     ds = nc_read_series(ncfilename,checktimestep=False)
     nRecs = int(ds.globalattributes["nc_nrecs"])
@@ -295,12 +295,21 @@ def nc_2xls(ncfilename,outputlist=None):
     # xlwt seems to only handle 225 columns
     if nRecs<65535 and nCols<220:
         # write the variables to the Excel 97/2003 file
-        xlfilename= ncfilename.replace('.nc','.xls')
-        xl_write_series(ds,xlfilename,outputlist=outputlist)
+        xlsfilename= ncfilename.replace(".nc", ".xls")
+        if os.path.isfile(xlsfilename):
+            file_path = os.path.split(xlsfilename)
+            xlsfilename = get_output_filename_dialog(file_path=file_path[0], ext="*.xls")
+            if len(xlsfilename) == 0: return
+        xl_write_series(ds, xlsfilename, outputlist=outputlist)
     else:
         # write the variables to the Excel 2010 file
-        xlsxfilename= ncfilename.replace('.nc','.xlsx')
-        xlsx_write_series(ds,xlsxfilename,outputlist=outputlist)
+        xlsxfilename= ncfilename.replace(".nc", ".xlsx")
+        if os.path.isfile(xlsxfilename):
+            file_path = os.path.split(xlsxfilename)
+            xlsxfilename = get_output_filename_dialog(file_path=file_path[0], ext="*.xlsx")
+            if len(xlsxfilename) == 0: return
+        xlsx_write_series(ds, xlsxfilename, outputlist=outputlist)
+    return
 
 def read_eddypro_full(csvname):
     ds = DataStructure()
@@ -842,8 +851,9 @@ def xl2nc(cf,InLevel):
     pfp_ts.get_synthetic_fsd(ds)
     # write the data to the netCDF file
     outfilename = get_outfilenamefromcf(cf)
-    ncFile = nc_open_write(outfilename)
-    nc_write_series(ncFile,ds)
+    nc_file = nc_open_write(outfilename)
+    if nc_file is None: return 0
+    nc_write_series(nc_file,ds)
     return 1
 
 def write_csv_ep_biomet(cf):
@@ -1226,6 +1236,10 @@ def get_filename_dialog(file_path='.', title='Choose a file', ext="*.*"):
     file_name = QtWidgets.QFileDialog.getOpenFileName(caption=title, directory=file_path, filter=ext)[0]
     return str(file_name)
 
+def get_output_filename_dialog(file_path=".", title="Choose an output file ...", ext="*.*"):
+    file_name = QtWidgets.QFileDialog.getSaveFileName(caption=title, directory=file_path, filter=ext)[0]
+    return str(file_name)
+
 def get_infilenamefromcf(cf):
     path = pfp_utils.get_keyvaluefromcf(cf,["Files"],"file_path",default="")
     path = os.path.join(str(path), "")
@@ -1346,6 +1360,7 @@ def NetCDFConcatenate(info):
     logger.info(" Writing data to " + os.path.split(inc["out_file_name"])[1])
     # write the concatenated data structure to file
     nc_file = nc_open_write(inc["out_file_name"])
+    if nc_file is None: return
     nc_write_series(nc_file, ds_out, ndims=inc["NumberOfDimensions"])
     return
 
@@ -1569,8 +1584,9 @@ def ncsplit_run(split_gui):
     ds_out.globalattributes["start_date"] = str(ldt_out[0])
     ds_out.globalattributes["end_date"] = str(ldt_out[-1])
     # write the output data structure to a netCDF file
-    ncFile = nc_open_write(outfilename)
-    nc_write_series(ncFile, ds_out)
+    nc_file = nc_open_write(outfilename)
+    if nc_file is None: return
+    nc_write_series(nc_file, ds_out)
     msg = " Finished splitting " + os.path.basename(infilename)
     logger.info(msg)
 
@@ -1733,7 +1749,7 @@ def nc_read_var(ncFile,ThisOne):
             attr[vattr] = getattr(ncFile.variables[ThisOne],vattr)
     return data,flag,attr
 
-def nc_open_write(ncFullName,nctype='NETCDF4'):
+def nc_open_write(ncFullName, nctype='NETCDF4'):
     """
     Purpose:
      Opens a netCDF file object for writing.  The opened netCDF file
@@ -1748,12 +1764,12 @@ def nc_open_write(ncFullName,nctype='NETCDF4'):
     Date: Back in the day
     """
     file_name = os.path.split(ncFullName)
-    logger.info("Opening netCDF file "+file_name[1])
+    logger.info("Opening netCDF file " + file_name[1])
     try:
-        ncFile = netCDF4.Dataset(ncFullName,'w',format=nctype)
+        ncFile = netCDF4.Dataset(ncFullName, "w", format=nctype)
     except:
-        logger.error(' Unable to open netCDF file '+ncFullName+' for writing')
-        ncFile = ''
+        logger.error(" Unable to open netCDF file " + file_name[1] + " for writing")
+        ncFile = None
     return ncFile
 
 def nc_write_data(nc_obj, data_dict):

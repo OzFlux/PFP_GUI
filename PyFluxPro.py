@@ -16,8 +16,11 @@ if platform.system() == "Darwin":
 elif platform.system() == "Windows":
     # set backend to "QT5Agg" for Windows
     matplotlib.use("QT5Agg")
+elif platform.system() == "Linux":
+    # set backend to "QT5Agg" for Linux
+    matplotlib.use("QT5Agg")
 else:
-    # use whatever on Linux ...
+    # use whatever ...
     pass
 from PyQt5 import QtWidgets
 # PFP modules

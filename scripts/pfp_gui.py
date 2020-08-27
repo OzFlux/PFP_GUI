@@ -2027,6 +2027,12 @@ class edit_cfg_L3(QtWidgets.QWidget):
                 self.context_menu.actionRemoveExcludeDateRange.setText("Remove date range")
                 self.context_menu.addAction(self.context_menu.actionRemoveExcludeDateRange)
                 self.context_menu.actionRemoveExcludeDateRange.triggered.connect(self.remove_daterange)
+            if (str(idx.parent().data()) in ["MergeSeries"] and
+                str(idx.data()) != "source"):
+                self.context_menu.actionRemoveMergeSeriesItem = QtWidgets.QAction(self)
+                self.context_menu.actionRemoveMergeSeriesItem.setText("Remove item")
+                self.context_menu.addAction(self.context_menu.actionRemoveMergeSeriesItem)
+                self.context_menu.actionRemoveMergeSeriesItem.triggered.connect(self.remove_item)
 
         self.context_menu.exec_(self.view.viewport().mapToGlobal(position))
 
@@ -4049,6 +4055,11 @@ class edit_cfg_L5(QtWidgets.QWidget):
                         self.context_menu.actionSetTurbulanceFilter2L.setText("L")
                         self.context_menu.addAction(self.context_menu.actionSetTurbulanceFilter2L)
                         self.context_menu.actionSetTurbulanceFilter2L.triggered.connect(self.set_L)
+                    if existing_entry != "none":
+                        self.context_menu.actionSetTurbulanceFilter2none = QtWidgets.QAction(self)
+                        self.context_menu.actionSetTurbulanceFilter2none.setText("none")
+                        self.context_menu.addAction(self.context_menu.actionSetTurbulanceFilter2none)
+                        self.context_menu.actionSetTurbulanceFilter2none.triggered.connect(self.set_none)
             elif (str(parent.text()) in ["Fluxes", "Variables"]):
                 # get a list of existing entries
                 existing_entries = self.get_existing_entries()
@@ -4783,6 +4794,13 @@ class edit_cfg_L5(QtWidgets.QWidget):
         selected_item = idx.model().itemFromIndex(idx)
         parent = selected_item.parent()
         parent.child(selected_item.row(), 1).setText("L")
+
+    def set_none(self):
+        """ Set the turbulence filter to none."""
+        idx = self.view.selectedIndexes()[0]
+        selected_item = idx.model().itemFromIndex(idx)
+        parent = selected_item.parent()
+        parent.child(selected_item.row(), 1).setText("none")
 
     def set_ustar(self):
         """ Set the turbulence filter to ustar."""

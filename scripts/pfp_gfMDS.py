@@ -393,8 +393,7 @@ def gfMDS_plot(pd, ds, mds_label, l5_info, called_by):
     fig.savefig(figure_path, format='png')
     if pd["show_plots"]:
         plt.draw()
-        #plt.pause(1)
-        mypause(1)
+        mypause(0.5)
         plt.ioff()
     else:
         plt.close(fig)

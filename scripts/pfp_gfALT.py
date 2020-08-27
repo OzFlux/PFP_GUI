@@ -972,8 +972,7 @@ def gfalternate_plotcomposite(data_dict, stat_dict, diel_avg, l4a, pd):
     # draw the plot on the screen
     if l4a["gui"]["show_plots"]:
         plt.draw()
-        #plt.pause(1)
-        mypause(1)
+        mypause(0.5)
         plt.ioff()
     else:
         plt.ion()
@@ -1048,7 +1047,7 @@ def gfalternate_plotcoveragelines(ds_tower, l4_info, called_by):
     fig.tight_layout()
     if l4a["gui"]["show_plots"]:
         plt.draw()
-        mypause(1)
+        mypause(0.5)
         plt.ioff()
     else:
         plt.ion()

@@ -4,7 +4,7 @@
 
 [Variables]
     [[Fc]]
-        name = Fc
+        name = Fc_PFP
     [[Ta]]
         name = Ta
     [[ustar]]

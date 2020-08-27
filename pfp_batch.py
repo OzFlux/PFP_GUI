@@ -29,8 +29,9 @@ def do_L1_batch(cf_level):
             cf = pfp_io.get_controlfilecontents(cf_level[i])
             ds1 = pfp_levels.l1qc(cf)
             outfilename = pfp_io.get_outfilenamefromcf(cf)
-            ncFile = pfp_io.nc_open_write(outfilename)
-            pfp_io.nc_write_series(ncFile, ds1)
+            nc_file = pfp_io.nc_open_write(outfilename)
+            if nc_file is None: return
+            pfp_io.nc_write_series(nc_file, ds1)
             msg = "Finished L1 processing with " + cf_file_name[1]
             logger.info(msg)
             logger.info("")
@@ -53,8 +54,9 @@ def do_L2_batch(cf_level):
             ds1 = pfp_io.nc_read_series(infilename)
             ds2 = pfp_levels.l2qc(cf, ds1)
             outfilename = pfp_io.get_outfilenamefromcf(cf)
-            ncFile = pfp_io.nc_open_write(outfilename)
-            pfp_io.nc_write_series(ncFile, ds2)
+            nc_file = pfp_io.nc_open_write(outfilename)
+            if nc_file is None: return
+            pfp_io.nc_write_series(nc_file, ds2)
             msg = "Finished L2 processing with " + cf_file_name[1]
             logger.info(msg)
             logger.info("")
@@ -77,8 +79,9 @@ def do_L3_batch(cf_level):
             ds2 = pfp_io.nc_read_series(infilename)
             ds3 = pfp_levels.l3qc(cf, ds2)
             outfilename = pfp_io.get_outfilenamefromcf(cf)
-            ncFile = pfp_io.nc_open_write(outfilename)
-            pfp_io.nc_write_series(ncFile, ds3)
+            nc_file = pfp_io.nc_open_write(outfilename)
+            if nc_file is None: return
+            pfp_io.nc_write_series(nc_file, ds3)
             msg = "Finished L3 processing with " + cf_file_name[1]
             logger.info(msg)
             logger.info("")
@@ -296,8 +299,9 @@ def do_L4_batch(cf_level):
             ds3 = pfp_io.nc_read_series(infilename)
             ds4 = pfp_levels.l4qc(None, cf_l4, ds3)
             outfilename = pfp_io.get_outfilenamefromcf(cf_l4)
-            ncFile = pfp_io.nc_open_write(outfilename)
-            pfp_io.nc_write_series(ncFile, ds4)
+            nc_file = pfp_io.nc_open_write(outfilename)
+            if nc_file is None: return
+            pfp_io.nc_write_series(nc_file, ds4)
             msg = "Finished L4 processing with " + cf_file_name[1]
             logger.info(msg)
             # now plot the fingerprints for the L4 files
@@ -348,8 +352,9 @@ def do_L5_batch(cf_level):
             ds4 = pfp_io.nc_read_series(infilename)
             ds5 = pfp_levels.l5qc(None, cf_l5, ds4)
             outfilename = pfp_io.get_outfilenamefromcf(cf_l5)
-            ncFile = pfp_io.nc_open_write(outfilename)
-            pfp_io.nc_write_series(ncFile, ds5)
+            nc_file = pfp_io.nc_open_write(outfilename)
+            if nc_file is None: return
+            pfp_io.nc_write_series(nc_file, ds5)
             msg = "Finished L5 processing with " + cf_file_name[1]
             logger.info(msg)
             # now plot the fingerprints for the L5 files
@@ -401,8 +406,9 @@ def do_L6_batch(cf_level):
             ds5 = pfp_io.nc_read_series(infilename)
             ds6 = pfp_levels.l6qc(None, cf, ds5)
             outfilename = pfp_io.get_outfilenamefromcf(cf)
-            ncFile = pfp_io.nc_open_write(outfilename)
-            pfp_io.nc_write_series(ncFile, ds6)
+            nc_file = pfp_io.nc_open_write(outfilename)
+            if nc_file is None: return
+            pfp_io.nc_write_series(nc_file, ds6)
             msg = "Finished L6 processing with " + cf_file_name[1]
             logger.info(msg)
             logger.info("")

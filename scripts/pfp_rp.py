@@ -1151,7 +1151,7 @@ def L6_summary_plotdaily(cf, ds, daily_dict):
         fig.savefig(figure_path, format='png')
         if cf["Options"]["call_mode"].lower()=="interactive":
             plt.draw()
-            mypause(1)
+            mypause(0.5)
             plt.ioff()
         else:
             plt.close(fig)
@@ -1182,7 +1182,7 @@ def L6_summary_plotdaily(cf, ds, daily_dict):
     fig.savefig(figname,format='png')
     if cf["Options"]["call_mode"].lower()=="interactive":
         plt.draw()
-        mypause(1)
+        mypause(0.5)
         plt.ioff()
     else:
         plt.close(fig)
@@ -1282,7 +1282,7 @@ def L6_summary_plotcumulative(cf, ds, cumulative_dict):
         fig.savefig(figure_path, format='png')
         if cf["Options"]["call_mode"].lower()=="interactive":
             plt.draw()
-            mypause(1)
+            mypause(0.5)
             plt.ioff()
         else:
             plt.close(fig)

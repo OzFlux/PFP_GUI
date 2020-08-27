@@ -437,14 +437,14 @@ def do_diurnalcheck(cf, ds, section, series, code=5):
     """
     if "DiurnalCheck" not in cf[section][series].keys():
         return
-    if "NumSd" not in cf[section][series]["DiurnalCheck"].keys():
+    if "numsd" not in cf[section][series]["DiurnalCheck"].keys():
         return
     ts = float(ds.globalattributes['time_step'])
     n = int((60./ts) + 0.5)             #Number of timesteps per hour
     nInts = int((1440.0/ts)+0.5)        #Number of timesteps per day
     Av = numpy.array([c.missing_value]*nInts, dtype=numpy.float64)
     Sd = numpy.array([c.missing_value]*nInts, dtype=numpy.float64)
-    NSd = numpy.array(parse_rangecheck_limit(cf[section][series]['DiurnalCheck']['NumSd']))
+    NSd = numpy.array(parse_rangecheck_limit(cf[section][series]['DiurnalCheck']['numsd']))
     ldt = pfp_utils.GetVariable(ds, "DateTime")
     month = numpy.array([d.month for d in ldt["Data"]])
     Hdh = numpy.array([(d.hour + d.minute/float(60)) for d in ldt["Data"]])
@@ -468,7 +468,7 @@ def do_diurnalcheck(cf, ds, section, series, code=5):
                                 ((l2ds!=float(c.missing_value))&(l2ds>Upr[hindex])))[0] + mindex[0]
             ds.series[series]["Data"][index] = numpy.float64(c.missing_value)
             ds.series[series]["Flag"][index] = numpy.int32(code)
-            ds.series[series]["Attr"]["diurnalcheck_numsd"] = cf[section][series]["DiurnalCheck"]["NumSd"]
+            ds.series[series]["Attr"]["diurnalcheck_numsd"] = cf[section][series]["DiurnalCheck"]["numsd"]
     return
 
 def do_EC155check(cf,ds):

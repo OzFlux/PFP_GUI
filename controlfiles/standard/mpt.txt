@@ -26,9 +26,9 @@ level = mpt
     threshold_check = 1
 [Variables]
     [[NEE]]
-        name = Fc
+        name = Fc_PFP
     [[VPD]]
-        name = Ta
+        name = VPD
     [[USTAR]]
         name = ustar
     [[TA]]

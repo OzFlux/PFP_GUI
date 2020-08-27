@@ -427,8 +427,7 @@ def gfSOLO_plot(pd, ds, drivers, target, output, l5s, si=0, ei=-1):
     # draw the plot on the screen
     if l5s["gui"]["show_plots"]:
         plt.draw()
-        #plt.pause(1)
-        mypause(1)
+        mypause(0.5)
         plt.ioff()
     else:
         plt.ion()
@@ -502,7 +501,7 @@ def gfSOLO_plotcoveragelines(ds, l5_info, called_by):
     fig.tight_layout()
     if l5s["gui"]["show_plots"]:
         plt.draw()
-        mypause(1)
+        mypause(0.5)
         plt.ioff()
     else:
         plt.ion()
@@ -587,6 +586,7 @@ def gfSOLO_plotsummary(ds, solo):
     fig.savefig(figname, format="png")
     if solo["gui"]["show_plots"]:
         plt.draw()
+        mypause(0.5)
         plt.ioff()
     else:
         plt.ion()

@@ -416,8 +416,9 @@ def do_run_l1(cfg):
         ds1 = pfp_levels.l1qc(cfg)
         if ds1.returncodes["value"] == 0:
             outfilename = pfp_io.get_outfilenamefromcf(cfg)
-            ncFile = pfp_io.nc_open_write(outfilename)
-            pfp_io.nc_write_series(ncFile, ds1)
+            nc_file = pfp_io.nc_open_write(outfilename)
+            if nc_file is None: return
+            pfp_io.nc_write_series(nc_file, ds1)
             logger.info("Finished L1 processing")
         else:
             msg = "An error occurred during L1 processing"
@@ -457,6 +458,7 @@ def do_run_l2(cfg):
             return
         out_filepath = pfp_io.get_outfilenamefromcf(cfg)
         nc_file = pfp_io.nc_open_write(out_filepath)
+        if nc_file is None: return
         pfp_io.nc_write_series(nc_file, ds2)
         logger.info("Finished L2 processing")
         if "Plots" in list(cfg.keys()):
@@ -506,6 +508,7 @@ def do_run_l3(cfg):
             return
         out_filepath = pfp_io.get_outfilenamefromcf(cfg)
         nc_file = pfp_io.nc_open_write(out_filepath)
+        if nc_file is None: return
         pfp_io.nc_write_series(nc_file, ds3)
         logger.info("Finished L3 processing")
         if "Plots" in list(cfg.keys()):
@@ -560,6 +563,7 @@ def do_run_l4(main_gui, cfg):
             logger.info("Finished L4: " + sitename)
             out_filepath = pfp_io.get_outfilenamefromcf(cfg)
             nc_file = pfp_io.nc_open_write(out_filepath)
+            if nc_file is None: return
             pfp_io.nc_write_series(nc_file, ds4)         # save the L4 data
             logger.info("Finished saving L4 gap filled data")
         logger.info("")
@@ -602,6 +606,7 @@ def do_run_l5(main_gui, cfg):
             logger.info("Finished L5: "+sitename)
             out_filepath = pfp_io.get_outfilenamefromcf(cfg)
             nc_file = pfp_io.nc_open_write(out_filepath)
+            if nc_file is None: return
             pfp_io.nc_write_series(nc_file, ds5)
             logger.info("Finished saving L5 gap filled data")
         logger.info("")
@@ -645,6 +650,7 @@ def do_run_l6(main_gui, cfg):
             logger.info("Finished L6: "+sitename)
             out_filepath = pfp_io.get_outfilenamefromcf(cfg)
             nc_file = pfp_io.nc_open_write(out_filepath)
+            if nc_file is None: return
             pfp_io.nc_write_series(nc_file, ds6)
             logger.info("Finished saving L6 gap filled data")
         logger.info("")

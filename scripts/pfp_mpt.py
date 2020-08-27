@@ -114,6 +114,9 @@ def run_mpt_code(cf, ds, nc_file_name):
             msg = " MPT: variable " + label + " not defined in control file, skipping MPT ..."
             logger.error(msg)
             return out_file_paths
+        else:
+            msg = " MPT: Using variable " + cf["Variables"][label]["name"] + " for " + label
+            logger.info(msg)
     fmt = "%12i,%f,%f,%f,%f,%f,%f,%f"
     log_file_path = os.path.join("mpt", "log", "mpt.log")
     mptlogfile = open(log_file_path, "wb")
