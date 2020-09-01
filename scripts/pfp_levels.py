@@ -99,7 +99,8 @@ def l3qc(cf, ds2):
     pfp_ck.do_linear(cf,ds3)
     # parse the control file for information on how the user wants to do the gap filling
     l3_info = pfp_compliance.ParseL3ControlFile(cf, ds3)
-    if ds3.returncodes["value"] != 0:
+    if l3_info["status"]["value"] != 0:
+        logger.error(l3_info["status"]["message"])
         return ds3
     # ************************
     # *** Merge humidities ***
@@ -123,19 +124,7 @@ def l3qc(cf, ds2):
     # *** Merge CO2 concentrations ***
     # ********************************
     # merge the 7500 CO2 concentration
-    # PRI 09/08/2017 possibly the ugliest thing I have done yet
-    # This needs to be abstracted to a general alias checking routine at the
-    # start of the L3 processing so that possible aliases are mapped to a single
-    # set of variable names.
-    if "CO2" in cf["Variables"]:
-        CO2 = "CO2"
-    elif "Cc" in cf["Variables"]:
-        CO2 = "Cc"
-    else:
-        msg = "Label for CO2 ('CO2','Cc') not found in control file"
-        logger.warning(msg)
-        CO2 = None
-    pfp_ts.CombineSeries(cf, ds3, CO2, convert_units=True)
+    pfp_ts.CombineSeries(cf, ds3, l3_info["CO2"]["label"], convert_units=True)
     # ******************************************
     # *** Calculate meteorological variables ***
     # ******************************************
@@ -164,27 +153,14 @@ def l3qc(cf, ds2):
     # **************************
     # *** CO2 and Fc section ***
     # **************************
-    # merge Fc and Fc_storage series if required
-    cfv = cf["Variables"]
-    merge_list = [l for l in cfv.keys() if l[0:2] == "Fc" and "MergeSeries" in cfv[l].keys()]
-    for label in merge_list:
-        pfp_ts.CombineSeries(cf, ds3, label, save_originals=True)
     # convert CO2 units if required
-    pfp_utils.ConvertCO2Units(cf, ds3, CO2=CO2)
+    pfp_utils.ConvertCO2Units(cf, ds3, l3_info["CO2"]["label"])
     # calculate Fc storage term - single height only at present
-    pfp_ts.CalculateFcStorageSinglePoint(cf, ds3, Fc_out='Fc_single', CO2_in=CO2)
+    pfp_ts.CalculateFcStorageSinglePoint(cf, ds3, l3_info["CO2"]["label"])
     # convert Fc units if required
-    ## PRI 27/08/2020 reinstate use of pfp_utils.ConvertFcUnits()
     pfp_utils.ConvertFcUnits(cf, ds3)
-    #Fc_list = ["Fc", "Fc_PFP", "Fc_single", "Fc_profile", "Fc_storage"]
-    #Fc_list = [l for l in ds3.series.keys() if l[0:2] == "Fc" and "Flag" not in l]
-    #pfp_utils.CheckUnits(ds3, Fc_list, "umol/m2/s", convert_units=True)
-    ## PRI 27/08/2020 move merge before single point storage calculation
-    ## merge Fc and Fc_storage series if required
-    #cfv = cf["Variables"]
-    #merge_list = [l for l in cfv.keys() if l[0:2] == "Fc" and "MergeSeries" in cfv[l].keys()]
-    #for label in merge_list:
-        #pfp_ts.CombineSeries(cf, ds3, label, save_originals=True)
+    # merge Fc and Fc_storage series if required
+    pfp_ts.CombineSeries(cf, ds3, l3_info["Fc"]["combine_list"], save_originals=True)
     # correct Fc for storage term - only recommended if storage calculated from profile available
     pfp_ts.CorrectFcForStorage(cf, ds3)
     # *************************

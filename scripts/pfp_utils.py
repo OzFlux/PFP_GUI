@@ -222,7 +222,7 @@ def contiguous_regions(condition):
     idx.shape = (-1,2)
     return idx
 
-def ConvertCO2Units(cf, ds, CO2='CO2'):
+def ConvertCO2Units(cf, ds, CO2):
     if CO2 == None:
         return
     CO2_units_out = "mg/m3"            # default value
@@ -270,12 +270,14 @@ def ConvertFcUnits(cf, ds):
         return
     if 'FcUnits' not in cf['Options']:
         return
+    # list of supported CO2 flux units
+    units_list = ["mg/m2/s", "umol/m2/s"]
     # get the Fc units requested by the user
     Fc_units_out = get_keyvaluefromcf(cf, ['Options'], "FcUnits", default="umol/m2/s")
     # get a list of Fc series
-    Fc_list = [label for label in ds.series.keys() if label[0:2] == "Fc"]
+    labels = ds.series.keys()
+    Fc_list = [l for l in labels if l[0:2] == "Fc" and ds.series[l]["Attr"]["units"] in units_list]
     # convert units of Fc as required
-    units_list = ["mg/m2/s", "umol/m2/s"]
     for label in Fc_list:
         # get the Fc variable
         Fc = GetVariable(ds, label)
@@ -988,6 +990,15 @@ def convert_anglestring(anglestring):
             anglefloat = float(c.missing_value)
     # return with the string converted to a float
     return anglefloat
+
+def convert_csv_string_to_list(input_string):
+    """ Convert a string containing items separated by commas into a list."""
+    input_string = "".join(input_string.split())
+    if "," in input_string:
+        output_list = input_string.split(",")
+    else:
+        output_list = [input_string]
+    return output_list
 
 def convert_WSWDtoUV(WS, WD):
     """

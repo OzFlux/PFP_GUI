@@ -92,7 +92,7 @@ class pfp_main_ui(QtWidgets.QWidget):
         # Help menu
         self.menuHelp = QtWidgets.QMenu(self.menubar)
         self.menuHelp.setTitle("Help")
-        # File menu items
+        # File menu items: menu actions for control files
         self.actionFileOpen = QtWidgets.QAction(self)
         self.actionFileOpen.setText("Open")
         self.actionFileOpen.setShortcut('Ctrl+O')
@@ -102,11 +102,10 @@ class pfp_main_ui(QtWidgets.QWidget):
         self.actionFileSaveAs = QtWidgets.QAction(self)
         self.actionFileSaveAs.setText("Save As...")
         self.actionFileSaveAs.setShortcut('Shift+Ctrl+S')
-        self.actionFileSplit = QtWidgets.QAction(self)
-        self.actionFileSplit.setText("Split")
-        self.actionFileQuit = QtWidgets.QAction(self)
-        self.actionFileQuit.setText("Quit")
-        self.actionFileQuit.setShortcut('Ctrl+Z')
+        # File menu items: menu actions for netCDF files
+        self.actionFileExplore = QtWidgets.QAction(self)
+        self.actionFileExplore.setText("Explore")
+        self.actionFileExplore.setShortcut('Ctrl+E')
         # File/Convert submenu
         self.actionFileConvertnc2biomet = QtWidgets.QAction(self)
         self.actionFileConvertnc2biomet.setText("nc to Biomet")
@@ -116,6 +115,14 @@ class pfp_main_ui(QtWidgets.QWidget):
         self.actionFileConvertnc2reddyproc.setText("nc to REddyProc")
         self.actionFileConvertncupdate = QtWidgets.QAction(self)
         self.actionFileConvertncupdate.setText("nc update")
+        # File menu item: split netCDF
+        self.actionFileSplit = QtWidgets.QAction(self)
+        self.actionFileSplit.setText("Split")
+        self.actionFileSplit.setShortcut('Ctrl+P')
+        # File menu item: Quit
+        self.actionFileQuit = QtWidgets.QAction(self)
+        self.actionFileQuit.setText("Quit")
+        self.actionFileQuit.setShortcut('Ctrl+Z')
         # Edit menu items
         self.actionEditPreferences = QtWidgets.QAction(self)
         self.actionEditPreferences.setText("Preferences...")
@@ -155,6 +162,7 @@ class pfp_main_ui(QtWidgets.QWidget):
         self.menuFile.addAction(self.actionFileSaveAs)
         self.menuFile.addSeparator()
         self.menuFile.addAction(self.menuFileConvert.menuAction())
+        self.menuFile.addAction(self.actionFileExplore)
         self.menuFile.addAction(self.actionFileSplit)
         self.menuFile.addSeparator()
         self.menuFile.addAction(self.actionFileQuit)
@@ -213,6 +221,7 @@ class pfp_main_ui(QtWidgets.QWidget):
 
         # Connect signals to slots
         # File menu actions
+        self.actionFileExplore.triggered.connect(self.do_file_explore)
         self.actionFileConvertnc2biomet.triggered.connect(lambda:pfp_top_level.do_file_convert_nc2biomet(None, mode="standard"))
         self.actionFileConvertnc2xls.triggered.connect(pfp_top_level.do_file_convert_nc2xls)
         self.actionFileConvertnc2reddyproc.triggered.connect(lambda:pfp_top_level.do_file_convert_nc2reddyproc(None, mode="standard"))
@@ -334,6 +343,16 @@ class pfp_main_ui(QtWidgets.QWidget):
         self.tabs.setCurrentIndex(self.tabs.tab_index_all)
         if self.tabs.tab_dict[self.tabs.tab_index_all].cfg_changed:
             self.update_tab_text()
+        self.tabs.tab_index_all = self.tabs.tab_index_all + 1
+        return
+
+    def do_file_explore(self):
+        self.tabs.tab_dict[self.tabs.tab_index_all] = pfp_gui.file_explore(self)
+        self.tabs.cfg_dict[self.tabs.tab_index_all] = {}
+        # add a tab for the netCDF file contents
+        file_name = self.tabs.tab_dict[self.tabs.tab_index_all].file_name
+        self.tabs.addTab(self.tabs.tab_dict[self.tabs.tab_index_all], file_name)
+        self.tabs.setCurrentIndex(self.tabs.tab_index_all)
         self.tabs.tab_index_all = self.tabs.tab_index_all + 1
         return
 

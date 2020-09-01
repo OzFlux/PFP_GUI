@@ -451,10 +451,66 @@ def ParseL3ControlFile(cf, ds):
     """
     ds.returncodes["message"] = "OK"
     ds.returncodes["value"] = 0
-    l3_info = {}
+    l3_info = {"CO2": {}, "Fc": {}, "status": {"value": 0, "message": "OK"}}
     # add key for suppressing output of intermediate variables e.g. Cpd etc
     opt = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "KeepIntermediateSeries", default="No")
     l3_info["RemoveIntermediateSeries"] = {"KeepIntermediateSeries": opt, "not_output": []}
+    # find out what label is used for CO2
+    if "CO2" in list(cf["Variables"].keys()):
+        l3_info["CO2"]["label"] = "CO2"
+    elif "Cc" in list(cf["Variables"].keys()):
+        l3_info["CO2"]["label"] = "Cc"
+    else:
+        msg = " Label for CO2 ('CO2' or 'Cc') not found in control file"
+        l3_info["status"]["value"] = 1
+        l3_info["status"]["message"] = msg
+        return l3_info
+    # get the height of the CO2 measurement
+    got_zms = False
+    labels = list(ds.series.keys())
+    CO2_label = l3_info["CO2"]["label"]
+    # try and get the height from the CO2 variable
+    if CO2_label in labels:
+        # get height from attributes if the CO2 variable is already in the data structure
+        CO2 = pfp_utils.GetVariable(ds, CO2_label)
+        zms = float(pfp_utils.strip_non_numeric(CO2["Attr"]["height"]))
+        got_zms = True
+    elif "MergeSeries" in list(cf["Variables"][CO2_label].keys()):
+        # get the height from the variables listed in MergeSeries
+        source = cf["Variables"][CO2_label]["MergeSeries"]["source"]
+        source = pfp_utils.convert_csv_string_to_list(source)
+        for item in source:
+            var = pfp_utils.GetVariable(ds, item)
+            zms = float(pfp_utils.strip_non_numeric(var["Attr"]["height"]))
+            got_zms = True
+            break
+    elif "AverageSeries" in list(cf["Variables"][CO2_label].keys()):
+        # get the height from the variables listed in AverageSeries
+        source = cf["Variables"][CO2_label]["AverageSeries"]["source"]
+        source = pfp_utils.convert_csv_string_to_list(source)
+        for item in source:
+            var = pfp_utils.GetVariable(ds, item)
+            zms = float(pfp_utils.strip_non_numeric(var["Attr"]["height"]))
+            got_zms = True
+            break
+    if "tower_height" in ds.globalattributes.keys() and not got_zms:
+        zms = float(pfp_utils.strip_non_numeric(ds.globalattributes["tower_height"]))
+        got_zms = True
+    if pfp_utils.cfkeycheck(cf, Base="Options", ThisOne="zms") and not got_zms:
+        zms = float(pfp_utils.strip_non_numeric(cf["Options"]["zms"]))
+        got_zms = True
+    if got_zms:
+        l3_info["CO2"]["height"] = zms
+    else:
+        msg = " Unable to find height for CO2 (" + CO2_label + ") measurement"
+        l3_info["status"]["value"] = 1
+        l3_info["status"]["message"] = msg
+        return l3_info
+    # get a list of Fc variables to be merged
+    cfv = cf["Variables"]
+    merge_list = [l for l in cfv.keys() if l[0:2] == "Fc" and "MergeSeries" in cfv[l].keys()]
+    average_list = [l for l in cfv.keys() if l[0:2] == "Fc" and "AverageSeries" in cfv[l].keys()]
+    l3_info["Fc"]["combine_list"] = merge_list + average_list
     return l3_info
 
 #def ParseL6ControlFile(cf, ds):

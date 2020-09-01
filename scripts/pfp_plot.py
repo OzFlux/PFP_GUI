@@ -469,6 +469,32 @@ def plot_fluxnet(cf):
         mypause(0.5)
     plt.ioff()
 
+def plot_timeseries_explore(ds, labels):
+    site_name = ds.globalattributes["site_name"]
+    nrows = len(labels)
+    plt.ion()
+    fig, axs = plt.subplots(nrows=nrows, sharex=True, figsize=(10.9, 7.5))
+    fig.subplots_adjust(wspace=0, hspace=0.05, left=0.1, right=0.95, top=0.95, bottom=0.1)
+    if nrows == 1: axs = [axs]
+    fig.canvas.set_window_title(site_name)
+    for n, label in enumerate(labels):
+        var = pfp_utils.GetVariable(ds, label)
+        sdt = var["DateTime"][0]
+        edt = var["DateTime"][-1]
+        axs[n].plot(var["DateTime"], var["Data"], "b.", label=label)
+        axs[n].legend()
+        if n == 0:
+            title_str = site_name + ": " + sdt.strftime("%Y-%m-%d") + " to "
+            title_str += edt.strftime("%Y-%m-%d")
+            axs[n].set_title(title_str)
+        if n == nrows-1:
+            axs[n].set_xlabel("Date")
+        axs[n].set_ylabel("(" + var["Attr"]["units"] + ")")
+    plt.draw()
+    mypause(0.5)
+    plt.ioff()
+    return
+
 def plottimeseries(cf, nFig, dsa, dsb):
     SiteName = dsa.globalattributes['site_name']
     Level = dsb.globalattributes['nc_level']

@@ -1,5 +1,4 @@
 # standard
-import ast
 import copy
 import datetime
 import inspect
@@ -807,7 +806,7 @@ def CheckCovarianceUnits(ds):
             if "H" in item: item = item.replace("H","A")
             pfp_utils.CreateSeries(ds,item,data,flag,attr)
 
-def CombineSeries(cf, ds, label, convert_units=False, save_originals=False, mode="quiet"):
+def CombineSeries(cf, ds, labels, convert_units=False, save_originals=False, mode="quiet"):
     """
     Purpose:
      Combine two variables by merging or element-wise averaging.
@@ -826,23 +825,29 @@ def CombineSeries(cf, ds, label, convert_units=False, save_originals=False, mode
     Author: PRI
     Date: October 2019
     """
-    if (label not in cf["Variables"]):
-        if mode != "quiet":
-            msg = " CombineSeries: Variable " + label + " not found in control file"
-            msg += ", skipping ..."
-            logger.warning(msg)
-        return
-    if "MergeSeries" in cf["Variables"][label]:
-        MergeSeries(cf, ds, label, convert_units=convert_units, save_originals=save_originals)
-    elif "AverageSeries" in cf["Variables"][label]:
-        AverageSeriesByElements(cf, ds, label)
-    else:
-        if mode != "quiet":
-            msg = " CombineSeries: Neither MergeSeries nor AverageSeries "
-            msg += " option given for variable " + label
-            msg += ", skipping ..."
-            logger.warning(msg)
-        pass
+    # check to see if labels argument is a string (single variable label)
+    if isinstance(labels, basestring):
+        # if so, make it a list
+        labels = [labels]
+    # loop over the variables to be checked
+    for label in labels:
+        if (label not in cf["Variables"]):
+            if mode != "quiet":
+                msg = " CombineSeries: Variable " + label + " not found in control file"
+                msg += ", skipping ..."
+                logger.warning(msg)
+            return
+        if "MergeSeries" in cf["Variables"][label]:
+            MergeSeries(cf, ds, label, convert_units=convert_units, save_originals=save_originals)
+        elif "AverageSeries" in cf["Variables"][label]:
+            AverageSeriesByElements(cf, ds, label)
+        else:
+            if mode != "quiet":
+                msg = " CombineSeries: Neither MergeSeries nor AverageSeries "
+                msg += " option given for variable " + label
+                msg += ", skipping ..."
+                logger.warning(msg)
+            pass
     return
 
 def CoordRotation2D(cf, ds):
@@ -1036,16 +1041,16 @@ def CalculateComponentsFromWsWd(ds):
     pfp_utils.CreateVariable(ds, u)
     pfp_utils.CreateVariable(ds, v)
 
-def CalculateFcStorageSinglePoint(cf, ds, Fc_out="Fc_single", CO2_in="CO2"):
+def CalculateFcStorageSinglePoint(cf, ds, CO2_label, Fc_out="Fc_single"):
     """
     Calculate CO2 flux storage term in the air column beneath the CO2 instrument.  This
     routine assumes the air column between the sensor and the surface is well mixed.
 
-    Usage pfp_ts.CalculateFcStorageSinglePoint(cf, ds, Fc_out='Fc_single', CO2_in='CO2')
+    Usage pfp_ts.CalculateFcStorageSinglePoint(cf, ds, CO2_label, Fc_out='Fc_single')
     cf: control file object
     ds: data structure
     Fc_out: series label of the CO2 flux storage term
-    CO2_in: series label of the CO2 concentration
+    CO2_label: series label of the CO2 concentration
 
     Parameters loaded from control file:
         zms: measurement height from surface, m
@@ -1062,84 +1067,43 @@ def CalculateFcStorageSinglePoint(cf, ds, Fc_out="Fc_single", CO2_in="CO2"):
         ldt = pfp_utils.GetVariable(ds, "DateTime")
         Fc_single = pfp_utils.CreateEmptyVariable(Fc_out, nRecs, datetime=ldt["Data"])
         # get the input data
-        if CO2_in not in ds.series.keys():
-            if "Cc" in ds.series.keys():
-                CO2_in = "Cc"
-            else:
-                msg = "  Neither CO2 nor Cc not in data structure, storage not calculated"
-                logger.error(msg)
-                pfp_utils.CreateVariable(ds, Fc_single)
-                return
-        CO2 = pfp_utils.GetVariable(ds, CO2_in)
-        Fc = pfp_utils.GetVariable(ds, "Fc")
+        if CO2_label not in ds.series.keys():
+            msg = "  CO2 variable (" + CO2_label + ") not in data structure, storage not calculated"
+            logger.error(msg)
+            pfp_utils.CreateVariable(ds, Fc_single)
+            return
+        CO2 = pfp_utils.GetVariable(ds, CO2_label)
         Ta = pfp_utils.GetVariable(ds, "Ta")
         ps = pfp_utils.GetVariable(ds, "ps")
-        # try to get a value for zms, the instrument height above ground
-        got_zms = False
-        if "height" in CO2["Attr"] and not got_zms:
-            try:
-                zms = float(pfp_utils.strip_non_numeric(CO2["Attr"]["height"]))
-                got_zms = True
-            except:
-                pass
-        if "height" in Fc["Attr"] and not got_zms:
-            try:
-                zms = float(pfp_utils.strip_non_numeric(Fc["Attr"]["height"]))
-                got_zms = True
-            except:
-                pass
-        if "tower_height" in ds.globalattributes.keys() and not got_zms:
-            try:
-                zms = float(pfp_utils.strip_non_numeric(ds.globalattributes["tower_height"]))
-                got_zms = True
-            except:
-                pass
-        if pfp_utils.cfkeycheck(cf, Base="General", ThisOne="zms") and not got_zms:
-            try:
-                zms = float(pfp_utils.strip_non_numeric(cf["General"]["zms"]))
-                got_zms = True
-            except:
-                pass
-        if pfp_utils.cfkeycheck(cf, Base="Options", ThisOne="zms") and not got_zms:
-            try:
-                zms = float(pfp_utils.strip_non_numeric(cf["Options"]["zms"]))
-                got_zms = True
-            except:
-                pass
-        if got_zms:
-            # check the CO2 concentration units
-            # if the units are mg/m3, convert CO2 concentration to umol/mol before taking the difference
-            pfp_utils.convert_units_co2(ds, CO2, "umol/mol")
-            # calculate the change in CO2 concentration between time steps
-            # CO2 concentration assumed to be in umol/mol
-            dc = numpy.ma.ediff1d(CO2["Data"], to_begin=0)
-            # convert the CO2 concentration difference from umol/mol to umol/m3
-            dc = pfp_mf.co2_umolpm3fromppm(dc, Ta["Data"], ps["Data"])
-            # calculate the time step in seconds
-            epoch = datetime.datetime(1970, 1, 1, 0, 0, 0)
-            seconds = numpy.array([(dt-epoch).total_seconds() for dt in ldt["Data"]])
-            dt = numpy.ediff1d(seconds, to_begin=float(ts)*60)
-            # calculate the CO2 flux based on storage below the measurement height
-            Fc_single["Data"] = zms*dc/dt
-            # do the attributes
-            Fc_single["Attr"] = {}
-            for attr in ["height", "instrument", "serial_number"]:
-                if attr in CO2["Attr"]:
-                    Fc_single["Attr"][attr] = CO2["Attr"][attr]
-            Fc_single["Attr"]["units"] = "umol/m2/s"
-            Fc_single["Attr"]["standard_name"] = "not defined"
-            Fc_single["Attr"]["long_name"] = "CO2 flux (storage term)"
-            Fc_single["Attr"]["group_name"] = "flux"
-            Fc_single["Attr"][descr] = "Fc storage component calcuated using single point \
-                                        CO2 measurement"
-            # put the storage flux in the data structure
-            mask = numpy.ma.getmaskarray(Fc_single["Data"])
-            Fc_single["Flag"] = numpy.where(mask == True, ones, zeros)
-            # match the units of Fc_single to the units of Fc
-            pfp_utils.convert_units_co2(ds, Fc_single, Fc["Attr"]["units"])
-        else:
-            msg = "  Measurement height not found, storage not calculated"
-            logger.error(msg)
+        # check the CO2 concentration units
+        # if the units are mg/m3, convert CO2 concentration to umol/mol before taking the difference
+        pfp_utils.convert_units_co2(ds, CO2, "umol/mol")
+        # calculate the change in CO2 concentration between time steps
+        # CO2 concentration assumed to be in umol/mol
+        dc = numpy.ma.ediff1d(CO2["Data"], to_begin=0)
+        # convert the CO2 concentration difference from umol/mol to umol/m3
+        dc = pfp_mf.co2_umolpm3fromppm(dc, Ta["Data"], ps["Data"])
+        # calculate the time step in seconds
+        epoch = datetime.datetime(1970, 1, 1, 0, 0, 0)
+        seconds = numpy.array([(dt-epoch).total_seconds() for dt in ldt["Data"]])
+        dt = numpy.ediff1d(seconds, to_begin=float(ts)*60)
+        # calculate the CO2 flux based on storage below the measurement height
+        zms = float(pfp_utils.strip_non_numeric(CO2["Attr"]["height"]))
+        Fc_single["Data"] = zms*dc/dt
+        # do the attributes
+        Fc_single["Attr"] = {}
+        for attr in ["height", "instrument", "serial_number"]:
+            if attr in CO2["Attr"]:
+                Fc_single["Attr"][attr] = CO2["Attr"][attr]
+        Fc_single["Attr"]["units"] = "umol/m2/s"
+        Fc_single["Attr"]["standard_name"] = "not defined"
+        Fc_single["Attr"]["long_name"] = "CO2 flux (storage term)"
+        Fc_single["Attr"]["group_name"] = "flux"
+        Fc_single["Attr"][descr] = "Fc storage component calcuated using single point \
+                                    CO2 measurement"
+        # put the storage flux in the data structure
+        mask = numpy.ma.getmaskarray(Fc_single["Data"])
+        Fc_single["Flag"] = numpy.where(mask == True, ones, zeros)
         pfp_utils.CreateVariable(ds, Fc_single)
     else:
         msg = "  " + Fc_out + " found in data structure, not calculated"
