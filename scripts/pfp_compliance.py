@@ -413,7 +413,10 @@ def ParseL1ControlFile(cf):
                 # check the arguments are being read in
                 else:
                     function_args = function_string[function_string.index("(")+1:-1].split(",")
-                    for item in function_args:
+                    nargs = len(function_args)
+                    if function_name in ["Linear"]:
+                        nargs = 1
+                    for item in function_args[:nargs]:
                         if item not in list(l1ire["Variables"].keys()):
                             msg = " Skipping " + label + "(function argument '" + item + "' not found"
                             logger.warning(msg)

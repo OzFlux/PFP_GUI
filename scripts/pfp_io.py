@@ -967,7 +967,7 @@ def ExcelToDataStructures(xl_data, l1_info):
     # header row
     hdr = int(l1ire["Files"]["in_headerrow"])
     xl_datemode = l1ire["Global"]["xl_datemode"]
-    xl_sheets = list(xl_data.keys())
+    xl_sheets = sorted(list(xl_data.keys()))
     # read each sheet to a data structure
     ds = {}
     for xl_sheet in xl_sheets:
@@ -996,6 +996,8 @@ def ExcelToDataStructures(xl_data, l1_info):
         pfp_utils.CreateVariable(ds[xl_sheet], var)
         # now do the rest of the variables for this sheet
         xl_labels = list(l1ire["xl_sheets"][xl_sheet]["xl_labels"].keys())
+        nc_labels = [l1ire["xl_sheets"][xl_sheet]["xl_labels"][l] for l in xl_labels]
+        xl_labels = [x for _,x in sorted(zip(nc_labels, xl_labels))]
         for xl_label in xl_labels:
             # get the netCDF variable name
             nc_label = l1ire["xl_sheets"][xl_sheet]["xl_labels"][xl_label]

@@ -99,13 +99,21 @@ class file_explore(QtWidgets.QWidget):
         self.context_menu = QtWidgets.QMenu()
         idx = self.view.selectedIndexes()
         selected_text = sorted([i.data() for i in idx])
-        menu_text = "Plot variable"
-        if len(selected_text) > 1:
-            menu_text = "Plot variables"
-        self.context_menu.actionPlotVariable = QtWidgets.QAction(self)
-        self.context_menu.actionPlotVariable.setText(menu_text)
-        self.context_menu.addAction(self.context_menu.actionPlotVariable)
-        self.context_menu.actionPlotVariable.triggered.connect(lambda: self.plot_variable(selected_text))
+        self.context_menu.actionPlotTimeSeries = QtWidgets.QAction(self)
+        self.context_menu.actionPlotTimeSeries.setText("Plot time series")
+        self.context_menu.addAction(self.context_menu.actionPlotTimeSeries)
+        self.context_menu.actionPlotTimeSeries.triggered.connect(lambda: self.plot_timeseries(selected_text))
+
+        self.context_menu.actionPlotHistograms = QtWidgets.QAction(self)
+        self.context_menu.actionPlotHistograms.setText("Plot histograms")
+        self.context_menu.addAction(self.context_menu.actionPlotHistograms)
+        self.context_menu.actionPlotHistograms.triggered.connect(lambda: self.plot_histograms(selected_text))
+
+        self.context_menu.actionPlotPercentiles = QtWidgets.QAction(self)
+        self.context_menu.actionPlotPercentiles.setText("Plot percentiles")
+        self.context_menu.addAction(self.context_menu.actionPlotPercentiles)
+        self.context_menu.actionPlotPercentiles.triggered.connect(lambda: self.plot_percentiles(selected_text))
+
         self.context_menu.exec_(self.view.viewport().mapToGlobal(position))
 
     def get_data_from_file(self):
@@ -124,9 +132,14 @@ class file_explore(QtWidgets.QWidget):
         labels = sorted(list(self.ds.series.keys()))
         for label in labels:
             var = pfp_utils.GetVariable(self.ds, label)
-            variable_name = QtGui.QStandardItem(label)
             long_name = QtGui.QStandardItem(var["Attr"]["long_name"])
-            self.model.appendRow([variable_name, long_name])
+            section = QtGui.QStandardItem(label)
+            for attr in var["Attr"]:
+                value = var["Attr"][attr]
+                child0 = QtGui.QStandardItem(attr)
+                child1 = QtGui.QStandardItem(value)
+                section.appendRow([child0, child1])
+            self.model.appendRow([section, long_name])
 
     def handleItemChanged(self, item):
         """ Handler for when view items are edited."""
@@ -136,9 +149,56 @@ class file_explore(QtWidgets.QWidget):
         #self.update_tab_text()
         pass
 
-    def plot_variable(self, labels):
-        pfp_plot.plot_timeseries_explore(self.ds, labels)
+    def plot_histograms(self, labels):
+        """ Wrapper for plot histograms function."""
+        # remove anything that is not the label of a variable in self.ds
+        for label in list(labels):
+            if label not in list(self.ds.series.keys()):
+                labels.remove(label)
+        # check to make sure there is something left to plot
+        if len(labels) == 0:
+            msg = " No variables to plot"
+            logger.warning(msg)
+            return
+        # go ahead and plot
+        pfp_plot.plot_explore_histograms(self.ds, labels)
+        # increment the figure number
         self.figure_number += 1
+        return
+
+    def plot_percentiles(self, labels):
+        """ Wrapper for plot percentiles function."""
+        # remove anything that is not the label of a variable in self.ds
+        for label in list(labels):
+            if label not in list(self.ds.series.keys()):
+                labels.remove(label)
+        # check to make sure there is something left to plot
+        if len(labels) == 0:
+            msg = " No variables to plot"
+            logger.warning(msg)
+            return
+        # go ahead and plot
+        pfp_plot.plot_explore_percentiles(self.ds, labels)
+        # increment the figure number
+        self.figure_number += 1
+        return
+
+    def plot_timeseries(self, labels):
+        """ Wrapper for plot time series function."""
+        # remove anything that is not the label of a variable in self.ds
+        for label in list(labels):
+            if label not in list(self.ds.series.keys()):
+                labels.remove(label)
+        # check to make sure there is something left to plot
+        if len(labels) == 0:
+            msg = " No variables to plot"
+            logger.warning(msg)
+            return
+        # go ahead and plot
+        pfp_plot.plot_explore_timeseries(self.ds, labels)
+        # increment the figure number
+        self.figure_number += 1
+        return
 
     def update_tab_text(self, text):
         """ Update tab text with file name."""
@@ -249,6 +309,19 @@ class edit_cfg_L1(QtWidgets.QWidget):
                             cfg[key1][key2][key3][key4] = val4
         return cfg
 
+    def get_existing_entries(self):
+        """ Get a list of existing entries in the current section."""
+        # index of the selected item
+        idx = self.view.selectedIndexes()[0]
+        # get the selected item from its index
+        selected_item = idx.model().itemFromIndex(idx)
+        # build a list of existing QC checks
+        existing_entries = []
+        if selected_item.hasChildren():
+            for i in range(selected_item.rowCount()):
+                existing_entries.append(str(selected_item.child(i, 0).text()))
+        return existing_entries
+
     def get_keyval_by_key_name(self, section, key):
         """ Get the value from a section based on the key name."""
         found = False
@@ -287,10 +360,14 @@ class edit_cfg_L1(QtWidgets.QWidget):
         self.context_menu = QtWidgets.QMenu()
         # get the index of the selected item
         idx = self.view.selectedIndexes()[0]
+        # get the selected item text
+        selected_text = str(idx.data())
+        # get the selected item
+        selected_item = idx.model().itemFromIndex(idx)
         # get the level of the selected item
         level = self.get_level_selected_item()
+        add_separator = False
         if level == 0:
-            selected_text = str(idx.data())
             if selected_text == "Global":
                 self.context_menu.actionAddGlobal = QtWidgets.QAction(self)
                 self.context_menu.actionAddGlobal.setText("Add attribute")
@@ -302,7 +379,6 @@ class edit_cfg_L1(QtWidgets.QWidget):
                 self.context_menu.addAction(self.context_menu.actionAddVariable)
                 self.context_menu.actionAddVariable.triggered.connect(self.add_variable)
         elif level == 1:
-            selected_item = idx.model().itemFromIndex(idx)
             parent = selected_item.parent()
             if (str(parent.text()) == "Files") and (selected_item.column() == 1):
                 key = str(parent.child(selected_item.row(),0).text())
@@ -330,18 +406,27 @@ class edit_cfg_L1(QtWidgets.QWidget):
                 self.context_menu.addAction(self.context_menu.actionRemoveGlobal)
                 self.context_menu.actionRemoveGlobal.triggered.connect(self.remove_item)
             elif str(parent.text()) == "Variables":
-                self.context_menu.actionAddFunction = QtWidgets.QAction(self)
-                self.context_menu.actionAddFunction.setText("Add Function")
-                self.context_menu.addAction(self.context_menu.actionAddFunction)
-                self.context_menu.actionAddFunction.triggered.connect(self.add_function)
-                self.context_menu.addSeparator()
+                existing_entries = self.get_existing_entries()
+                if "xl" not in existing_entries:
+                    self.context_menu.actionAddxlSection = QtWidgets.QAction(self)
+                    self.context_menu.actionAddxlSection.setText("Add xl section")
+                    self.context_menu.addAction(self.context_menu.actionAddxlSection)
+                    self.context_menu.actionAddxlSection.triggered.connect(self.add_xlsection)
+                    add_separator = True
+                if "Function" not in existing_entries:
+                    self.context_menu.actionAddFunction = QtWidgets.QAction(self)
+                    self.context_menu.actionAddFunction.setText("Add Function")
+                    self.context_menu.addAction(self.context_menu.actionAddFunction)
+                    self.context_menu.actionAddFunction.triggered.connect(self.add_function)
+                    add_separator = True
+                if add_separator:
+                    self.context_menu.addSeparator()
                 self.context_menu.actionRemoveVariable = QtWidgets.QAction(self)
                 self.context_menu.actionRemoveVariable.setText("Remove variable")
                 self.context_menu.addAction(self.context_menu.actionRemoveVariable)
                 self.context_menu.actionRemoveVariable.triggered.connect(self.remove_item)
         elif level == 2:
             section_text = str(idx.parent().parent().data())
-            subsection_text = str(idx.parent().data())
             subsubsection_text = str(idx.data())
             if section_text == "Variables":
                 if subsubsection_text == "Attr":
@@ -361,12 +446,12 @@ class edit_cfg_L1(QtWidgets.QWidget):
                 self.context_menu.addAction(self.context_menu.actionRemoveAttribute)
                 self.context_menu.actionRemoveAttribute.triggered.connect(self.remove_item)
             elif (str(idx.parent().data()) == "Function" and
-                  str(idx.data()) == "Right click to browse"):
+                  (selected_item.column() == 1)):
                 implemented_functions_name = [name for name,data in inspect.getmembers(pfp_func,inspect.isfunction)]
                 self.context_menu.actionAddFunction = {}
                 for item in implemented_functions_name:
                     self.context_menu.actionAddFunction[item] = QtWidgets.QAction(self)
-                    self.context_menu.actionAddFunction[item].setText(str(item))
+                    self.context_menu.actionAddFunction[item].setText(str(item.replace("_", " ")))
                     self.context_menu.addAction(self.context_menu.actionAddFunction[item])
                     self.context_menu.actionAddFunction[item].triggered.connect(self.add_function_entry)
 
@@ -406,6 +491,7 @@ class edit_cfg_L1(QtWidgets.QWidget):
         implemented_functions_data = [data for name,data in inspect.getmembers(pfp_func,inspect.isfunction)]
         # get the context menu entry that has been selected
         sender = str(self.context_menu.sender().text())
+        sender = sender.replace(" ", "_")
         # get the arguments for the selected function
         args = inspect.getargspec(implemented_functions_data[implemented_functions_name.index(sender)])
         # construct the function string
@@ -458,6 +544,16 @@ class edit_cfg_L1(QtWidgets.QWidget):
         self.add_subsubsection(subsection, new_var)
         parent.appendRow(subsection)
         # add an asterisk to the tab text to indicate the tab contents have changed
+        self.update_tab_text()
+
+    def add_xlsection(self):
+        """ Add an xl section to a variable."""
+        idx = self.view.selectedIndexes()[0]
+        selected_item = idx.model().itemFromIndex(idx)
+        dict_to_add = {"xl":{"sheet": "", "name": ""}}
+        # add the subsubsection
+        self.add_subsubsection(selected_item, dict_to_add)
+        # update the tab text with an asterix if required
         self.update_tab_text()
 
     def browse_file_path(self):

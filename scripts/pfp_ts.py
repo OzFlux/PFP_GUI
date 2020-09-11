@@ -1009,15 +1009,33 @@ def CoordRotation2D(cf, ds):
     flag = numpy.where(numpy.ma.getmaskarray(uu) == True, ones, zeros)
     pfp_utils.CreateVariable(ds, {"Label": "U_SONIC_Vr", "Data": uu, "Flag": flag, "Attr": attr})
 
+    attr = copy.deepcopy(UxUx["Attr"])
+    attr["long_name"] = "Standard deviation of streamwise windspeed, rotated to natural wind coordinates"
+    data = numpy.ma.sqrt(uu)
+    flag = numpy.where(numpy.ma.getmaskarray(uu) == True, ones, zeros)
+    pfp_utils.CreateVariable(ds, {"Label": "U_SONIC_Sd", "Data": data, "Flag": flag, "Attr": attr})
+
     attr = copy.deepcopy(UyUy["Attr"])
-    attr["long_name"] = "Variance of crossstream windspeed, rotated to natural wind coordinates"
+    attr["long_name"] = "Variance of cross-stream windspeed, rotated to natural wind coordinates"
     flag = numpy.where(numpy.ma.getmaskarray(vv) == True, ones, zeros)
     pfp_utils.CreateVariable(ds, {"Label": "V_SONIC_Vr", "Data": vv, "Flag": flag, "Attr": attr})
+
+    attr = copy.deepcopy(UyUy["Attr"])
+    attr["long_name"] = "Standard deviation of cross-stream windspeed, rotated to natural wind coordinates"
+    data = numpy.ma.sqrt(vv)
+    flag = numpy.where(numpy.ma.getmaskarray(vv) == True, ones, zeros)
+    pfp_utils.CreateVariable(ds, {"Label": "V_SONIC_Sd", "Data": data, "Flag": flag, "Attr": attr})
 
     attr = copy.deepcopy(UzUz["Attr"])
     attr["long_name"] = "Variance of vertical windspeed, rotated to natural wind coordinates"
     flag = numpy.where(numpy.ma.getmaskarray(ww) == True, ones, zeros)
     pfp_utils.CreateVariable(ds, {"Label": "W_SONIC_Vr", "Data": ww, "Flag": flag, "Attr": attr})
+
+    attr = copy.deepcopy(UzUz["Attr"])
+    attr["long_name"] = "Standard deviation of vertical windspeed, rotated to natural wind coordinates"
+    data = numpy.ma.sqrt(ww)
+    flag = numpy.where(numpy.ma.getmaskarray(ww) == True, ones, zeros)
+    pfp_utils.CreateVariable(ds, {"Label": "W_SONIC_Sd", "Data": data, "Flag": flag, "Attr": attr})
 
     if pfp_utils.get_optionskeyaslogical(cf, "RelaxRotation"):
         RotatedSeriesList = ['wT', 'wA', 'wC', 'uw', 'vw']
@@ -1077,7 +1095,7 @@ def CalculateFcStorageSinglePoint(cf, ds, CO2_label, Fc_out="Fc_single"):
         ps = pfp_utils.GetVariable(ds, "ps")
         # check the CO2 concentration units
         # if the units are mg/m3, convert CO2 concentration to umol/mol before taking the difference
-        pfp_utils.convert_units_co2(ds, CO2, "umol/mol")
+        pfp_utils.convert_units_func(ds, CO2, "umol/mol")
         # calculate the change in CO2 concentration between time steps
         # CO2 concentration assumed to be in umol/mol
         dc = numpy.ma.ediff1d(CO2["Data"], to_begin=0)
@@ -1542,19 +1560,20 @@ def DoFunctions(ds, info):
     Author: PRI
     Date: September 2015
     """
+    nrecs = int(ds.globalattributes["nc_nrecs"])
     implemented_functions = [name for name,data in inspect.getmembers(pfp_func,inspect.isfunction)]
     functions = {}
     convert_vars = []
     function_vars = []
-    for var in info["Variables"].keys():
+    for label in info["Variables"].keys():
         # datetime functions handled elsewhere for now
-        if var == "DateTime": continue
-        if "Function" not in info["Variables"][var].keys(): continue
-        if "func" not in info["Variables"][var]["Function"].keys():
-            msg = " DoFunctions: 'func' keyword not found in [Functions] for "+var
+        if label == "DateTime": continue
+        if "Function" not in info["Variables"][label].keys(): continue
+        if "func" not in info["Variables"][label]["Function"].keys():
+            msg = " DoFunctions: 'func' keyword not found in [Functions] for "+label
             logger.error(msg)
             continue
-        function_string = info["Variables"][var]["Function"]["func"]
+        function_string = info["Variables"][label]["Function"]["func"]
         function_string = function_string.replace('"','')
         function_name = function_string.split("(")[0]
         function_args = function_string.split("(")[1].replace(")","").replace(" ","").split(",")
@@ -1563,21 +1582,29 @@ def DoFunctions(ds, info):
             logger.error(msg)
             continue
         else:
-            functions[var] = {"name":function_name, "arguments":function_args}
+            functions[label] = {"name":function_name, "arguments":function_args}
             if "convert" in function_name.lower():
-                convert_vars.append(var)
+                convert_vars.append(label)
             else:
-                function_vars.append(var)
-    for var in convert_vars:
-        result = getattr(pfp_func, functions[var]["name"])(ds, var, *functions[var]["arguments"])
+                function_vars.append(label)
+    series_list = list(ds.series.keys())
+    for label in convert_vars:
+        if label not in series_list:
+            var = pfp_utils.CreateEmptyVariable(label, nrecs, attr=info["Variables"][label]["Attr"])
+            pfp_utils.CreateVariable(ds, var)
+        result = getattr(pfp_func, functions[label]["name"])(ds, label, *functions[label]["arguments"])
         if result:
-            msg = " Completed units conversion for " + var
+            msg = " Completed units conversion for " + label
             logger.info(msg)
-    for var in function_vars:
-        result = getattr(pfp_func, functions[var]["name"])(ds, var, *functions[var]["arguments"])
+    for label in function_vars:
+        if label not in series_list:
+            var = pfp_utils.CreateEmptyVariable(label, nrecs, attr=info["Variables"][label]["Attr"])
+            pfp_utils.CreateVariable(ds, var)
+        result = getattr(pfp_func, functions[label]["name"])(ds, label, *functions[label]["arguments"])
         if result:
-            msg = " Completed function for " + var
+            msg = " Completed function for " + label
             logger.info(msg)
+    return
 
 def CalculateStandardDeviations(ds):
     """
@@ -1648,7 +1675,7 @@ def CalculateStandardDeviations(ds):
             sd["Label"] = sd_label
             sd["Data"] = numpy.ma.sqrt(vr["Data"])
             sd["Attr"]["long_name"] = vr["Attr"]["long_name"].replace("variance", "standard deviation")
-            sd["Attr"]["units"] = variance_units_to_standard_deviation(vr["Attr"]["units"])
+            sd["Attr"]["units"] = pfp_utils.units_variance_to_standard_deviation(vr["Attr"]["units"])
             pfp_utils.CreateVariable(ds, sd)
     # second, variances from standard deviations
     # get a list of standard deviations that were not created in step 1 above
@@ -1662,36 +1689,9 @@ def CalculateStandardDeviations(ds):
             vr["Label"] = vr_label
             vr["Data"] = sd["Data"]*sd["Data"]
             vr["Attr"]["long_name"] = sd["Attr"]["long_name"].replace("standard deviation", "variance")
-            vr["Attr"]["units"] = standard_deviation_units_to_variance(sd["Attr"]["units"])
+            vr["Attr"]["units"] = pfp_utils.units_standard_deviation_to_variance(sd["Attr"]["units"])
             pfp_utils.CreateVariable(ds, vr)
     return
-
-def variance_units_to_standard_deviation(units):
-    """
-    Purpose:
-     Convert variance units string to standard deviation units string.
-    Usage:
-     sd_units = pfp_ts.variance_units_to_standard_deviation(vr_units)
-    Author: PRI
-    Date: August 2020
-    """
-    if (("(" in units) and (")" in units)):
-        units = units[units.index("(")+1:units.index(")")]
-    else:
-        units = ""
-    return units
-
-def standard_deviation_units_to_variance(units):
-    """
-    Purpose:
-     Convert standard deviation units string to variance units string.
-    Usage:
-     vr_units = pfp_ts.standard_deviation_units_to_variance(sd_units)
-    Author: PRI
-    Date: August 2020
-    """
-    units = "(" + units + ")2"
-    return units
 
 def do_mergeseries(ds,target,srclist,mode="verbose"):
     if mode.lower()!="quiet":
