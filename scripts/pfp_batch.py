@@ -1,5 +1,6 @@
 # standard modules
 import datetime
+import logging
 import ntpath
 import os
 import sys
@@ -7,7 +8,7 @@ import traceback
 # 3rd party modules
 from configobj import ConfigObj
 # PFP modules
-sys.path.append("scripts")
+#sys.path.append("scripts")
 import pfp_cfg
 import pfp_clim
 import pfp_compliance
@@ -15,13 +16,14 @@ import pfp_cpd1
 import pfp_cpd2
 import pfp_io
 import pfp_levels
-import pfp_log
 import pfp_mpt
 import pfp_plot
 import pfp_utils
 
+logger = logging.getLogger("pfp_log")
+
 def do_L1_batch(cf_level):
-    logger = pfp_log.change_logger_filename("pfp_log", "L1")
+    #logger = pfp_log.change_logger_filename("pfp_log", "L1")
     for i in cf_level.keys():
         cf_file_name = os.path.split(cf_level[i])
         logger.info("Starting L1 processing with %s", cf_file_name[1])
@@ -43,7 +45,7 @@ def do_L1_batch(cf_level):
             continue
     return
 def do_L2_batch(cf_level):
-    logger = pfp_log.change_logger_filename("pfp_log", "L2")
+    #logger = pfp_log.change_logger_filename("pfp_log", "L2")
     for i in cf_level.keys():
         cf_file_name = os.path.split(cf_level[i])
         msg = "Starting L2 processing with " + cf_file_name[1]
@@ -68,7 +70,7 @@ def do_L2_batch(cf_level):
             continue
     return
 def do_L3_batch(cf_level):
-    logger = pfp_log.change_logger_filename("pfp_log", "L3")
+    #logger = pfp_log.change_logger_filename("pfp_log", "L3")
     for i in cf_level.keys():
         cf_file_name = os.path.split(cf_level[i])
         msg = "Starting L3 processing with " + cf_file_name[1]
@@ -93,7 +95,7 @@ def do_L3_batch(cf_level):
             continue
     return
 def do_ecostress_batch(cf_level):
-    logger = pfp_log.change_logger_filename("pfp_log", "ecostress")
+    #logger = pfp_log.change_logger_filename("pfp_log", "ecostress")
     for i in cf_level.keys():
         cf_file_name = os.path.split(cf_level[i])
         msg = "Starting ECOSTRESS output with " + cf_file_name[1]
@@ -112,7 +114,7 @@ def do_ecostress_batch(cf_level):
             continue
     return
 def do_fluxnet_batch(cf_level):
-    logger = pfp_log.change_logger_filename("pfp_log", "fluxnet")
+    #logger = pfp_log.change_logger_filename("pfp_log", "fluxnet")
     for i in cf_level.keys():
         cf_file_name = os.path.split(cf_level[i])
         msg = "Starting FluxNet output with " + cf_file_name[1]
@@ -124,7 +126,7 @@ def do_fluxnet_batch(cf_level):
         logger.info("")
     return
 def do_reddyproc_batch(cf_level):
-    logger = pfp_log.change_logger_filename("pfp_log", "reddyproc")
+    #logger = pfp_log.change_logger_filename("pfp_log", "reddyproc")
     for i in cf_level.keys():
         cf_file_name = os.path.split(cf_level[i])
         msg = "Starting REddyProc output with " + cf_file_name[1]
@@ -136,7 +138,7 @@ def do_reddyproc_batch(cf_level):
         logger.info("")
     return
 def do_concatenate_batch(cf_level):
-    logger = pfp_log.change_logger_filename("pfp_log", "concatenate")
+    #logger = pfp_log.change_logger_filename("pfp_log", "concatenate")
     for i in cf_level.keys():
         if not os.path.isfile(cf_level[i]):
             msg = " Control file " + cf_level[i] + " not found"
@@ -188,7 +190,7 @@ def do_concatenate_batch(cf_level):
             continue
     return
 def do_climatology_batch(cf_level):
-    logger = pfp_log.change_logger_filename("pfp_log", "climatology")
+    #logger = pfp_log.change_logger_filename("pfp_log", "climatology")
     for i in cf_level.keys():
         if not os.path.isfile(cf_level[i]):
             msg = " Control file " + cf_level[i] + " not found"
@@ -211,7 +213,7 @@ def do_climatology_batch(cf_level):
             continue
     return
 def do_cpd1_batch(cf_level):
-    logger = pfp_log.change_logger_filename("pfp_log", "cpd1")
+    #logger = pfp_log.change_logger_filename("pfp_log", "cpd1")
     for i in cf_level.keys():
         cf_file_name = os.path.split(cf_level[i])
         msg = "Starting CPD (McHugh) with " + cf_file_name[1]
@@ -234,7 +236,7 @@ def do_cpd1_batch(cf_level):
             continue
     return
 def do_cpd2_batch(cf_level):
-    logger = pfp_log.change_logger_filename("pfp_log", "cpd2")
+    #logger = pfp_log.change_logger_filename("pfp_log", "cpd2")
     for i in cf_level.keys():
         cf_file_name = os.path.split(cf_level[i])
         msg = "Starting CPD (Barr) with " + cf_file_name[1]
@@ -257,7 +259,7 @@ def do_cpd2_batch(cf_level):
             continue
     return
 def do_mpt_batch(cf_level):
-    logger = pfp_log.change_logger_filename("pfp_log", "mpt")
+    #logger = pfp_log.change_logger_filename("pfp_log", "mpt")
     for i in cf_level.keys():
         cf_file_name = os.path.split(cf_level[i])
         msg = "Starting MPT with " + cf_file_name[1]
@@ -280,7 +282,7 @@ def do_mpt_batch(cf_level):
             continue
     return
 def do_L4_batch(cf_level):
-    logger = pfp_log.change_logger_filename("pfp_log", "L4")
+    #logger = pfp_log.change_logger_filename("pfp_log", "L4")
     for i in cf_level.keys():
         if not os.path.isfile(cf_level[i]):
             msg = " Control file " + cf_level[i] + " not found"
@@ -333,7 +335,7 @@ def do_L4_batch(cf_level):
             continue
     return
 def do_L5_batch(cf_level):
-    logger = pfp_log.change_logger_filename("pfp_log", "L5")
+    #logger = pfp_log.change_logger_filename("pfp_log", "L5")
     for i in cf_level.keys():
         if not os.path.isfile(cf_level[i]):
             msg = " Control file " + cf_level[i] + " not found"
@@ -387,7 +389,7 @@ def do_L5_batch(cf_level):
             continue
     return
 def do_L6_batch(cf_level):
-    logger = pfp_log.change_logger_filename("pfp_log", "L6")
+    #logger = pfp_log.change_logger_filename("pfp_log", "L6")
     for i in cf_level.keys():
         if not os.path.isfile(cf_level[i]):
             msg = " Control file " + cf_level[i] + " not found"
@@ -420,9 +422,10 @@ def do_L6_batch(cf_level):
             continue
     return
 def do_levels_batch(cf_batch):
-    batch_log_path = pfp_log.get_batch_log_path("logfiles")
-    batch_log_file_name = os.path.join(batch_log_path, "batch.log")
-    logger = pfp_log.init_logger("pfp_log", batch_log_file_name, to_file=True, to_screen=True)
+    logger = logging.getLogger("pfp_log")
+    #batch_log_path = pfp_log.get_batch_log_path("logfiles")
+    #batch_log_file_name = os.path.join(batch_log_path, "batch.log")
+    #logger = pfp_log.init_logger("pfp_log", batch_log_file_name, to_file=True, to_screen=True)
     start = datetime.datetime.now()
     msg = " Started batch processing at " + start.strftime("%Y%m%d%H%M")
     logger.info(msg)
@@ -489,29 +492,29 @@ def do_levels_batch(cf_batch):
         elif level.lower() == "l6":
             # L6 processing
             do_L6_batch(cf_batch["Levels"][level])
-    logger = pfp_log.change_logger_filename("pfp_log", "batch")
+    #logger = pfp_log.change_logger_filename("pfp_log", "batch")
     end = datetime.datetime.now()
     msg = " Finished batch processing at " + end.strftime("%Y%m%d%H%M")
     logger.info(msg)
     return
 
-if (__name__ == '__main__'):
-    # get the control file name
-    if len(sys.argv) == 1:
-        # not on the command line, so ask the user
-        cfg_file_path = raw_input("Enter the control file name: ")
-        # exit if nothing selected
-        if len(cfg_file_path) == 0:
-            sys.exit()
-    else:
-        # control file name on the command line
-        if not os.path.exists(sys.argv[1]):
-            # control file doesn't exist
-            logger.error("Control file %s does not exist", sys.argv[1])
-            sys.exit()
-        else:
-            cfg_file_path = sys.argv[1]
-    # read the control file
-    cf_batch = ConfigObj(cfg_file_path, indent_type="    ", list_values=False)
-    # call the processing
-    do_levels_batch(cf_batch)
+#if (__name__ == '__main__'):
+    ## get the control file name
+    #if len(sys.argv) == 1:
+        ## not on the command line, so ask the user
+        #cfg_file_path = raw_input("Enter the control file name: ")
+        ## exit if nothing selected
+        #if len(cfg_file_path) == 0:
+            #sys.exit()
+    #else:
+        ## control file name on the command line
+        #if not os.path.exists(sys.argv[1]):
+            ## control file doesn't exist
+            #logger.error("Control file %s does not exist", sys.argv[1])
+            #sys.exit()
+        #else:
+            #cfg_file_path = sys.argv[1]
+    ## read the control file
+    #cf_batch = ConfigObj(cfg_file_path, indent_type="    ", list_values=False)
+    ## call the processing
+    #do_levels_batch(cf_batch)

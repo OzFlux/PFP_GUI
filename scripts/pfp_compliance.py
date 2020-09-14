@@ -787,7 +787,20 @@ def include_variables(cfg, ds_in):
                 ds_out.series[label] = ds_in.series[label]
     return ds_out
 
-def l1_check_controlfile(cfg):
+def check_batch_controlfile(cfg):
+    """
+    Purpose:
+     Check the L1 control file to make sure it contains all information
+     needed to run L1 and that all information is correct.
+    Usage:
+    Side effects:
+    Author: PRI
+    Date: June 2020
+    """
+    ok = True
+    return ok
+
+def check_l1_controlfile(cfg):
     """
     Purpose:
      Check the L1 control file to make sure it contains all information

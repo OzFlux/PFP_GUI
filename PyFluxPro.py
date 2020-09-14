@@ -598,9 +598,13 @@ class pfp_main_ui(QtWidgets.QWidget):
         self.tabs.setCurrentIndex(0)
         # call the appropriate processing routine depending on the level
         self.tabs.tab_index_running = tab_index_current
-        if self.tabs.cfg_dict[tab_index_current]["level"] == "L1":
+        if self.tabs.cfg_dict[tab_index_current]["level"] == "batch":
             # check the L1 control file to see if it is OK to run
-            if not pfp_compliance.l1_check_controlfile(cfg): return
+            if not pfp_compliance.check_batch_controlfile(cfg): return
+            pfp_top_level.do_run_batch(cfg)
+        elif self.tabs.cfg_dict[tab_index_current]["level"] == "L1":
+            # check the L1 control file to see if it is OK to run
+            if not pfp_compliance.check_l1_controlfile(cfg): return
             pfp_top_level.do_run_l1(cfg)
         elif self.tabs.cfg_dict[tab_index_current]["level"] == "L2":
             pfp_top_level.do_run_l2(cfg)

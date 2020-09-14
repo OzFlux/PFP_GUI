@@ -7,6 +7,7 @@ import netCDF4
 import matplotlib
 from PyQt5 import QtCore, QtWidgets, QtGui
 # PFP modules
+import pfp_batch
 import pfp_clim
 import pfp_compliance
 import pfp_cpd1
@@ -398,6 +399,40 @@ def do_file_split_run(ui):
         error_message = traceback.format_exc()
         logger.error(error_message)
 # top level routines for the Run menu
+def do_run_batch(cfg):
+    """
+    Purpose:
+     Top level routine for running the batch processing.
+    Usage:
+     pfp_top_level.do_run_batch(cfg)
+     where cfg is a batch control exist
+    Side effects:
+     Creates netCDF files and plots as required.
+    Author: PRI
+    Date: September 2020
+    """
+    try:
+        logger.info("Starting batch processing")
+        pfp_batch.do_levels_batch(cfg)
+
+        #ds1 = pfp_levels.l1qc(cfg)
+        #if ds1.returncodes["value"] == 0:
+            #outfilename = pfp_io.get_outfilenamefromcf(cfg)
+            #nc_file = pfp_io.nc_open_write(outfilename)
+            #if nc_file is None: return
+            #pfp_io.nc_write_series(nc_file, ds1)
+            #logger.info("Finished L1 processing")
+        #else:
+            #msg = "An error occurred during L1 processing"
+            #logger.error(msg)
+        #logger.info("")
+
+    except Exception:
+        msg = " Error running batch processing, see below for details ..."
+        logger.error(msg)
+        error_message = traceback.format_exc()
+        logger.error(error_message)
+    return
 def do_run_l1(cfg):
     """
     Purpose:
