@@ -1,0 +1,17 @@
+level = cpd_barr
+[Files]
+    file_path = Right click to browse
+    in_filename = Right click to browse
+    out_filename = Right click to browse
+[Options]
+    Fsd_threshold  = 5
+    Num_bootstraps = 100
+[Variables]
+    [[Fc]]
+        name = Fc
+    [[Ta]]
+        name = Ta
+    [[ustar]]
+        name = ustar
+    [[Fsd]]
+        name = Fsd
