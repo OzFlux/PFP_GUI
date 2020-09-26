@@ -45,6 +45,7 @@ def Convert_gH2Opm3_to_percent(ds, RH_out, Ah_in, Ta_in):
     RH = pfp_utils.GetVariable(ds, RH_out)
     RH["Data"] = pfp_mf.RHfromabsolutehumidity(Ah["Data"], Ta["Data"])
     RH["Flag"] = numpy.where(numpy.ma.getmaskarray(RH["Data"]) == True, ones, zeros)
+    RH["Attr"]["units"] = "%"
     pfp_utils.CreateVariable(ds, RH)
     return 1
 
@@ -57,20 +58,6 @@ def Convert_gH2Opm3_to_mmolpm3(ds, H2O_out, Ah_in):
     Author: PRI
     Date: September 2020
     """
-    #nRecs = int(ds.globalattributes["nc_nrecs"])
-    #zeros = numpy.zeros(nRecs, dtype=numpy.int32)
-    #ones = numpy.ones(nRecs, dtype=numpy.int32)
-    #for item in [Ah_in]:
-        #if item not in ds.series.keys():
-            #msg = " Requested series " + item + " not found, " + MD_out + " not calculated"
-            #logger.error(msg)
-            #return 0
-    #Ah = pfp_utils.GetVariable(ds, Ah_in)
-    #MD = pfp_utils.GetVariable(ds, MD_out)
-    #MD["Data"] = pfp_mf.h2o_mmolpm3fromgpm3(Ah["Data"])
-    #MD["Flag"] = numpy.where(numpy.ma.getmaskarray(MD["Data"]) == True, ones, zeros)
-    #pfp_utils.CreateVariable(ds, MD)
-    #return 1
     for item in [Ah_in]:
         if item not in ds.series.keys():
             msg = " Requested series " + item + " not found, " + H2O_out + " not calculated"
@@ -108,11 +95,15 @@ def Convert_gH2Opm3_to_mmolpmol(ds, MF_out, Ah_in, Ta_in, ps_in):
             logger.error(msg)
             return 0
     Ah = pfp_utils.GetVariable(ds, Ah_in)
+    Ah = pfp_utils.convert_units_func(ds, Ah, "g/m3")
     Ta = pfp_utils.GetVariable(ds, Ta_in)
+    Ta = pfp_utils.convert_units_func(ds, Ta, "C")
     ps = pfp_utils.GetVariable(ds, ps_in)
+    ps = pfp_utils.convert_units_func(ds, ps, "kPa")
     MF = pfp_utils.GetVariable(ds, MF_out)
     MF["Data"] = pfp_mf.h2o_mmolpmolfromgpm3(Ah["Data"], Ta["Data"], ps["Data"])
     MF["Flag"] = numpy.where(numpy.ma.getmaskarray(MF["Data"]) == True, ones, zeros)
+    MF["Attr"]["units"] = "mmol/mol"
     pfp_utils.CreateVariable(ds, MF)
     return 1
 
@@ -171,6 +162,64 @@ def Convert_kgpm3_to_gpm3(ds, Ah_out, Ah_in):
     pfp_utils.CreateVariable(ds, var_out)
     return 1
 
+def Convert_mgCO2pm3_to_mmolpm3(ds, CO2_out, CO2_in):
+    """
+    Purpose:
+     Calculate CO2 molar density in mmol/m3 from CO2 concentration in mg/m3.
+    Usage:
+     pfp_func.Convert_mgCO2pm3_to_mmolpm3(ds, CO2_out, CO2_in)
+    Author: PRI
+    Date: September 2020
+    """
+    for item in [CO2_in]:
+        if item not in ds.series.keys():
+            msg = " Requested series " + item + " not found, " + CO2_out + " not calculated"
+            logger.error(msg)
+            return 0
+    var_in = pfp_utils.GetVariable(ds, CO2_in)
+    got_variance = False
+    if "Vr" in var_in["Label"] and ")2" in var_in["Attr"]["units"]:
+        got_variance = True
+        var_in["Data"] = numpy.ma.sqrt(var_in["Data"])
+        var_in["Attr"]["units"] = pfp_utils.units_variance_to_standard_deviation(var_in["Attr"]["units"])
+    var_out = pfp_utils.convert_units_func(ds, var_in, "mmol/m3", mode="quiet")
+    var_out["Label"] = CO2_out
+    if got_variance:
+        var_out["Data"] = var_out["Data"]*var_out["Data"]
+        var_out["Attr"]["units"] = pfp_utils.units_standard_deviation_to_variance(var_out["Attr"]["units"])
+    pfp_utils.CreateVariable(ds, var_out)
+    return 1
+
+def Convert_mgCO2pm3_to_umolpmol(ds, MF_out, Cc_in, Ta_in, ps_in):
+    """
+    Purpose:
+     Calculate CO2 mole fraction in uml/mol from mass density in mgCO2/m3.
+    Usage:
+     pfp_func.Convert_mgCO2pm3_to_umolpmol(ds, MF_out, Cc_in, Ta_in, ps_in)
+    Author: PRI
+    Date: August 2019
+    """
+    nRecs = int(ds.globalattributes["nc_nrecs"])
+    zeros = numpy.zeros(nRecs, dtype=numpy.int32)
+    ones = numpy.ones(nRecs, dtype=numpy.int32)
+    for item in [Cc_in, Ta_in, ps_in]:
+        if item not in ds.series.keys():
+            msg = " Requested series " + item + " not found, " + MF_out + " not calculated"
+            logger.error(msg)
+            return 0
+    Cc = pfp_utils.GetVariable(ds, Cc_in)
+    Cc = pfp_utils.convert_units_func(ds, Cc, "mg/m3")
+    Ta = pfp_utils.GetVariable(ds, Ta_in)
+    Ta = pfp_utils.convert_units_func(ds, Ta, "C")
+    ps = pfp_utils.GetVariable(ds, ps_in)
+    ps = pfp_utils.convert_units_func(ds, ps, "kPa")
+    MF = pfp_utils.GetVariable(ds, MF_out)
+    MF["Data"] = pfp_mf.co2_ppmfrommgCO2pm3(Cc["Data"], Ta["Data"], ps["Data"])
+    MF["Flag"] = numpy.where(numpy.ma.getmaskarray(MF["Data"]) == True, ones, zeros)
+    MF["Attr"]["units"] = "umol/mol"
+    pfp_utils.CreateVariable(ds, MF)
+    return 1
+
 def Convert_mmolpm3_to_gH2Opm3(ds, Ah_out, H2O_in):
     """
     Purpose:
@@ -221,20 +270,17 @@ def Convert_mmolpmol_to_gH2Opm3(ds, Ah_out, MF_in, Ta_in, ps_in):
             msg = " Requested series " + item + " not found, " + Ah_out + " not calculated"
             logger.error(msg)
             return 0
-    if Ah_out in ds.series.keys():
-        msg = " Output series " + Ah_out + " already exists, skipping ..."
-        logger.error(msg)
-        return 0
-    MF_data,MF_flag,MF_attr = pfp_utils.GetSeriesasMA(ds,MF_in)
-    Ta_data,Ta_flag,Ta_attr = pfp_utils.GetSeriesasMA(ds,Ta_in)
-    ps_data,ps_flag,ps_attr = pfp_utils.GetSeriesasMA(ds,ps_in)
-    Ah_data = pfp_mf.h2o_gpm3frommmolpmol(MF_data,Ta_data,ps_data)
-    long_name = "Absolute humidity calculated from " + MF_in + ", " + Ta_in + " and " + ps_in
-    Ah_attr = pfp_utils.MakeAttributeDictionary(long_name=long_name,
-                                              height=MF_attr["height"],
-                                              units="g/m3")
-    Ah_flag = numpy.where(numpy.ma.getmaskarray(Ah_data) == True, ones, zeros)
-    pfp_utils.CreateSeries(ds, Ah_out, Ah_data, Ah_flag, Ah_attr)
+    MF = pfp_utils.GetVariable(ds, MF_in)
+    MF = pfp_utils.convert_units_func(ds, MF, "mmol/mol")
+    Ta = pfp_utils.GetVariable(ds, Ta_in)
+    Ta = pfp_utils.convert_units_func(ds, Ta, "C")
+    ps = pfp_utils.GetVariable(ds, ps_in)
+    ps = pfp_utils.convert_units_func(ds, ps, "kPa")
+    Ah = pfp_utils.GetVariable(ds, Ah_out)
+    Ah["Data"] = pfp_mf.h2o_gpm3frommmolpmol(MF["Data"], Ta["Data"], ps["Data"])
+    Ah["Flag"] = numpy.where(numpy.ma.getmaskarray(Ah["Data"]) == True, ones, zeros)
+    Ah["Attr"]["units"] = "g/m3"
+    pfp_utils.CreateVariable(ds, Ah)
     return 1
 
 def Convert_percent_to_mmolpmol(ds, MF_out, RH_in, Ta_in, ps_in):
@@ -250,21 +296,25 @@ def Convert_percent_to_mmolpmol(ds, MF_out, RH_in, Ta_in, ps_in):
             msg = " Requested series " + item + " not found, " + MF_out + " not calculated"
             logger.error(msg)
             return 0
-    if MF_out in ds.series.keys():
-        msg = " Output series " + MF_out + " already exists, skipping ..."
-        logger.error(msg)
-        return 0
-    RH_data, RH_flag, RH_attr = pfp_utils.GetSeriesasMA(ds, RH_in)
-    Ta_data, Ta_flag, Ta_attr = pfp_utils.GetSeriesasMA(ds, Ta_in)
-    Ah_data = pfp_mf.absolutehumidityfromRH(Ta_data, RH_data)
-    ps_data, ps_flag, ps_attr = pfp_utils.GetSeriesasMA(ds, ps_in)
-    MF_data = pfp_mf.h2o_mmolpmolfromgpm3(Ah_data, Ta_data, ps_data)
-    long_name = "H2O mole fraction calculated from " + RH_in + ", " + Ta_in + " and " + ps_in
-    MF_attr = pfp_utils.MakeAttributeDictionary(long_name=long_name,
-                                              height=RH_attr["height"],
-                                              units="mmol/mol")
-    MF_flag = numpy.where(numpy.ma.getmaskarray(MF_data)==True,ones,zeros)
-    pfp_utils.CreateSeries(ds, MF_out, MF_data, MF_flag, MF_attr)
+    # get the relative humidity and check the units
+    RH = pfp_utils.GetVariable(ds, RH_in)
+    RH = pfp_utils.convert_units_func(ds, RH, "%")
+    # get the temperature and check the units
+    Ta = pfp_utils.GetVariable(ds, Ta_in)
+    Ta = pfp_utils.convert_units_func(ds, Ta, "C")
+    # get the absoulte humidity
+    Ah_data = pfp_mf.absolutehumidityfromRH(Ta["Data"], RH["Data"])
+    # get the atmospheric pressure and check the units
+    ps = pfp_utils.GetVariable(ds, ps_in)
+    ps = pfp_utils.convert_units_func(ds, ps, "kPa")
+    # get the output variable (created in pfp_ts.DoFunctions())
+    MF = pfp_utils.GetVariable(ds, MF_out)
+    # do the business
+    MF["Data"] = pfp_mf.h2o_mmolpmolfromgpm3(Ah_data, Ta["Data"], ps["Data"])
+    MF["Flag"] = numpy.where(numpy.ma.getmaskarray(MF["Data"]) == True, ones, zeros)
+    MF["Attr"]["units"] = "mmol/mol"
+    # put the output variable back into the data structure
+    pfp_utils.CreateVariable(ds, MF)
     return 1
 
 def Convert_percent_to_gH2Opm3(ds, Ah_out, RH_in, Ta_in):
@@ -289,19 +339,18 @@ def Convert_percent_to_gH2Opm3(ds, Ah_out, RH_in, Ta_in):
             msg = " Requested series " + item + " not found, " + Ah_out + " not calculated"
             logger.error(msg)
             return 0
-    if Ah_out in ds.series.keys():
-        msg = " Output series " + Ah_out + " already exists, skipping ..."
-        logger.error(msg)
-        return 0
-    RH_data, RH_flag, RH_attr = pfp_utils.GetSeriesasMA(ds, RH_in)
-    Ta_data, Ta_flag, Ta_attr = pfp_utils.GetSeriesasMA(ds, Ta_in)
-    Ah_data = pfp_mf.absolutehumidityfromRH(Ta_data, RH_data)
-    long_name = "Absolute humidity calculated from " + RH_in + " and " + Ta_in
-    Ah_attr = pfp_utils.MakeAttributeDictionary(long_name=long_name,
-                                                height=RH_attr["height"],
-                                                units="g/m3")
-    flag = numpy.where(numpy.ma.getmaskarray(Ah_data) == True, ones, zeros)
-    pfp_utils.CreateSeries(ds, Ah_out, Ah_data, flag, Ah_attr)
+    # get the relative humidity and check the units
+    RH = pfp_utils.GetVariable(ds, RH_in)
+    RH = pfp_utils.convert_units_func(ds, RH, "%")
+    # get the temperature and check the units
+    Ta = pfp_utils.GetVariable(ds, Ta_in)
+    Ta = pfp_utils.convert_units_func(ds, Ta, "C")
+    # get the absolute humidity
+    Ah = pfp_utils.GetVariable(ds, Ah_out)
+    Ah["Data"] = pfp_mf.absolutehumidityfromRH(Ta["Data"], RH["Data"])
+    Ah["Flag"] = numpy.where(numpy.ma.getmaskarray(Ah["Data"]) == True, ones, zeros)
+    Ah["Attr"]["units"] = "g/m3"
+    pfp_utils.CreateVariable(ds, Ah)
     return 1
 
 def Convert_Pa_to_kPa(ds, ps_out, ps_in):

@@ -1,17 +1,17 @@
 import constants as c
 import numpy
-from pfp_utils import SeriestoMA, MAtoSeries
+import pfp_utils
 
 def absolutehumidityfromRH(Ta,RH):
     # convert to masked arrays
-    RH, WasND = SeriestoMA(RH)
-    Ta, dummy = SeriestoMA(Ta)
+    RH, WasND = pfp_utils.SeriestoMA(RH)
+    Ta, dummy = pfp_utils.SeriestoMA(Ta)
     # do the job
     VPsat = es(Ta)
     vp = RH * VPsat / float(100)
     ah = float(1000000) * vp / ((Ta + 273.15) * c.Rv)
     # convert back to ndarray if input is not a masked array
-    if WasND: ah, _ = MAtoSeries(ah)
+    if WasND: ah, _ = pfp_utils.MAtoSeries(ah)
     return ah
 
 def co2_ppmfrommgCO2pm3(c_mgpm3,T,p):
@@ -26,15 +26,15 @@ def co2_ppmfrommgCO2pm3(c_mgpm3,T,p):
         Returns the CO2 mole fraction in umol/mol.
     """
     # convert to masked array if required
-    c_mgpm3, WasND = SeriestoMA(c_mgpm3)
-    T, dummy = SeriestoMA(T)
+    c_mgpm3, WasND = pfp_utils.SeriestoMA(c_mgpm3)
+    T, dummy = pfp_utils.SeriestoMA(T)
     T = T + 273.15             # temperature in K
-    p, dummy = SeriestoMA(p)
+    p, dummy = pfp_utils.SeriestoMA(p)
     p = p * float(1000)        # pressure in Pa
     # do the job
     c_ppm = (c_mgpm3/c.Mco2)*c.R*T/p
     # convert back to ndarray if input is not a masked array
-    if WasND: c_ppm, _ = MAtoSeries(c_ppm)
+    if WasND: c_ppm, _ = pfp_utils.MAtoSeries(c_ppm)
     return c_ppm
 
 def co2_mgCO2pm3fromppm(c_ppm,T,p):
@@ -49,15 +49,15 @@ def co2_mgCO2pm3fromppm(c_ppm,T,p):
         Returns the CO2 concentration in mg/m3.
     """
     # convert to masked array if required
-    c_ppm, WasND = SeriestoMA(c_ppm)
-    T, dummy = SeriestoMA(T)
+    c_ppm, WasND = pfp_utils.SeriestoMA(c_ppm)
+    T, dummy = pfp_utils.SeriestoMA(T)
     T = T + 273.15             # temperature in K
-    p, dummy = SeriestoMA(p)
+    p, dummy = pfp_utils.SeriestoMA(p)
     p = p * float(1000)        # pressure in Pa
     # do the job
     c_mgpm3 = c_ppm*c.Mco2*p/(c.R*T)
     # convert back to ndarray if input is not a masked array
-    if WasND: c_mgpm3, _ = MAtoSeries(c_mgpm3)
+    if WasND: c_mgpm3, _ = pfp_utils.MAtoSeries(c_mgpm3)
     return c_mgpm3
 
 def co2_umolpm3fromppm(c_ppm, T, p):
@@ -72,15 +72,15 @@ def co2_umolpm3fromppm(c_ppm, T, p):
         Returns the CO2 concentration in umol/m3.
     """
     # convert to masked array if required
-    c_ppm, WasND = SeriestoMA(c_ppm)
-    T, dummy = SeriestoMA(T)
+    c_ppm, WasND = pfp_utils.SeriestoMA(c_ppm)
+    T, dummy = pfp_utils.SeriestoMA(T)
     T = T + 273.15             # temperature in K
-    p, dummy = SeriestoMA(p)
+    p, dummy = pfp_utils.SeriestoMA(p)
     p = p * float(1000)        # pressure in Pa
     # do the job
     c_umolpm3 = c_ppm*p/(c.R*T)
     # convert back to ndarray if input is not a masked array
-    if WasND: c_umolpm3, _ = MAtoSeries(c_umolpm3)
+    if WasND: c_umolpm3, _ = pfp_utils.MAtoSeries(c_umolpm3)
     return c_umolpm3
 
 def densitydryair(Ta,ps,vp):
@@ -130,11 +130,11 @@ def Fc_gCpm2psfromumolpm2ps(Fc_umolpm2ps):
     Returns the CO2 flux in units of gC/m2/s
     """
     # convert to masked array
-    Fc_umolpm2ps, WasND = SeriestoMA(Fc_umolpm2ps)
+    Fc_umolpm2ps, WasND = pfp_utils.SeriestoMA(Fc_umolpm2ps)
     # do the job
     Fc_gCpm2ps = Fc_umolpm2ps * c.Mc/1E3
     # convert back to ndarray if input is not a masked array
-    if WasND: Fc_gCpm2ps, _ = MAtoSeries(Fc_gCpm2ps)
+    if WasND: Fc_gCpm2ps, _ = pfp_utils.MAtoSeries(Fc_gCpm2ps)
     return Fc_gCpm2ps
 
 def Fc_mgCO2pm2psfromumolpm2ps(Fc_umolpm2ps):
@@ -147,11 +147,11 @@ def Fc_mgCO2pm2psfromumolpm2ps(Fc_umolpm2ps):
     Returns the CO2 flux in units of mgCO2/m2/s
     """
     # convert to masked array
-    Fc_umolpm2ps, WasND = SeriestoMA(Fc_umolpm2ps)
+    Fc_umolpm2ps, WasND = pfp_utils.SeriestoMA(Fc_umolpm2ps)
     # do the job
     Fc_mgCO2pm2ps = Fc_umolpm2ps * c.Mco2
     # convert back to ndarray if input is not a masked array
-    if WasND: Fc_mgCO2pm2ps, _ = MAtoSeries(Fc_mgCO2pm2ps)
+    if WasND: Fc_mgCO2pm2ps, _ = pfp_utils.MAtoSeries(Fc_mgCO2pm2ps)
     return Fc_mgCO2pm2ps
 
 def Fc_umolpm2psfrommgCO2pm2ps(Fc_mgpm2ps):
@@ -164,11 +164,11 @@ def Fc_umolpm2psfrommgCO2pm2ps(Fc_mgpm2ps):
     Returns the CO2 flux in units of umol/m2/s
     """
     # convert to masked array
-    Fc_mgpm2ps, WasND = SeriestoMA(Fc_mgpm2ps)
+    Fc_mgpm2ps, WasND = pfp_utils.SeriestoMA(Fc_mgpm2ps)
     # do the job
     Fc_umolpm2ps = Fc_mgpm2ps / c.Mco2
     # convert back to ndarray if input is not a masked array
-    if WasND: Fc_umolpm2ps, _ = MAtoSeries(Fc_umolpm2ps)
+    if WasND: Fc_umolpm2ps, _ = pfp_utils.MAtoSeries(Fc_umolpm2ps)
     return Fc_umolpm2ps
 
 def h2o_gpm3frommmolpmol(h_mmpm,T,p):
@@ -183,13 +183,13 @@ def h2o_gpm3frommmolpmol(h_mmpm,T,p):
         Returns the H2O concentration in g/m3.
     """
     # convert to masked arrays
-    h_mmpm, WasND = SeriestoMA(h_mmpm)
-    T, dummy = SeriestoMA(T)
-    p, dummy = SeriestoMA(p)
+    h_mmpm, WasND = pfp_utils.SeriestoMA(h_mmpm)
+    T, dummy = pfp_utils.SeriestoMA(T)
+    p, dummy = pfp_utils.SeriestoMA(p)
     # do the job
     h_gpm3 = (c.Mv*h_mmpm*p*1000)/(c.R*(T+273.15))
     # convert to ndarray if input is not a masked array
-    if WasND: h_gpm3, _ = MAtoSeries(h_gpm3)
+    if WasND: h_gpm3, _ = pfp_utils.MAtoSeries(h_gpm3)
     return h_gpm3
 
 def h2o_mmolpmolfromgpm3(h_gpm3,T,p):
@@ -204,14 +204,15 @@ def h2o_mmolpmolfromgpm3(h_gpm3,T,p):
         Returns the H2O concentration in mmol/mol.
     """
     # convert to masked arrays
-    h_gpm3, WasND = SeriestoMA(h_gpm3)
-    T, dummy = SeriestoMA(T)
-    p, dummy = SeriestoMA(p)
+    h_gpm3, WasND = pfp_utils.SeriestoMA(h_gpm3)
+    T, dummy = pfp_utils.SeriestoMA(T)
+    p, dummy = pfp_utils.SeriestoMA(p)
     # do the job
     h_mmpm = (h_gpm3/c.Mv)*c.R*(T+273.15)/(p*1000)
     # convert to ndarray if input is not a masked array
-    if WasND: h_mmpm, _ = MAtoSeries(h_mmpm)
+    if WasND: h_mmpm, _ = pfp_utils.MAtoSeries(h_mmpm)
     return h_mmpm
+
 
 def h2o_mmolpm3fromgpm3(h_gpm3):
     """
@@ -223,11 +224,11 @@ def h2o_mmolpm3fromgpm3(h_gpm3):
         Returns the H2O concentration in mmol/m3.
     """
     # convert to masked arrays
-    h_gpm3, WasND = SeriestoMA(h_gpm3)
+    h_gpm3, WasND = pfp_utils.SeriestoMA(h_gpm3)
     # do the job
     h_mmolpm3 = h_gpm3/float(c.Mv)
     # convert to ndarray if input is not a masked array
-    if WasND: h_mmolpm3, _ = MAtoSeries(h_mmolpm3)
+    if WasND: h_mmolpm3, _ = pfp_utils.MAtoSeries(h_mmolpm3)
     return h_mmolpm3
 
 def Lv(Ta):
@@ -277,15 +278,15 @@ def RHfromabsolutehumidity(Ah,Ta):
     #  Ah is the absolute humidity, g/m3
     #  RH is the relative humidity, %
     # convert to masked arrays
-    Ah, WasND = SeriestoMA(Ah)
-    Ta, dummy = SeriestoMA(Ta)
+    Ah, WasND = pfp_utils.SeriestoMA(Ah)
+    Ta, dummy = pfp_utils.SeriestoMA(Ta)
     # do the job
     VPsat = es(Ta)
     #vp = Ah * ((Ta+273.15)*c.Rv)/float(1000000)
     vp = vapourpressure(Ah,Ta)
     RH = float(100)*vp/VPsat
     # convert back to ndarray if input is not a masked array
-    if WasND: RH, _ = MAtoSeries(RH)
+    if WasND: RH, _ = pfp_utils.MAtoSeries(RH)
     return RH
 
 def RHfromdewpoint(Td,Ta):
@@ -294,12 +295,12 @@ def RHfromdewpoint(Td,Ta):
     #  Td is the dew point temperature, C
     #  RH is the relative humidity, %
     # convert to masked arrays
-    Td, WasND = SeriestoMA(Td)
-    Ta, dummy = SeriestoMA(Ta)
+    Td, WasND = pfp_utils.SeriestoMA(Td)
+    Ta, dummy = pfp_utils.SeriestoMA(Ta)
     # do the job
     RH = 100*10**(7.591386*(Td/(Td+240.7263)-Ta/(Ta+240.7263)))
     # convert back to ndarray if input is not a masked array
-    if WasND: RH, _ = MAtoSeries(RH)
+    if WasND: RH, _ = pfp_utils.MAtoSeries(RH)
     return RH
 
 def RHfromspecifichumidity(q,Ta,ps):
@@ -309,13 +310,13 @@ def RHfromspecifichumidity(q,Ta,ps):
     #  ps is the pressure, kPa
     #  RH is the relative humidity, %
     # convert to masked arrays
-    q, WasND = SeriestoMA(q)
-    Ta, dummy = SeriestoMA(Ta)
+    q, WasND = pfp_utils.SeriestoMA(q)
+    Ta, dummy = pfp_utils.SeriestoMA(Ta)
     # do the job
     VPsat = es(Ta)
     RH = float(100)*q*(c.Md/c.Mv)*ps/VPsat
     # convert back to ndarray if input is not a masked array
-    if WasND: RH, _ = MAtoSeries(RH)
+    if WasND: RH, _ = pfp_utils.MAtoSeries(RH)
     return RH
 
 def densitytimesspecificheat(rhow,Cpw,rhoa,Cpa):

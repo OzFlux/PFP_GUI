@@ -154,7 +154,7 @@ def l3qc(cf, ds2):
     # *** CO2 and Fc section ***
     # **************************
     # convert CO2 units if required
-    pfp_utils.ConvertCO2Units(cf, ds3, l3_info["CO2"]["label"])
+    pfp_utils.ConvertCO2Units(cf, ds3)
     # calculate Fc storage term - single height only at present
     pfp_ts.CalculateFcStorageSinglePoint(cf, ds3, l3_info["CO2"]["label"])
     # convert Fc units if required

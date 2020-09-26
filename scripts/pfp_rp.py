@@ -874,7 +874,6 @@ def get_turbulence_indicator_ustar(ldt, ustar, ustar_dict, ts):
         # set the QC flag
         idx = numpy.ma.where(ustar[si:ei]>=ustar_threshold)[0]
         inds[si:ei][idx] = numpy.int32(1)
-        #print year, len(idx), ei-si+1
     return turbulence_indicator
 
 def get_turbulence_indicator_ustar_evgb(ldt, ind_day, ind_ustar, ustar, ustar_dict):

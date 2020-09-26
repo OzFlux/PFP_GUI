@@ -5,6 +5,7 @@ import datetime
 import logging
 import os
 # 3rd party modules
+import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -305,8 +306,8 @@ def CPD_run(cf):
         else:
             names[item] = item
     # read the netcdf file
-    logger.info(' Reading netCDF file '+file_in)
     ds = pfp_io.nc_read_series(file_in)
+    if ds.returncodes["value"] != 0: return
     ts = int(ds.globalattributes["time_step"])
     # get the datetime
     dt = ds.series["DateTime"]["Data"]

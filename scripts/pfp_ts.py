@@ -69,11 +69,21 @@ def AverageSeriesByElements(cf,ds,Av_out):
         Av_out: output variable to ds.  Example: 'Fg'
         Series_in: input variable series in ds.  Example: ['Fg_8cma','Fg_8cmb']
         """
-    if Av_out not in cf['Variables'].keys(): return
-    if Av_out in ds.averageserieslist: return
-    srclist = pfp_utils.GetAverageSeriesKeys(cf,Av_out)
-    logger.info(' Averaging '+str(srclist)+'==>'+Av_out)
-
+    # sanity checks
+    if Av_out not in cf['Variables'].keys():
+        return
+    if Av_out in ds.averageserieslist:
+        return
+    # get the list of series to average
+    srclist = pfp_utils.GetAverageSeriesKeys(cf, Av_out)
+    logger.info(" Averaging " + str(srclist) + "==>" + Av_out)
+    # check to see if they are in the data structure
+    labels = ds.series.keys()
+    for label in list(srclist):
+        if label not in labels:
+            msg = " Variable " + label + " not found in data structure, skipping ..."
+            logger.warning(msg)
+            srclist.remove(label)
     nSeries = len(srclist)
     if nSeries==0:
         logger.error('  AverageSeriesByElements: no input series specified for'+str(Av_out))
@@ -2756,6 +2766,7 @@ def ReplaceOnDiff(cf,ds,series=''):
                             n = len(open_ncfiles)
                             open_ncfiles.append(alt_filename)
                             ds_alt[n] = pfp_io.nc_read_series(alt_filename)
+                            if ds_alt[n].returncodes["value"] != 0: return
                         else:
                             n = open_ncfiles.index(alt_filename)
                         if 'Transform' in cf['Variables'][ThisOne]['ReplaceOnDiff'][Alt].keys():

@@ -243,8 +243,8 @@ class pfp_main_ui(QtWidgets.QWidget):
         self.actionPlotClosePlots.triggered.connect(pfp_top_level.do_plot_closeplots)
         # Utilities menu actions
         self.actionUtilitiesClimatology.triggered.connect(lambda:pfp_top_level.do_utilities_climatology(mode="standard"))
-        self.actionUtilitiesUstarCPD1.triggered.connect(lambda:pfp_top_level.do_utilities_ustar_cpd1(mode="standard"))
-        self.actionUtilitiesUstarCPD2.triggered.connect(lambda:pfp_top_level.do_utilities_ustar_cpd2(mode="standard"))
+        self.actionUtilitiesUstarCPD1.triggered.connect(lambda:pfp_top_level.do_utilities_ustar_cpd_mchugh(mode="standard"))
+        self.actionUtilitiesUstarCPD2.triggered.connect(lambda:pfp_top_level.do_utilities_ustar_cpd_barr(mode="standard"))
         self.actionUtilitiesUstarMPT.triggered.connect(lambda:pfp_top_level.do_utilities_ustar_mpt(mode="standard"))
         # add the L4 GUI
         self.l4_ui = pfp_gui.pfp_l4_ui(self)
@@ -298,6 +298,26 @@ class pfp_main_ui(QtWidgets.QWidget):
         elif self.cfg["level"] in ["concatenate"]:
             if not pfp_compliance.concatenate_update_controlfile(self.cfg): return
             self.tabs.tab_dict[self.tabs.tab_index_all] = pfp_gui.edit_cfg_concatenate(self)
+            self.tabs.cfg_dict[self.tabs.tab_index_all] = self.tabs.tab_dict[self.tabs.tab_index_all].get_data_from_model()
+            self.tabs.cfg_dict[self.tabs.tab_index_all]["controlfile_name"] = cfgpath
+        elif self.cfg["level"] in ["climatology"]:
+            if not pfp_compliance.climatology_update_controlfile(self.cfg): return
+            self.tabs.tab_dict[self.tabs.tab_index_all] = pfp_gui.edit_cfg_climatology(self)
+            self.tabs.cfg_dict[self.tabs.tab_index_all] = self.tabs.tab_dict[self.tabs.tab_index_all].get_data_from_model()
+            self.tabs.cfg_dict[self.tabs.tab_index_all]["controlfile_name"] = cfgpath
+        elif self.cfg["level"] in ["cpd_mchugh"]:
+            if not pfp_compliance.cpd_mchugh_update_controlfile(self.cfg): return
+            self.tabs.tab_dict[self.tabs.tab_index_all] = pfp_gui.edit_cfg_cpd_mchugh(self)
+            self.tabs.cfg_dict[self.tabs.tab_index_all] = self.tabs.tab_dict[self.tabs.tab_index_all].get_data_from_model()
+            self.tabs.cfg_dict[self.tabs.tab_index_all]["controlfile_name"] = cfgpath
+        elif self.cfg["level"] in ["cpd_barr"]:
+            if not pfp_compliance.cpd_barr_update_controlfile(self.cfg): return
+            self.tabs.tab_dict[self.tabs.tab_index_all] = pfp_gui.edit_cfg_cpd_barr(self)
+            self.tabs.cfg_dict[self.tabs.tab_index_all] = self.tabs.tab_dict[self.tabs.tab_index_all].get_data_from_model()
+            self.tabs.cfg_dict[self.tabs.tab_index_all]["controlfile_name"] = cfgpath
+        elif self.cfg["level"] in ["mpt"]:
+            if not pfp_compliance.mpt_update_controlfile(self.cfg): return
+            self.tabs.tab_dict[self.tabs.tab_index_all] = pfp_gui.edit_cfg_mpt(self)
             self.tabs.cfg_dict[self.tabs.tab_index_all] = self.tabs.tab_dict[self.tabs.tab_index_all].get_data_from_model()
             self.tabs.cfg_dict[self.tabs.tab_index_all]["controlfile_name"] = cfgpath
         elif self.cfg["level"] in ["L4"]:
@@ -612,6 +632,14 @@ class pfp_main_ui(QtWidgets.QWidget):
             pfp_top_level.do_run_l3(cfg)
         elif self.tabs.cfg_dict[tab_index_current]["level"] == "concatenate":
             pfp_top_level.do_file_concatenate(cfg)
+        elif self.tabs.cfg_dict[tab_index_current]["level"] == "climatology":
+            pfp_top_level.do_utilities_climatology(cfg=cfg, mode="custom")
+        elif self.tabs.cfg_dict[tab_index_current]["level"] == "cpd_mchugh":
+            pfp_top_level.do_utilities_ustar_cpd_mchugh(cfg=cfg, mode="custom")
+        elif self.tabs.cfg_dict[tab_index_current]["level"] == "cpd_barr":
+            pfp_top_level.do_utilities_ustar_cpd_barr(cfg=cfg, mode="custom")
+        elif self.tabs.cfg_dict[tab_index_current]["level"] == "mpt":
+            pfp_top_level.do_utilities_ustar_mpt(cfg=cfg, mode="custom")
         elif self.tabs.cfg_dict[tab_index_current]["level"] == "L4":
             pfp_top_level.do_run_l4(self, cfg)
         elif self.tabs.cfg_dict[tab_index_current]["level"] == "L5":

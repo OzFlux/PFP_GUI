@@ -1,41 +1,59 @@
+level = climatology
 [Files]
-    file_path = ../Sites/<site_name>/Data/Processed/<year>/
-    in_filename = <site_name>_<year>_L3.nc
-
+    file_path = Right click to browse
+    in_filename = Right click to browse
 [Variables]
     [[Ta]]
+        name = Ta
         format = 0.00
     [[Ah]]
+        name = Ah
         format = 0.00
     [[RH]]
+        name = RH
         format = 0
     [[SH]]
+        name = SH
         format = 0.0000
     [[CO2]]
+        name = CO2
         format = 0.0
     [[H2O]]
+        name = H2O
         format = 0.00
     [[Ws]]
+        name = Ws
         format = 0.00
     [[Wd]]
+        name = Wd
         format = 0
     [[ps]]
+        name = ps
         format = 0.00
     [[Fld]]
+        name = Fld
         format = 0
     [[Flu]]
+        name = Flu
         format = 0
     [[Fn]]
+        name = Fn
         format = 0
     [[Fsd]]
+        name = Fsd
         format = 0
     [[Fsu]]
+        name = Fsu
         format = 0
     [[Ts]]
+        name = Ts
         format = 0.00
     [[Sws]]
+        name = Sws
         format = 0.000
     [[Fg]]
+        name = Fg
         format = 0
     [[Fa]]
+        name = Fa
         format = 0

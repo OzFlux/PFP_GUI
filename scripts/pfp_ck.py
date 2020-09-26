@@ -706,9 +706,13 @@ def do_li7500check(cf, ds, code=4):
     # let's check the contents of ds and see what we have to work with
     # first, list everything we may have once used for some kind of LI-7500 output
     # we do this for backwards compatibility
-    irga_list_all = ["Ah_7500_Av", "Ah_7500_Sd", "Ah_IRGA_Av", "Ah_IRGA_Sd",
-                     "Cc_7500_Av", "Cc_7500_Sd", "Cc_7500_Av", "Cc_7500_Sd",
-                     "H2O_IRGA_Av", "H2O_IRGA_Vr","CO2_IRGA_Av", "CO2_IRGA_Vr",
+    #irga_list_all = ["Ah_7500_Av", "Ah_7500_Sd", "Ah_IRGA_Av", "Ah_IRGA_Sd",
+                     #"Cc_7500_Av", "Cc_7500_Sd", "Cc_IRGA_Av", "Cc_7500_Sd",
+                     #"H2O_IRGA_Av", "H2O_IRGA_Vr","CO2_IRGA_Av", "CO2_IRGA_Vr",
+                     #"UzA", "UxA", "UyA", "UzC", "UxC", "UyC"]
+    irga_list_all = ["Ah_7500_Av", "Ah_IRGA_Av",
+                     "Cc_7500_Av", "Cc_IRGA_Av",
+                     "H2O_IRGA_Av", "CO2_IRGA_Av",
                      "UzA", "UxA", "UyA", "UzC", "UxC", "UyC"]
     # now get a list of what is actually there
     irga_list = []
@@ -755,6 +759,7 @@ def do_li7500check(cf, ds, code=4):
         idx = numpy.where(ds.series[label]["Flag"] != 0)
         logger.info("  IRGACheck: "+label+" rejected "+str(numpy.size(idx))+" points")
         flag[idx] = numpy.int32(1)
+        idx2 = numpy.where(flag == 0)[0]
     if not used_AGC:
         msg = " AGC value not used in QC (not in data)"
         logger.warning(msg)
@@ -772,6 +777,7 @@ def do_li7500check(cf, ds, code=4):
     for label in irga_list:
         ds.series[label]['Data'][idx] = numpy.float64(c.missing_value)
         ds.series[label]['Flag'][idx] = numpy.int32(code)
+    return
 
 def do_li7500acheck(cf,ds):
     '''Rejects data values for series specified in LI75List for times when the Diag_7500

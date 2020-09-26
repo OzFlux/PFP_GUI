@@ -309,11 +309,13 @@ def pltfingerprint_readncfiles(cf):
     if "Files" in cf:
         infilename = pfp_io.get_infilenamefromcf(cf)
         ds[infilename] = pfp_io.nc_read_series(infilename)
+        if ds[infilename].returncodes["value"] != 0: return ds
     for var in cf["Variables"].keys():
         if "in_filename" in cf["Variables"][var]:
             if cf["Variables"][var]["in_filename"] not in ds:
                 infilename = cf["Variables"][var]["in_filename"]
                 ds[cf["Variables"][var]["in_filename"]] = pfp_io.nc_read_series(infilename)
+                if ds[cf["Variables"][var]["in_filename"]].returncodes["value"] != 0: return ds
     return ds
 
 def plot_fingerprint(cf):
@@ -437,6 +439,7 @@ def plot_fluxnet(cf):
     infilename = pfp_io.get_infilenamefromcf(cf)
 
     ds = pfp_io.nc_read_series(infilename)
+    if ds.returncodes["value"] != 0: return
     site_name = ds.globalattributes["site_name"]
     ldt=ds.series["DateTime"]["Data"]
     sdt = ldt[0]
@@ -469,6 +472,7 @@ def plot_fluxnet(cf):
         plt.draw()
         mypause(0.5)
     plt.ioff()
+    return
 
 def plot_explore_histograms(ds, labels):
     """ Plot histograms of selected variables."""
@@ -912,6 +916,7 @@ def plot_quickcheck(cf):
     ncfilename = pfp_io.get_infilenamefromcf(cf)
     # read the netCDF file and return the data structure "ds"
     ds = pfp_io.nc_read_series(ncfilename)
+    if ds.returncodes["value"] != 0: return
     series_list = ds.series.keys()
     # get the time step
     ts = int(ds.globalattributes["time_step"])

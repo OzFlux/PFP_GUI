@@ -63,6 +63,7 @@ def cpd2_main(cf):
     # read the netcdf file
     logger.info(" Reading netCDF file " + file_in)
     ds = pfp_io.nc_read_series(file_in)
+    if ds.returncodes["value"] != 0: return
     # get the single-point storage, Fc_single, if available
     if apply_storage and "Fc_storage" not in ds.series.keys():
         pfp_ts.CalculateFcStorageSinglePoint(cf, ds, Fc_out="Fc_single")

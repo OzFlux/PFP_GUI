@@ -68,7 +68,6 @@ def CheckExcelWorkbook(l1_info):
         if "xl" in list(l1ire["Variables"][nc_label].keys()):
             xl_sheet = l1ire["Variables"][nc_label]["xl"]["sheet"]
             xl_label = l1ire["Variables"][nc_label]["xl"]["name"]
-            #print xl_sheet, xl_label, nc_label
             if xl_sheet not in xl_sheets_present:
                 msg = " Sheet " + xl_sheet + " (" + xl_label + ") not found in workbook, skipping ..."
                 logger.warning(msg)
@@ -98,10 +97,8 @@ def CheckExcelWorkbook(l1_info):
             col = xl_labels.index(xl_label)
             types = numpy.array(xl_data[xl_sheet].col_types(col)[fdr:ldr])
             mode = scipy.stats.mode(types)
-            #print xl_sheet, xl_label, col, mode[0][0], fdr, ldr
             if mode[0][0] == xlrd.XL_CELL_DATE and 100*mode[1][0]/len(types) > 75:
                 got_timestamp = True
-                #print " Time stamp is " + xl_label + " for sheet " + xl_sheet
                 l1ire["xl_sheets"][xl_sheet]["DateTime"] = xl_label
                 if xl_label in l1ire["xl_sheets"][xl_sheet]["xl_labels"]:
                     del l1ire["xl_sheets"][xl_sheet]["xl_labels"][xl_label]
@@ -142,6 +139,198 @@ def check_status_ok(ds, info):
         return False
     else:
         return True
+
+def climatology_update_controlfile(cfg):
+    """
+    Purpose:
+     Parse the climatology control file to update the syntax from earlier OFQC/PFP
+     versions to the syntax used by this version.
+    Usage:
+     result = pfp_compliance.climatology_update_controlfile(cfg)
+     where cfg is a ConfigObj object
+           result is True if the concatenate control file was updated successfully
+                     False if it couldn't be updated
+    Side effects:
+    Author: PRI
+    Date: September 2020
+    """
+    # copy the control file
+    cfg_original = copy.deepcopy(cfg)
+    # initialise the return logical
+    ok = True
+    try:
+        strip_list = ['"', "'", "[", "]"]
+        for key1 in cfg:
+            if key1 in ["level"]:
+                cfg[key1] = parse_cfg_values(key1, cfg[key1], strip_list)
+            elif key1 in ["Files"]:
+                for key2 in cfg[key1]:
+                    cfg2 = cfg[key1][key2]
+                    cfg[key1][key2] = parse_cfg_values(key2, cfg2, strip_list)
+            elif key1 in ["Variables"]:
+                for key2 in cfg[key1]:
+                    for key3 in cfg[key1][key2]:
+                        cfg3 = cfg[key1][key2][key3]
+                        cfg[key1][key2][key3] = parse_cfg_values(key3, cfg3, strip_list)
+            else:
+                del cfg[key1]
+        # check to see if the control file object has been changed
+        if cfg != cfg_original:
+            # and save it if it has changed
+            file_name = os.path.basename(cfg.filename)
+            logger.info(" Updated and saved control file " + file_name)
+            cfg.write()
+    except Exception:
+        ok = False
+        msg = " An error occurred while updating the climatology control file syntax"
+        logger.error(msg)
+        error_message = traceback.format_exc()
+        logger.error(error_message)
+    return ok
+
+def cpd_mchugh_update_controlfile(cfg):
+    """
+    Purpose:
+     Parse the CPD (McHugh) control file to update the syntax from earlier OFQC/PFP
+     versions to the syntax used by this version.
+    Usage:
+     result = pfp_compliance.cpd_mchugh_update_controlfile(cfg)
+     where cfg is a ConfigObj object
+           result is True if the concatenate control file was updated successfully
+                     False if it couldn't be updated
+    Side effects:
+    Author: PRI
+    Date: September 2020
+    """
+    # copy the control file
+    cfg_original = copy.deepcopy(cfg)
+    # initialise the return logical
+    ok = True
+    try:
+        strip_list = ['"', "'", "[", "]"]
+        for key1 in cfg:
+            if key1 in ["level"]:
+                cfg[key1] = parse_cfg_values(key1, cfg[key1], strip_list)
+            elif key1 in ["Files", "Options"]:
+                for key2 in cfg[key1]:
+                    cfg2 = cfg[key1][key2]
+                    cfg[key1][key2] = parse_cfg_values(key2, cfg2, strip_list)
+            elif key1 in ["Variables"]:
+                for key2 in cfg[key1]:
+                    for key3 in cfg[key1][key2]:
+                        cfg3 = cfg[key1][key2][key3]
+                        cfg[key1][key2][key3] = parse_cfg_values(key3, cfg3, strip_list)
+            else:
+                del cfg[key1]
+        # check to see if the control file object has been changed
+        if cfg != cfg_original:
+            # and save it if it has changed
+            file_name = os.path.basename(cfg.filename)
+            logger.info(" Updated and saved control file " + file_name)
+            cfg.write()
+    except Exception:
+        ok = False
+        msg = " An error occurred while updating the CPD (McHugh) control file syntax"
+        logger.error(msg)
+        error_message = traceback.format_exc()
+        logger.error(error_message)
+    return ok
+
+def cpd_barr_update_controlfile(cfg):
+    """
+    Purpose:
+     Parse the CPD (Barr) control file to update the syntax from earlier OFQC/PFP
+     versions to the syntax used by this version.
+    Usage:
+     result = pfp_compliance.cpd_barr_update_controlfile(cfg)
+     where cfg is a ConfigObj object
+           result is True if the concatenate control file was updated successfully
+                     False if it couldn't be updated
+    Side effects:
+    Author: PRI
+    Date: September 2020
+    """
+    # copy the control file
+    cfg_original = copy.deepcopy(cfg)
+    # initialise the return logical
+    ok = True
+    try:
+        strip_list = ['"', "'", "[", "]"]
+        for key1 in cfg:
+            if key1 in ["level"]:
+                cfg[key1] = parse_cfg_values(key1, cfg[key1], strip_list)
+            elif key1 in ["Files", "Options"]:
+                for key2 in cfg[key1]:
+                    cfg2 = cfg[key1][key2]
+                    cfg[key1][key2] = parse_cfg_values(key2, cfg2, strip_list)
+            elif key1 in ["Variables"]:
+                for key2 in cfg[key1]:
+                    for key3 in cfg[key1][key2]:
+                        cfg3 = cfg[key1][key2][key3]
+                        cfg[key1][key2][key3] = parse_cfg_values(key3, cfg3, strip_list)
+            else:
+                del cfg[key1]
+        # check to see if the control file object has been changed
+        if cfg != cfg_original:
+            # and save it if it has changed
+            file_name = os.path.basename(cfg.filename)
+            logger.info(" Updated and saved control file " + file_name)
+            cfg.write()
+    except Exception:
+        ok = False
+        msg = " An error occurred while updating the CPD (Barr) control file syntax"
+        logger.error(msg)
+        error_message = traceback.format_exc()
+        logger.error(error_message)
+    return ok
+
+def mpt_update_controlfile(cfg):
+    """
+    Purpose:
+     Parse the MPT control file to update the syntax from earlier OFQC/PFP
+     versions to the syntax used by this version.
+    Usage:
+     result = pfp_compliance.mpt_update_controlfile(cfg)
+     where cfg is a ConfigObj object
+           result is True if the concatenate control file was updated successfully
+                     False if it couldn't be updated
+    Side effects:
+    Author: PRI
+    Date: September 2020
+    """
+    # copy the control file
+    cfg_original = copy.deepcopy(cfg)
+    # initialise the return logical
+    ok = True
+    try:
+        strip_list = ['"', "'", "[", "]"]
+        for key1 in cfg:
+            if key1 in ["level"]:
+                cfg[key1] = parse_cfg_values(key1, cfg[key1], strip_list)
+            elif key1 in ["Files", "Options"]:
+                for key2 in cfg[key1]:
+                    cfg2 = cfg[key1][key2]
+                    cfg[key1][key2] = parse_cfg_values(key2, cfg2, strip_list)
+            elif key1 in ["Variables"]:
+                for key2 in cfg[key1]:
+                    for key3 in cfg[key1][key2]:
+                        cfg3 = cfg[key1][key2][key3]
+                        cfg[key1][key2][key3] = parse_cfg_values(key3, cfg3, strip_list)
+            else:
+                del cfg[key1]
+        # check to see if the control file object has been changed
+        if cfg != cfg_original:
+            # and save it if it has changed
+            file_name = os.path.basename(cfg.filename)
+            logger.info(" Updated and saved control file " + file_name)
+            cfg.write()
+    except Exception:
+        ok = False
+        msg = " An error occurred while updating the MPT control file syntax"
+        logger.error(msg)
+        error_message = traceback.format_exc()
+        logger.error(error_message)
+    return ok
 
 def concatenate_update_controlfile(cfg):
     """
@@ -741,7 +930,6 @@ def error_handler(info, msg, val):
     Purpose:
      Handle errors from ParseL1ControlFile().
     """
-    #print msg
     logger.error(msg)
     info["status"]["message"] = msg
     info["status"]["value"] = val
@@ -845,6 +1033,9 @@ def check_l1_controlfile(cfg):
         msg = " In the Files section of the control file, in_firstdatarow is not a number"
         error_message(msg, mode="correct")
         ok = False
+    # *************************
+    # *** global attributes ***
+    # *************************
     # check time step is present and makes sense
     try:
         ts = int(cfg["Global"]["time_step"])
@@ -896,6 +1087,10 @@ def check_l1_controlfile(cfg):
         #msg = " Error checking global attribute 'time_zone'"
         #error_message(msg)
         #ok = False
+    # *******************
+    # *** check units ***
+    # *******************
+    # ... well, maybe in PFP3.
     return ok
 
 def error_message(msg, mode="correct"):
@@ -1465,6 +1660,7 @@ def nc_update(cfg):
     logger.info(msg)
     # read the input file
     ds1 = pfp_io.nc_read_series(nc_file_path)
+    if ds1.returncodes["value"] != 0: return
     # update the variable names
     change_variable_names(cfg, ds1)
     # make sure there are Ws and Wd series

@@ -486,6 +486,7 @@ def do_run_l2(cfg):
             logger.error("File "+in_filename[1]+" not found")
             return
         ds1 = pfp_io.nc_read_series(in_filepath)
+        if ds1.returncodes["value"] != 0: return
         ds2 = pfp_levels.l2qc(cfg, ds1)
         if ds2.returncodes["value"] != 0:
             logger.error("An error occurred during L2 processing")
@@ -536,6 +537,7 @@ def do_run_l3(cfg):
             logger.error("File "+in_filename[1]+" not found")
             return
         ds2 = pfp_io.nc_read_series(in_filepath)
+        if ds2.returncodes["value"] != 0: return
         ds3 = pfp_levels.l3qc(cfg, ds2)
         if ds3.returncodes["value"] != 0:
             logger.error("An error occurred during L3 processing")
@@ -586,6 +588,7 @@ def do_run_l4(main_gui, cfg):
             logger.error("File "+in_filename[1]+" not found")
             return
         ds3 = pfp_io.nc_read_series(in_filepath)
+        if ds3.returncodes["value"] != 0: return
         #ds3.globalattributes['controlfile_name'] = cfg['controlfile_name']
         sitename = ds3.globalattributes['site_name']
         if "Options" not in cfg:
@@ -629,6 +632,7 @@ def do_run_l5(main_gui, cfg):
             logger.error("File "+in_filename[1]+" not found")
             return
         ds4 = pfp_io.nc_read_series(in_filepath)
+        if ds4.returncodes["value"] != 0: return
         #ds4.globalattributes['controlfile_name'] = cfg['controlfile_name']
         sitename = ds4.globalattributes['site_name']
         if "Options" not in cfg:
@@ -672,6 +676,7 @@ def do_run_l6(main_gui, cfg):
             logger.error("File "+in_filename[1]+" not found")
             return
         ds5 = pfp_io.nc_read_series(in_filepath)
+        if ds5.returncodes["value"] != 0: return
         #ds5.globalattributes['controlfile_name'] = cfg['controlfile_name']
         sitename = ds5.globalattributes['site_name']
         if "Options" not in cfg:
@@ -717,6 +722,7 @@ def do_plot_fcvsustar():
             return
         # read the netCDF file
         ds = pfp_io.nc_read_series(file_path)
+        if ds.returncodes["value"] != 0: return
         logger.info("Plotting Fc versus u* ...")
         pfp_plot.plot_fcvsustar(ds)
         logger.info(" Finished plotting Fc versus u*")
@@ -867,34 +873,38 @@ def do_plot_closeplots():
     matplotlib.pyplot.close("all")
     return
 # top level routines for the Utilities menu
-def do_utilities_climatology(mode="standard"):
+def do_utilities_climatology(cfg=None, mode="standard"):
     try:
         logger.info(" Starting climatology")
         if mode == "standard":
             stdname = "controlfiles/standard/climatology.txt"
             if os.path.exists(stdname):
-                cf = pfp_io.get_controlfilecontents(stdname)
+                cfg = pfp_io.get_controlfilecontents(stdname)
                 filename = pfp_io.get_filename_dialog(file_path="../Sites", title='Choose a netCDF file')
                 if not os.path.exists(filename):
                     logger.info( " Climatology: no input file chosen")
                     return
-                if "Files" not in cf:
-                    cf["Files"] = {}
-                cf["Files"]["file_path"] = os.path.join(os.path.split(filename)[0],"")
+                if "Files" not in cfg:
+                    cfg["Files"] = {}
+                cfg["Files"]["file_path"] = os.path.join(os.path.split(filename)[0], "")
                 in_filename = os.path.split(filename)[1]
-                cf["Files"]["in_filename"] = in_filename
-                cf["Files"]["out_filename"] = in_filename.replace(".nc", "_Climatology.xls")
+                cfg["Files"]["in_filename"] = in_filename
+                cfg["Files"]["out_filename"] = in_filename.replace(".nc", "_Climatology.xls")
             else:
-                cf = pfp_io.load_controlfile(path="controlfiles")
-                if len(cf) == 0:
+                cfg = pfp_io.load_controlfile(path="controlfiles")
+                if len(cfg) == 0:
                     return
+        elif mode == "custom":
+            # we get here via Run/Current and should have a control file
+            if cfg == None:
+                return
         else:
             logger.info("Loading control file ...")
-            cf = pfp_io.load_controlfile(path='controlfiles')
-            if len(cf) == 0:
+            cfg = pfp_io.load_controlfile(path="controlfiles")
+            if len(cfg) == 0:
                 return
         logger.info("Doing the climatology")
-        pfp_clim.climatology(cf)
+        pfp_clim.climatology(cfg)
         logger.info(" Finished climatology")
         logger.info("")
     except Exception:
@@ -903,7 +913,7 @@ def do_utilities_climatology(mode="standard"):
         error_message = traceback.format_exc()
         logger.error(error_message)
     return
-def do_utilities_ustar_cpd1(mode="standard"):
+def do_utilities_ustar_cpd_mchugh(cfg=None, mode="standard"):
     """
     Purpose:
      Calculate the u* threshold using the Change Point Detection method described in
@@ -915,28 +925,32 @@ def do_utilities_ustar_cpd1(mode="standard"):
         if mode == "standard":
             stdname = "controlfiles/standard/cpd1.txt"
             if os.path.exists(stdname):
-                cf = pfp_io.get_controlfilecontents(stdname)
+                cfg = pfp_io.get_controlfilecontents(stdname)
                 filename = pfp_io.get_filename_dialog(file_path="../Sites", title="Choose a netCDF file")
                 if not os.path.exists(filename):
                     logger.info( " CPD (McHugh): no input file chosen")
                     return
-                if "Files" not in cf:
-                    cf["Files"] = {}
-                cf["Files"]["file_path"] = os.path.join(os.path.split(filename)[0],"")
+                if "Files" not in cfg:
+                    cfg["Files"] = {}
+                cfg["Files"]["file_path"] = os.path.join(os.path.split(filename)[0],"")
                 in_filename = os.path.split(filename)[1]
-                cf["Files"]["in_filename"] = in_filename
-                cf["Files"]["out_filename"] = in_filename.replace(".nc", "_CPD_McHugh.xls")
+                cfg["Files"]["in_filename"] = in_filename
+                cfg["Files"]["out_filename"] = in_filename.replace(".nc", "_CPD_McHugh.xls")
             else:
-                cf = pfp_io.load_controlfile(path="controlfiles")
-                if len(cf) == 0:
+                cfg = pfp_io.load_controlfile(path="controlfiles")
+                if len(cfg) == 0:
                     return
+        elif mode == "custom":
+            # we get here via Run/Current and should have a control file
+            if cfg == None:
+                return
         else:
             logger.info("Loading control file ...")
-            cf = pfp_io.load_controlfile(path='controlfiles')
-            if len(cf) == 0:
+            cfg = pfp_io.load_controlfile(path='controlfiles')
+            if len(cfg) == 0:
                 return
         logger.info("Doing CPD u* threshold detection (McHugh)")
-        pfp_cpd1.cpd1_main(cf)
+        pfp_cpd1.cpd1_main(cfg)
         logger.info(" Finished CPD u* threshold detection (McHugh)")
         logger.info("")
     except Exception:
@@ -945,7 +959,7 @@ def do_utilities_ustar_cpd1(mode="standard"):
         error_message = traceback.format_exc()
         logger.error(error_message)
     return
-def do_utilities_ustar_cpd2(mode="standard"):
+def do_utilities_ustar_cpd_barr(cfg=None, mode="standard"):
     """
     Purpose:
      Calculate the u* threshold using the Change Point Detection method described in
@@ -958,37 +972,41 @@ def do_utilities_ustar_cpd2(mode="standard"):
         if mode == "standard":
             stdname = "controlfiles/standard/cpd2.txt"
             if os.path.exists(stdname):
-                cf = pfp_io.get_controlfilecontents(stdname)
+                cfg = pfp_io.get_controlfilecontents(stdname)
                 filename = pfp_io.get_filename_dialog(file_path="../Sites", title="Choose a netCDF file")
                 if not os.path.exists(filename):
                     logger.info( " CPD (Barr): no input file chosen")
                     return
-                if "Files" not in cf:
-                    cf["Files"] = {}
-                cf["Files"]["file_path"] = os.path.join(os.path.split(filename)[0],"")
+                if "Files" not in cfg:
+                    cfg["Files"] = {}
+                cfg["Files"]["file_path"] = os.path.join(os.path.split(filename)[0],"")
                 in_filename = os.path.split(filename)[1]
-                cf["Files"]["in_filename"] = in_filename
-                cf["Files"]["out_filename"] = in_filename.replace(".nc", "_CPD_Barr.xls")
+                cfg["Files"]["in_filename"] = in_filename
+                cfg["Files"]["out_filename"] = in_filename.replace(".nc", "_CPD_Barr.xls")
             else:
-                cf = pfp_io.load_controlfile(path="controlfiles")
-                if len(cf) == 0:
+                cfg = pfp_io.load_controlfile(path="controlfiles")
+                if len(cfg) == 0:
                     return
+        elif mode == "custom":
+            # we get here via Run/Current and should have a control file
+            if cfg == None:
+                return
         else:
             logger.info("Loading control file ...")
-            cf = pfp_io.load_controlfile(path='controlfiles')
-            if len(cf) == 0:
+            cfg = pfp_io.load_controlfile(path='controlfiles')
+            if len(cfg) == 0:
                 return
         logger.info("Doing CPD u* threshold detection (Barr)")
-        pfp_cpd2.cpd2_main(cf)
+        pfp_cpd2.cpd2_main(cfg)
         logger.info(" Finished CPD u* threshold detection (Barr)")
         logger.info("")
     except Exception:
-        error_message = " An error occured while doing CPD2 u* threshold (Barr), see below for details ..."
+        error_message = " An error occured while doing CPD u* threshold (Barr), see below for details ..."
         logger.error(error_message)
         error_message = traceback.format_exc()
         logger.error(error_message)
     return
-def do_utilities_ustar_mpt(mode="standard"):
+def do_utilities_ustar_mpt(cfg=None, mode="standard"):
     """
     Purpose:
      Calculate the u* threshold using the Moving Point Threshold (MPT) method.
@@ -1002,31 +1020,35 @@ def do_utilities_ustar_mpt(mode="standard"):
         if mode == "standard":
             stdname = "controlfiles/standard/mpt.txt"
             if os.path.exists(stdname):
-                cf = pfp_io.get_controlfilecontents(stdname)
+                cfg = pfp_io.get_controlfilecontents(stdname)
                 filename = pfp_io.get_filename_dialog(file_path='../Sites', title="Choose a netCDF file")
                 if not os.path.exists(filename):
                     logger.info( " MPT: no input file chosen")
                     return
-                if "Files" not in dir(cf):
-                    cf["Files"] = {}
-                cf["Files"]["file_path"] = os.path.join(os.path.split(filename)[0], "")
+                if "Files" not in dir(cfg):
+                    cfg["Files"] = {}
+                cfg["Files"]["file_path"] = os.path.join(os.path.split(filename)[0], "")
                 in_filename = os.path.split(filename)[1]
-                cf["Files"]["in_filename"] = in_filename
-                cf["Files"]["out_filename"] = in_filename.replace(".nc", "_MPT.xls")
+                cfg["Files"]["in_filename"] = in_filename
+                cfg["Files"]["out_filename"] = in_filename.replace(".nc", "_MPT.xls")
             else:
-                cf = pfp_io.load_controlfile(path="controlfiles")
-                if len(cf) == 0:
+                cfg = pfp_io.load_controlfile(path="controlfiles")
+                if len(cfg) == 0:
                     return
+        elif mode == "custom":
+            # we get here via Run/Current and should have a control file
+            if cfg == None:
+                return
         else:
             logger.info("Loading control file ...")
-            cf = pfp_io.load_controlfile(path="controlfiles")
-            if len(cf) == 0:
+            cfg = pfp_io.load_controlfile(path="controlfiles")
+            if len(cfg) == 0:
                 return
         logger.info(" Doing u* threshold detection (MPT)")
-        if "Options" not in cf:
-            cf["Options"] = {}
-        cf["Options"]["call_mode"] = "interactive"
-        pfp_mpt.mpt_main(cf)
+        if "Options" not in cfg:
+            cfg["Options"] = {}
+        cfg["Options"]["call_mode"] = "interactive"
+        pfp_mpt.mpt_main(cfg)
         logger.info(" Finished u* threshold detection (MPT)")
         logger.info("")
     except Exception:
