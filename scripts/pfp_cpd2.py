@@ -61,7 +61,6 @@ def cpd2_main(cf):
         msg = " CPD (Barr): Using variable " + names[item] + " for " + item
         logger.info(msg)
     # read the netcdf file
-    logger.info(" Reading netCDF file " + file_in)
     ds = pfp_io.nc_read_series(file_in)
     if ds.returncodes["value"] != 0: return
     # get the single-point storage, Fc_single, if available
@@ -74,7 +73,8 @@ def cpd2_main(cf):
     ts = int(ds.globalattributes["time_step"])
     dt = pfp_utils.GetVariable(ds, "DateTime")
     ustar_results = {}
-    years = sorted(list(set([ldt.year for ldt in dt["Data"]])))
+    dtd = dt["Data"] - datetime.timedelta(minutes=ts)
+    years = sorted(list(set([ldt.year for ldt in dtd])))
     msg = " Starting CPD analysis for " + str(years)
     logger.info(msg)
     pb = {"nYears": len(years), "n": 0}

@@ -213,6 +213,7 @@ class edit_cfg_batch(QtWidgets.QWidget):
         self.cfg = copy.deepcopy(main_gui.cfg)
         self.cfg_changed = False
 
+        self.main_gui = main_gui
         self.tabs = main_gui.tabs
 
         self.implemented_levels = ["L1", "L2", "L3",
@@ -427,6 +428,14 @@ class edit_cfg_batch(QtWidgets.QWidget):
                     self.context_menu.addAction(self.context_menu.actionRemoveInputFile)
                     self.context_menu.actionRemoveInputFile.triggered.connect(self.remove_cfg_file)
                 elif (selected_item.column() == 1):
+                    # edit the selected control file
+                    if os.path.isfile(selected_item.text()):
+                        self.context_menu.actionEditInputFile = QtWidgets.QAction(self)
+                        self.context_menu.actionEditInputFile.setText("Edit")
+                        self.context_menu.addAction(self.context_menu.actionEditInputFile)
+                        arg = lambda: self.main_gui.open_controlfile(cfgpath=selected_item.text())
+                        self.context_menu.actionEditInputFile.triggered.connect(arg)
+                    # browse for a control file
                     self.context_menu.actionBrowseInputFile = QtWidgets.QAction(self)
                     self.context_menu.actionBrowseInputFile.setText("Browse...")
                     self.context_menu.addAction(self.context_menu.actionBrowseInputFile)
@@ -3571,6 +3580,7 @@ class edit_cfg_cpd_mchugh(QtWidgets.QWidget):
     def get_data_from_model(self):
         """ Iterate over the model and get the data."""
         cfg = ConfigObj(indent_type="    ", list_values=False)
+        cfg.filename = self.cfg.filename
         cfg["level"] = "cpd_mchugh"
         model = self.model
         # there must be a way to do this recursively

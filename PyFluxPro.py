@@ -251,13 +251,14 @@ class pfp_main_ui(QtWidgets.QWidget):
         # add the L5 GUI
         self.solo_gui = pfp_gui.solo_gui(self)
 
-    def open_controlfile(self):
+    def open_controlfile(self, cfgpath=None):
         # get the control file path
-        cfgpath = QtWidgets.QFileDialog.getOpenFileName(caption="Choose a control file ...")[0]
-        cfgpath = str(cfgpath)
-        # check to see if file open was cancelled
-        if len(cfgpath) == 0:
-            return
+        if not cfgpath:
+            cfgpath = QtWidgets.QFileDialog.getOpenFileName(caption="Choose a control file ...")[0]
+            cfgpath = str(cfgpath)
+            # check to see if file open was cancelled
+            if len(cfgpath) == 0:
+                return
         # read the contents of the control file
         logger.info(" Opening " + cfgpath)
         try:
