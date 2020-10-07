@@ -1,6 +1,9 @@
 level = mpt
+[Files]
+    file_path = Right click to browse
+    in_filename = Right click to browse
+    out_filename = Right click to browse
 [Options]
-# this section is not used at present
     hourly = No
     percentile = 90
     percentile_check = No

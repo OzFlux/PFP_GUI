@@ -5,6 +5,7 @@ import os
 # 3rd party
 import matplotlib
 import matplotlib.dates as mdt
+import matplotlib.gridspec as gridspec
 import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 import numpy
@@ -181,6 +182,7 @@ def plot_fcvsustar(ds):
         plt.ylabel("Fc ("+Fc["Attr"]["units"]+")")
         plt.title(site_name+": "+str(year))
         plt.draw()
+        mypause(0.5)
     # plot 4 seasons for each year
     logger.info(" Doing seasonal Fc versus u* plots")
     seasons = {"summer":[12, 1, 2], "autumn":[3, 4, 5], "winter":[6, 7, 8], "spring":[9, 10, 11]}
@@ -246,6 +248,7 @@ def plot_fcvsustar(ds):
             axs[row, col].set_ylabel("Fc ("+Fc["Attr"]["units"]+")")
         fig.tight_layout()
         plt.draw()
+        mypause(0.5)
     plt.ioff()
     return
 
@@ -306,11 +309,13 @@ def pltfingerprint_readncfiles(cf):
     if "Files" in cf:
         infilename = pfp_io.get_infilenamefromcf(cf)
         ds[infilename] = pfp_io.nc_read_series(infilename)
+        if ds[infilename].returncodes["value"] != 0: return ds
     for var in cf["Variables"].keys():
         if "in_filename" in cf["Variables"][var]:
             if cf["Variables"][var]["in_filename"] not in ds:
                 infilename = cf["Variables"][var]["in_filename"]
                 ds[cf["Variables"][var]["in_filename"]] = pfp_io.nc_read_series(infilename)
+                if ds[cf["Variables"][var]["in_filename"]].returncodes["value"] != 0: return ds
     return ds
 
 def plot_fingerprint(cf):
@@ -434,6 +439,7 @@ def plot_fluxnet(cf):
     infilename = pfp_io.get_infilenamefromcf(cf)
 
     ds = pfp_io.nc_read_series(infilename)
+    if ds.returncodes["value"] != 0: return
     site_name = ds.globalattributes["site_name"]
     ldt=ds.series["DateTime"]["Data"]
     sdt = ldt[0]
@@ -464,7 +470,129 @@ def plot_fluxnet(cf):
         figname += '_' + ds.globalattributes['nc_level'] + '_FC_' + label + '.png'
         fig.savefig(figname, format='png')
         plt.draw()
+        mypause(0.5)
     plt.ioff()
+    return
+
+def plot_explore_histograms(ds, labels):
+    """ Plot histograms of selected variables."""
+    # set up a dictionary with the percentiles of the histograms to be plotted
+    p = {0: {"lwr": 0.0, "upr": 100.0},
+         1: {"lwr": 0.1, "upr": 99.9},
+         2: {"lwr": 0.5, "upr": 99.5},
+         3: {"lwr": 1.0, "upr": 99.0},
+         4: {"lwr": 2.5, "upr": 97.5}}
+    site_name = ds.globalattributes["site_name"]
+    plt.ion()
+    for label in labels:
+        var = pfp_utils.GetVariable(ds, label)
+        sdt = var["DateTime"][0]
+        edt = var["DateTime"][-1]
+        fig = plt.figure(figsize=(11, 8), tight_layout=True)
+        window_title = site_name + ": " + var["Label"]
+        fig.canvas.set_window_title(window_title)
+        gs = gridspec.GridSpec(2, 5, height_ratios=[1, 0.5])
+        ax_ts = fig.add_subplot(gs[0, :])
+        title_str = site_name + ": " + sdt.strftime("%Y-%m-%d") + " to "
+        title_str += edt.strftime("%Y-%m-%d")
+        ax_ts.set_title(title_str)
+        ax_ts.plot(var["DateTime"], var["Data"], 'b.', label=var["Label"])
+        ax_ts.legend()
+        for n in p:
+            d = plot_explore_do_histogram(var, p[n]["lwr"], p[n]["upr"])
+            lwrs = str(pfp_utils.round2significant(d["lwr"], 4))
+            uprs = str(pfp_utils.round2significant(d["upr"], 4))
+            x = numpy.arange(len(d["hist"]))
+            ax_hist = fig.add_subplot(gs[1, n])
+            label = str(p[n]["lwr"]) + "," + str(p[n]["upr"])
+            ax_hist.bar(x, d["hist"])
+            ax_hist.text(0.5, 0.9, label, transform=ax_hist.transAxes,
+                        horizontalalignment='center')
+            ax_hist.set_xticks([x[1], x[-2]])
+            ax_hist.set_xticklabels([lwrs, uprs])
+        plt.draw()
+        mypause(0.5)
+    return
+
+def plot_explore_do_histogram(var, plwr, pupr):
+    """ Return a dictionary with the histogram results for given percentiles."""
+    d = {}
+    idx = numpy.where(numpy.ma.getmaskarray(var["Data"]) == False)[0]
+    d["lwr"], d["upr"] = numpy.percentile(var["Data"][idx],[plwr, pupr])
+    idx = numpy.ma.where((var["Data"] >= d["lwr"]) &
+                         (var["Data"] <= d["upr"]))[0]
+    bins = numpy.linspace(d["lwr"], d["upr"], num=25)
+    bins = numpy.insert(bins, 0, numpy.ma.min(var["Data"]))
+    d["bins"] = numpy.append(bins, numpy.ma.max(var["Data"]))
+    d["hist"], d["edges"] = numpy.histogram(var["Data"][idx], bins=d["bins"])
+    d["idx"] = idx
+    return d
+
+def plot_explore_percentiles(ds, labels):
+    """ Plot time series histograms of selected variables."""
+    p = {0: {"lwr": 0.0, "upr": 100.0},
+         1: {"lwr": 0.1, "upr": 99.9},
+         2: {"lwr": 0.5, "upr": 99.5},
+         3: {"lwr": 1.0, "upr": 99.0},
+         4: {"lwr": 2.5, "upr": 97.5}}
+    site_name = ds.globalattributes["site_name"]
+    plt.ion()
+    for label in labels:
+        var = pfp_utils.GetVariable(ds, label)
+        sdt = var["DateTime"][0]
+        edt = var["DateTime"][-1]
+        fig = plt.figure(figsize=(11, 8), tight_layout=True)
+        window_title = site_name + ": " + var["Label"]
+        fig.canvas.set_window_title(window_title)
+        gs = gridspec.GridSpec(5, 2, width_ratios=[5, 1])
+        for n in p:
+            d = plot_explore_do_histogram(var, p[n]["lwr"], p[n]["upr"])
+            ax_ts = fig.add_subplot(gs[n, 0])
+            if n == 0:
+                title_str = site_name + ": " + sdt.strftime("%Y-%m-%d") + " to "
+                title_str += edt.strftime("%Y-%m-%d")
+                ax_ts.set_title(title_str)
+            ax_ts.plot(var["DateTime"][d["idx"]], var["Data"][d["idx"]], 'b.')
+            lwrs = str(pfp_utils.round2significant(d["lwr"], 4))
+            uprs = str(pfp_utils.round2significant(d["upr"], 4))
+            x = numpy.arange(len(d["hist"]))
+            ax_hist = fig.add_subplot(gs[n, 1])
+            label = str(p[n]["lwr"]) + "," + str(p[n]["upr"])
+            ax_hist.bar(x, d["hist"])
+            ax_hist.text(0.5, 0.85, label, transform=ax_hist.transAxes,
+                         horizontalalignment='center')
+            ax_hist.set_xticks([x[1], x[-2]])
+            ax_hist.set_xticklabels([lwrs, uprs])
+        plt.draw()
+        mypause(0.5)
+    return
+
+def plot_explore_timeseries(ds, labels):
+    """ Plot time series of selected variables."""
+    site_name = ds.globalattributes["site_name"]
+    nrows = len(labels)
+    plt.ion()
+    fig, axs = plt.subplots(nrows=nrows, sharex=True, figsize=(10.9, 7.5))
+    fig.subplots_adjust(wspace=0.0, hspace=0.05, left=0.1, right=0.95, top=0.95, bottom=0.1)
+    if nrows == 1: axs = [axs]
+    fig.canvas.set_window_title(site_name)
+    for n, label in enumerate(labels):
+        var = pfp_utils.GetVariable(ds, label)
+        sdt = var["DateTime"][0]
+        edt = var["DateTime"][-1]
+        axs[n].plot(var["DateTime"], var["Data"], "b.", label=label)
+        axs[n].legend()
+        if n == 0:
+            title_str = site_name + ": " + sdt.strftime("%Y-%m-%d") + " to "
+            title_str += edt.strftime("%Y-%m-%d")
+            axs[n].set_title(title_str)
+        if n == nrows-1:
+            axs[n].set_xlabel("Date")
+        axs[n].set_ylabel("(" + var["Attr"]["units"] + ")")
+    plt.draw()
+    mypause(0.5)
+    plt.ioff()
+    return
 
 def plottimeseries(cf, nFig, dsa, dsb):
     SiteName = dsa.globalattributes['site_name']
@@ -572,7 +700,6 @@ def plottimeseries(cf, nFig, dsa, dsb):
             #if n > 0: plt.setp(bar_ax.get_xticklabels(), visible=False)
         else:
             logger.error('  plttimeseries: series '+ThisOne+' not in data structure')
-    #fig.show()
     plt.draw()
     mypause(0.5)
     if "plot_path" in cf["Files"]:
@@ -789,6 +916,7 @@ def plot_quickcheck(cf):
     ncfilename = pfp_io.get_infilenamefromcf(cf)
     # read the netCDF file and return the data structure "ds"
     ds = pfp_io.nc_read_series(ncfilename)
+    if ds.returncodes["value"] != 0: return
     series_list = ds.series.keys()
     # get the time step
     ts = int(ds.globalattributes["time_step"])
@@ -899,8 +1027,8 @@ def plot_quickcheck(cf):
     file_name = site_name.replace(" ", "") + "_" + level +"_QC_DailyRadn.png"
     figure_name = os.path.join("plots", file_name)
     fig.savefig(figure_name, format="png")
-    mypause(0.5)
     plt.draw()
+    mypause(0.5)
     # plot the daily average fluxes
     nFig = nFig + 1
     fig = plt.figure(nFig, figsize=(9, 6))

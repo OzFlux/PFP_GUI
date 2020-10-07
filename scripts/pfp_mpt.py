@@ -85,6 +85,7 @@ def mpt_main(cf):
     nc_file_name = cf["Files"]["in_filename"]
     nc_file_path = os.path.join(base_file_path, nc_file_name)
     ds = pfp_io.nc_read_series(nc_file_path)
+    if ds.returncodes["value"] != 0: return
     out_file_paths = run_mpt_code(cf, ds, nc_file_name)
     if len(out_file_paths) == 0:
         return
@@ -114,6 +115,9 @@ def run_mpt_code(cf, ds, nc_file_name):
             msg = " MPT: variable " + label + " not defined in control file, skipping MPT ..."
             logger.error(msg)
             return out_file_paths
+        else:
+            msg = " MPT: Using variable " + cf["Variables"][label]["name"] + " for " + label
+            logger.info(msg)
     fmt = "%12i,%f,%f,%f,%f,%f,%f,%f"
     log_file_path = os.path.join("mpt", "log", "mpt.log")
     mptlogfile = open(log_file_path, "wb")

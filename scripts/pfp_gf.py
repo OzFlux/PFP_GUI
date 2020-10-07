@@ -303,6 +303,7 @@ def ReadAlternateFiles(ds, l4_info):
         # if the file has not already been read, do it now
         if f not in ds_alt:
             ds_alternate = pfp_io.nc_read_series(f, fixtimestepmethod="round")
+            if ds_alternate.returncodes["value"] != 0: return ds_alt
             gfalternate_matchstartendtimes(ds, ds_alternate)
             ds_alt[f] = ds_alternate
     return ds_alt
@@ -1340,6 +1341,7 @@ def ImportSeries(cf,ds):
             logger.warning(msg)
             continue
         ds_import = pfp_io.nc_read_series(import_filename)
+        if ds_import.returncodes["value"] != 0: return
         ts_import = ds_import.globalattributes["time_step"]
         ldt_import = ds_import.series["DateTime"]["Data"]
         si = pfp_utils.GetDateIndex(ldt_import, str(start_date), ts=ts_import, default=0, match="exact")
@@ -1355,3 +1357,4 @@ def ImportSeries(cf,ds):
         data[indbina] = data_import[indainb]
         flag[indbina] = flag_import[indainb]
         pfp_utils.CreateSeries(ds, label, data, flag, attr_import)
+        return

@@ -568,8 +568,7 @@ def rpLT_plot(pd, ds, output, drivers, target, iel, si=0, ei=-1):
     # draw the plot on the screen
     if iel["gui"]["show_plots"]:
         plt.draw()
-        #plt.pause(1)
-        mypause(1)
+        mypause(0.5)
         plt.ioff()
     else:
         plt.close(fig)

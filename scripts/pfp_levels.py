@@ -42,10 +42,10 @@ def l1qc(cf):
     ds = pfp_ts.MergeDataStructures(ds_dict, l1_info)
     # write the processing level to a global attribute
     ds.globalattributes["nc_level"] = "L1"
-    # calculate variances from standard deviations and vice versa
-    pfp_ts.CalculateStandardDeviations(ds)
     # create new variables using user defined functions
     pfp_ts.DoFunctions(ds, l1_info["read_excel"])
+    # calculate variances from standard deviations and vice versa
+    pfp_ts.CalculateStandardDeviations(ds)
     # check missing data and QC flags are consistent
     pfp_utils.CheckQCFlags(ds)
     return ds
@@ -99,7 +99,8 @@ def l3qc(cf, ds2):
     pfp_ck.do_linear(cf,ds3)
     # parse the control file for information on how the user wants to do the gap filling
     l3_info = pfp_compliance.ParseL3ControlFile(cf, ds3)
-    if ds3.returncodes["value"] != 0:
+    if l3_info["status"]["value"] != 0:
+        logger.error(l3_info["status"]["message"])
         return ds3
     # ************************
     # *** Merge humidities ***
@@ -123,19 +124,7 @@ def l3qc(cf, ds2):
     # *** Merge CO2 concentrations ***
     # ********************************
     # merge the 7500 CO2 concentration
-    # PRI 09/08/2017 possibly the ugliest thing I have done yet
-    # This needs to be abstracted to a general alias checking routine at the
-    # start of the L3 processing so that possible aliases are mapped to a single
-    # set of variable names.
-    if "CO2" in cf["Variables"]:
-        CO2 = "CO2"
-    elif "Cc" in cf["Variables"]:
-        CO2 = "Cc"
-    else:
-        msg = "Label for CO2 ('CO2','Cc') not found in control file"
-        logger.warning(msg)
-        CO2 = None
-    pfp_ts.CombineSeries(cf, ds3, CO2, convert_units=True)
+    pfp_ts.CombineSeries(cf, ds3, l3_info["CO2"]["label"], convert_units=True)
     # ******************************************
     # *** Calculate meteorological variables ***
     # ******************************************
@@ -165,18 +154,13 @@ def l3qc(cf, ds2):
     # *** CO2 and Fc section ***
     # **************************
     # convert CO2 units if required
-    pfp_utils.ConvertCO2Units(cf, ds3, CO2=CO2)
+    pfp_utils.ConvertCO2Units(cf, ds3)
     # calculate Fc storage term - single height only at present
-    pfp_ts.CalculateFcStorageSinglePoint(cf, ds3, Fc_out='Fc_single', CO2_in=CO2)
-    # convert Fc and Fc_storage units if required
-    #pfp_utils.ConvertFcUnits(cf, ds3)
-    Fc_list = ["Fc", "Fc_single", "Fc_profile", "Fc_storage"]
-    pfp_utils.CheckUnits(ds3, Fc_list, "umol/m2/s", convert_units=True)
+    pfp_ts.CalculateFcStorageSinglePoint(cf, ds3, l3_info["CO2"]["label"])
+    # convert Fc units if required
+    pfp_utils.ConvertFcUnits(cf, ds3)
     # merge Fc and Fc_storage series if required
-    cfv = cf["Variables"]
-    merge_list = [l for l in cfv.keys() if l[0:2] == "Fc" and "MergeSeries" in cfv[l].keys()]
-    for label in merge_list:
-        pfp_ts.CombineSeries(cf, ds3, label, save_originals=True)
+    pfp_ts.CombineSeries(cf, ds3, l3_info["Fc"]["combine_list"], save_originals=True)
     # correct Fc for storage term - only recommended if storage calculated from profile available
     pfp_ts.CorrectFcForStorage(cf, ds3)
     # *************************

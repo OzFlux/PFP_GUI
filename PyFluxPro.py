@@ -16,8 +16,11 @@ if platform.system() == "Darwin":
 elif platform.system() == "Windows":
     # set backend to "QT5Agg" for Windows
     matplotlib.use("QT5Agg")
+elif platform.system() == "Linux":
+    # set backend to "QT5Agg" for Linux
+    matplotlib.use("QT5Agg")
 else:
-    # use whatever on Linux ...
+    # use whatever ...
     pass
 from PyQt5 import QtWidgets
 # PFP modules
@@ -89,7 +92,7 @@ class pfp_main_ui(QtWidgets.QWidget):
         # Help menu
         self.menuHelp = QtWidgets.QMenu(self.menubar)
         self.menuHelp.setTitle("Help")
-        # File menu items
+        # File menu items: menu actions for control files
         self.actionFileOpen = QtWidgets.QAction(self)
         self.actionFileOpen.setText("Open")
         self.actionFileOpen.setShortcut('Ctrl+O')
@@ -99,11 +102,10 @@ class pfp_main_ui(QtWidgets.QWidget):
         self.actionFileSaveAs = QtWidgets.QAction(self)
         self.actionFileSaveAs.setText("Save As...")
         self.actionFileSaveAs.setShortcut('Shift+Ctrl+S')
-        self.actionFileSplit = QtWidgets.QAction(self)
-        self.actionFileSplit.setText("Split")
-        self.actionFileQuit = QtWidgets.QAction(self)
-        self.actionFileQuit.setText("Quit")
-        self.actionFileQuit.setShortcut('Ctrl+Z')
+        # File menu items: menu actions for netCDF files
+        self.actionFileExplore = QtWidgets.QAction(self)
+        self.actionFileExplore.setText("Explore")
+        self.actionFileExplore.setShortcut('Ctrl+E')
         # File/Convert submenu
         self.actionFileConvertnc2biomet = QtWidgets.QAction(self)
         self.actionFileConvertnc2biomet.setText("nc to Biomet")
@@ -113,6 +115,14 @@ class pfp_main_ui(QtWidgets.QWidget):
         self.actionFileConvertnc2reddyproc.setText("nc to REddyProc")
         self.actionFileConvertncupdate = QtWidgets.QAction(self)
         self.actionFileConvertncupdate.setText("nc update")
+        # File menu item: split netCDF
+        self.actionFileSplit = QtWidgets.QAction(self)
+        self.actionFileSplit.setText("Split")
+        self.actionFileSplit.setShortcut('Ctrl+P')
+        # File menu item: Quit
+        self.actionFileQuit = QtWidgets.QAction(self)
+        self.actionFileQuit.setText("Quit")
+        self.actionFileQuit.setShortcut('Ctrl+Z')
         # Edit menu items
         self.actionEditPreferences = QtWidgets.QAction(self)
         self.actionEditPreferences.setText("Preferences...")
@@ -152,6 +162,7 @@ class pfp_main_ui(QtWidgets.QWidget):
         self.menuFile.addAction(self.actionFileSaveAs)
         self.menuFile.addSeparator()
         self.menuFile.addAction(self.menuFileConvert.menuAction())
+        self.menuFile.addAction(self.actionFileExplore)
         self.menuFile.addAction(self.actionFileSplit)
         self.menuFile.addSeparator()
         self.menuFile.addAction(self.actionFileQuit)
@@ -210,6 +221,7 @@ class pfp_main_ui(QtWidgets.QWidget):
 
         # Connect signals to slots
         # File menu actions
+        self.actionFileExplore.triggered.connect(self.do_file_explore)
         self.actionFileConvertnc2biomet.triggered.connect(lambda:pfp_top_level.do_file_convert_nc2biomet(None, mode="standard"))
         self.actionFileConvertnc2xls.triggered.connect(pfp_top_level.do_file_convert_nc2xls)
         self.actionFileConvertnc2reddyproc.triggered.connect(lambda:pfp_top_level.do_file_convert_nc2reddyproc(None, mode="standard"))
@@ -231,21 +243,22 @@ class pfp_main_ui(QtWidgets.QWidget):
         self.actionPlotClosePlots.triggered.connect(pfp_top_level.do_plot_closeplots)
         # Utilities menu actions
         self.actionUtilitiesClimatology.triggered.connect(lambda:pfp_top_level.do_utilities_climatology(mode="standard"))
-        self.actionUtilitiesUstarCPD1.triggered.connect(lambda:pfp_top_level.do_utilities_ustar_cpd1(mode="standard"))
-        self.actionUtilitiesUstarCPD2.triggered.connect(lambda:pfp_top_level.do_utilities_ustar_cpd2(mode="standard"))
+        self.actionUtilitiesUstarCPD1.triggered.connect(lambda:pfp_top_level.do_utilities_ustar_cpd_mchugh(mode="standard"))
+        self.actionUtilitiesUstarCPD2.triggered.connect(lambda:pfp_top_level.do_utilities_ustar_cpd_barr(mode="standard"))
         self.actionUtilitiesUstarMPT.triggered.connect(lambda:pfp_top_level.do_utilities_ustar_mpt(mode="standard"))
         # add the L4 GUI
         self.l4_ui = pfp_gui.pfp_l4_ui(self)
         # add the L5 GUI
         self.solo_gui = pfp_gui.solo_gui(self)
 
-    def open_controlfile(self):
+    def open_controlfile(self, cfgpath=None):
         # get the control file path
-        cfgpath = QtWidgets.QFileDialog.getOpenFileName(caption="Choose a control file ...")[0]
-        cfgpath = str(cfgpath)
-        # check to see if file open was cancelled
-        if len(cfgpath) == 0:
-            return
+        if not cfgpath:
+            cfgpath = QtWidgets.QFileDialog.getOpenFileName(caption="Choose a control file ...")[0]
+            cfgpath = str(cfgpath)
+            # check to see if file open was cancelled
+            if len(cfgpath) == 0:
+                return
         # read the contents of the control file
         logger.info(" Opening " + cfgpath)
         try:
@@ -286,6 +299,26 @@ class pfp_main_ui(QtWidgets.QWidget):
         elif self.cfg["level"] in ["concatenate"]:
             if not pfp_compliance.concatenate_update_controlfile(self.cfg): return
             self.tabs.tab_dict[self.tabs.tab_index_all] = pfp_gui.edit_cfg_concatenate(self)
+            self.tabs.cfg_dict[self.tabs.tab_index_all] = self.tabs.tab_dict[self.tabs.tab_index_all].get_data_from_model()
+            self.tabs.cfg_dict[self.tabs.tab_index_all]["controlfile_name"] = cfgpath
+        elif self.cfg["level"] in ["climatology"]:
+            if not pfp_compliance.climatology_update_controlfile(self.cfg): return
+            self.tabs.tab_dict[self.tabs.tab_index_all] = pfp_gui.edit_cfg_climatology(self)
+            self.tabs.cfg_dict[self.tabs.tab_index_all] = self.tabs.tab_dict[self.tabs.tab_index_all].get_data_from_model()
+            self.tabs.cfg_dict[self.tabs.tab_index_all]["controlfile_name"] = cfgpath
+        elif self.cfg["level"] in ["cpd_mchugh"]:
+            if not pfp_compliance.cpd_mchugh_update_controlfile(self.cfg): return
+            self.tabs.tab_dict[self.tabs.tab_index_all] = pfp_gui.edit_cfg_cpd_mchugh(self)
+            self.tabs.cfg_dict[self.tabs.tab_index_all] = self.tabs.tab_dict[self.tabs.tab_index_all].get_data_from_model()
+            self.tabs.cfg_dict[self.tabs.tab_index_all]["controlfile_name"] = cfgpath
+        elif self.cfg["level"] in ["cpd_barr"]:
+            if not pfp_compliance.cpd_barr_update_controlfile(self.cfg): return
+            self.tabs.tab_dict[self.tabs.tab_index_all] = pfp_gui.edit_cfg_cpd_barr(self)
+            self.tabs.cfg_dict[self.tabs.tab_index_all] = self.tabs.tab_dict[self.tabs.tab_index_all].get_data_from_model()
+            self.tabs.cfg_dict[self.tabs.tab_index_all]["controlfile_name"] = cfgpath
+        elif self.cfg["level"] in ["mpt"]:
+            if not pfp_compliance.mpt_update_controlfile(self.cfg): return
+            self.tabs.tab_dict[self.tabs.tab_index_all] = pfp_gui.edit_cfg_mpt(self)
             self.tabs.cfg_dict[self.tabs.tab_index_all] = self.tabs.tab_dict[self.tabs.tab_index_all].get_data_from_model()
             self.tabs.cfg_dict[self.tabs.tab_index_all]["controlfile_name"] = cfgpath
         elif self.cfg["level"] in ["L4"]:
@@ -331,6 +364,16 @@ class pfp_main_ui(QtWidgets.QWidget):
         self.tabs.setCurrentIndex(self.tabs.tab_index_all)
         if self.tabs.tab_dict[self.tabs.tab_index_all].cfg_changed:
             self.update_tab_text()
+        self.tabs.tab_index_all = self.tabs.tab_index_all + 1
+        return
+
+    def do_file_explore(self):
+        self.tabs.tab_dict[self.tabs.tab_index_all] = pfp_gui.file_explore(self)
+        self.tabs.cfg_dict[self.tabs.tab_index_all] = {}
+        # add a tab for the netCDF file contents
+        file_name = self.tabs.tab_dict[self.tabs.tab_index_all].file_name
+        self.tabs.addTab(self.tabs.tab_dict[self.tabs.tab_index_all], file_name)
+        self.tabs.setCurrentIndex(self.tabs.tab_index_all)
         self.tabs.tab_index_all = self.tabs.tab_index_all + 1
         return
 
@@ -576,9 +619,13 @@ class pfp_main_ui(QtWidgets.QWidget):
         self.tabs.setCurrentIndex(0)
         # call the appropriate processing routine depending on the level
         self.tabs.tab_index_running = tab_index_current
-        if self.tabs.cfg_dict[tab_index_current]["level"] == "L1":
+        if self.tabs.cfg_dict[tab_index_current]["level"] == "batch":
             # check the L1 control file to see if it is OK to run
-            if not pfp_compliance.l1_check_controlfile(cfg): return
+            if not pfp_compliance.check_batch_controlfile(cfg): return
+            pfp_top_level.do_run_batch(cfg)
+        elif self.tabs.cfg_dict[tab_index_current]["level"] == "L1":
+            # check the L1 control file to see if it is OK to run
+            if not pfp_compliance.check_l1_controlfile(cfg): return
             pfp_top_level.do_run_l1(cfg)
         elif self.tabs.cfg_dict[tab_index_current]["level"] == "L2":
             pfp_top_level.do_run_l2(cfg)
@@ -586,6 +633,14 @@ class pfp_main_ui(QtWidgets.QWidget):
             pfp_top_level.do_run_l3(cfg)
         elif self.tabs.cfg_dict[tab_index_current]["level"] == "concatenate":
             pfp_top_level.do_file_concatenate(cfg)
+        elif self.tabs.cfg_dict[tab_index_current]["level"] == "climatology":
+            pfp_top_level.do_utilities_climatology(cfg=cfg, mode="custom")
+        elif self.tabs.cfg_dict[tab_index_current]["level"] == "cpd_mchugh":
+            pfp_top_level.do_utilities_ustar_cpd_mchugh(cfg=cfg, mode="custom")
+        elif self.tabs.cfg_dict[tab_index_current]["level"] == "cpd_barr":
+            pfp_top_level.do_utilities_ustar_cpd_barr(cfg=cfg, mode="custom")
+        elif self.tabs.cfg_dict[tab_index_current]["level"] == "mpt":
+            pfp_top_level.do_utilities_ustar_mpt(cfg=cfg, mode="custom")
         elif self.tabs.cfg_dict[tab_index_current]["level"] == "L4":
             pfp_top_level.do_run_l4(self, cfg)
         elif self.tabs.cfg_dict[tab_index_current]["level"] == "L5":

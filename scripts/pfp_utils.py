@@ -222,38 +222,95 @@ def contiguous_regions(condition):
     idx.shape = (-1,2)
     return idx
 
-def ConvertCO2Units(cf, ds, CO2='CO2'):
-    if CO2 == None:
-        return
-    CO2_units_out = "mg/m3"            # default value
-    CO2_units_in = ds.series[CO2]['Attr']['units']
-    if 'Options' in cf:
-        if 'CO2Units' in cf['Options']:
-            CO2_units_out = str(cf['Options']['CO2Units'])
-    if CO2_units_out!=CO2_units_in:
-        logger.info(' Converting CO2 concentration from '+CO2_units_in+' to '+CO2_units_out)
-        if CO2_units_out=="umol/mol" and CO2_units_in=="mg/m3":
-            c_mgpm3,flag,attr = GetSeriesasMA(ds,CO2)
-            T,f,a = GetSeriesasMA(ds,'Ta')
-            p,f,a = GetSeriesasMA(ds,'ps')
-            c_ppm = pfp_mf.co2_ppmfrommgCO2pm3(c_mgpm3,T,p)
-            attr["long_name"] = attr["long_name"]+", converted to umol/mol"
-            attr["units"] = CO2_units_out
-            attr["standard_name"] = "mole_concentration_of_carbon_dioxide_in_air"
-            CreateSeries(ds,CO2,c_ppm,flag,attr)
-        elif CO2_units_out=="mg/m3" and CO2_units_in=="umol/mol":
-            c_ppm,flag,attr = GetSeriesasMA(ds,CO2)
-            T,f,a = GetSeriesasMA(ds,'Ta')
-            p,f,a = GetSeriesasMA(ds,'ps')
-            c_mgpm3 = pfp_mf.co2_mgCO2pm3fromppm(c_ppm,T,p)
-            attr["long_name"] = attr["long_name"]+", converted to mg/m3"
-            attr["units"] = CO2_units_out
-            attr["standard_name"] = "mass_concentration_of_carbon_dioxide_in_air"
-            CreateSeries(ds,CO2,c_mgpm3,flag,attr)
+#def ConvertCO2Units(cf, ds, CO2):
+    #if CO2 == None:
+        #return
+    #CO2_units_out = "mg/m3"            # default value
+    #CO2_units_in = ds.series[CO2]['Attr']['units']
+    #if 'Options' in cf:
+        #if 'CO2Units' in cf['Options']:
+            #CO2_units_out = str(cf['Options']['CO2Units'])
+    #if CO2_units_out!=CO2_units_in:
+        #logger.info(' Converting CO2 concentration from '+CO2_units_in+' to '+CO2_units_out)
+        #if CO2_units_out=="umol/mol" and CO2_units_in=="mg/m3":
+            #c_mgpm3,flag,attr = GetSeriesasMA(ds,CO2)
+            #T,f,a = GetSeriesasMA(ds,'Ta')
+            #p,f,a = GetSeriesasMA(ds,'ps')
+            #c_ppm = pfp_mf.co2_ppmfrommgCO2pm3(c_mgpm3,T,p)
+            #attr["long_name"] = attr["long_name"]+", converted to umol/mol"
+            #attr["units"] = CO2_units_out
+            #attr["standard_name"] = "mole_concentration_of_carbon_dioxide_in_air"
+            #CreateSeries(ds,CO2,c_ppm,flag,attr)
+        #elif CO2_units_out=="mg/m3" and CO2_units_in=="umol/mol":
+            #c_ppm,flag,attr = GetSeriesasMA(ds,CO2)
+            #T,f,a = GetSeriesasMA(ds,'Ta')
+            #p,f,a = GetSeriesasMA(ds,'ps')
+            #c_mgpm3 = pfp_mf.co2_mgCO2pm3fromppm(c_ppm,T,p)
+            #attr["long_name"] = attr["long_name"]+", converted to mg/m3"
+            #attr["units"] = CO2_units_out
+            #attr["standard_name"] = "mass_concentration_of_carbon_dioxide_in_air"
+            #CreateSeries(ds,CO2,c_mgpm3,flag,attr)
+        #else:
+            #logger.info('  ConvertCO2Units: input or output units for CO2 concentration not recognised')
+    #else:
+        #logger.info(" CO2 concentration already in requested units")
+
+def ConvertCO2Units(cf, ds):
+    """
+    Purpose:
+     Convert CO2 concentration units as required.
+    Usage:
+    Side effects:
+     The units of any CO2 concentrations in the data structure are converted to the units
+     specified in the [Options] section of the control file.
+    Author: PRI
+    Date: Back in the day
+    """
+    # list of supported CO2 flux units
+    units_list = ["mg/m3", "(mg/m3)2", "mgCO2/m3", "(mgCO2/m3)2", "umol/m3", "umol/mol"]
+    # get the CO2 units requested by the user
+    CO2_units_out = get_keyvaluefromcf(cf, ["Options"], "CO2Units", default="umol/mol")
+    # get a list of CO2 series
+    labels = ds.series.keys()
+    CO2_labels = [l for l in labels if l[0:3] == "CO2" and ds.series[l]["Attr"]["units"] in units_list]
+    Cc_labels = [l for l in labels if l[0:2] == "Cc" and ds.series[l]["Attr"]["units"] in units_list]
+    CO2_labels = CO2_labels + Cc_labels
+    # do the units conversion
+    # separate averages and standard deviations
+    for label in CO2_labels:
+        CO2_in = GetVariable(ds, label)
+        # skip if the old and new units are the same
+        if CO2_in["Attr"]["units"] == CO2_units_out:
+            continue
+        # check if we have a standard deviation or a variance
+        long_name = CO2_in["Attr"]["long_name"].lower()
+        if ("Sd" in label and "deviation" in long_name):
+            # the only conversion allowed for standard deviations is mg/m3 to mmol/m3 ...
+            if CO2_in["Attr"]["units"] in ["mg/m3", "mgCO2/m3"] and CO2_units_out == "umol/mol":
+                # ... and we will only do it if the user has requested umol/mol for CO2
+                msg = " Converting " + label + " from " + CO2_in["Attr"]["units"]
+                msg += " to mmol/m3"
+                logger.info(msg)
+                CO2_out = convert_units_func(ds, CO2_in, "mmol/m3")
+        elif ("Vr" in label and ")2" in CO2_in["Attr"]["units"]):
+            # the only conversion allowed for variances is (mg/m3)2 to (mmol/m3)2
+            if CO2_in["Attr"]["units"] in ["(mg/m3)2", "(mgCO2/m3)2"] and CO2_units_out == "umol/mol":
+                msg = " Converting " + label + " from " + CO2_in["Attr"]["units"]
+                msg += " to (mmol/m3)2"
+                logger.info(msg)
+                CO2_in["Data"] = numpy.ma.sqrt(CO2_in["Data"])
+                CO2_in["Attr"]["units"] = units_variance_to_standard_deviation(CO2_in["Attr"]["units"])
+                CO2_out = convert_units_func(ds, CO2_in, "mmol/m3")
+                CO2_out["Data"] = CO2_out["Data"]*CO2_out["Data"]
+                CO2_out["Attr"]["units"] = units_standard_deviation_to_variance(CO2_out["Attr"]["units"])
         else:
-            logger.info('  ConvertCO2Units: input or output units for CO2 concentration not recognised')
-    else:
-        logger.info(" CO2 concentration already in requested units")
+            # assume we have an average and do the units conersion
+            msg = " Converting " + label + " from " + CO2_in["Attr"]["units"]
+            msg += " to " + CO2_units_out
+            logger.info(msg)
+            CO2_out = convert_units_func(ds, CO2_in, CO2_units_out)
+        CreateVariable(ds, CO2_out)
+    return
 
 def ConvertFcUnits(cf, ds):
     """
@@ -266,22 +323,19 @@ def ConvertFcUnits(cf, ds):
     Author: PRI
     Date: Back in the day
     """
-    if 'Options' not in cf:
-        return
-    if 'FcUnits' not in cf['Options']:
-        return
+    # list of supported CO2 flux units
+    units_list = ["mg/m2/s", "umol/m2/s"]
     # get the Fc units requested by the user
     Fc_units_out = get_keyvaluefromcf(cf, ['Options'], "FcUnits", default="umol/m2/s")
     # get a list of Fc series
-    Fc_list = [label for label in ds.series.keys() if label[0:2] == "Fc"]
+    labels = ds.series.keys()
+    Fc_list = [l for l in labels if l[0:2] == "Fc" and ds.series[l]["Attr"]["units"] in units_list]
     # convert units of Fc as required
-    units_list = ["mg/m2/s", "umol/m2/s"]
     for label in Fc_list:
         # get the Fc variable
         Fc = GetVariable(ds, label)
         # check the units, we only operate on what we know (LBYL)
         if Fc["Attr"]["units"] not in units_list:
-            Fc_list.remove(label)
             continue
         Fc_units_in = Fc["Attr"]["units"]
         # check to see if we need to convert units
@@ -306,7 +360,62 @@ def ConvertFcUnits(cf, ds):
             logger.info('  ConvertFcUnits: input or output units for Fc unrecognised')
     return
 
-def convert_units_func(ds, variable, new_units, mode="quiet"):
+#def convert_units_func(ds, variable, new_units, mode="quiet"):
+    #"""
+    #Purpose:
+     #Generic routine for changing units.
+     #Nothing is done if the original units are the same as the requested units.
+    #Usage:
+     #new_variable = pfp_utils.convert_units_func(ds, old_variable, new_units)
+     #where;
+      #new_variable is a copy of old_variable converted to new_units
+      #ds is a data structure
+      #old_variable is a variable in the original units
+      #new_units are the units of the new data
+    #Author: PRI
+    #Date: July 2015
+    #"""
+    #old_units = variable["Attr"]["units"]
+    #if old_units == new_units:
+        ## old units same as new units, nothing to do ...
+        #msg = " New units same as old ones, skipping ..."
+        #logger.warning(msg)
+        #return variable
+    ## check the units are something we understand
+    ## add more lists here to cope with water etc
+    #co2_list = ["umol/m2/s", "gC/m2", "mg/m3", "mgCO2/m3", "umol/mol", "mg/m2/s", "mgCO2/m2/s", "mmol/m3"]
+    #h2o_list = ["g/m3", "kg/m3", "mmol/mol", "%", "percent", "frac", "fraction", "kg/kg", "mmol/m3"]
+    #t_list = ["C", "K"]
+    #ps_list = ["Pa", "hPa", "kPa"]
+    #soil_list = ["%", "percent", "frac", "m3/m3"]
+    #ok_list = co2_list + h2o_list + t_list + ps_list + soil_list
+    ## parse the original units
+    #if old_units not in ok_list:
+        #if "Label" in variable:
+            #label = variable["Label"]
+        #else:
+            #label = "quantity provided"
+        #msg = " Unrecognised units (" + old_units + ") in " + label
+        #logger.error(msg)
+    #elif new_units not in ok_list:
+        #msg = " Unrecognised units requested (" + new_units + ")"
+        #logger.error(msg)
+    #elif new_units in co2_list and old_units in co2_list:
+        #variable = convert_units_co2(ds, variable, new_units)
+    #elif new_units in h2o_list and old_units in h2o_list:
+        #variable = convert_units_h2o(ds, variable, new_units)
+    #elif new_units in t_list and old_units in t_list:
+        #variable = convert_units_t(ds, variable, new_units)
+    #elif new_units in ps_list and old_units in ps_list:
+        #variable = convert_units_ps(ds, variable, new_units)
+    #elif new_units in soil_list and old_units in soil_list:
+        #variable = convert_units_soil(ds, variable, new_units)
+    #else:
+        #msg = "Unrecognised units combination " + old_units + " and " + new_units
+        #logger.error(msg)
+    #return variable
+
+def convert_units_func(ds, var_in, new_units, mode="quiet"):
     """
     Purpose:
      Generic routine for changing units.
@@ -321,47 +430,80 @@ def convert_units_func(ds, variable, new_units, mode="quiet"):
     Author: PRI
     Date: July 2015
     """
-    old_units = variable["Attr"]["units"]
+    old_units = var_in["Attr"]["units"]
+    var_out = CopyVariable(var_in)
     if old_units == new_units:
-        # old units same as new units, nothing to do ...
-        msg = " New units same as old ones, skipping ..."
-        logger.warning(msg)
-        return variable
-    # check the units are something we understand
-    # add more lists here to cope with water etc
-    co2_list = ["umol/m2/s", "gC/m2", "mg/m3", "mgCO2/m3", "umol/mol", "mg/m2/s", "mgCO2/m2/s"]
-    h2o_list = ["g/m3", "mmol/mol", "%", "percent", "frac", "fraction", "kg/kg"]
-    t_list = ["C", "K"]
-    ps_list = ["Pa", "hPa", "kPa"]
-    soil_list = ["%", "percent", "frac", "m3/m3"]
-    ok_list = co2_list + h2o_list + t_list + ps_list + soil_list
+        if mode != "quiet":
+            # old units same as new units, nothing to do ...
+            msg = " New units same as old ones, skipping ..."
+            logger.warning(msg)
+        return var_out
+    # check the units and the long_name are something we understand
+    co2_info = {"units": ["umol/m2/s", "gC/m2", "mg/m3", "mgCO2/m3", "umol/mol",
+                          "mg/m2/s", "mgCO2/m2/s", "mmol/m3"],
+                "long_name": ["co2", "carbon dioxide"]}
+    h2o_info = {"units": ["g/m3", "kg/m3", "mmol/mol", "%", "percent", "frac",
+                          "fraction", "kg/kg", "mmol/m3"],
+                "long_name": ["h2o", "humidity", "vapour"]}
+    t_info = {"units": ["C", "K"], "long_name": ["temperature"]}
+    ps_info = {"units": ["Pa", "hPa", "kPa"], "long_name": ["pressure"]}
+    sws_info = {"units": ["%", "percent", "frac", "m3/m3"], "long_name": ["soil"]}
+    ok_units = co2_info["units"] + h2o_info["units"]
+    ok_units += t_info["units"] + ps_info["units"]
+    ok_units += sws_info["units"]
     # parse the original units
-    if old_units not in ok_list:
-        if "Label" in variable:
-            label = variable["Label"]
+    if old_units not in ok_units:
+        if "Label" in var_in:
+            label = var_in["Label"]
         else:
             label = "quantity provided"
         msg = " Unrecognised units (" + old_units + ") in " + label
         logger.error(msg)
-    elif new_units not in ok_list:
+    elif new_units not in ok_units:
         msg = " Unrecognised units requested (" + new_units + ")"
+        msg += " for variable " + label
         logger.error(msg)
-    elif new_units in co2_list and old_units in co2_list:
-        variable = convert_units_co2(ds, variable, new_units)
-    elif new_units in h2o_list and old_units in h2o_list:
-        variable = convert_units_h2o(ds, variable, new_units)
-    elif new_units in t_list and old_units in t_list:
-        variable = convert_units_t(ds, variable, new_units)
-    elif new_units in ps_list and old_units in ps_list:
-        variable = convert_units_ps(ds, variable, new_units)
-    elif new_units in soil_list and old_units in soil_list:
-        variable = convert_units_soil(ds, variable, new_units)
+    elif (new_units in co2_info["units"] and old_units in co2_info["units"]):
+        doit = False
+        for item in co2_info["long_name"]:
+            if item in var_in["Attr"]["long_name"].lower():
+                doit = True
+        if doit:
+            var_out = convert_units_co2(ds, var_in, new_units, co2_info)
+    elif (new_units in h2o_info["units"] and old_units in h2o_info["units"]):
+        doit = False
+        for item in h2o_info["long_name"]:
+            if item in var_in["Attr"]["long_name"].lower():
+                doit = True
+        if doit:
+            var_out = convert_units_h2o(ds, var_in, new_units, h2o_info)
+    elif (new_units in t_info["units"] and old_units in t_info["units"]):
+        doit = False
+        for item in t_info["long_name"]:
+            if item in var_in["Attr"]["long_name"].lower():
+                doit = True
+        if doit:
+            var_out = convert_units_t(ds, var_in, new_units, t_info)
+    elif (new_units in ps_info["units"] and old_units in ps_info["units"]):
+        doit = False
+        for item in ps_info["long_name"]:
+            if item in var_in["Attr"]["long_name"].lower():
+                doit = True
+        if doit:
+            var_out = convert_units_ps(ds, var_in, new_units, ps_info)
+    elif (new_units in sws_info["units"] and old_units in sws_info["units"]):
+        doit = False
+        for item in sws_info["long_name"]:
+            if item in var_in["Attr"]["long_name"].lower():
+                doit = True
+        if doit:
+            var_out = convert_units_soil(ds, var_in, new_units, sws_info)
     else:
         msg = "Unrecognised units combination " + old_units + " and " + new_units
         logger.error(msg)
-    return variable
+    return var_out
 
-def convert_units_co2(ds, variable, new_units):
+def convert_units_co2(ds, var_in, new_units, co2_info):
     """
     Purpose:
      General purpose routine to convert from one set of CO2 concentration units
@@ -382,26 +524,24 @@ def convert_units_co2(ds, variable, new_units):
     Author: PRI
     Date: January 2016
     """
+    var_out = CopyVariable(var_in)
     # get the current units and the timestep
-    old_units = variable["Attr"]["units"]
-    if old_units == new_units:
-        # nothing to do here, folks
-        return
+    old_units = var_in["Attr"]["units"]
     ts = int(ds.globalattributes["time_step"])
     # default values for the valid_range minimum and maximum
     valid_range_minimum = -1E35
     valid_range_maximum = 1E35
     # now check the units and see what we have to convert
-    if old_units == "umol/m2/s" and new_units == "gC/m2":
+    if ((old_units == "umol/m2/s") and (new_units == "gC/m2")):
         # convert the data
-        variable["Data"] = variable["Data"]*12.01*ts*60/1E6
+        var_out["Data"] = var_out["Data"]*12.01*ts*60/1E6
         # update the range check limits in the variable attribute
         # this one is easy because it is a simple numerical change
         for attr in ["rangecheck_lower", "rangecheck_upper"]:
-            if attr in variable["Attr"]:
-                attr_limit = numpy.array(parse_rangecheck_limits(variable["Attr"][attr]))
+            if attr in var_out["Attr"]:
+                attr_limit = numpy.array(parse_rangecheck_limits(var_out["Attr"][attr]))
                 attr_limit = attr_limit*12.01*ts*60/1E6
-                variable["Attr"][attr] = list(attr_limit)
+                var_out["Attr"][attr] = list(attr_limit)
                 if attr == "rangecheck_lower":
                     valid_range_minimum = numpy.amin(attr_limit)
                 elif attr == "rangecheck_upper":
@@ -412,22 +552,22 @@ def convert_units_co2(ds, variable, new_units):
                     logger.error(msg)
                     continue
         # is the valid_range attribute defined for this variable?
-        if "valid_range" in variable["Attr"]:
+        if "valid_range" in var_out["Attr"]:
             # if so, then update it
-            variable["Attr"]["valid_range"] = repr(valid_range_minimum)
-            variable["Attr"]["valid_range"] += "," + repr(valid_range_maximum)
+            var_out["Attr"]["valid_range"] = repr(valid_range_minimum)
+            var_out["Attr"]["valid_range"] += "," + repr(valid_range_maximum)
         # update the variable attributes to the new units
-        variable["Attr"]["units"] = new_units
+        var_out["Attr"]["units"] = new_units
     elif old_units == "gC/m2" and new_units == "umol/m2/s":
         # convert the data
-        variable["Data"] = variable["Data"]*1E6/(12.01*ts*60)
+        var_out["Data"] = var_out["Data"]*1E6/(12.01*ts*60)
         # update the range check limits in the variable attribute
         # this one is easy because it is a simple numerical change
         for attr in ["rangecheck_lower", "rangecheck_upper"]:
-            if attr in variable["Attr"]:
-                attr_limit = numpy.array(parse_rangecheck_limits(variable["Attr"][attr]))
+            if attr in var_out["Attr"]:
+                attr_limit = numpy.array(parse_rangecheck_limits(var_out["Attr"][attr]))
                 attr_limit = attr_limit*1E6/(12.01*ts*60)
-                variable["Attr"][attr] = list(attr_limit)
+                var_out["Attr"][attr] = list(attr_limit)
                 if attr == "rangecheck_lower":
                     valid_range_minimum = numpy.amin(attr_limit)
                 elif attr == "rangecheck_upper":
@@ -438,15 +578,14 @@ def convert_units_co2(ds, variable, new_units):
                     logger.error(msg)
                     continue
         # is the valid_range attribute defined for this variable?
-        if "valid_range" in variable["Attr"]:
+        if "valid_range" in var_out["Attr"]:
             # if so, then update it
-            variable["Attr"]["valid_range"] = repr(valid_range_minimum)
-            variable["Attr"]["valid_range"] += "," + repr(valid_range_maximum)
+            var_out["Attr"]["valid_range"] = repr(valid_range_minimum)
+            var_out["Attr"]["valid_range"] += "," + repr(valid_range_maximum)
         # update the variable attributes to the new units
-        variable["Attr"]["units"] = new_units
+        var_out["Attr"]["units"] = new_units
     elif old_units in ["mg/m3", "mgCO2/m3"] and new_units == "umol/mol":
         ldt = GetVariable(ds, "DateTime")
-        months = numpy.array([dt.month for dt in ldt["Data"]])
         # convert the data
         ldt = GetVariable(ds, "DateTime")
         Month = numpy.array([d.month for d in ldt["Data"]])
@@ -454,13 +593,13 @@ def convert_units_co2(ds, variable, new_units):
         ps = GetVariable(ds, "ps")
         Ta_def = numpy.full(12, numpy.ma.mean(Ta["Data"]))
         ps_def = numpy.full(12, numpy.ma.mean(ps["Data"]))
-        variable["Data"] = pfp_mf.co2_ppmfrommgCO2pm3(variable["Data"], Ta["Data"], ps["Data"])
+        var_out["Data"] = pfp_mf.co2_ppmfrommgCO2pm3(var_out["Data"], Ta["Data"], ps["Data"])
         # update the range check limits in the variable attribute
         # this one is more complicated because it involves temperature and pressure
         for attr in ["rangecheck_lower", "rangecheck_upper"]:
-            if attr in variable["Attr"]:
+            if attr in var_out["Attr"]:
                 # get the list of monthly maxima or minima
-                limit_list = parse_rangecheck_limits(variable["Attr"][attr])
+                limit_list = parse_rangecheck_limits(var_out["Attr"][attr])
                 # get an array of default conversions using mean temperature and pressure
                 attr_limit = pfp_mf.co2_ppmfrommgCO2pm3(numpy.array(limit_list), Ta_def, ps_def)
                 # now loop over each month and get the maxima (rangecheck_lower) or minima
@@ -489,7 +628,7 @@ def convert_units_co2(ds, variable, new_units):
                         logger.error(msg)
                         continue
                 # update the variable attribute with the converted limits
-                variable["Attr"][attr] = list(attr_limit)
+                var_out["Attr"][attr] = list(attr_limit)
                 # get the absolute minimum and maximum for the valid_range attribute
                 if attr == "rangecheck_lower":
                     valid_range_minimum = numpy.amin(attr_limit)
@@ -500,11 +639,11 @@ def convert_units_co2(ds, variable, new_units):
                     msg = "convert_units_co2: unexpected option for attr (" + attr + ")"
                     logger.error(msg)
                     continue
-        if "valid_range" in variable["Attr"]:
-            variable["Attr"]["valid_range"] = repr(valid_range_minimum)
-            variable["Attr"]["valid_range"] += "," + repr(valid_range_maximum)
+        if "valid_range" in var_out["Attr"]:
+            var_out["Attr"]["valid_range"] = repr(valid_range_minimum)
+            var_out["Attr"]["valid_range"] += "," + repr(valid_range_maximum)
         # update the variable attributes to the new units
-        variable["Attr"]["units"] = new_units
+        var_out["Attr"]["units"] = new_units
     elif old_units == "umol/mol" and new_units in ["mg/m3", "mgCO2/m3"]:
         ldt = GetVariable(ds, "DateTime")
         Month = numpy.array([d.month for d in ldt["Data"]])
@@ -512,13 +651,13 @@ def convert_units_co2(ds, variable, new_units):
         ps = GetVariable(ds, "ps")
         Ta_def = numpy.full(12, numpy.ma.mean(Ta["Data"]))
         ps_def = numpy.full(12, numpy.ma.mean(ps["Data"]))
-        variable["Data"] = pfp_mf.co2_mgCO2pm3fromppm(variable["Data"], Ta["Data"], ps["Data"])
+        var_out["Data"] = pfp_mf.co2_mgCO2pm3fromppm(var_out["Data"], Ta["Data"], ps["Data"])
         # update the range check limits in the variable attribute
         # this one is more complicated because it involves temperature and pressure
         for attr in ["rangecheck_lower", "rangecheck_upper"]:
-            if attr in variable["Attr"]:
+            if attr in var_out["Attr"]:
                 # get the list of monthly maxima or minima
-                limit_list = parse_rangecheck_limits(variable["Attr"][attr])
+                limit_list = parse_rangecheck_limits(var_out["Attr"][attr])
                 # get an array of default conversions using mean temperature and pressure
                 attr_limit = pfp_mf.co2_mgCO2pm3fromppm(numpy.array(limit_list), Ta_def, ps_def)
                 # now loop over each month and get the maxima (rangecheck_lower) or minima
@@ -547,7 +686,7 @@ def convert_units_co2(ds, variable, new_units):
                         logger.error(msg)
                         continue
                 # update the variable attribute with the converted limits
-                variable["Attr"][attr] = list(attr_limit)
+                var_out["Attr"][attr] = list(attr_limit)
                 # get the absolute minimum and maximum for the valid_range attribute
                 if attr == "rangecheck_lower":
                     valid_range_minimum = numpy.amin(attr_limit)
@@ -558,21 +697,21 @@ def convert_units_co2(ds, variable, new_units):
                     msg = "convert_units_co2: unexpected option for attr (" + attr + ")"
                     logger.error(msg)
                     continue
-        if "valid_range" in variable["Attr"]:
-            variable["Attr"]["valid_range"] = repr(valid_range_minimum)
-            variable["Attr"]["valid_range"] += "," + repr(valid_range_maximum)
+        if "valid_range" in var_out["Attr"]:
+            var_out["Attr"]["valid_range"] = repr(valid_range_minimum)
+            var_out["Attr"]["valid_range"] += "," + repr(valid_range_maximum)
         # update the variable attributes to the new units
-        variable["Attr"]["units"] = new_units
+        var_out["Attr"]["units"] = new_units
     elif old_units in ["mg/m2/s", "mgCO2/m2/s"] and new_units == "umol/m2/s":
         # convert the data
-        variable["Data"] = pfp_mf.Fc_umolpm2psfrommgCO2pm2ps(variable["Data"])
+        var_out["Data"] = pfp_mf.Fc_umolpm2psfrommgCO2pm2ps(var_out["Data"])
         # update the range check limits in the variable attribute
         # this one is easy because it is a simple numerical change
         for attr in ["rangecheck_lower", "rangecheck_upper"]:
-            if attr in variable["Attr"]:
-                attr_limit = numpy.array(parse_rangecheck_limits(variable["Attr"][attr]))
+            if attr in var_out["Attr"]:
+                attr_limit = numpy.array(parse_rangecheck_limits(var_out["Attr"][attr]))
                 attr_limit = pfp_mf.Fc_umolpm2psfrommgCO2pm2ps(attr_limit)
-                variable["Attr"][attr] = list(attr_limit)
+                var_out["Attr"][attr] = list(attr_limit)
                 if attr == "rangecheck_lower":
                     valid_range_minimum = numpy.amin(attr_limit)
                 elif attr == "rangecheck_upper":
@@ -583,22 +722,22 @@ def convert_units_co2(ds, variable, new_units):
                     logger.error(msg)
                     continue
         # is the valid_range attribute defined for this variable?
-        if "valid_range" in variable["Attr"]:
+        if "valid_range" in var_out["Attr"]:
             # if so, then update it
-            variable["Attr"]["valid_range"] = repr(valid_range_minimum)
-            variable["Attr"]["valid_range"] += "," + repr(valid_range_maximum)
+            var_out["Attr"]["valid_range"] = repr(valid_range_minimum)
+            var_out["Attr"]["valid_range"] += "," + repr(valid_range_maximum)
         # update the variable attributes to the new units
-        variable["Attr"]["units"] = new_units
+        var_out["Attr"]["units"] = new_units
     elif old_units == "umol/m2/s" and new_units in ["mg/m2/s", "mgCO2/m2/s"]:
         # convert the data
-        variable["Data"] = pfp_mf.Fc_mgCO2pm2psfromumolpm2ps(variable["Data"])
+        var_out["Data"] = pfp_mf.Fc_mgCO2pm2psfromumolpm2ps(var_out["Data"])
         # update the range check limits in the variable attribute
         # this one is easy because it is a simple numerical change
         for attr in ["rangecheck_lower", "rangecheck_upper"]:
-            if attr in variable["Attr"]:
-                attr_limit = numpy.array(parse_rangecheck_limits(variable["Attr"][attr]))
+            if attr in var_out["Attr"]:
+                attr_limit = numpy.array(parse_rangecheck_limits(var_out["Attr"][attr]))
                 attr_limit = pfp_mf.Fc_mgCO2pm2psfromumolpm2ps(attr_limit)
-                variable["Attr"][attr] = list(attr_limit)
+                var_out["Attr"][attr] = list(attr_limit)
                 if attr == "rangecheck_lower":
                     valid_range_minimum = numpy.amin(attr_limit)
                 elif attr == "rangecheck_upper":
@@ -609,19 +748,31 @@ def convert_units_co2(ds, variable, new_units):
                     logger.error(msg)
                     continue
         # is the valid_range attribute defined for this variable?
-        if "valid_range" in variable["Attr"]:
+        if "valid_range" in var_out["Attr"]:
             # if so, then update it
-            variable["Attr"]["valid_range"] = repr(valid_range_minimum)
-            variable["Attr"]["valid_range"] += "," + repr(valid_range_maximum)
+            var_out["Attr"]["valid_range"] = repr(valid_range_minimum)
+            var_out["Attr"]["valid_range"] += "," + repr(valid_range_maximum)
         # update the variable attributes to the new units
-        variable["Attr"]["units"] = new_units
+        var_out["Attr"]["units"] = new_units
+    elif old_units in ["mg/m3", "mgCO2/m3"] and new_units == "mmol/m3":
+        var_out["Data"] = var_out["Data"] / (float(1000)*float(c.Mco2))
+        var_out["Attr"]["units"] = new_units
+        if "rangecheck_lower" in var_out["Attr"]:
+            attr_in = var_out["Attr"]["rangecheck_lower"]
+            limits = parse_rangecheck_limits(attr_in)
+            limits = [(l / (float(1000)*float(c.Mco2))) for l in limits]
+            var_out["Attr"]["rangecheck_lower"] = ','.join(str(l) for l in limits)
+        if "rangecheck_upper" in var_out["Attr"]:
+            attr_in = var_out["Attr"]["rangecheck_upper"]
+            limits = parse_rangecheck_limits(attr_in)
+            limits = [(l / (float(1000)*float(c.Mco2))) for l in limits]
+            var_out["Attr"]["rangecheck_upper"] = ','.join(str(l) for l in limits)
     else:
         msg = " Unrecognised conversion from " + old_units + " to " + new_units
         logger.error(msg)
+    return var_out
 
-    return variable
-
-def convert_units_h2o(ds, var_in, new_units):
+def convert_units_h2o(ds, var_in, new_units, h2o_info):
     """
     Purpose:
      General purpose routine to convert from one set of H2O concentration units
@@ -640,16 +791,16 @@ def convert_units_h2o(ds, var_in, new_units):
     Author: PRI
     Date: January 2016
     """
+    var_out = CopyVariable(var_in)
     nrecs = int(ds.globalattributes["nc_nrecs"])
     series_list = list(ds.series.keys())
-    var_out = CopyVariable(var_in)
-    ok_units = ["mmol/mol", "g/m3", "fraction", "frac", "%", "percent"]
+    ok_units = h2o_info["units"]
     old_units = var_in["Attr"]["units"]
-    if (old_units not in ok_units) or (new_units not in ok_units):
+    if ((old_units not in ok_units) or (new_units not in ok_units)):
         msg = " Unrecognised conversion from " + old_units + " to " + new_units
         logger.error(msg)
         return var_out
-    if old_units == "mmol/mol" and new_units == "g/m3":
+    if ((old_units == "mmol/mol") and (new_units == "g/m3")):
         # this routine may be called before Ta and ps have been created by
         # merging variables as specified in the control file
         if "Ta" in series_list:
@@ -664,8 +815,9 @@ def convert_units_h2o(ds, var_in, new_units):
             # if ps doesn't exist, create it by merging anything that starts with "ps"
             p_list = [p for p in series_list if p[0:2] in ["ps"]]
             ps = MergeVariables(ds, "ps", p_list)
-        month = GetVariable(ds, "Month")
         var_out["Data"] = pfp_mf.h2o_gpm3frommmolpmol(var_in["Data"], Ta["Data"], ps["Data"])
+        var_out["Attr"]["units"] = new_units
+        month = GetVariable(ds, "Month")
         if "rangecheck_lower" in var_out["Attr"]:
             attr_in = var_out["Attr"]["rangecheck_lower"]
             attr_out = convert_units_h2o_lower_gpm3(attr_in, Ta["Data"], ps["Data"], month["Data"])
@@ -674,7 +826,7 @@ def convert_units_h2o(ds, var_in, new_units):
             attr_in = var_out["Attr"]["rangecheck_lower"]
             attr_out = convert_units_h2o_upper_gpm3(attr_in, Ta["Data"], ps["Data"], month["Data"])
             var_out["Attr"]["rangecheck_lower"] = str(attr_out)
-    elif old_units == "g/m3" and new_units == "mmol/mol":
+    elif ((old_units == "g/m3") and (new_units == "mmol/mol")):
         if "Ta" in series_list:
             Ta = GetVariable(ds, "Ta")
         else:
@@ -687,8 +839,9 @@ def convert_units_h2o(ds, var_in, new_units):
             # if ps doesn't exist, create it by merging anything that starts with "ps"
             p_list = [p for p in series_list if p[0:2] in ["ps"]]
             ps = MergeVariables(ds, "ps", p_list)
-        month = GetVariable(ds, "Month")
         var_out["Data"] = pfp_mf.h2o_mmolpmolfromgpm3(var_in["Data"], Ta["Data"], ps["Data"])
+        var_out["Attr"]["units"] = new_units
+        month = GetVariable(ds, "Month")
         if "rangecheck_lower" in var_out["Attr"]:
             attr_in = var_out["Attr"]["rangecheck_lower"]
             attr_out = convert_units_h2o_lower_mmolpmol(attr_in, Ta["Data"], ps["Data"], month["Data"])
@@ -697,8 +850,46 @@ def convert_units_h2o(ds, var_in, new_units):
             attr_in = var_out["Attr"]["rangecheck_lower"]
             attr_out = convert_units_h2o_upper_mmolpmol(attr_in, Ta["Data"], ps["Data"], month["Data"])
             var_out["Attr"]["rangecheck_lower"] = str(attr_out)
-    elif (old_units in ["frac", "fraction"] and
-          new_units in ["%", "percent"]):
+    elif ((old_units == "kg/m3") and (new_units == "g/m3")):
+        var_out["Data"] = var_out["Data"] * float(1000)
+        var_out["Attr"]["units"] = new_units
+        if "rangecheck_lower" in var_out["Attr"]:
+            attr_in = var_out["Attr"]["rangecheck_lower"]
+            limits = parse_rangecheck_limits(attr_in)
+            limits = [(l * float(1000)) for l in limits]
+            var_out["Attr"]["rangecheck_lower"] = ','.join(str(l) for l in limits)
+        if "rangecheck_upper" in var_out["Attr"]:
+            attr_in = var_out["Attr"]["rangecheck_upper"]
+            limits = parse_rangecheck_limits(attr_in)
+            limits = [(l * float(1000)) for l in limits]
+            var_out["Attr"]["rangecheck_upper"] = ','.join(str(l) for l in limits)
+    elif ((old_units == "mmol/m3") and (new_units == "g/m3")):
+        var_out["Data"] = var_out["Data"] * float(c.Mv)
+        var_out["Attr"]["units"] = new_units
+        if "rangecheck_lower" in var_out["Attr"]:
+            attr_in = var_out["Attr"]["rangecheck_lower"]
+            limits = parse_rangecheck_limits(attr_in)
+            limits = [(l * float(c.Mv)) for l in limits]
+            var_out["Attr"]["rangecheck_lower"] = ','.join(str(l) for l in limits)
+        if "rangecheck_upper" in var_out["Attr"]:
+            attr_in = var_out["Attr"]["rangecheck_upper"]
+            limits = parse_rangecheck_limits(attr_in)
+            limits = [(l * float(c.Mv)) for l in limits]
+            var_out["Attr"]["rangecheck_upper"] = ','.join(str(l) for l in limits)
+    elif ((old_units == "g/m3") and (new_units == "mmol/m3")):
+        var_out["Data"] = var_out["Data"] / float(c.Mv)
+        var_out["Attr"]["units"] = new_units
+        if "rangecheck_lower" in var_out["Attr"]:
+            attr_in = var_out["Attr"]["rangecheck_lower"]
+            limits = parse_rangecheck_limits(attr_in)
+            limits = [(l / float(c.Mv)) for l in limits]
+            var_out["Attr"]["rangecheck_lower"] = ','.join(str(l) for l in limits)
+        if "rangecheck_upper" in var_out["Attr"]:
+            attr_in = var_out["Attr"]["rangecheck_upper"]
+            limits = parse_rangecheck_limits(attr_in)
+            limits = [(l / float(c.Mv)) for l in limits]
+            var_out["Attr"]["rangecheck_upper"] = ','.join(str(l) for l in limits)
+    elif ((old_units in ["frac", "fraction"]) and (new_units in ["%", "percent"])):
         var_out["Data"] = var_out["Data"] * float(100)
         var_out["Attr"]["units"] = new_units
         if "rangecheck_lower" in var_out["Attr"]:
@@ -711,8 +902,7 @@ def convert_units_h2o(ds, var_in, new_units):
             limits = parse_rangecheck_limits(attr_in)
             limits = [(l * float(100)) for l in limits]
             var_out["Attr"]["rangecheck_upper"] = ','.join(str(l) for l in limits)
-    elif (old_units in ["%", "percent"] and
-          new_units in ["frac", "fraction"]):
+    elif ((old_units in ["%", "percent"]) and (new_units in ["frac", "fraction"])):
         var_out["Data"] = var_out["Data"] / float(100)
         var_out["Attr"]["units"] = new_units
         if "rangecheck_lower" in var_out["Attr"]:
@@ -726,7 +916,7 @@ def convert_units_h2o(ds, var_in, new_units):
             limits = [(l / float(100)) for l in limits]
             var_out["Attr"]["rangecheck_upper"] = ','.join(str(l) for l in limits)
     else:
-        msg = " Unrecognised conversion from "+old_units+" to "+new_units
+        msg = " Unrecognised conversion from " + old_units + " to " + new_units
         logger.error(msg)
         var_out["Data"] = numpy.ma.array(numpy.full(nrecs, c.missing_value))
     return var_out
@@ -811,7 +1001,7 @@ def convert_units_h2o_upper_mmolpmol(attr_in, Ta, ps, month):
         attr_out = ','.join(str(x) for x in attr_list)
     return attr_out
 
-def convert_units_soil(ds, var_in, new_units):
+def convert_units_soil(ds, var_in, new_units, sws_info):
     """
     Purpose:
      General purpose routine to convert soil moisture from one set of units
@@ -829,15 +1019,15 @@ def convert_units_soil(ds, var_in, new_units):
     Date: April 2020 (during the COVID-19 lock down)
     """
     # make a copy of the input variable
-    var_out = copy.deepcopy(var_in)
+    var_out = CopyVariable(var_in)
     # do the business
     if ((var_in["Attr"]["units"] in ["%", "percent"]) and
         (new_units in ["frac", "m3/m3"])):
-        var_out["Data"] = var_in["Data"]/float(100)
+        var_out["Data"] = var_out["Data"]/float(100)
         var_out["Attr"]["units"] = new_units
     elif ((var_in["Attr"]["units"] in ["frac", "m3/m3"]) and
         (new_units in ["%", "percent"])):
-        var_out["Data"] = var_in["Data"]*float(100)
+        var_out["Data"] = var_out["Data"]*float(100)
         var_out["Attr"]["units"] = new_units
     else:
         msg = " Unrecognised conversion from " + var_in["Attr"]["units"]
@@ -845,7 +1035,7 @@ def convert_units_soil(ds, var_in, new_units):
         logger.error(msg)
     return var_out
 
-def convert_units_t(ds, var_in, new_units):
+def convert_units_t(ds, var_in, new_units, t_info):
     """
     Purpose:
      General purpose routine to convert from one set of temperature units
@@ -861,7 +1051,7 @@ def convert_units_t(ds, var_in, new_units):
     Author: PRI
     Date: January 2016
     """
-    var_out = copy.deepcopy(var_in)
+    var_out = CopyVariable(var_in)
     if var_in["Attr"]["units"] == "C" and new_units == "K":
         var_out["Data"] = var_in["Data"] + c.C2K
         var_out["Attr"]["units"] = "K"
@@ -889,11 +1079,11 @@ def convert_units_t(ds, var_in, new_units):
             limits = [(l + c.C2K) for l in limits]
             var_out["Attr"]["rangecheck_upper"] = ','.join(str(l) for l in limits)
     else:
-        msg = " Unrecognised conversion from "+var_in["Attr"]["units"]+" to "+new_units
+        msg = " Unrecognised conversion from " + var_in["Attr"]["units"] + " to " + new_units
         logger.error(msg)
     return var_out
 
-def convert_units_ps(ds, var_in, new_units):
+def convert_units_ps(ds, var_in, new_units, ps_info):
     """
     Purpose:
      General purpose routine to convert from one set of pressure units
@@ -909,7 +1099,7 @@ def convert_units_ps(ds, var_in, new_units):
     Author: PRI
     Date: February 2018
     """
-    var_out = copy.deepcopy(var_in)
+    var_out = CopyVariable(var_in)
     if var_in["Attr"]["units"] == "Pa" and new_units == "kPa":
         var_out["Data"] = var_in["Data"]/float(1000)
         var_out["Attr"]["units"] = "kPa"
@@ -937,7 +1127,7 @@ def convert_units_ps(ds, var_in, new_units):
             limits = [(l/float(10)) for l in limits]
             var_out["Attr"]["rangecheck_upper"] = ','.join(str(l) for l in limits)
     else:
-        msg = " Unrecognised conversion from "+var_in["Attr"]["units"]+" to "+new_units
+        msg = " Unrecognised conversion from " + var_in["Attr"]["units"] + " to " + new_units
         logger.error(msg)
     return var_out
 
@@ -989,6 +1179,15 @@ def convert_anglestring(anglestring):
             anglefloat = float(c.missing_value)
     # return with the string converted to a float
     return anglefloat
+
+def convert_csv_string_to_list(input_string):
+    """ Convert a string containing items separated by commas into a list."""
+    input_string = "".join(input_string.split())
+    if "," in input_string:
+        output_list = input_string.split(",")
+    else:
+        output_list = [input_string]
+    return output_list
 
 def convert_WSWDtoUV(WS, WD):
     """
@@ -1130,15 +1329,17 @@ def CopyVariable(var):
      variable_copy = pfp_utils.CopyVariable(variable)
     Author: PRI
     Date: October 2018
+          September 2020 - bad Peter, original code returns a view, not a copy
     """
-    tmp = {"Data":var["Data"], "Flag":var["Flag"], "Attr":var["Attr"]}
-    if "Label" in var:
-        tmp["Label"] = var["Label"]
-    if "DateTime" in var:
-        tmp["DateTime"] = var["DateTime"]
-    if "time_step" in var:
-        tmp["time_step"] = var["time_step"]
-    return tmp
+    #tmp = {"Data":var["Data"], "Flag":var["Flag"], "Attr":var["Attr"]}
+    #if "Label" in var:
+        #tmp["Label"] = var["Label"]
+    #if "DateTime" in var:
+        #tmp["DateTime"] = var["DateTime"]
+    #if "time_step" in var:
+        #tmp["time_step"] = var["time_step"]
+    #return tmp
+    return copy.deepcopy(var)
 
 def CreateDatetimeRange(start,stop,step=datetime.timedelta(minutes=30)):
     '''
@@ -1293,10 +1494,10 @@ def DeleteVariable(ds, variable):
         logger.warning(msg)
     return
 
-def file_exists(filename,mode="verbose"):
+def file_exists(filename, mode="quiet"):
     if not os.path.exists(filename):
-        if mode=="verbose":
-            logger.error(' File '+filename+' not found')
+        if mode != "quiet":
+            logger.error(" File " + filename + " not found")
         return False
     else:
         return True
@@ -2641,8 +2842,7 @@ def make_attribute_dictionary(attr_existing):
                 "standard_name": "", "units": "", "valid_range": "", "group_name": ""}
     if isinstance(attr_existing, dict):
         for item in attr_existing:
-            if item in ["height", "standard_name", "long_name", "units"]:
-                attr_new[item] = attr_existing[item]
+            attr_new[item] = attr_existing[item]
     return attr_new
 
 def MakeQCFlag(ds,SeriesList):
@@ -2981,6 +3181,36 @@ def strip_non_numeric(s):
     Strip non-numeric characters from a string.
     """
     return "".join([c for c in s if c in "-1234567890."])
+
+def units_variance_to_standard_deviation(units_in):
+    """
+    Purpose:
+     Convert variance units string to standard deviation units string.
+    Usage:
+     sd_units = pfp_utils.units_variance_to_standard_deviation(vr_units)
+    Author: PRI
+    Date: August 2020
+    """
+    if (("(" in units_in) and (")" in units_in)):
+        units_out = units_in[units_in.index("(")+1:units_in.index(")")]
+    else:
+        units_out = units_in
+    return units_out
+
+def units_standard_deviation_to_variance(units_in):
+    """
+    Purpose:
+     Convert standard deviation units string to variance units string.
+    Usage:
+     vr_units = pfp_utils.units_standard_deviation_to_variance(sd_units)
+    Author: PRI
+    Date: August 2020
+    """
+    if (("(" in units_in) and (")" in units_in)):
+        units_out = units_in
+    else:
+        units_out = "(" + units_in + ")2"
+    return units_out
 
 def UpdateGlobalAttributes(cf,ds,level):
     ds.globalattributes["nc_level"] = str(level)

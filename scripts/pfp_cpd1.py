@@ -5,6 +5,7 @@ import datetime
 import logging
 import os
 # 3rd party modules
+import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -305,8 +306,8 @@ def CPD_run(cf):
         else:
             names[item] = item
     # read the netcdf file
-    logger.info(' Reading netCDF file '+file_in)
     ds = pfp_io.nc_read_series(file_in)
+    if ds.returncodes["value"] != 0: return
     ts = int(ds.globalattributes["time_step"])
     # get the datetime
     dt = ds.series["DateTime"]["Data"]
@@ -317,6 +318,8 @@ def CPD_run(cf):
     d = {}
     f = {}
     for item in names.keys():
+        msg = " CPD (McHugh): Using variable " + names[item] + " for " + item
+        logger.info(msg)
         data,flag,attr = pfp_utils.GetSeries(ds,names[item])
         d[item] = np.where(data==c.missing_value,np.nan,data)
         f[item] = flag
@@ -417,6 +420,7 @@ def plot_hist(S,mu,sig,crit_t,year,d):
     fig.savefig(plot_out_name)
     if d["show_plots"]:
         plt.draw()
+        mypause(0.5)
         plt.ioff()
     else:
         plt.ion()
@@ -444,6 +448,7 @@ def plot_slopes(df,d):
     fig.savefig(plot_out_name)
     if d["show_plots"]:
         plt.draw()
+        mypause(0.5)
         plt.ioff()
     else:
         plt.ion()
@@ -647,3 +652,13 @@ def stats_calc(df,stats_df):
 
     return stats_df
 #------------------------------------------------------------------------------
+def mypause(interval):
+    backend = plt.rcParams['backend']
+    if backend in matplotlib.rcsetup.interactive_bk:
+        figManager = matplotlib._pylab_helpers.Gcf.get_active()
+        if figManager is not None:
+            canvas = figManager.canvas
+            if canvas.figure.stale:
+                canvas.draw()
+            canvas.start_event_loop(interval)
+            return

@@ -58,9 +58,11 @@ def cpd2_main(cf):
             names[item] = cf["Variables"][item]["name"]
         else:
             names[item] = item
+        msg = " CPD (Barr): Using variable " + names[item] + " for " + item
+        logger.info(msg)
     # read the netcdf file
-    logger.info(" Reading netCDF file " + file_in)
     ds = pfp_io.nc_read_series(file_in)
+    if ds.returncodes["value"] != 0: return
     # get the single-point storage, Fc_single, if available
     if apply_storage and "Fc_storage" not in ds.series.keys():
         pfp_ts.CalculateFcStorageSinglePoint(cf, ds, Fc_out="Fc_single")
@@ -71,7 +73,8 @@ def cpd2_main(cf):
     ts = int(ds.globalattributes["time_step"])
     dt = pfp_utils.GetVariable(ds, "DateTime")
     ustar_results = {}
-    years = sorted(list(set([ldt.year for ldt in dt["Data"]])))
+    dtd = dt["Data"] - datetime.timedelta(minutes=ts)
+    years = sorted(list(set([ldt.year for ldt in dtd])))
     msg = " Starting CPD analysis for " + str(years)
     logger.info(msg)
     pb = {"nYears": len(years), "n": 0}
@@ -80,17 +83,21 @@ def cpd2_main(cf):
         ustar_results[year] = {}
         start = datetime.datetime(year, 1, 1, 0, 0) + datetime.timedelta(minutes=ts)
         end = datetime.datetime(year+1, 1, 1, 0, 0)
-        Fsd = pfp_utils.GetVariable(ds, "Fsd", start=start, end=end, out_type="nan")
-        Fc = pfp_utils.GetVariable(ds, "Fc", start=start, end=end, out_type="nan")
-        if apply_storage:
-            pfp_ts.CorrectFcForStorage(cf,ds,Fc_out='Fc',Fc_in='Fc',Fc_storage_in='Fc_single')
-        ustar = pfp_utils.GetVariable(ds, "ustar", start=start, end=end, out_type="nan")
-        Ta = pfp_utils.GetVariable(ds, "Ta", start=start, end=end, out_type="nan")
+        Fsd = pfp_utils.GetVariable(ds, names["Fsd"], start=start, end=end, out_type="nan")
+        Fc = pfp_utils.GetVariable(ds, names["Fc"], start=start, end=end, out_type="nan")
+        ustar = pfp_utils.GetVariable(ds, names["ustar"], start=start, end=end, out_type="nan")
+        Ta = pfp_utils.GetVariable(ds, names["Ta"], start=start, end=end, out_type="nan")
         if start < Fsd["DateTime"][0] or end > Fsd["DateTime"][-1]:
             Fsd = pfp_utils.PadVariable(Fsd, start, end, out_type="nan")
             Fc = pfp_utils.PadVariable(Fc, start, end, out_type="nan")
             ustar = pfp_utils.PadVariable(ustar, start, end, out_type="nan")
             Ta = pfp_utils.PadVariable(Ta, start, end, out_type="nan")
+        # if requested, apply storage
+        if apply_storage:
+            label = cf["Variables"]["Fc"]["name"]
+            msg = " CPD2: Applying Fc_stoage to " + label
+            logger.info(msg)
+            pfp_ts.CorrectFcForStorage(cf, ds, Fc_out=label, Fc_in=label, Fc_storage_in="Fc_storage")
         # get the day/night indicator, fNight is 1 for night time, 0 for day time
         fNight = numpy.where(Fsd["Data"] < Fsd_threshold, 1, 0)
         # get a time series

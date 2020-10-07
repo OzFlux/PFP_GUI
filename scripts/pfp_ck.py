@@ -437,14 +437,14 @@ def do_diurnalcheck(cf, ds, section, series, code=5):
     """
     if "DiurnalCheck" not in cf[section][series].keys():
         return
-    if "NumSd" not in cf[section][series]["DiurnalCheck"].keys():
+    if "numsd" not in cf[section][series]["DiurnalCheck"].keys():
         return
     ts = float(ds.globalattributes['time_step'])
     n = int((60./ts) + 0.5)             #Number of timesteps per hour
     nInts = int((1440.0/ts)+0.5)        #Number of timesteps per day
     Av = numpy.array([c.missing_value]*nInts, dtype=numpy.float64)
     Sd = numpy.array([c.missing_value]*nInts, dtype=numpy.float64)
-    NSd = numpy.array(parse_rangecheck_limit(cf[section][series]['DiurnalCheck']['NumSd']))
+    NSd = numpy.array(parse_rangecheck_limit(cf[section][series]['DiurnalCheck']['numsd']))
     ldt = pfp_utils.GetVariable(ds, "DateTime")
     month = numpy.array([d.month for d in ldt["Data"]])
     Hdh = numpy.array([(d.hour + d.minute/float(60)) for d in ldt["Data"]])
@@ -468,7 +468,7 @@ def do_diurnalcheck(cf, ds, section, series, code=5):
                                 ((l2ds!=float(c.missing_value))&(l2ds>Upr[hindex])))[0] + mindex[0]
             ds.series[series]["Data"][index] = numpy.float64(c.missing_value)
             ds.series[series]["Flag"][index] = numpy.int32(code)
-            ds.series[series]["Attr"]["diurnalcheck_numsd"] = cf[section][series]["DiurnalCheck"]["NumSd"]
+            ds.series[series]["Attr"]["diurnalcheck_numsd"] = cf[section][series]["DiurnalCheck"]["numsd"]
     return
 
 def do_EC155check(cf,ds):
@@ -706,9 +706,13 @@ def do_li7500check(cf, ds, code=4):
     # let's check the contents of ds and see what we have to work with
     # first, list everything we may have once used for some kind of LI-7500 output
     # we do this for backwards compatibility
-    irga_list_all = ["Ah_7500_Av", "Ah_7500_Sd", "Ah_IRGA_Av", "Ah_IRGA_Sd",
-                     "Cc_7500_Av", "Cc_7500_Sd", "Cc_7500_Av", "Cc_7500_Sd",
-                     "H2O_IRGA_Av", "H2O_IRGA_Vr","CO2_IRGA_Av", "CO2_IRGA_Vr",
+    #irga_list_all = ["Ah_7500_Av", "Ah_7500_Sd", "Ah_IRGA_Av", "Ah_IRGA_Sd",
+                     #"Cc_7500_Av", "Cc_7500_Sd", "Cc_IRGA_Av", "Cc_7500_Sd",
+                     #"H2O_IRGA_Av", "H2O_IRGA_Vr","CO2_IRGA_Av", "CO2_IRGA_Vr",
+                     #"UzA", "UxA", "UyA", "UzC", "UxC", "UyC"]
+    irga_list_all = ["Ah_7500_Av", "Ah_IRGA_Av",
+                     "Cc_7500_Av", "Cc_IRGA_Av",
+                     "H2O_IRGA_Av", "CO2_IRGA_Av",
                      "UzA", "UxA", "UyA", "UzC", "UxC", "UyC"]
     # now get a list of what is actually there
     irga_list = []
@@ -755,6 +759,7 @@ def do_li7500check(cf, ds, code=4):
         idx = numpy.where(ds.series[label]["Flag"] != 0)
         logger.info("  IRGACheck: "+label+" rejected "+str(numpy.size(idx))+" points")
         flag[idx] = numpy.int32(1)
+        idx2 = numpy.where(flag == 0)[0]
     if not used_AGC:
         msg = " AGC value not used in QC (not in data)"
         logger.warning(msg)
@@ -772,6 +777,7 @@ def do_li7500check(cf, ds, code=4):
     for label in irga_list:
         ds.series[label]['Data'][idx] = numpy.float64(c.missing_value)
         ds.series[label]['Flag'][idx] = numpy.int32(code)
+    return
 
 def do_li7500acheck(cf,ds):
     '''Rejects data values for series specified in LI75List for times when the Diag_7500
