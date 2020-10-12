@@ -272,9 +272,13 @@ def l4qc(main_gui, cf, ds3):
 
 def l5qc(main_gui, cf, ds4):
     ds5 = pfp_io.copy_datastructure(cf, ds4)
-    # ds4 will be empty (logical false) if an error occurs in copy_datastructure
+    # ds5 will be empty (logical false) if an error occurs in copy_datastructure
     # return from this routine if this is the case
     if not ds5:
+        return ds5
+    # parse the control file for information on how the user wants to do the gap filling
+    l5_info = pfp_gf.ParseL5ControlFile(cf, ds5)
+    if ds5.returncodes["value"] != 0:
         return ds5
     # set some attributes for this level
     pfp_utils.UpdateGlobalAttributes(cf, ds5, "L5")
@@ -282,11 +286,10 @@ def l5qc(main_gui, cf, ds4):
     pfp_gf.ImportSeries(cf, ds5)
     # re-apply the quality control checks (range, diurnal and rules)
     pfp_ck.do_qcchecks(cf, ds5)
-    # now do the flux gap filling methods
-    # parse the control file for information on how the user wants to do the gap filling
-    l5_info = pfp_gf.ParseL5ControlFile(cf, ds5)
+    pfp_gf.CheckL5Drivers(ds5, l5_info)
     if ds5.returncodes["value"] != 0:
         return ds5
+    # now do the flux gap filling methods
     # *** start of the section that does the gap filling of the fluxes ***
     pfp_gf.CheckGapLengths(cf, ds5, l5_info)
     if ds5.returncodes["value"] != 0:
@@ -310,6 +313,10 @@ def l5qc(main_gui, cf, ds4):
             return ds5
     # merge the gap filled drivers into a single series
     pfp_ts.MergeSeriesUsingDict(ds5, l5_info, merge_order="standard")
+    # check that all targets were gap filled
+    pfp_gf.CheckL5Targets(ds5, l5_info)
+    if ds5.returncodes["value"] != 0:
+        return ds5
     # calculate Monin-Obukhov length
     pfp_ts.CalculateMoninObukhovLength(ds5)
     # write the percentage of good data as a variable attribute
@@ -334,8 +341,7 @@ def l6qc(main_gui, cf, ds5):
     # check to see if we have any imports
     pfp_gf.ImportSeries(cf, ds6)
     # check units of Fc
-    Fc_list = [label for label in ds6.series.keys() if label[0:2] == "Fc"]
-    pfp_utils.CheckUnits(ds6, Fc_list, "umol/m2/s", convert_units=True)
+    pfp_utils.CheckFcUnits(ds6, "umol/m2/s", convert_units=True)
     # get ER from the observed Fc
     pfp_rp.GetERFromFc(cf, ds6)
     # return code will be non-zero if turbulance filter not applied to CO2 flux

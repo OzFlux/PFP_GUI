@@ -1444,9 +1444,10 @@ def l5_update_controlfile(cfg):
                     cfg[key1][key2] = parse_cfg_values(key2, cfg2, strip_list)
             elif key1 in ["Options"]:
                 for key2 in cfg[key1]:
-                    if key2 in ["MaxGapInterpolate", "MaxShortGapLength", "FilterList",
-                                "TurbulenceFilter", "DayNightFilter", "AcceptDayTimes",
-                                "TruncateToImports"]:
+                    if key2 in ["AcceptDayTimes", "DayNightFilter", "FilterList",
+                                "Fsd_threshold", "KeepIntermediateSeries",
+                                "MaxGapInterpolate", "MaxShortGapDays",
+                                "TruncateToImports", "TurbulenceFilter"]:
                         cfg2 = cfg[key1][key2]
                         cfg[key1][key2] = parse_cfg_values(key2, cfg2, strip_list)
                     else:

@@ -95,6 +95,23 @@ def get_optionskeyaslogical(cf, key, default=False):
             returnValue = cf.get("Options").as_bool(key)
     return returnValue
 
+def CheckFcUnits(ds, new_units, convert_units=True):
+    """
+    Purpose:
+     Check the CO2 flux units.
+    Usage:
+    Side effects:
+    Author: PRI
+    Date: October 2020
+    """
+    # list of supported CO2 flux units
+    ok_units = ["mg/m2/s", "mgCO2/m2/s", "umol/m2/s"]
+    # list of CO2 flux variables ("Fc") with allowed units
+    Fc_list = [l for l in ds.series.keys() if l[0:2] == "Fc" and ds.series[l]["Attr"]["units"] in ok_units]
+    # check the units of Fc and convert if necessary
+    CheckUnits(ds, Fc_list, "umol/m2/s", convert_units=True)
+    return
+
 def CheckQCFlags(ds):
     """
     Purpose:

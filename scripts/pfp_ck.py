@@ -80,144 +80,130 @@ def ApplyTurbulenceFilter(cf, ds, l5_info, ustar_threshold=None):
     Date:
     """
     iris = l5_info["RemoveIntermediateSeries"]
-    opt = ApplyTurbulenceFilter_checks(cf,ds)
+    opt = ApplyTurbulenceFilter_checks(cf, ds)
     if not opt["OK"]:
         return
-    # local point to datetime series
-    ldt = ds.series["DateTime"]["Data"]
     # time step
     ts = int(ds.globalattributes["time_step"])
     # dictionary of utar thresold values
-    if ustar_threshold==None:
+    if ustar_threshold == None:
         ustar_dict = pfp_rp.get_ustar_thresholds(cf, ds)
     else:
-        ustar_dict = pfp_rp.get_ustar_thresholds_annual(ldt,ustar_threshold)
+        ustar_dict = pfp_rp.get_ustar_thresholds_annual(ldt, ustar_threshold)
     # initialise a dictionary for the indicator series
     indicators = {}
+    # local point to datetime series
+    ldt = pfp_utils.GetVariable(ds, "DateTime")
     # get data for the indicator series
-    ustar,ustar_flag,ustar_attr = pfp_utils.GetSeriesasMA(ds,"ustar")
-    #Fsd,f,a = pfp_utils.GetSeriesasMA(ds,"Fsd")
-    #if "solar_altitude" not in ds.series.keys():
-        #pfp_ts.get_synthetic_fsd(ds)
-    #Fsd_syn,f,a = pfp_utils.GetSeriesasMA(ds,"Fsd_syn")
-    #sa,f,a = pfp_utils.GetSeriesasMA(ds,"solar_altitude")
-    # get the day/night indicator series
-    # indicators["day"] = 1 ==> day time, indicators["day"] = 0 ==> night time
-    #indicators["day"] = pfp_rp.get_day_indicator(cf,Fsd,Fsd_syn,sa)
+    ustar = pfp_utils.GetVariable(ds, "ustar")
+    # get the day/night indicator
     indicators["day"] = pfp_rp.get_day_indicator(cf, ds)
-    ind_day = indicators["day"]["values"]
+    ind_day = indicators["day"]["Data"]
     # get the turbulence indicator series
-    if opt["turbulence_filter"].lower() == "ustar":
+    if opt["turbulence_filter"].lower() in ["ustar", "ustar_basic"]:
         # indicators["turbulence"] = 1 ==> turbulent, indicators["turbulence"] = 0 ==> not turbulent
-        indicators["turbulence"] = pfp_rp.get_turbulence_indicator_ustar(ldt, ustar, ustar_dict, ts)
+        indicators["turbulence"] = pfp_rp.get_turbulence_indicator_ustar_basic(ldt, ustar, ustar_dict)
+        # initialise the final indicator series as the turbulence indicator
+        # subsequent filters will modify the final indicator series
+        indicators["final"] = copy.deepcopy(indicators["turbulence"]["basic"])
+        indicators["final"]["Label"] = "indicator_turbulence_final"
     elif opt["turbulence_filter"].lower() == "ustar (evgb)":
-        # ustar >= threshold ==> ind_ustar = 1, ustar < threshold == ind_ustar = 0
-        indicators["ustar"] = pfp_rp.get_turbulence_indicator_ustar(ldt, ustar, ustar_dict, ts)
-        ind_ustar = indicators["ustar"]["values"]
         # ustar >= threshold during day AND ustar has been >= threshold since sunset ==> indicators["turbulence"] = 1
         # indicators["turbulence"] = 0 during night once ustar has dropped below threshold even if it
         # increases above the threshold later in the night
-        indicators["turbulence"] = pfp_rp.get_turbulence_indicator_ustar_evgb(ldt, ind_day, ind_ustar, ustar, ustar_dict)
-    elif opt["turbulence_filter"].lower() == "l":
-        #indicators["turbulence] = get_turbulence_indicator_l(ldt,L,z,d,zmdonL_threshold)
-        indicators["turbulence"] = numpy.ones(len(ldt))
-        msg = " Use of L as turbulence indicator not implemented, no filter applied"
-        logger.warning(msg)
+        indicators["turbulence"] = pfp_rp.get_turbulence_indicator_ustar_evgb(ldt, ustar, ustar_dict, ind_day)
+        # initialise the final indicator series as the turbulence indicator
+        # subsequent filters will modify the final indicator series
+        indicators["final"] = copy.deepcopy(indicators["turbulence"]["evgb"])
+        indicators["final"]["Label"] = "indicator_turbulence_final"
+    elif opt["turbulence_filter"].lower() == "ustar (fluxnet)":
+        # ustar >= threshold ==> indicators["turbulence"] = 1
+        # BUT ...
+        # if ustar[i] < threshold and ustar[i+1] >= threshold then
+        #     indicators["turbulence"][i+1] = 0
+        # IE the first period with ustar above the threshold is ignored
+        indicators["turbulence"] = pfp_rp.get_turbulence_indicator_ustar_fluxnet(ldt, ustar, ustar_dict)
+        # initialise the final indicator series as the turbulence indicator
+        # subsequent filters will modify the final indicator series
+        indicators["final"] = copy.deepcopy(indicators["turbulence"]["fluxnet"])
+        indicators["final"]["Label"] = "indicator_turbulence_final"
     else:
         msg = " Unrecognised turbulence filter option ("
         msg = msg + opt["turbulence_filter"] + "), no filter applied"
         logger.error(msg)
         return
-    # initialise the final indicator series as the turbulence indicator
-    # subsequent filters will modify the final indicator series
-    # we must use copy.deepcopy() otherwise the "values" array will only
-    # be copied by reference not value.  Damn Python's default of copy by reference!
-    indicators["final"] = copy.deepcopy(indicators["turbulence"])
     # check to see if the user wants to accept all day time observations
     # regardless of ustar value
-    if opt["accept_day_times"].lower()=="yes":
-        # if yes, then we force the final indicator to be 1
-        # when ustar is below the threshold during the day ...
-        c1 = (indicators["day"]["values"] == 1)
-        # ... but only if the ustar data is not masked
-        c2 = (numpy.ma.getmaskarray(ustar) == False)
-        idx = numpy.where(c1 & c2)[0]
-        indicators["final"]["values"][idx] = numpy.int(1)
-        indicators["final"]["attr"].update(indicators["day"]["attr"])
-    # get the evening indicator series
-    #indicators["evening"] = pfp_rp.get_evening_indicator(cf,Fsd,Fsd_syn,sa,ts)
-    indicators["evening"] = pfp_rp.get_evening_indicator(cf, ds)
-    indicators["dayevening"] = {"values":indicators["day"]["values"]+indicators["evening"]["values"]}
-    indicators["dayevening"]["attr"] = indicators["day"]["attr"].copy()
-    indicators["dayevening"]["attr"].update(indicators["evening"]["attr"])
-    if opt["use_evening_filter"].lower()=="yes":
-        idx = numpy.where(indicators["dayevening"]["values"]==0)[0]
-        indicators["final"]["values"][idx] = numpy.int(0)
-        indicators["final"]["attr"].update(indicators["dayevening"]["attr"])
-    # save the indicator series
-    ind_flag = numpy.zeros(len(ldt))
-    long_name = "Turbulence indicator, 1 for turbulent, 0 for non-turbulent"
-    ind_attr = pfp_utils.MakeAttributeDictionary(long_name=long_name,units="None")
-    pfp_utils.CreateSeries(ds,"turbulence_indicator",indicators["turbulence"]["values"],ind_flag,ind_attr)
-    iris["not_output"].append("turbulence_indicator")
-    long_name = "Day indicator, 1 for day time, 0 for night time"
-    ind_attr = pfp_utils.MakeAttributeDictionary(long_name=long_name,units="None")
-    pfp_utils.CreateSeries(ds,"day_indicator",indicators["day"]["values"],ind_flag,ind_attr)
-    iris["not_output"].append("day_indicator")
-    long_name = "Evening indicator, 1 for evening, 0 for not evening"
-    ind_attr = pfp_utils.MakeAttributeDictionary(long_name=long_name,units="None")
-    pfp_utils.CreateSeries(ds,"evening_indicator",indicators["evening"]["values"],ind_flag,ind_attr)
-    iris["not_output"].append("evening_indicator")
-    long_name = "Day/evening indicator, 1 for day/evening, 0 for not day/evening"
-    ind_attr = pfp_utils.MakeAttributeDictionary(long_name=long_name,units="None")
-    pfp_utils.CreateSeries(ds,"dayevening_indicator",indicators["dayevening"]["values"],ind_flag,ind_attr)
-    iris["not_output"].append("dayevening_indicator")
-    long_name = "Final indicator, 1 for use data, 0 for don't use data"
-    ind_attr = pfp_utils.MakeAttributeDictionary(long_name=long_name,units="None")
-    pfp_utils.CreateSeries(ds,"final_indicator",indicators["final"]["values"],ind_flag,ind_attr)
-    iris["not_output"].append("final_indicator")
+    if opt["accept_day_times"].lower() == "yes":
+        # FluxNet method applies ustar filter to day time data
+        if opt["turbulence_filter"].lower() not in ["ustar (fluxnet)"]:
+            # if yes, then we force the final indicator to be 1
+            # when ustar is below the threshold during the day ...
+            c1 = (indicators["day"]["Data"] == 1)
+            # ... but only if the ustar data is not masked
+            c2 = (numpy.ma.getmaskarray(ustar) == False)
+            idx = numpy.where(c1 & c2)[0]
+            indicators["final"]["Data"][idx] = numpy.int(1)
+            indicators["final"]["Attr"].update(indicators["day"]["Attr"])
+        else:
+            msg = " u* filter applied to day time data (FluxNet method)"
+            logger.warning(msg)
+    # write the turbulence indicator to the data structure
+    for item in list(indicators["turbulence"].keys()):
+        pfp_utils.CreateVariable(ds, indicators["turbulence"][item])
+        iris["not_output"].append(indicators["turbulence"][item]["Label"])
+    # write the day, night and evening indicators to the data structure
+    pfp_utils.CreateVariable(ds, indicators["day"])
+    iris["not_output"].append(indicators["day"]["Label"])
+    # write the final indicator to the data structure
+    pfp_utils.CreateVariable(ds, indicators["final"])
+    iris["not_output"].append(indicators["final"]["Label"])
+
     # loop over the series to be filtered
     descr_level = "description_" + ds.globalattributes["nc_level"]
-    for series in opt["filter_list"]:
-        msg = " Applying "+opt["turbulence_filter"]+" filter to "+series
+    for label in opt["filter_list"]:
+        msg = " Applying " + opt["turbulence_filter"] + " filter to " + label
         logger.info(msg)
         # get the data
-        data,flag,attr = pfp_utils.GetSeriesasMA(ds,series)
+        var = pfp_utils.GetVariable(ds, label)
         # continue to next series if this series has been filtered before
-        if "turbulence_filter" in attr:
-            msg = " Series " + series + " has already been filtered, skipping ..."
+        if "turbulence_filter" in var["Attr"]:
+            msg = " Series " + label + " has already been filtered, skipping ..."
             logger.warning(msg)
             continue
+        # make sure the description variable attribute is present
+        if descr_level not in list(var["Attr"].keys()):
+            var["Attr"][descr_level] = ""
         # save the non-filtered data
-        attr_nofilter = copy.deepcopy(attr)
-        pfp_utils.CreateSeries(ds, series + "_nofilter", data,flag, attr_nofilter)
-        iris["not_output"].append(series + "_nofilter")
+        var_nofilter = copy.deepcopy(var)
+        var_nofilter["Label"] = var["Label"] + "_nofilter"
+        pfp_utils.CreateVariable(ds, var_nofilter)
+        iris["not_output"].append(var_nofilter["Label"])
         # now apply the filter
-        data_filtered = numpy.ma.masked_where(indicators["final"]["values"]==0,data,copy=True)
-        flag_filtered = numpy.copy(flag)
-        idx = numpy.where(indicators["final"]["values"]==0)[0]
-        flag_filtered[idx] = numpy.int32(61)
-        attr_filtered = copy.deepcopy(attr)
-        # update the series attributes
-        for item in indicators["final"]["attr"].keys():
-            attr_filtered[item] = indicators["final"]["attr"][item]
+        var_filtered = copy.deepcopy(var)
+        var_filtered["Data"] = numpy.ma.masked_where(indicators["final"]["Data"] == 0,
+                                                     var["Data"], copy=True)
+        var_filtered["Flag"] = numpy.copy(var["Flag"])
+        idx = numpy.where(indicators["final"]["Data"] == 0)[0]
+        var_filtered["Flag"][idx] = numpy.int32(61)
         # update the "description" attribute
-        attr_filtered[descr_level] = pfp_utils.append_string(attr_filtered[descr_level],
-                                                             "turbulence filter applied")
+        var_filtered["Attr"][descr_level] = pfp_utils.append_string(var_filtered["Attr"][descr_level],
+                                                                    "turbulence filter applied")
         # and write the filtered data to the data structure
         # write the annual ustar thresholds to the variable attributes
         for year in sorted(list(ustar_dict.keys())):
-            attr_filtered["ustar_threshold_"+str(year)] = str(ustar_dict[year]["ustar_mean"])
-        pfp_utils.CreateSeries(ds,series,data_filtered,flag_filtered,attr_filtered)
-        # and write a copy of the filtered datas to the data structure so it
+            var_filtered["Attr"]["ustar_threshold_" + str(year)] = str(ustar_dict[year]["ustar_mean"])
+        pfp_utils.CreateVariable(ds, var_filtered)
+        # and write a copy of the filtered data to the data structure so it
         # will still exist once the gap filling has been done
-        pfp_utils.CreateSeries(ds,series+"_filtered",data_filtered,flag_filtered,attr_filtered)
-        iris["not_output"].append(series+"_filtered")
-        nnf = numpy.ma.count(data)
-        nf = numpy.ma.count(data_filtered)
-        pc = int(100*(float(nnf-nf)/float(nnf))+0.5)
+        var_filtered["Label"] = str(label) + "_filtered"
+        pfp_utils.CreateVariable(ds, var_filtered)
+        iris["not_output"].append(var_filtered["Label"])
+        nnf = numpy.ma.count(var["Data"])
+        nf = numpy.ma.count(var_filtered["Data"])
+        pc = int(100 * (float(nnf - nf) / float(nnf)) + 0.5)
         msg = "  " + opt["turbulence_filter"] + " filter removed " + str(pc)
-        msg += "% of available data from " + series
+        msg += "% of available data from " + label
         logger.info(msg)
     return
 
@@ -247,7 +233,7 @@ def ApplyTurbulenceFilter_checks(cf, ds):
         opt["OK"] = False
         return opt
     # check to see if filter type can be handled
-    if opt["turbulence_filter"].lower() not in ["ustar", "ustar (evgb)", "l"]:
+    if opt["turbulence_filter"].lower() not in ["ustar", "ustar (basic)", "ustar (fluxnet)", "ustar (evgb)"]:
         msg = " Unrecognised turbulence filter option ("
         msg = msg+opt["turbulence_filter"]+"), no filter applied"
         logger.error(msg)

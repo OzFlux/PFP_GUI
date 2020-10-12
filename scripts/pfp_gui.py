@@ -5517,6 +5517,7 @@ class edit_cfg_L5(QtWidgets.QWidget):
                         parent2.appendRow(parent3)
                     self.sections[key1].appendRow(parent2)
                 self.model.appendRow(self.sections[key1])
+        return
 
     def get_data_from_model(self):
         """ Iterate over the model and get the data."""
@@ -5578,8 +5579,8 @@ class edit_cfg_L5(QtWidgets.QWidget):
 
     def handleItemChanged(self, item):
         """ Handler for when view items are edited."""
-        # update the list of altered series
-        self.update_altered_list()
+        # update the control file contents
+        self.cfg = self.get_data_from_model()
         # add an asterisk to the tab text to indicate the tab contents have changed
         self.update_tab_text()
 
@@ -5825,21 +5826,21 @@ class edit_cfg_L5(QtWidgets.QWidget):
                         self.context_menu.actionChangeTruncateToImports.triggered.connect(lambda:self.change_selected_text("No"))
                 elif (selected_item.column() == 1) and (key == "TurbulenceFilter"):
                     existing_entry = str(parent.child(selected_item.row(),1).text())
-                    if existing_entry != "ustar":
-                        self.context_menu.actionSetTurbulanceFilter2ustar = QtWidgets.QAction(self)
-                        self.context_menu.actionSetTurbulanceFilter2ustar.setText("ustar")
-                        self.context_menu.addAction(self.context_menu.actionSetTurbulanceFilter2ustar)
-                        self.context_menu.actionSetTurbulanceFilter2ustar.triggered.connect(self.set_ustar)
+                    if existing_entry != "ustar (basic)":
+                        self.context_menu.actionSetTurbulanceFilter2ustar_basic = QtWidgets.QAction(self)
+                        self.context_menu.actionSetTurbulanceFilter2ustar_basic.setText("ustar (basic)")
+                        self.context_menu.addAction(self.context_menu.actionSetTurbulanceFilter2ustar_basic)
+                        self.context_menu.actionSetTurbulanceFilter2ustar_basic.triggered.connect(self.set_ustar_basic)
                     if existing_entry != "ustar (EvGb)":
                         self.context_menu.actionSetTurbulanceFilter2ustar_evgb = QtWidgets.QAction(self)
                         self.context_menu.actionSetTurbulanceFilter2ustar_evgb.setText("ustar (EvGb)")
                         self.context_menu.addAction(self.context_menu.actionSetTurbulanceFilter2ustar_evgb)
                         self.context_menu.actionSetTurbulanceFilter2ustar_evgb.triggered.connect(self.set_ustar_evgb)
-                    if existing_entry != "L":
-                        self.context_menu.actionSetTurbulanceFilter2L = QtWidgets.QAction(self)
-                        self.context_menu.actionSetTurbulanceFilter2L.setText("L")
-                        self.context_menu.addAction(self.context_menu.actionSetTurbulanceFilter2L)
-                        self.context_menu.actionSetTurbulanceFilter2L.triggered.connect(self.set_L)
+                    if existing_entry != "ustar (FluxNet)":
+                        self.context_menu.actionSetTurbulanceFilter2ustar_fluxnet = QtWidgets.QAction(self)
+                        self.context_menu.actionSetTurbulanceFilter2ustar_fluxnet.setText("ustar (FluxNet)")
+                        self.context_menu.addAction(self.context_menu.actionSetTurbulanceFilter2ustar_fluxnet)
+                        self.context_menu.actionSetTurbulanceFilter2ustar_fluxnet.triggered.connect(self.set_ustar_fluxnet)
                     if existing_entry != "none":
                         self.context_menu.actionSetTurbulanceFilter2none = QtWidgets.QAction(self)
                         self.context_menu.actionSetTurbulanceFilter2none.setText("none")
@@ -6024,16 +6025,12 @@ class edit_cfg_L5(QtWidgets.QWidget):
         dict_to_add = {"DependencyCheck":{"source":""}}
         # add the subsubsection (DependencyCheck)
         self.add_subsubsection(dict_to_add)
-        # update the list of altered series
-        self.update_altered_list()
 
     def add_diurnalcheck(self):
         """ Add a diurnal check to a variable."""
         dict_to_add = {"DiurnalCheck":{"numsd":"5"}}
         # add the subsubsection (DiurnalCheck)
         self.add_subsubsection(dict_to_add)
-        # update the list of altered series
-        self.update_altered_list()
 
     def add_excludedaterange(self):
         """ Add another date range to the ExcludeDates QC check."""
@@ -6053,8 +6050,6 @@ class edit_cfg_L5(QtWidgets.QWidget):
         dict_to_add = {"ExcludeDates":{"0":"YYYY-mm-dd HH:MM, YYYY-mm-dd HH:MM"}}
         # add the subsubsection (ExcludeDates)
         self.add_subsubsection(dict_to_add)
-        # update the list of altered series
-        self.update_altered_list()
 
     def add_fileentry(self, item):
         """ Add a new entry to the [Files] section."""
@@ -6281,8 +6276,6 @@ class edit_cfg_L5(QtWidgets.QWidget):
         dict_to_add = {"RangeCheck":{"lower":0, "upper": 1}}
         # add the subsubsection (RangeCheck)
         self.add_subsubsection(dict_to_add)
-        # update the list of altered series
-        self.update_altered_list()
 
     def add_subsection(self, dict_to_add):
         """ Add a subsection to the model."""
@@ -6574,8 +6567,6 @@ class edit_cfg_L5(QtWidgets.QWidget):
             parent = selected_item.parent()
             # remove the row
             parent.removeRow(selected_item.row())
-        # update the list of altered series
-        self.update_altered_list()
         # update the tab text
         self.update_tab_text()
 
@@ -6594,13 +6585,6 @@ class edit_cfg_L5(QtWidgets.QWidget):
         # update the tab text
         self.update_tab_text()
 
-    def set_L(self):
-        """ Set the turbulence filter to L."""
-        idx = self.view.selectedIndexes()[0]
-        selected_item = idx.model().itemFromIndex(idx)
-        parent = selected_item.parent()
-        parent.child(selected_item.row(), 1).setText("L")
-
     def set_none(self):
         """ Set the turbulence filter to none."""
         idx = self.view.selectedIndexes()[0]
@@ -6608,12 +6592,12 @@ class edit_cfg_L5(QtWidgets.QWidget):
         parent = selected_item.parent()
         parent.child(selected_item.row(), 1).setText("none")
 
-    def set_ustar(self):
-        """ Set the turbulence filter to ustar."""
+    def set_ustar_basic(self):
+        """ Set the turbulence filter to ustar_basic."""
         idx = self.view.selectedIndexes()[0]
         selected_item = idx.model().itemFromIndex(idx)
         parent = selected_item.parent()
-        parent.child(selected_item.row(), 1).setText("ustar")
+        parent.child(selected_item.row(), 1).setText("ustar (basic)")
 
     def set_ustar_evgb(self):
         """ Set the turbulence filter to ustar_evgb."""
@@ -6622,27 +6606,12 @@ class edit_cfg_L5(QtWidgets.QWidget):
         parent = selected_item.parent()
         parent.child(selected_item.row(), 1).setText("ustar (EvGb)")
 
-    def update_altered_list(self):
-        """ Update the list of entries in the control file that have been altered."""
+    def set_ustar_fluxnet(self):
+        """ Set the turbulence filter to ustar_fluxnet."""
         idx = self.view.selectedIndexes()[0]
-        level = self.get_level_selected_item()
-        if level == 1 and str(idx.parent().data()) == "Fluxes":
-            parent_text = str(idx.data())
-            if parent_text not in self.altered:
-                self.altered.append(parent_text)
-        elif level == 2 and str(idx.parent().parent().data()) == "Fluxes":
-            parent_text = str(idx.parent().data())
-            if parent_text not in self.altered:
-                self.altered.append(parent_text)
-        elif level == 3 and str(idx.parent().parent().parent().data()) == "Fluxes":
-            parent_text = str(idx.parent().parent().data())
-            if parent_text not in self.altered:
-                self.altered.append(parent_text)
-        elif level == 4 and str(idx.parent().parent().parent().parent().data()) == "Fluxes":
-            parent_text = str(idx.parent().parent().parent().data())
-            if parent_text not in self.altered:
-                self.altered.append(parent_text)
-        return
+        selected_item = idx.model().itemFromIndex(idx)
+        parent = selected_item.parent()
+        parent.child(selected_item.row(), 1).setText("ustar (FluxNet)")
 
     def update_tab_text(self):
         """ Add an asterisk to the tab title text to indicate tab contents have changed."""

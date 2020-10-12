@@ -550,10 +550,10 @@ def ERUsingSOLO(main_gui, ds, l6_info, called_by):
     # set the default return code
     ds.returncodes["value"] = 0
     ds.returncodes["message"] = "normal"
-    # check the SOLO drivers for missing data
-    pfp_gf.CheckDrivers(ds, l6_info, called_by)
-    if ds.returncodes["value"] != 0:
-        return ds
+    ## check the SOLO drivers for missing data
+    #pfp_gf.CheckDrivers(ds, l6_info, called_by)
+    #if ds.returncodes["value"] != 0:
+        #return ds
     if l6_info["ERUsingSOLO"]["info"]["call_mode"].lower() == "interactive":
         # call the ERUsingSOLO GUI
         pfp_gfSOLO.gfSOLO_gui(main_gui, ds, l6_info, called_by)
@@ -581,8 +581,18 @@ def GetERFromFc(cf, ds):
     Author: PRI
     Date: October 2015
     """
+    ds.returncodes = {"value":0,"message":"OK"}
     ER = {"Label": "ER"}
+    # get the CO2 flux
     Fc = pfp_utils.GetVariable(ds, "Fc")
+    # check for missing data, CO2 flux should be gap filled by this point
+    if numpy.any(numpy.ma.getmaskarray(Fc["Data"])):
+        msg = " CO2 flux Fc contains missing data, aborting L6 ..."
+        logger.error("!!!!!")
+        logger.error(msg)
+        logger.error("!!!!!")
+        ds.returncodes = {"value": 1, "message": msg}
+        return
     # get a copy of the Fc flag and make the attribute dictionary
     ER["Flag"] = numpy.array(Fc["Flag"])
     # make the ER attribute dictionary
@@ -690,18 +700,23 @@ def get_day_indicator(cf, ds):
       ds is a data structure
     and;
       indicators["day"] is a dictionary containing
-      indicators["day"]["values"] is the indicator series
-      indicators["day"]["attr"] are the attributes
+      indicators["day"]["Data"] is the indicator series
+      indicators["day"]["Attr"] are the attributes
     Author: PRI
     Date: March 2016
     Mods:
      PRI 6/12/2018 - removed calculation of Fsd_syn by default
     """
-    Fsd, _, _ = pfp_utils.GetSeriesasMA(ds, "Fsd")
+    nrecs = int(ds.globalattributes["nc_nrecs"])
+    Fsd = pfp_utils.GetVariable(ds, "Fsd")
     # indicator = 1 ==> day, indicator = 0 ==> night
-    day_indicator = {"values":numpy.ones(len(Fsd), dtype=numpy.int32), "attr":{}}
-    inds = day_indicator["values"]
-    attr = day_indicator["attr"]
+    long_name = "Day time indicator, 1 ==> day, 0 ==> night"
+    indicator_day = {"Label" : "indicator_day",
+                     "Data": numpy.ones(nrecs, dtype=numpy.int32),
+                     "Flag": numpy.zeros(nrecs, dtype=numpy.int32),
+                     "Attr": {"long_name": long_name, "units": "none"}}
+    inds = indicator_day["Data"]
+    attr = indicator_day["Attr"]
     # get the filter type
     filter_type = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "DayNightFilter", default="Fsd")
     attr["daynight_filter_type"] = filter_type
@@ -713,7 +728,7 @@ def get_day_indicator(cf, ds):
         Fsd_threshold = int(pfp_utils.get_keyvaluefromcf(cf, ["Options"], "Fsd_threshold", default=10))
         attr["Fsd_threshold"] = str(Fsd_threshold)
         # we are using Fsd only to define day/night
-        idx = numpy.ma.where(Fsd <= Fsd_threshold)[0]
+        idx = numpy.ma.where(Fsd["Data"] <= Fsd_threshold)[0]
         inds[idx] = numpy.int32(0)
     elif filter_type.lower() == "sa":
         # get the solar altitude threshold
@@ -722,13 +737,13 @@ def get_day_indicator(cf, ds):
         # we are using solar altitude to define day/night
         if "solar_altitude" not in ds.series.keys():
             pfp_ts.get_synthetic_fsd(ds)
-        sa, _, _ = pfp_utils.GetSeriesasMA(ds, "solar_altitude")
-        index = numpy.ma.where(sa < sa_threshold)[0]
+        sa = pfp_utils.GetVariable(ds, "solar_altitude")
+        index = numpy.ma.where(sa["Data"] < sa_threshold)[0]
         inds[index] = numpy.int32(0)
     else:
         msg = "Unrecognised DayNightFilter option in control file"
         raise Exception(msg)
-    return day_indicator
+    return indicator_day
 
 def get_evening_indicator(cf, ds):
     """
@@ -739,40 +754,42 @@ def get_evening_indicator(cf, ds):
      specified in the control file [Options] section as the EveningFilterLength
      key.
     Usage:
-     indicators["evening"] = get_evening_indicator(cf,Fsd,Fsd_syn,sa,ts)
+     indicators["evening"] = get_evening_indicator(cf, ds)
      where;
       cf is a control file object
-      Fsd is a series of incoming shortwave radiation values (ndarray)
-      Fsd_syn is a series of calculated Fsd (ndarray)
-      sa is a series of solar altitude values (ndarray)
-      ts is the time step (minutes), integer
+      ds is a data structure
     and;
       indicators["evening"] is a dictionary containing
-      indicators["evening"]["values"] is the indicator series
-      indicators["evening"]["attr"] are the attributes
+      indicators["evening"]["Data"] is the indicator series
+      indicators["evening"]["Attr"] are the attributes
     Author: PRI
     Date: March 2016
     """
+    nrecs = int(ds.globalattributes["nc_nrecs"])
     ts = int(ds.globalattributes["time_step"])
-    Fsd, _, _ = pfp_utils.GetSeriesasMA(ds, "Fsd")
-    evening_indicator = {"values":numpy.zeros(len(Fsd), dtype=numpy.int32), "attr":{}}
-    attr = evening_indicator["attr"]
+    # indicator series, 1 ==> evening
+    long_name = "Evening indicator, 1 ==> evening hours (after sunset)"
+    indicator_evening = {"Label": "indicator_evening",
+                         "Data": numpy.zeros(nrecs, dtype=numpy.int32),
+                         "Flag": numpy.zeros(nrecs, dtype=numpy.int32),
+                         "Attr": {"long_name": long_name, "units": "none"}}
+    attr = indicator_evening["Attr"]
     opt = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "EveningFilterLength", default="3")
     num_hours = int(opt)
     if num_hours <= 0 or num_hours >= 12:
-        evening_indicator["values"] = numpy.zeros(len(Fsd))
-        evening_indicator["attr"]["evening_filter_length"] = num_hours
+        indicator_evening["Data"] = numpy.zeros(nrecs)
+        indicator_evening["Attr"]["evening_filter_length"] = str(num_hours)
         msg = " Evening filter period outside 0 to 12 hours, skipping ..."
         logger.warning(msg)
-        return evening_indicator
+        return indicator_evening
     night_indicator = get_night_indicator(cf, ds)
     day_indicator = get_day_indicator(cf, ds)
-    ntsperhour = int(0.5+float(60)/float(ts))
+    ntsperhour = int(0.5 + float(60)/float(ts))
     shift = num_hours*ntsperhour
-    day_indicator_shifted = numpy.roll(day_indicator["values"], shift)
-    evening_indicator["values"] = night_indicator["values"]*day_indicator_shifted
-    attr["evening_filter_length"] = num_hours
-    return evening_indicator
+    day_indicator_shifted = numpy.roll(day_indicator["Data"], shift)
+    indicator_evening["Data"] = night_indicator["Data"]*day_indicator_shifted
+    attr["evening_filter_length"] = str(num_hours)
+    return indicator_evening
 
 def get_night_indicator(cf, ds):
     """
@@ -788,16 +805,21 @@ def get_night_indicator(cf, ds):
       ds is a data structure
     and;
       indicators["night"] is a dictionary containing
-      indicators["night"]["values"] is the indicator series
-      indicators["night"]["attr"] are the attributes
+      indicators["night"]["Data"] is the indicator series
+      indicators["night"]["Attr"] are the attributes
     Author: PRI
     Date: March 2016
     """
-    Fsd, _, _ = pfp_utils.GetSeriesasMA(ds, "Fsd")
+    nrecs = int(ds.globalattributes["nc_nrecs"])
+    Fsd = pfp_utils.GetVariable(ds, "Fsd")
     # indicator = 1 ==> night, indicator = 0 ==> day
-    night_indicator = {"values":numpy.zeros(len(Fsd), dtype=numpy.int32), "attr":{}}
-    inds = night_indicator["values"]
-    attr = night_indicator["attr"]
+    long_name = "Night time indicator, 1 ==> night, 0 ==> day"
+    indicator_night = {"Label" : "indicator_night",
+                       "Data": numpy.ones(nrecs, dtype=numpy.int32),
+                       "Flag": numpy.zeros(nrecs, dtype=numpy.int32),
+                       "Attr": {"long_name": long_name, "units": "none"}}
+    inds = indicator_night["Data"]
+    attr = indicator_night["Attr"]
     # get the filter type
     filter_type = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "DayNightFilter", default="Fsd")
     attr["daynight_filter_type"] = filter_type
@@ -809,7 +831,7 @@ def get_night_indicator(cf, ds):
         Fsd_threshold = int(pfp_utils.get_keyvaluefromcf(cf, ["Options"], "Fsd_threshold", default=10))
         attr["Fsd_threshold"] = str(Fsd_threshold)
         # we are using Fsd only to define day/night
-        idx = numpy.ma.where(Fsd <= Fsd_threshold)[0]
+        idx = numpy.ma.where(Fsd["Data"] <= Fsd_threshold)[0]
         inds[idx] = numpy.int32(1)
     elif filter_type.lower() == "sa":
         # get the solar altitude threshold
@@ -818,65 +840,62 @@ def get_night_indicator(cf, ds):
         # we are using solar altitude to define day/night
         if "solar_altitude" not in ds.series.keys():
             pfp_ts.get_synthetic_fsd(ds)
-        sa, _, _ = pfp_utils.GetSeriesasMA(ds, "solar_altitude")
-        index = numpy.ma.where(sa < sa_threshold)[0]
+        sa = pfp_utils.GetVariable(ds, "solar_altitude")
+        index = numpy.ma.where(sa["Data"] < sa_threshold)[0]
         inds[index] = numpy.int32(1)
     else:
         msg = "Unrecognised DayNightFilter option in control file"
         raise Exception(msg)
-    return night_indicator
+    return indicator_night
 
-def get_turbulence_indicator_l(ldt, L, z, d, zmdonL_threshold):
-    turbulence_indicator = numpy.zeros(len(ldt),dtype=numpy.int32)
-    zmdonL = (z-d)/L
-    idx = numpy.ma.where(zmdonL <= zmdonL_threshold)[0]
-    turbulence_indicator[idx] = numpy.int32(1)
-    return turbulence_indicator
-
-def get_turbulence_indicator_ustar(ldt, ustar, ustar_dict, ts):
+def get_turbulence_indicator_ustar_basic(ldt, ustar, ustar_dict):
     """
     Purpose:
      Returns a dictionary containing an indicator series and some attributes.
      The indicator series is 1 when ustar is above the threshold and 0 when
      ustar is below the threshold.
-     By default, all day time observations are accepted regardless of ustar value.
     Usage:
-     indicators["turbulence"] = get_turbulence_indicator_ustar(ldt,ustar,ustar_dict,ts)
+     indicators["turbulence"] = get_turbulence_indicator_ustar_basic(ldt,ustar,ustar_dict)
      where;
       ldt is a list of datetimes
       ustar is a series of ustar values (ndarray)
       ustar_dict is a dictionary of ustar thresholds returned by pfp_rp.get_ustar_thresholds
-      ts is the time step for ustar
     and;
      indicators["turbulence"] is a dictionary containing
-      indicators["turbulence"]["values"] is the indicator series
-      indicators["turbulence"]["attr"] are the attributes
+      indicators["turbulence"]["Data"] is the indicator series
+      indicators["turbulence"]["Attr"] are the attributes
     Author: PRI
     Date: March 2016
     """
-    year_list = ustar_dict.keys()
-    year_list.sort()
+    nrecs = len(ldt["Data"])
+    ts = int(ustar["time_step"])
+    years = sorted(list(ustar_dict.keys()))
     # now loop over the years in the data to apply the ustar threshold
-    turbulence_indicator = {"values":numpy.zeros(len(ldt)), "attr":{}}
-    inds = turbulence_indicator["values"]
-    attr = turbulence_indicator["attr"]
-    attr["turbulence_filter"] = "ustar"
-    for year in year_list:
-        start_date = str(year)+"-01-01 00:30"
-        if ts==60: start_date = str(year)+"-01-01 01:00"
-        end_date = str(int(year)+1)+"-01-01 00:00"
+    long_name = "Indicator for basic ustar filter, 1 ==> turbulent"
+    indicator_turbulence = {"basic": {"Label": "indicator_turbulence_basic",
+                                      "Data": numpy.zeros(nrecs),
+                                      "Flag": numpy.zeros(nrecs),
+                                      "Attr": {"long_name": long_name,
+                                               "units": "none"}}}
+    ustar_basic = indicator_turbulence["basic"]["Data"]
+    attr = indicator_turbulence["basic"]["Attr"]
+    attr["turbulence_filter"] = "ustar_basic"
+    for year in years:
+        start_date = datetime.datetime(int(year), 1, 1, 0, 0) + datetime.timedelta(minutes=ts)
+        end_date = datetime.datetime(int(year)+1, 1, 1, 0, 0)
         # get the ustar threshold
         ustar_threshold = float(ustar_dict[year]["ustar_mean"])
-        attr["ustar_threshold_"+str(year)] = str(ustar_threshold)
+        attr["ustar_threshold_" + str(year)] = str(ustar_threshold)
         # get the start and end datetime indices
-        si = pfp_utils.GetDateIndex(ldt,start_date,ts=ts,default=0,match='exact')
-        ei = pfp_utils.GetDateIndex(ldt,end_date,ts=ts,default=len(ldt),match='exact')
+        si = pfp_utils.GetDateIndex(ldt["Data"], start_date, ts=ts, default=0, match="exact")
+        ei = pfp_utils.GetDateIndex(ldt["Data"], end_date, ts=ts, default=nrecs-1, match="exact")
         # set the QC flag
-        idx = numpy.ma.where(ustar[si:ei]>=ustar_threshold)[0]
-        inds[si:ei][idx] = numpy.int32(1)
-    return turbulence_indicator
+        idx = numpy.ma.where(ustar["Data"][si:ei] >= ustar_threshold)[0]
+        ustar_basic[si:ei][idx] = numpy.int32(1)
+    indicator_turbulence["basic"]["Data"] = ustar_basic
+    return indicator_turbulence
 
-def get_turbulence_indicator_ustar_evgb(ldt, ind_day, ind_ustar, ustar, ustar_dict):
+def get_turbulence_indicator_ustar_evgb(ldt, ustar, ustar_dict, indicator_day):
     """
     Purpose:
      Returns a dictionary containing an indicator series and some attributes.
@@ -887,50 +906,135 @@ def get_turbulence_indicator_ustar_evgb(ldt, ind_day, ind_ustar, ustar, ustar_di
      Based on a ustar filter scheme designed by Eva van Gorsel for use at the
      Tumbarumba site.
     Usage:
-     indicators["turbulence"] = get_turbulence_indicator_ustar_evg(ldt,ind_day,ustar,ustar_dict)
+     indicators["turbulence"] = get_turbulence_indicator_ustar_evgb(ldt, ustar, ustar_dict, ind_day)
      where;
       ldt is a list of datetimes
-      ind_day is a day/night indicator
       ustar is a series of ustar values (ndarray)
       ustar_dict is a dictionary of ustar thresholds returned by pfp_rp.get_ustar_thresholds
-      ts is the time step for ustar
+      ind_day is a day/night indicator
+    and;
+     indicators["turbulence"] is a dictionary containing
+      indicators["turbulence"]["Data"] is the indicator series
+      indicators["turbulence"]["Attr"] are the attributes
+    Author: PRI, EVG, WW
+    Date: December 2016
+    """
+    nrecs = len(ldt["Data"])
+    years = sorted(list(ustar_dict.keys()))
+    # initialise the return dictionary
+    long_name_basic = "Indicator for basic ustar filter, 1 ==> turbulent"
+    long_name_evgb = "Indicator for EvGB ustar filter, 1 ==> turbulent"
+    indicator_turbulence = {"basic": {"Label": "indicator_turbulence_basic",
+                                      "Data": numpy.zeros(nrecs),
+                                      "Flag": numpy.zeros(nrecs),
+                                      "Attr": {"long_name": long_name_basic,
+                                               "units": "none"}},
+                            "evgb": {"Label": "indicator_turbulence_evgb",
+                                      "Data": numpy.zeros(nrecs),
+                                      "Flag": numpy.zeros(nrecs),
+                                      "Attr": {"long_name": long_name_evgb,
+                                               "units": "none"}}}
+    attr = indicator_turbulence["evgb"]["Attr"]
+    attr["turbulence_filter"] = "ustar_evgb"
+    # get the basic ustar filter indicator series
+    # ustar >= threshold ==> ind_ustar = 1, ustar < threshold == ind_ustar = 0
+    ustar_basic = get_turbulence_indicator_ustar_basic(ldt, ustar, ustar_dict)
+    indicator_turbulence["basic"] = copy.deepcopy(ustar_basic["basic"])
+    # there may be a better way to do this than looping over all elements
+    # keep_going is a logical that is True as long as ustar is above the threshold
+    # after sunset and is False once ustar drops below the threshold
+    # keep_going controls rejection of the rest of the nocturnal data once ustar
+    # falls below the threshold
+    keep_going = False
+    ustar_evgb = numpy.zeros(nrecs, dtype=int)
+    # loop over all records
+    for i in range(nrecs):
+        if indicator_day[i] == 1:
+            # day time ==> reset logical, turbulence indicator = basic
+            keep_going = True
+            ustar_evgb[i] = indicator_turbulence["basic"]["Data"][i]
+        else:
+            # night time
+            if indicator_turbulence["basic"]["Data"][i] == 1 and keep_going:
+                # ustar still above threshold, turbulence indicator = basic
+                ustar_evgb[i] = indicator_turbulence["basic"]["Data"][i]
+            else:
+                # ustar dropped below threshold, turbulence indicator = 0
+                ustar_evgb[i] = 0
+                # reject the rest of this night
+                keep_going = False
+    # put the ustar thrtesholds into the variable attributes
+    for year in years:
+        attr["ustar_threshold_" + str(year)] = str(ustar_dict[year]["ustar_mean"])
+    # apply the EvGB filter to the basic ustar filter
+    indicator_turbulence["evgb"]["Data"] = ustar_basic["basic"]["Data"]*ustar_evgb
+    return indicator_turbulence
+
+def get_turbulence_indicator_ustar_fluxnet(ldt, ustar, ustar_dict):
+    """
+    Purpose:
+     Returns a dictionary containing an indicator series and some attributes.
+     The indicator series is:
+      - 1 when ustar is above the threshold
+      - 0 when ustar is below the threshold
+      - 0 when ustar is above the threshold for the first time following a period
+          when ustar has been below the threshold.
+     This is the FluxNet ustar filter from Pastorello et al 2020 (https://doi.org/10.1038/s41597-020-0534-3).
+    Usage:
+     indicators["turbulence"] = get_turbulence_indicator_ustar_fluxnet(ldt,ustar,ustar_dict)
+     where;
+      ldt is a datetime val
+      ustar is a ustar variable
+      ustar_dict is a dictionary of ustar thresholds returned by pfp_rp.get_ustar_thresholds
     and;
      indicators["turbulence"] is a dictionary containing
       indicators["turbulence"]["values"] is the indicator series
       indicators["turbulence"]["attr"] are the attributes
-    Author: PRI, EVG, WW
-    Date: December 2016
+    Author: PRI
+    Date: October 2020
     """
-    # differentiate the day/night indicator series, we will
-    # use this value to indicate the transition from day to night
-    dinds = numpy.ediff1d(ind_day, to_begin=0)
+    nrecs = len(ldt["Data"])
+    ts = int(ustar["time_step"])
+    years = sorted(list(ustar_dict.keys()))
+    # initialise the return dictionary
+    long_name_basic = "Indicator for basic ustar filter, 1 ==> turbulent"
+    long_name_fluxnet = "Indicator for FluxNet ustar filter, 1 ==> turbulent"
+    indicator_turbulence = {"basic": {"Label": "indicator_turbulence_basic",
+                                      "Data": numpy.zeros(nrecs, dtype=int),
+                                      "Flag": numpy.zeros(nrecs, dtype=int),
+                                      "Attr": {"long_name": long_name_basic,
+                                               "units": "none"}},
+                            "fluxnet": {"Label": "indicator_turbulence_fluxnet",
+                                        "Data": numpy.zeros(nrecs, dtype=int),
+                                        "Flag": numpy.zeros(nrecs, dtype=int),
+                                        "Attr": {"long_name": long_name_fluxnet,
+                                                 "units": "none"}}}
+    ustar_basic = indicator_turbulence["basic"]["Data"]
+    ustar_fluxnet = indicator_turbulence["fluxnet"]["Data"]
+    attr = indicator_turbulence["fluxnet"]["Attr"]
+    attr["turbulence_filter"] = "ustar_fluxnet"
     # get the list of years
-    year_list = ustar_dict.keys()
-    year_list.sort()
-    # now loop over the years in the data to apply the ustar threshold
-    # ustar >= threshold ==> ind_ustar = 1 else ind_ustar = 0
-    turbulence_indicator = {"values":ind_ustar,"attr":{}}
-    attr = turbulence_indicator["attr"]
-    attr["turbulence_filter"] = "ustar_evg"
-    # get an array of ustar threshold values
-    year = numpy.array([ldt[i].year for i in range(len(ldt))])
-    ustar_threshold = numpy.zeros(len(ldt))
-    for yr in year_list:
-        idx = numpy.where(year==int(yr))[0]
-        ustar_threshold[idx] = float(ustar_dict[yr]["ustar_mean"])
-        attr["ustar_threshold_"+str(yr)] = str(ustar_dict[yr]["ustar_mean"])
-    # get the indicator series
-    ind_evg = ind_day.copy()
-    idx = numpy.where(dinds<-0.5)[0]
-    for i in idx:
-        n = i
-        while ustar[n]>=ustar_threshold[n]:
-            ind_evg[n] = 1
-            n = n+1
-            if n>=len(ldt):
-                break
-    turbulence_indicator["values"] = turbulence_indicator["values"]*ind_evg
-    return turbulence_indicator
+    for year in years:
+        start_date = datetime.datetime(int(year), 1, 1, 0, 0) + datetime.timedelta(minutes=ts)
+        end_date = datetime.datetime(int(year)+1, 1, 1, 0, 0)
+        # get the ustar threshold
+        ustar_threshold = float(ustar_dict[year]["ustar_mean"])
+        attr["ustar_threshold_" + str(year)] = str(ustar_threshold)
+        # get the start and end datetime indices
+        si = pfp_utils.GetDateIndex(ldt["Data"], start_date, ts=ts, default=0, match="exact")
+        ei = pfp_utils.GetDateIndex(ldt["Data"], end_date, ts=ts, default=nrecs-1, match="exact")
+        # basic ustar filter
+        # ustar >= threshold ==> ustar_basic = 1
+        idx = numpy.ma.where(ustar["Data"][si:ei] >= ustar_threshold)[0]
+        ustar_basic[si:ei][idx] = int(1)
+        # FluxNet ustar filter
+        # first period with ustar >= threshold ==> ustar_fluxnet = 0
+        ustar_fluxnet[si:ei] = ustar_basic[si:ei] * numpy.roll(ustar_basic[si:ei], 1)
+        if ustar_basic[si] < ustar_threshold:
+            ustar_fluxnet[si:si+2] = int(0)
+    indicator_turbulence["basic"]["Data"] = ustar_basic
+    indicator_turbulence["fluxnet"]["Data"] = ustar_fluxnet
+    return indicator_turbulence
 
 def get_ustarthreshold_from_cf(cf):
     """

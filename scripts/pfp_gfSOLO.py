@@ -36,10 +36,11 @@ def GapFillUsingSOLO(main_gui, ds, l5_info, called_by):
     ds.returncodes["value"] = 0
     ds.returncodes["message"] = "normal"
     # check the SOLO drivers for missing data
-    pfp_gf.CheckDrivers(ds, l5_info, called_by)
-    if ds.returncodes["value"] != 0:
-        return ds
+    #pfp_gf.CheckDrivers(ds, l5_info, called_by)
+    #if ds.returncodes["value"] != 0:
+        #return ds
     if l5_info[called_by]["info"]["call_mode"].lower() == "interactive":
+        l5_info["GapFillUsingSOLO"]["gui"]["show_plots"] = True
         # put up a plot of the data coverage at L4
         gfSOLO_plotcoveragelines(ds, l5_info, called_by)
         # call the GapFillUsingSOLO GUI
@@ -92,16 +93,60 @@ def  gfSOLO_gui(main_gui, ds, l5_info, called_by):
     main_gui.solo_gui.show()
     main_gui.solo_gui.exec_()
 
+#def gfSOLO_autocomplete(ds, l5_info, called_by):
+    #"""
+    #Purpose:
+     #Gap fill long gaps.
+    #"""
+    #l5s = l5_info[called_by]
+    #if not l5s["gui"]["auto_complete"]:
+        #return
+    #ldt = ds.series["DateTime"]["Data"]
+    #nRecs = len(ldt)
+    #for output in l5s["outputs"].keys():
+        #not_enough_points = False
+        #target = l5s["outputs"][output]["target"]
+        #data_solo, _, _ = pfp_utils.GetSeriesasMA(ds, output)
+        #if numpy.ma.count(data_solo) == 0:
+            #continue
+        #mask_solo = numpy.ma.getmaskarray(data_solo)
+        #gapstartend = pfp_utils.contiguous_regions(mask_solo)
+        #data_obs, _, _ = pfp_utils.GetSeriesasMA(ds, target)
+        #for si_gap, ei_gap in gapstartend:
+            #min_points = int((ei_gap-si_gap)*l5s["gui"]["min_percent"]/100)
+            #num_good_points = numpy.ma.count(data_obs[si_gap: ei_gap])
+            #while num_good_points < min_points:
+                #si_gap = max([0, si_gap - l5s["info"]["nperday"]])
+                #ei_gap = min([nRecs-1, ei_gap + l5s["info"]["nperday"]])
+                #if si_gap == 0 and ei_gap == nRecs-1:
+                    #msg = " Unable to find enough good points in target " + target
+                    #logger.error(msg)
+                    #not_enough_points = True
+                #if not_enough_points:
+                    #break
+                #min_points = int((ei_gap-si_gap)*l5s["gui"]["min_percent"]/100)
+                #num_good_points = numpy.ma.count(data_obs[si_gap: ei_gap])
+            #if not_enough_points:
+                #break
+            #si = max([0, si_gap])
+            #ei = min([len(ldt)-1, ei_gap])
+            #l5s["run"]["startdate"] = ldt[si].strftime("%Y-%m-%d %H:%M")
+            #l5s["run"]["enddate"] = ldt[ei].strftime("%Y-%m-%d %H:%M")
+            #gfSOLO_main(ds, l5_info, called_by, outputs=[output])
+            #if l5s["info"]["call_mode"] == "interactive":
+                #gfSOLO_plotcoveragelines(ds, l5_info, called_by)
+
 def gfSOLO_autocomplete(ds, l5_info, called_by):
     """
     Purpose:
-     Gap fill long gaps.
+     Fill gaps that were not filled on the first pass through.
     """
     l5s = l5_info[called_by]
     if not l5s["gui"]["auto_complete"]:
         return
     ldt = ds.series["DateTime"]["Data"]
     nRecs = len(ldt)
+    use_all_data = []
     for output in l5s["outputs"].keys():
         not_enough_points = False
         target = l5s["outputs"][output]["target"]
@@ -118,10 +163,11 @@ def gfSOLO_autocomplete(ds, l5_info, called_by):
                 si_gap = max([0, si_gap - l5s["info"]["nperday"]])
                 ei_gap = min([nRecs-1, ei_gap + l5s["info"]["nperday"]])
                 if si_gap == 0 and ei_gap == nRecs-1:
-                    msg = " Unable to find enough good points in target " + target
-                    logger.error(msg)
+                    msg = " Less than " + str(l5s["gui"]["min_percent"]) + " % good data "
+                    msg += " for " + target + ", skipping ..."
+                    logger.warning(msg)
+                    use_all_data.append(output)
                     not_enough_points = True
-                if not_enough_points:
                     break
                 min_points = int((ei_gap-si_gap)*l5s["gui"]["min_percent"]/100)
                 num_good_points = numpy.ma.count(data_obs[si_gap: ei_gap])
@@ -134,6 +180,48 @@ def gfSOLO_autocomplete(ds, l5_info, called_by):
             gfSOLO_main(ds, l5_info, called_by, outputs=[output])
             if l5s["info"]["call_mode"] == "interactive":
                 gfSOLO_plotcoveragelines(ds, l5_info, called_by)
+    # get a list variables where autocomplete didn't work
+    use_all_data = list(set(use_all_data))
+    # now try gap filling these with minimum percent set to 10 %
+    if len(use_all_data) > 0:
+        # save the current min percent
+        save_min_percent = l5s["gui"]["min_percent"]
+        # set min percebt to 10 %
+        l5s["gui"]["min_percent"] = 10
+        # set the start and end dates to the start and end of the data set
+        l5s["run"]["startdate"] = ldt[0].strftime("%Y-%m-%d %H:%M")
+        l5s["run"]["enddate"] = ldt[-1].strftime("%Y-%m-%d %H:%M")
+        # tell the user what we are about to do
+        targets = [l5s["outputs"][output]["target"] for output in use_all_data]
+        msg = " Attempting to gap fill " + ','.join(targets)
+        msg += ", minimum percent good data set to "
+        msg += str(l5s["gui"]["min_percent"]) + " %"
+        logger.warning(msg)
+        # loop over outputs
+        for output in use_all_data:
+            # get the target for this output
+            target = l5s["outputs"][output]["target"]
+            # get the target variable
+            var = pfp_utils.GetVariable(ds, target)
+            # get the percentage of good data in the variable
+            percent_good = 100*numpy.ma.count(var["Data"])/nRecs
+            # check percentage of good data is greater than 10 %
+            if percent_good >= l5s["gui"]["min_percent"]:
+                # gap fill if it is ...
+                gfSOLO_main(ds, l5_info, called_by, outputs=[output])
+                if l5s["info"]["call_mode"] == "interactive":
+                    gfSOLO_plotcoveragelines(ds, l5_info, called_by)
+            else:
+                # skip this output if it isn't ...
+                msg = " I'm not filling a variable (" + target + ")"
+                msg += " with less than " + str(l5s["gui"]["min_percent"])
+                msg += " good data!"
+                logger.error("!!!!!")
+                logger.error(msg)
+                logger.error("!!!!!")
+        # restore the original min percent
+        l5s["gui"]["min_percent"] = save_min_percent
+    return
 
 def gfSOLO_check_drivers(ds, drivers, si, ei):
     """
@@ -243,7 +331,7 @@ def gfSOLO_main(ds, l5_info, called_by, outputs=None):
         d, _, _ = pfp_utils.GetSeriesasMA(ds, target, si=si, ei=ei)
         nRecs = len(d)
         if numpy.ma.count(d) < l5s["gui"]["min_points"]:
-            msg = "SOLO: Less than " + str(l5s["gui"]["min_points"]) + " points available for target " + target
+            msg = " Less than " + str(l5s["gui"]["min_percent"]) + " % good data available for " + target
             logger.warning(msg)
             l5s["outputs"][output]["results"]["No. points"].append(float(0))
             results = l5s["outputs"][output]["results"].keys()
@@ -579,7 +667,7 @@ def gfSOLO_plotsummary(ds, solo):
     # make the hard-copy file name and save the plot as a PNG file
     sdt = startdate.strftime("%Y%m%d")
     edt = enddate.strftime("%Y%m%d")
-    plot_path = os.path.join(solo["info"]["plot_path"], "L5", "")
+    plot_path = os.path.join(solo["info"]["plot_path"], "")
     if not os.path.exists(plot_path): os.makedirs(plot_path)
     figname = plot_path + site_name.replace(" ", "") + "_"+called_by+"_FitStatistics_"
     figname = figname + "_" + sdt + "_" + edt + ".png"

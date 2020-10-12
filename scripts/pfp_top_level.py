@@ -639,13 +639,23 @@ def do_run_l5(main_gui, cfg):
             cfg["Options"] = {}
         cfg["Options"]["call_mode"] = "interactive"
         ds5 = pfp_levels.l5qc(main_gui, cfg, ds4)
+        # check to see if all went well
         if ds5.returncodes["value"] != 0:
+            # tell the user something went wrong
             logger.info("Quitting L5: "+sitename)
-        else:
-            logger.info("Finished L5: "+sitename)
+            # delete the output file if it exists
             out_filepath = pfp_io.get_outfilenamefromcf(cfg)
+            if os.path.isfile(out_filepath):
+                os.remove(out_filepath)
+        else:
+            # tell the user we are finished
+            logger.info("Finished L5: "+sitename)
+            # get the output file name from the control file
+            out_filepath = pfp_io.get_outfilenamefromcf(cfg)
+            # open it for writing
             nc_file = pfp_io.nc_open_write(out_filepath)
             if nc_file is None: return
+            # write the output file
             pfp_io.nc_write_series(nc_file, ds5)
             logger.info("Finished saving L5 gap filled data")
         logger.info("")

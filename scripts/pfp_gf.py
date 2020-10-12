@@ -20,27 +20,19 @@ import pfp_utils
 
 logger = logging.getLogger("pfp_log")
 
-def CheckDrivers(ds, info, called_by):
+def CheckL5Drivers(ds, l5_info):
     """
     Purpose:
-     Check the drivers specified for gap filling using SOLO and warn
-     the user if any contain missing data.
+     Check the drvers specified for gap filling for missing data.
     Usage:
     Side effects:
     Author: PRI
-    Date: May 2019
+    Date: October 2020
     """
     msg = " Checking drivers for missing data"
     logger.info(msg)
-    ts = int(ds.globalattributes["time_step"])
-    ldt = pfp_utils.GetVariable(ds, "DateTime")
-    gf_drivers = []
-    for label in info[called_by]["outputs"].keys():
-        gf_drivers = gf_drivers + info[called_by]["outputs"][label]["drivers"]
-    drivers = list(set(gf_drivers))
-    drivers_with_missing = {}
-    # loop over the drivers and check for missing data
-    for label in drivers:
+    drivers_with_missing = []
+    for label in list(l5_info["CheckL5Drivers"]["drivers"]):
         if label not in ds.series.keys():
             msg = "  Requested driver (" + label + ") not found in data structure"
             logger.error(msg)
@@ -48,84 +40,129 @@ def CheckDrivers(ds, info, called_by):
             ds.returncodes["value"] = 1
             return
         var = pfp_utils.GetVariable(ds, label)
-        if numpy.ma.count_masked(var["Data"]) != 0:
-            # save the number of missing data points and the datetimes when they occur
-            idx = numpy.where(numpy.ma.getmaskarray(var["Data"]))[0]
-            drivers_with_missing[label] = {"count": len(idx),
-                                           "dates": ldt["Data"][idx]}
-    # check to see if any of the drivers have missing data
-    if len(drivers_with_missing.keys()) == 0:
+        if numpy.any(numpy.ma.getmaskarray(var["Data"])):
+            drivers_with_missing.append(label)
+    if len(drivers_with_missing) == 0:
         msg = "  No missing data found in drivers"
         logger.info(msg)
-        return
-    # deal with drivers that contain missing data points
-    logger.warning("!!!!!")
-    s = ','.join(drivers_with_missing.keys())
-    msg = "!!!!! The following variables contain missing data " + s
-    logger.warning(msg)
-    logger.warning("!!!!!")
-    for label in drivers_with_missing.keys():
-        var = pfp_utils.GetVariable(ds, label)
-        # check to see if this variable was imported
-        if "end_date" in var["Attr"]:
-            if "end_date" not in drivers_with_missing[label]:
-                drivers_with_missing[label]["end_date"] = []
-            # it was, so perhaps this variable finishes before the tower data
-            drivers_with_missing[label]["end_date"].append(dateutil.parser.parse(var["Attr"]["end_date"]))
-    # check to see if any variables with missing data have an end date
-    dwmwed = [l for l in drivers_with_missing.keys() if "end_date" in drivers_with_missing[l]]
-    if len(dwmwed) == 0:
-        # return with error message if no variables have end date
-        s = ','.join(drivers_with_missing.keys())
-        msg = "  Unable to resolve missing data in variables " + s
-        logger.error(msg)
-        ds.returncodes["message"] = msg
-        ds.returncodes["value"] = 1
-        return
-    # check to see if the user wants us to truncate to an end date
-    if info[called_by]["info"]["truncate_to_imports"].lower() == "no":
-        msg = "  Truncation to imported variable end date disabled in control file"
-        logger.error(msg)
-        ds.returncodes["message"] = msg
-        ds.returncodes["value"] = 1
-        return
-    msg = "  Truncating data to end date of imported variable"
-    logger.info(msg)
-    dwmed = [drivers_with_missing[l]["end_date"] for l in drivers_with_missing.keys()]
-    end_date = numpy.min(dwmed)
-    ei = pfp_utils.GetDateIndex(ldt["Data"], end_date, ts=ts)
-    # loop over the variables in the data structure
-    for label in ds.series.keys():
-        var = pfp_utils.GetVariable(ds, label, start=0, end=ei)
-        pfp_utils.CreateVariable(ds, var)
-    # update the global attributes
-    ldt = pfp_utils.GetVariable(ds, "DateTime")
-    ds.globalattributes["nc_nrecs"] = len(ldt["Data"])
-    ds.globalattributes["end_date"] = ldt["Data"][-1].strftime("%Y-%m-%d %H:%M:%S")
-    # ... and check again to see if any drivers have missing data
-    drivers_with_missing = {}
-    for label in drivers:
-        var = pfp_utils.GetVariable(ds, label)
-        if numpy.ma.count_masked(var["Data"]) != 0:
-            # save the number of missing data points and the datetimes when they occur
-            idx = numpy.where(numpy.ma.getmaskarray(var["Data"]))[0]
-            drivers_with_missing[label] = {"count": len(idx),
-                                           "dates": ldt["Data"][idx],
-                                           "end_date":[]}
-    # check to see if any of the drivers still have missing data
-    if len(drivers_with_missing.keys()) != 0:
-        # return with error message if no variables have end date
-        s = ','.join(drivers_with_missing.keys())
-        msg = "  Unable to resolve missing data in variables " + s
-        logger.error(msg)
-        ds.returncodes["message"] = msg
-        ds.returncodes["value"] = 1
-        return
+        ds.returncodes = {"value": 0, "message": msg}
     else:
-        # else we are all good, job done, so return
-        msg = "  No missing data found in drivers"
-        logger.info(msg)
-        return
+        dwm = ",".join(drivers_with_missing)
+        msg = " Drivers " + dwm + " have missing data, aborting L5 ..."
+        logger.error("!!!!!")
+        logger.error(msg)
+        logger.error("!!!!!")
+        ds.returncodes = {"value": 1, "message": msg}
+    return
+
+#def CheckDrivers(ds, info, called_by):
+    #"""
+    #Purpose:
+     #Check the drivers specified for gap filling using SOLO and warn
+     #the user if any contain missing data.
+    #Usage:
+    #Side effects:
+    #Author: PRI
+    #Date: May 2019
+    #"""
+    #msg = " Checking drivers for missing data"
+    #logger.info(msg)
+    #ts = int(ds.globalattributes["time_step"])
+    #ldt = pfp_utils.GetVariable(ds, "DateTime")
+    #gf_drivers = []
+    #for label in info[called_by]["outputs"].keys():
+        #gf_drivers = gf_drivers + info[called_by]["outputs"][label]["drivers"]
+    #drivers = list(set(gf_drivers))
+    #drivers_with_missing = {}
+    ## loop over the drivers and check for missing data
+    #for label in drivers:
+        #if label not in ds.series.keys():
+            #msg = "  Requested driver (" + label + ") not found in data structure"
+            #logger.error(msg)
+            #ds.returncodes["message"] = msg
+            #ds.returncodes["value"] = 1
+            #return
+        #var = pfp_utils.GetVariable(ds, label)
+        #if numpy.ma.count_masked(var["Data"]) != 0:
+            ## save the number of missing data points and the datetimes when they occur
+            #idx = numpy.where(numpy.ma.getmaskarray(var["Data"]))[0]
+            #drivers_with_missing[label] = {"count": len(idx),
+                                           #"dates": ldt["Data"][idx]}
+    ## check to see if any of the drivers have missing data
+    #if len(drivers_with_missing.keys()) == 0:
+        #msg = "  No missing data found in drivers"
+        #logger.info(msg)
+        #return
+
+    ## deal with drivers that contain missing data points
+    #logger.warning("!!!!!")
+    #s = ','.join(drivers_with_missing.keys())
+    #msg = "!!!!! The following variables contain missing data " + s
+    #logger.warning(msg)
+    #logger.warning("!!!!!")
+    #for label in drivers_with_missing.keys():
+        #var = pfp_utils.GetVariable(ds, label)
+        ## check to see if this variable was imported
+        #if "end_date" in var["Attr"]:
+            #if "end_date" not in drivers_with_missing[label]:
+                #drivers_with_missing[label]["end_date"] = []
+            ## it was, so perhaps this variable finishes before the tower data
+            #drivers_with_missing[label]["end_date"].append(dateutil.parser.parse(var["Attr"]["end_date"]))
+    ## check to see if any variables with missing data have an end date
+    #dwmwed = [l for l in drivers_with_missing.keys() if "end_date" in drivers_with_missing[l]]
+    #if len(dwmwed) == 0:
+        ## return with error message if no variables have end date
+        #s = ','.join(drivers_with_missing.keys())
+        #msg = "  Unable to resolve missing data in variables " + s
+        #logger.error(msg)
+        #ds.returncodes["message"] = msg
+        #ds.returncodes["value"] = 1
+        #return
+
+    ## check to see if the user wants us to truncate to an end date
+    #if info[called_by]["info"]["truncate_to_imports"].lower() == "no":
+        #msg = "  Truncation to imported variable end date disabled in control file"
+        #logger.error(msg)
+        #ds.returncodes["message"] = msg
+        #ds.returncodes["value"] = 1
+        #return
+    #msg = "  Truncating data to end date of imported variable"
+    #logger.info(msg)
+    #dwmed = [drivers_with_missing[l]["end_date"] for l in drivers_with_missing.keys()]
+    #end_date = numpy.min(dwmed)
+    #ei = pfp_utils.GetDateIndex(ldt["Data"], end_date, ts=ts)
+    ## loop over the variables in the data structure
+    #for label in ds.series.keys():
+        #var = pfp_utils.GetVariable(ds, label, start=0, end=ei)
+        #pfp_utils.CreateVariable(ds, var)
+    ## update the global attributes
+    #ldt = pfp_utils.GetVariable(ds, "DateTime")
+    #ds.globalattributes["nc_nrecs"] = len(ldt["Data"])
+    #ds.globalattributes["end_date"] = ldt["Data"][-1].strftime("%Y-%m-%d %H:%M:%S")
+    ## ... and check again to see if any drivers have missing data
+    #drivers_with_missing = {}
+    #for label in drivers:
+        #var = pfp_utils.GetVariable(ds, label)
+        #if numpy.ma.count_masked(var["Data"]) != 0:
+            ## save the number of missing data points and the datetimes when they occur
+            #idx = numpy.where(numpy.ma.getmaskarray(var["Data"]))[0]
+            #drivers_with_missing[label] = {"count": len(idx),
+                                           #"dates": ldt["Data"][idx],
+                                           #"end_date":[]}
+    ## check to see if any of the drivers still have missing data
+    #if len(drivers_with_missing.keys()) != 0:
+        ## return with error message if no variables have end date
+        #s = ','.join(drivers_with_missing.keys())
+        #msg = "  Unable to resolve missing data in variables " + s
+        #logger.error(msg)
+        #ds.returncodes["message"] = msg
+        #ds.returncodes["value"] = 1
+        #return
+    #else:
+        ## else we are all good, job done, so return
+        #msg = "  No missing data found in drivers"
+        #logger.info(msg)
+        #return
 
 def CheckGapLengths(cf, ds, l5_info):
     """
@@ -219,6 +256,38 @@ def CheckGapLengths(cf, ds, l5_info):
                 l5_info["GapFillUsingMDS"]["info"].pop("MaxShortGapRecords", None)
     return
 
+def CheckL5Targets(ds, l5_info):
+    """
+    Purpose:
+     Check the targets specified for gap filling at L5 to see if any of them
+     still contain missing data.
+    Usage:
+    Side effects:
+    Author: PRI
+    Date: October 2020
+    """
+    msg = " Checking targets for missing data"
+    logger.info(msg)
+    # get a list of target variables
+    targets = l5_info["CheckL5Targets"]["targets"]
+    series_with_missing_data = []
+    for target in targets:
+        var = pfp_utils.GetVariable(ds, target)
+        if numpy.any(numpy.ma.getmaskarray(var["Data"])):
+            series_with_missing_data.append(target)
+    if len(series_with_missing_data) == 0:
+        msg = "  No missing data found in targets"
+        logger.info(msg)
+        ds.returncodes = {"value": 0, "message": msg}
+    else:
+        s = ",".join(series_with_missing_data)
+        msg = " Targets " + s + " contain missing data, aborting L5 ..."
+        logger.error("!!!!!")
+        logger.error(msg)
+        logger.error("!!!!!")
+        ds.returncodes = {"value": 1, "message": msg}
+    return
+
 def ParseL4ControlFile(cf, ds):
     """
     Purpose:
@@ -274,7 +343,10 @@ def ParseL5ControlFile(cf, ds):
     # add key for suppressing output of intermediate variables e.g. Ta_aws
     opt = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "KeepIntermediateSeries", default="No")
     l5_info["RemoveIntermediateSeries"] = {"KeepIntermediateSeries": opt, "not_output": []}
-    for target in cf["Fluxes"].keys():
+    targets = sorted(list(cf["Fluxes"].keys()))
+    l5_info["CheckL5Targets"] = {"targets": targets}
+    l5_info["CheckL5Drivers"] = {"drivers": []}
+    for target in targets:
         if "GapFillUsingSOLO" in cf["Fluxes"][target].keys():
             gfSOLO_createdict(cf, ds, l5_info, target, "GapFillUsingSOLO", 510)
             # check to see if something went wrong
@@ -291,6 +363,7 @@ def ParseL5ControlFile(cf, ds):
                 return l5_info
         if "MergeSeries" in cf["Fluxes"][target].keys():
             gfMergeSeries_createdict(cf, ds, l5_info, target, "MergeSeries")
+    l5_info["CheckL5Drivers"]["drivers"] = list(set(l5_info["CheckL5Drivers"]["drivers"]))
     return l5_info
 
 def ReadAlternateFiles(ds, l4_info):
@@ -775,6 +848,8 @@ def gfMDS_createdict(cf, ds, l5_info, label, called_by, flag_code):
         if "," in drivers_string:
             if len(drivers_string.split(",")) == 3:
                 l5mo[output]["drivers"] = drivers_string.split(",")
+                # append to list of drivers to be checked for gaps
+                l5_info["CheckL5Drivers"]["drivers"] += drivers_string.split(",")
             else:
                 msg = " MDS: incorrect number of drivers for " + label + ", skipping ..."
                 logger.error(msg)
@@ -803,13 +878,14 @@ def gfMDS_createdict(cf, ds, l5_info, label, called_by, flag_code):
     # a FluxNet label, remove if they don't
     fluxnet_label_map = {"Fc":"NEE", "Fe":"LE", "Fh":"H",
                          "Fsd":"SW_IN", "Ta":"TA", "VPD":"VPD"}
-    for mds_label in l5_info[called_by]["outputs"]:
+    for mds_label in list(l5_info[called_by]["outputs"]):
         l5_info[called_by]["outputs"][mds_label]["mds_label"] = mds_label
         pfp_target = l5_info[called_by]["outputs"][mds_label]["target"]
         if pfp_target not in fluxnet_label_map:
             msg = " Target ("+pfp_target+") not supported for MDS gap filling"
             logger.warning(msg)
             del l5_info[called_by]["outputs"][mds_label]
+            continue
         else:
             l5_info[called_by]["outputs"][mds_label]["target_mds"] = fluxnet_label_map[pfp_target]
         pfp_drivers = l5_info[called_by]["outputs"][mds_label]["drivers"]
@@ -824,6 +900,7 @@ def gfMDS_createdict(cf, ds, l5_info, label, called_by, flag_code):
                 l5_info[called_by]["outputs"][mds_label]["drivers_mds"].append(fluxnet_label_map[pfp_driver])
         if len(l5_info[called_by]["outputs"][mds_label]["drivers"]) == 0:
             del l5_info[called_by]["outputs"][mds_label]
+            continue
     return
 
 def gfMergeSeries_createdict(cf, ds, info, label, called_by):
@@ -888,6 +965,7 @@ def gfSOLO_createdict(cf, ds, l5_info, target_label, called_by, flag_code):
     # create an empty series in ds if the SOLO output series doesn't exist yet
     outputs = cf["Fluxes"][target_label][called_by].keys()
     for output in outputs:
+        l5_info["CheckL5Drivers"]["drivers"] += l5_info[called_by]["outputs"][output]["drivers"]
         if output not in ds.series.keys():
             # disable output to netCDF file for this variable
             l5_info["RemoveIntermediateSeries"]["not_output"].append(output)
@@ -1279,44 +1357,6 @@ def gf_getdiurnalstats(DecHour,Data,ts):
                 Mx[i] = numpy.ma.max(Data[li])
                 Mn[i] = numpy.ma.min(Data[li])
     return Num, Hr, Av, Sd, Mx, Mn
-
-def gf_getdateticks(start, end):
-    from datetime import timedelta as td
-    delta = end - start
-    if delta <= td(minutes=10):
-        loc = mdt.MinuteLocator()
-        fmt = mdt.DateFormatter('%H:%M')
-    elif delta <= td(minutes=30):
-        loc = mdt.MinuteLocator(byminute=range(0,60,5))
-        fmt = mdt.DateFormatter('%H:%M')
-    elif delta <= td(hours=1):
-        loc = mdt.MinuteLocator(byminute=range(0,60,15))
-        fmt = mdt.DateFormatter('%H:%M')
-    elif delta <= td(hours=6):
-        loc = mdt.HourLocator()
-        fmt = mdt.DateFormatter('%H:%M')
-    elif delta <= td(days=1):
-        loc = mdt.HourLocator(byhour=range(0,24,3))
-        fmt = mdt.DateFormatter('%H:%M')
-    elif delta <= td(days=3):
-        loc = mdt.HourLocator(byhour=range(0,24,12))
-        fmt = mdt.DateFormatter('%d/%m %H')
-    elif delta <= td(weeks=2):
-        loc = mdt.DayLocator()
-        fmt = mdt.DateFormatter('%d/%m')
-    elif delta <= td(weeks=12):
-        loc = mdt.WeekdayLocator()
-        fmt = mdt.DateFormatter('%d/%m')
-    elif delta <= td(weeks=104):
-        loc = mdt.MonthLocator()
-        fmt = mdt.DateFormatter('%d/%m')
-    elif delta <= td(weeks=208):
-        loc = mdt.MonthLocator(interval=3)
-        fmt = mdt.DateFormatter('%d/%m/%y')
-    else:
-        loc = mdt.MonthLocator(interval=6)
-        fmt = mdt.DateFormatter('%d/%m/%y')
-    return loc,fmt
 
 def ImportSeries(cf,ds):
     # check to see if there is an Imports section
