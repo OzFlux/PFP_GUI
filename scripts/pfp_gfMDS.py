@@ -55,7 +55,7 @@ def GapFillUsingMDS(ds, l5_info, called_by):
     # get some useful odds and ends
     ldt = pfp_utils.GetVariable(ds, "DateTime")
     first_year = ldt["Data"][0].year
-    last_year = ldt["Data"][-1].year
+    last_year = ldt["Data"][-2].year
     # now loop over the series to be gap filled using MDS
     # open a log file for the MDS C code output
     log_file_path = os.path.join("mds", "log", "mds.log")
