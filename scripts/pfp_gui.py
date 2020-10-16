@@ -5826,26 +5826,13 @@ class edit_cfg_L5(QtWidgets.QWidget):
                         self.context_menu.actionChangeTruncateToImports.triggered.connect(lambda:self.change_selected_text("No"))
                 elif (selected_item.column() == 1) and (key == "TurbulenceFilter"):
                     existing_entry = str(parent.child(selected_item.row(),1).text())
-                    if existing_entry != "ustar (basic)":
-                        self.context_menu.actionSetTurbulanceFilter2ustar_basic = QtWidgets.QAction(self)
-                        self.context_menu.actionSetTurbulanceFilter2ustar_basic.setText("ustar (basic)")
-                        self.context_menu.addAction(self.context_menu.actionSetTurbulanceFilter2ustar_basic)
-                        self.context_menu.actionSetTurbulanceFilter2ustar_basic.triggered.connect(self.set_ustar_basic)
-                    if existing_entry != "ustar (EvGb)":
-                        self.context_menu.actionSetTurbulanceFilter2ustar_evgb = QtWidgets.QAction(self)
-                        self.context_menu.actionSetTurbulanceFilter2ustar_evgb.setText("ustar (EvGb)")
-                        self.context_menu.addAction(self.context_menu.actionSetTurbulanceFilter2ustar_evgb)
-                        self.context_menu.actionSetTurbulanceFilter2ustar_evgb.triggered.connect(self.set_ustar_evgb)
-                    if existing_entry != "ustar (FluxNet)":
-                        self.context_menu.actionSetTurbulanceFilter2ustar_fluxnet = QtWidgets.QAction(self)
-                        self.context_menu.actionSetTurbulanceFilter2ustar_fluxnet.setText("ustar (FluxNet)")
-                        self.context_menu.addAction(self.context_menu.actionSetTurbulanceFilter2ustar_fluxnet)
-                        self.context_menu.actionSetTurbulanceFilter2ustar_fluxnet.triggered.connect(self.set_ustar_fluxnet)
-                    if existing_entry != "none":
-                        self.context_menu.actionSetTurbulanceFilter2none = QtWidgets.QAction(self)
-                        self.context_menu.actionSetTurbulanceFilter2none.setText("none")
-                        self.context_menu.addAction(self.context_menu.actionSetTurbulanceFilter2none)
-                        self.context_menu.actionSetTurbulanceFilter2none.triggered.connect(self.set_none)
+                    for item in ["ustar (basic)", "ustar (EvGB)", "ustar (FluxNet)",
+                                 "ustar (FluxNet+day)", "none"]:
+                        if existing_entry != item:
+                            self.context_menu.SetUstarFilter = QtWidgets.QAction(self)
+                            self.context_menu.SetUstarFilter.setText(item)
+                            self.context_menu.addAction(self.context_menu.SetUstarFilter)
+                            self.context_menu.SetUstarFilter.triggered.connect(lambda: self.set_ustar_filter(item))
             elif (str(parent.text()) in ["Fluxes"]):
                 # get a list of existing entries
                 existing_entries = self.get_existing_entries()
@@ -6592,26 +6579,13 @@ class edit_cfg_L5(QtWidgets.QWidget):
         parent = selected_item.parent()
         parent.child(selected_item.row(), 1).setText("none")
 
-    def set_ustar_basic(self):
-        """ Set the turbulence filter to ustar_basic."""
+    def set_ustar_filter(self, item):
+        """ Set the turbulence filter type."""
+        sender = str(self.context_menu.sender().text())
         idx = self.view.selectedIndexes()[0]
         selected_item = idx.model().itemFromIndex(idx)
         parent = selected_item.parent()
-        parent.child(selected_item.row(), 1).setText("ustar (basic)")
-
-    def set_ustar_evgb(self):
-        """ Set the turbulence filter to ustar_evgb."""
-        idx = self.view.selectedIndexes()[0]
-        selected_item = idx.model().itemFromIndex(idx)
-        parent = selected_item.parent()
-        parent.child(selected_item.row(), 1).setText("ustar (EvGb)")
-
-    def set_ustar_fluxnet(self):
-        """ Set the turbulence filter to ustar_fluxnet."""
-        idx = self.view.selectedIndexes()[0]
-        selected_item = idx.model().itemFromIndex(idx)
-        parent = selected_item.parent()
-        parent.child(selected_item.row(), 1).setText("ustar (FluxNet)")
+        parent.child(selected_item.row(), 1).setText(sender)
 
     def update_tab_text(self):
         """ Add an asterisk to the tab title text to indicate tab contents have changed."""

@@ -1,5 +1,6 @@
 version_name = "PyFluxPro"
-version_number = "V1.0.2"
+version_number = "V1.1.0"
+# V1.1.0 - major changes (to be documented later)
 # V1.0.2 - 6th August 2020 (long oerdue version change)
 #        - check GitHub for what has been done since
 #          5th August 2019

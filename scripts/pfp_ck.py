@@ -116,7 +116,7 @@ def ApplyTurbulenceFilter(cf, ds, l5_info, ustar_threshold=None):
         # subsequent filters will modify the final indicator series
         indicators["final"] = copy.deepcopy(indicators["turbulence"]["evgb"])
         indicators["final"]["Label"] = "indicator_turbulence_final"
-    elif opt["turbulence_filter"].lower() == "ustar (fluxnet)":
+    elif opt["turbulence_filter"].lower() in ["ustar (fluxnet)", "ustar (fluxnet+day)"]:
         # ustar >= threshold ==> indicators["turbulence"] = 1
         # BUT ...
         # if ustar[i] < threshold and ustar[i+1] >= threshold then
@@ -233,7 +233,8 @@ def ApplyTurbulenceFilter_checks(cf, ds):
         opt["OK"] = False
         return opt
     # check to see if filter type can be handled
-    if opt["turbulence_filter"].lower() not in ["ustar", "ustar (basic)", "ustar (fluxnet)", "ustar (evgb)"]:
+    if opt["turbulence_filter"].lower() not in ["ustar", "ustar (basic)", "ustar (evgb)",
+                                                "ustar (fluxnet)", "ustar (fluxnet+day)"]:
         msg = " Unrecognised turbulence filter option ("
         msg = msg+opt["turbulence_filter"]+"), no filter applied"
         logger.error(msg)

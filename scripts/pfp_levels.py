@@ -276,12 +276,12 @@ def l5qc(main_gui, cf, ds4):
     # return from this routine if this is the case
     if not ds5:
         return ds5
+    # set some attributes for this level
+    pfp_utils.UpdateGlobalAttributes(cf, ds5, "L5")
     # parse the control file for information on how the user wants to do the gap filling
     l5_info = pfp_gf.ParseL5ControlFile(cf, ds5)
     if ds5.returncodes["value"] != 0:
         return ds5
-    # set some attributes for this level
-    pfp_utils.UpdateGlobalAttributes(cf, ds5, "L5")
     # check to see if we have any imports
     pfp_gf.ImportSeries(cf, ds5)
     # re-apply the quality control checks (range, diurnal and rules)
