@@ -123,7 +123,7 @@ def l3qc(cf, ds2):
     # ********************************
     # *** Merge CO2 concentrations ***
     # ********************************
-    # merge the 7500 CO2 concentration
+    # merge the CO2 concentration
     pfp_ts.CombineSeries(cf, ds3, l3_info["CO2"]["label"], convert_units=True)
     # ******************************************
     # *** Calculate meteorological variables ***
@@ -200,7 +200,7 @@ def l3qc(cf, ds2):
     # Calculate Monin-Obukhov length
     pfp_ts.CalculateMoninObukhovLength(ds3)
     # re-apply the quality control checks (range, diurnal and rules)
-    pfp_ck.do_qcchecks(cf,ds3)
+    pfp_ck.do_qcchecks(cf, ds3)
     # check missing data and QC flags are consistent
     pfp_utils.CheckQCFlags(ds3)
     # get the statistics for the QC flags and write these to an Excel spreadsheet

@@ -1972,6 +1972,13 @@ class edit_cfg_L3(QtWidgets.QWidget):
         self.sections["Options"].appendRow([child0, child1])
         self.update_tab_text()
 
+    def add_co2units_to_options(self):
+        """ Add CO2 units to the [Options] section."""
+        child0 = QtGui.QStandardItem("CO2Units")
+        child1 = QtGui.QStandardItem("umol/mol")
+        self.sections["Options"].appendRow([child0, child1])
+        self.update_tab_text()
+
     def add_dependencycheck(self):
         """ Add a dependency check to a variable."""
         new_qc = {"DependencyCheck":{"source":""}}
@@ -2013,6 +2020,13 @@ class edit_cfg_L3(QtWidgets.QWidget):
         child1 = QtGui.QStandardItem("YYYY-mm-dd HH:MM, YYYY-mm-dd HH:MM")
         # add them
         selected_item.appendRow([child0, child1])
+        self.update_tab_text()
+
+    def add_fcunits_to_options(self):
+        """ Add Fc units to the [Options] section."""
+        child0 = QtGui.QStandardItem("FcUnits")
+        child1 = QtGui.QStandardItem("umol/m2/s")
+        self.sections["Options"].appendRow([child0, child1])
         self.update_tab_text()
 
     def add_fileentry(self):
@@ -2405,6 +2419,16 @@ class edit_cfg_L3(QtWidgets.QWidget):
                     self.context_menu.actionAddKeepIntermediateSeries.setText("KeepIntermediateSeries")
                     self.context_menu.addAction(self.context_menu.actionAddKeepIntermediateSeries)
                     self.context_menu.actionAddKeepIntermediateSeries.triggered.connect(self.add_keepintermediateseries)
+                if "CO2Units" not in existing_entries:
+                    self.context_menu.actionAddCO2Units = QtWidgets.QAction(self)
+                    self.context_menu.actionAddCO2Units.setText("CO2Units")
+                    self.context_menu.addAction(self.context_menu.actionAddCO2Units)
+                    self.context_menu.actionAddCO2Units.triggered.connect(self.add_co2units_to_options)
+                if "FcUnits" not in existing_entries:
+                    self.context_menu.actionAddFcUnits = QtWidgets.QAction(self)
+                    self.context_menu.actionAddFcUnits.setText("FcUnits")
+                    self.context_menu.addAction(self.context_menu.actionAddFcUnits)
+                    self.context_menu.actionAddFcUnits.triggered.connect(self.add_fcunits_to_options)
             elif selected_text == "Massman":
                 self.context_menu.actionRemoveMassmanSection = QtWidgets.QAction(self)
                 self.context_menu.actionRemoveMassmanSection.setText("Remove section")
@@ -4648,6 +4672,10 @@ class edit_cfg_L4(QtWidgets.QWidget):
                 self.context_menu.actionAddVariable.triggered.connect(self.add_new_variable)
         elif level == 1:
             # sections with 2 levels
+            # get the selected item
+            selected_item = idx.model().itemFromIndex(idx)
+            # get the selected item text
+            selected_text = str(idx.data())
             # get the parent of the selected item
             parent = selected_item.parent()
             if (str(parent.text()) == "Files") and (selected_item.column() == 1):
@@ -6760,7 +6788,12 @@ class edit_cfg_L6(QtWidgets.QWidget):
             root = self.model.invisibleRootItem()
             for i in range(root.rowCount()):
                 self.section_headings.append(str(root.child(i).text()))
-            # sections with only 1 level
+            if "Imports" not in self.section_headings and selected_text == "Files":
+                self.context_menu.actionAddImportsSection = QtWidgets.QAction(self)
+                self.context_menu.actionAddImportsSection.setText("Add Imports section")
+                self.context_menu.addAction(self.context_menu.actionAddImportsSection)
+                self.context_menu.actionAddImportsSection.triggered.connect(self.add_imports_section)
+                add_separator = True
             if selected_text == "Files":
                 # get a list of existing entries in this section
                 existing_entries = self.get_existing_entries()

@@ -87,7 +87,7 @@ class pfp_main_ui(QtWidgets.QWidget):
         self.menuUtilities = QtWidgets.QMenu(self.menubar)
         self.menuUtilities.setTitle("Utilities")
         # Utilities/u* threshold submenu
-        self.menuUtilitiesUstar = QtWidgets.QMenu(self.menuFile)
+        self.menuUtilitiesUstar = QtWidgets.QMenu(self.menuUtilities)
         self.menuUtilitiesUstar.setTitle("u* threshold")
         # Help menu
         self.menuHelp = QtWidgets.QMenu(self.menubar)

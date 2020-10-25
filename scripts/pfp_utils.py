@@ -604,7 +604,6 @@ def convert_units_co2(ds, variable, new_units, co2_info):
     elif old_units in ["mg/m3", "mgCO2/m3"] and new_units == "umol/mol":
         ldt = GetVariable(ds, "DateTime")
         # convert the data
-        ldt = GetVariable(ds, "DateTime")
         Month = numpy.array([d.month for d in ldt["Data"]])
         Ta = GetVariable(ds, "Ta")
         ps = GetVariable(ds, "ps")
@@ -1027,7 +1026,7 @@ def convert_units_soil(ds, variable, new_units, sws_info):
       percent (0 to 100) to frac (0 to 1)
      Note: m3/m3 is treated as an alias for frac
     Usage:
-     new_data = pfp_utils.convert_units_soil(ds, variable, new_units)
+     new_data = pfp_utils.convert_units_soil(ds, variable, new_units, sws_info)
       where ds is a data structure
             variable is a variable dictionary (pfp_utils.GetVariable())
             new_units (string) is the new units
@@ -1062,6 +1061,7 @@ def convert_units_t(ds, variable, new_units, t_info):
       where ds is a data structure
             variable is a variable dictionary (pfp_utils.GetVariable())
             new_units (string) is the new units
+            t_info is defined in pfp_utils.convert_units_func()
     Author: PRI
     Date: January 2016
     """
@@ -1105,10 +1105,11 @@ def convert_units_ps(ds, variable, new_units, ps_info):
       Pa to kPa
       hPa to kPa
     Usage:
-     new_data = pfp_utils.convert_units_ps(ds, variable, new_units)
+     new_data = pfp_utils.convert_units_ps(ds, variable, new_units, ps_info)
       where ds is a data structure
             variable is a variable dictionary (pfp_utils.GetVariable())
             new_units (string) is the new units
+            ps_info is defined in pfp_utils.convert_units_func()
     Author: PRI
     Date: February 2018
     """
@@ -1343,14 +1344,6 @@ def CopyVariable(var):
     Date: October 2018
           September 2020 - bad Peter, original code returns a view, not a copy
     """
-    #tmp = {"Data":var["Data"], "Flag":var["Flag"], "Attr":var["Attr"]}
-    #if "Label" in var:
-        #tmp["Label"] = var["Label"]
-    #if "DateTime" in var:
-        #tmp["DateTime"] = var["DateTime"]
-    #if "time_step" in var:
-        #tmp["time_step"] = var["time_step"]
-    #return tmp
     return copy.deepcopy(var)
 
 def CreateDatetimeRange(start,stop,step=datetime.timedelta(minutes=30)):
@@ -3251,8 +3244,21 @@ def update_progress(progress):
         status = "Done...\r\n"
     block = int(round(barLength*progress))
     progress = round(progress,2)
-    #text = "\rPercent: [{0}] {1:3d}% {2}".format( "#"*block + "-"*(barLength-block), int(progress*100), status)
     text = "\rPercent: [{0}] {1:3d}%".format( "#"*block + "-"*(barLength-block), int(progress*100))
     sys.stdout.write(text)
     sys.stdout.flush()
     return
+
+def mypause(interval):
+    import matplotlib
+    import matplotlib.pyplot as plt
+    import matplotlib.backends
+    backend = plt.rcParams['backend']
+    if backend in matplotlib.rcsetup.interactive_bk:
+        figManager = matplotlib._pylab_helpers.Gcf.get_active()
+        if figManager is not None:
+            canvas = figManager.canvas
+            if canvas.figure.stale:
+                canvas.draw()
+            canvas.start_event_loop(interval)
+            return

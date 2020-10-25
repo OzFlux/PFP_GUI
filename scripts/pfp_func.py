@@ -127,7 +127,7 @@ def Convert_K_to_C(ds, T_out, T_in):
     Purpose:
      Function to convert temperature from K to C.
     Usage:
-     pfp_func.ConvertK2C(ds, T_out, T_in)
+     pfp_func.Convert_K_to_C(ds, T_out, T_in)
     Author: PRI
     Date: February 2018
     """
